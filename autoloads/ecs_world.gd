@@ -7,6 +7,7 @@ extends Node
 func _ready():
 	add_child(movement)
 	# add_child(damage)
+	#
 
 func _process(delta):
 	movement.process(delta)

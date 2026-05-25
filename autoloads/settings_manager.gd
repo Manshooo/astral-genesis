@@ -15,7 +15,6 @@ func load_settings():
 		save_settings()   # Создаём файл с дефолтными значениями
 
 	# Применяем настройки после загрузки
-	apply_sensitivity(settings.mouse_sensitivity)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), linear_to_db(settings.master_volume))
 	if settings.fullscreen:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -33,10 +32,3 @@ func get_mouse_sensitivity() -> float:
 func set_mouse_sensitivity(value: float):
 	settings.mouse_sensitivity = value
 	save_settings()
-	apply_sensitivity(value)
-
-func apply_sensitivity(value: float):
-	# Пример применения к мыши (если используется InputMap или камера)
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED  # если нужно
-	# Для камеры в 3D: обычно умножаем дельту на sensitivity
-	# Здесь просто сохраняем, а в скрипте камеры читаем SettingsManager.get_mouse_sensitivity()

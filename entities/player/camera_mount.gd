@@ -1,9 +1,13 @@
 extends Node3D
 
-var yaw := 0.0
-var pitch := 0.0
+@onready var yaw_node = $CamYaw
+@onready var pitch_node = $CamYaw/CamPitch
+@onready var camera = $CamYaw/CamPitch/PlayerCamera
 
-func _input(event):
+var yaw: float = 0
+var pitch: float = 0
+
+func _input(event: InputEvent):
 	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if event is InputEventMouseMotion:
 			var sens = SettingsManager.get_mouse_sensitivity()

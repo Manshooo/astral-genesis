@@ -3,48 +3,22 @@
 [ext_resource type="Script" uid="uid://bkgyc06h33pma" path="res://autoloads/ecs_world.gd" id="1_uyesf"]
 [ext_resource type="PackedScene" uid="uid://bprksygox7mbg" path="res://entities/player/player.tscn" id="2_fs0fj"]
 [ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://components/health.gd" id="3_kxray"]
+[ext_resource type="Environment" uid="uid://dt6nbx8xwsp5s" path="res://assets/environment.tres" id="4_fs0fj"]
 
 [sub_resource type="Resource" id="Resource_ppyta"]
 script = ExtResource("3_kxray")
 metadata/_custom_type_script = "uid://5r77tfxtjy6p"
 
-[sub_resource type="BoxMesh" id="BoxMesh_6uqi0"]
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_6uqi0"]
-
-[node name="Node3D" type="Node3D" unique_id=89981537]
+[node name="World" type="Node3D" unique_id=89981537]
 script = ExtResource("1_uyesf")
 
 [node name="Player" parent="." unique_id=254995031 instance=ExtResource("2_fs0fj")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7614255, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9435229, 0)
 health = SubResource("Resource_ppyta")
 
-[node name="MeshInstance3D3" type="MeshInstance3D" parent="." unique_id=160510934]
-transform = Transform3D(8.950001, 0, 0, 0, -8.412074e-09, -8.950001, 0, 0.19244581, -3.9121696e-07, 0.18267465, 5.0007744, 3.9118612)
-mesh = SubResource("BoxMesh_6uqi0")
+[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1303881862]
+use_collision = true
+size = Vector3(17, 1, 17)
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D3" unique_id=1826848204]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D3/StaticBody3D" unique_id=1854134629]
-transform = Transform3D(1.0174, 0, 0, 0, 1.0174, 0, 0, 0, 1.0174, 0, 0, -0.0050001144)
-shape = SubResource("BoxShape3D_6uqi0")
-
-[node name="MeshInstance3D5" type="MeshInstance3D" parent="." unique_id=1952760864]
-transform = Transform3D(-3.9121696e-07, 0.19244581, -3.91217e-07, 0, -8.412075e-09, -8.950001, -8.950001, -8.412074e-09, 4.8897426e-14, -4.3173256, 5.0007744, -0.5881388)
-mesh = SubResource("BoxMesh_6uqi0")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D5" unique_id=1032043110]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D5/StaticBody3D" unique_id=1854864202]
-transform = Transform3D(1.0174, 0, 0, 0, 1.0174, 0, 0, 0, 1.0174, 0, 0, -0.0050001144)
-shape = SubResource("BoxShape3D_6uqi0")
-
-[node name="MeshInstance3D4" type="MeshInstance3D" parent="." unique_id=1463675921]
-transform = Transform3D(8.950001, 0, 0, 0, 0.19244581, 0, 0, 0, 8.950001, 0.18267465, 0.5504666, -0.5941293)
-mesh = SubResource("BoxMesh_6uqi0")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D4" unique_id=521236323]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D4/StaticBody3D" unique_id=1489935926]
-transform = Transform3D(1.0174, 0, 0, 0, 1.0174, 0, 0, 0, 1.0174, 0, 0, -0.0050001144)
-shape = SubResource("BoxShape3D_6uqi0")
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=79587343]
+environment = ExtResource("4_fs0fj")

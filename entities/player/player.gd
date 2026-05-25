@@ -5,6 +5,8 @@ class_name PlayerEntity
 @export var health : HealthComponent
 # @export var movement : MovementComponent
 
+# var cam_basis = $CameraMount/CameraArm/PlayerCamera.global_transform.basis
+
 const SPEED: float = 5.0
 const JUMP_VELOCITY: float = 4.5
 

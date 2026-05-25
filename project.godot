@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 
 EcsWorld="*uid://bkgyc06h33pma"
 SettingsManager="*uid://b3rnljshci5d7"
+ECS="*uid://dfqwl5njvdnmq"
 
 [display]
 
@@ -33,6 +34,10 @@ window/stretch/scale_mode="integer"
 
 version_control/plugin_name="GitPlugin"
 version_control/autoload_on_startup=true
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gecs/plugin.cfg")
 
 [gui]
 
