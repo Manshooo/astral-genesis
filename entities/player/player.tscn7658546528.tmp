@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://bprksygox7mbg"]
+
+[ext_resource type="Script" uid="uid://cocf1f7qtvkf1" path="res://entities/player/player.gd" id="1_symyc"]
+[ext_resource type="Sky" uid="uid://d4htrvpjqlyrt" path="res://assets/sky.tres" id="2_abrql"]
+[ext_resource type="Script" uid="uid://61xi4h4tist1" path="res://entities/player/camera_mount.gd" id="2_sglur"]
+
+[sub_resource type="Environment" id="Environment_sglur"]
+background_mode = 2
+sky = ExtResource("2_abrql")
+ambient_light_color = Color(0.43254524, 0.29369596, 0.50340575, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_37kl0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_37kl0"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_8uh7m"]
+material = SubResource("StandardMaterial3D_37kl0")
+
+[node name="Player" type="CharacterBody3D" unique_id=254995031]
+script = ExtResource("1_symyc")
+
+[node name="CameraMount" type="Node3D" parent="." unique_id=254861652]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76791286, 0)
+script = ExtResource("2_sglur")
+mouse_sensitivity = null
+
+[node name="CameraArm" type="SpringArm3D" parent="CameraMount" unique_id=492141011]
+transform = Transform3D(1, 0, 0, 0, 0.8900219, 0.45591775, 0, -0.45591775, 0.8900219, 0, 1.7044153, 2.7531316)
+spring_length = 2.0
+
+[node name="PlayerCamera" type="Camera3D" parent="CameraMount/CameraArm" unique_id=412172093]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.9802322e-08, -0.12203884)
+environment = SubResource("Environment_sglur")
+fov = 90.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
+shape = SubResource("CapsuleShape3D_37kl0")
+
+[node name="Player_model" type="MeshInstance3D" parent="CollisionShape3D" unique_id=238945308]
+gi_mode = 2
+mesh = SubResource("CapsuleMesh_8uh7m")
+
+[node name="Marker3D" type="Marker3D" parent="." unique_id=2144725991]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1)

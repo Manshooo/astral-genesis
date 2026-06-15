@@ -45,6 +45,7 @@
 class_name QueryCacheKey
 extends RefCounted
 
+
 static func build(
 	all_components: Array,
 	any_components: Array,
@@ -52,65 +53,77 @@ static func build(
 	relationships: Array = [],
 	exclude_relationships: Array = [],
 	groups: Array = [],
-	exclude_groups: Array = []
+	exclude_groups: Array = [],
 ) -> int:
 	# Collect & sort per-domain IDs (order-insensitive inside each domain)
 	var all_ids: Array[int] = []
-	for c in all_components: all_ids.append(c.get_instance_id())
+	for c in all_components:
+		all_ids.append(c.get_instance_id())
 	all_ids.sort()
 	var any_ids: Array[int] = []
-	for c in any_components: any_ids.append(c.get_instance_id())
+	for c in any_components:
+		any_ids.append(c.get_instance_id())
 	any_ids.sort()
 	var ex_ids: Array[int] = []
-	for c in exclude_components: ex_ids.append(c.get_instance_id())
+	for c in exclude_components:
+		ex_ids.append(c.get_instance_id())
 	ex_ids.sort()
 
-	# Collect & sort relationship IDs
+	# Collect & sort relationship pair hashes (preserve pair identity, prevent cross-pair collisions)
+	# Each (relation, target) pair is pre-hashed as a unit via Array.hash()
 	var rel_ids: Array[int] = []
 	for rel in relationships:
-		# Use Script instance ID for type matching (consistent with component queries)
-		# Relationship.new(C_TestB.new()) creates component instance, we want the Script's ID
-		if rel.relation:
-			rel_ids.append(rel.relation.get_script().get_instance_id())
-		else:
-			rel_ids.append(0)
+		# Skip property-query relationships — they don't participate in structural hash
+		if rel is Relationship and rel._is_query_relationship:
+			continue
 
-		# Handle target - use Script instance ID for Components (type matching)
-		if rel.target is Component:
-			# Component target: use Script instance ID for type matching
-			rel_ids.append(rel.target.get_script().get_instance_id())
-		elif rel.target is Entity:
-			# Entity target: use entity instance ID (entities are specific instances)
-			rel_ids.append(rel.target.get_instance_id())
-		elif rel.target is Script:
-			# Archetype target: use Script instance ID
-			rel_ids.append(rel.target.get_instance_id())
-		elif rel.target != null:
-			# Other types: use generic hash
-			rel_ids.append(rel.target.hash())
+		var pair: Array = []
+
+		# Relation ID
+		if rel.relation:
+			pair.append(rel.relation.get_script().get_instance_id())
 		else:
-			rel_ids.append(0) # null target
+			pair.append(0)
+
+		# Target ID
+		if rel.target is Component:
+			pair.append(rel.target.get_script().get_instance_id())
+		elif rel.target is Entity:
+			pair.append(rel.target.get_instance_id())
+		elif rel.target is Script:
+			pair.append(rel.target.get_instance_id())
+		elif rel.target != null:
+			pair.append(rel.target.hash())
+		else:
+			pair.append(0)
+
+		# Hash the pair as a unit — preserves (A,B) vs (B,A) distinction
+		rel_ids.append(pair.hash())
 	rel_ids.sort()
 
 	var ex_rel_ids: Array[int] = []
 	for rel in exclude_relationships:
-		# Use Script instance ID for type matching (consistent with component queries)
-		if rel.relation:
-			ex_rel_ids.append(rel.relation.get_script().get_instance_id())
-		else:
-			ex_rel_ids.append(0)
+		if rel is Relationship and rel._is_query_relationship:
+			continue
 
-		# Handle target - use Script instance ID for Components (type matching)
-		if rel.target is Component:
-			ex_rel_ids.append(rel.target.get_script().get_instance_id())
-		elif rel.target is Entity:
-			ex_rel_ids.append(rel.target.get_instance_id())
-		elif rel.target is Script:
-			ex_rel_ids.append(rel.target.get_instance_id())
-		elif rel.target != null:
-			ex_rel_ids.append(rel.target.hash())
+		var pair: Array = []
+		if rel.relation:
+			pair.append(rel.relation.get_script().get_instance_id())
 		else:
-			ex_rel_ids.append(0)
+			pair.append(0)
+
+		if rel.target is Component:
+			pair.append(rel.target.get_script().get_instance_id())
+		elif rel.target is Entity:
+			pair.append(rel.target.get_instance_id())
+		elif rel.target is Script:
+			pair.append(rel.target.get_instance_id())
+		elif rel.target != null:
+			pair.append(rel.target.hash())
+		else:
+			pair.append(0)
+
+		ex_rel_ids.append(pair.hash())
 	ex_rel_ids.sort()
 
 	# Collect & sort group name hashes
@@ -125,13 +138,13 @@ static func build(
 	ex_group_ids.sort()
 
 	# Compute exact total length: (marker + count) per domain + IDs
-	var total = 1 + 1 + all_ids.size() # ALL marker + count + ids
-	total += 1 + 1 + any_ids.size() # ANY marker + count + ids
-	total += 1 + 1 + ex_ids.size() # NONE marker + count + ids
-	total += 1 + 1 + rel_ids.size() # RELATIONSHIPS marker + count + ids
-	total += 1 + 1 + ex_rel_ids.size() # EXCLUDE_RELATIONSHIPS marker + count + ids
-	total += 1 + 1 + group_ids.size() # GROUPS marker + count + ids
-	total += 1 + 1 + ex_group_ids.size() # EXCLUDE_GROUPS marker + count + ids
+	var total = 1 + 1 + all_ids.size()  # ALL marker + count + ids
+	total += 1 + 1 + any_ids.size()  # ANY marker + count + ids
+	total += 1 + 1 + ex_ids.size()  # NONE marker + count + ids
+	total += 1 + 1 + rel_ids.size()  # RELATIONSHIPS marker + count + ids
+	total += 1 + 1 + ex_rel_ids.size()  # EXCLUDE_RELATIONSHIPS marker + count + ids
+	total += 1 + 1 + group_ids.size()  # GROUPS marker + count + ids
+	total += 1 + 1 + ex_group_ids.size()  # EXCLUDE_GROUPS marker + count + ids
 
 	# Single allocation for final signature layout
 	var layout: Array[int] = []
@@ -139,46 +152,67 @@ static func build(
 
 	var i := 0
 	# --- Domain: ALL ---
-	layout[i] = 1; i += 1 # Marker for ALL domain
-	layout[i] = all_ids.size(); i += 1 # Count (disambiguates empty vs non-empty)
+	layout[i] = 1
+	i += 1  # Marker for ALL domain
+	layout[i] = all_ids.size()
+	i += 1  # Count (disambiguates empty vs non-empty)
 	for id in all_ids:
-		layout[i] = id; i += 1 # Sorted ALL component IDs
+		layout[i] = id
+		i += 1  # Sorted ALL component IDs
 
 	# --- Domain: ANY ---
-	layout[i] = 2; i += 1 # Marker for ANY domain
-	layout[i] = any_ids.size(); i += 1 # Count
+	layout[i] = 2
+	i += 1  # Marker for ANY domain
+	layout[i] = any_ids.size()
+	i += 1  # Count
 	for id in any_ids:
-		layout[i] = id; i += 1 # Sorted ANY component IDs
+		layout[i] = id
+		i += 1  # Sorted ANY component IDs
 
 	# --- Domain: NONE (exclude) ---
-	layout[i] = 3; i += 1 # Marker for NONE domain
-	layout[i] = ex_ids.size(); i += 1 # Count
+	layout[i] = 3
+	i += 1  # Marker for NONE domain
+	layout[i] = ex_ids.size()
+	i += 1  # Count
 	for id in ex_ids:
-		layout[i] = id; i += 1 # Sorted EXCLUDE component IDs
+		layout[i] = id
+		i += 1  # Sorted EXCLUDE component IDs
 
 	# --- Domain: RELATIONSHIPS ---
-	layout[i] = 4; i += 1 # Marker for RELATIONSHIPS domain
-	layout[i] = rel_ids.size(); i += 1 # Count
+	layout[i] = 4
+	i += 1  # Marker for RELATIONSHIPS domain
+	layout[i] = rel_ids.size()
+	i += 1  # Count
 	for id in rel_ids:
-		layout[i] = id; i += 1 # Sorted relationship IDs
+		layout[i] = id
+		i += 1  # Sorted relationship IDs
 
 	# --- Domain: EXCLUDE_RELATIONSHIPS ---
-	layout[i] = 5; i += 1 # Marker for EXCLUDE_RELATIONSHIPS domain
-	layout[i] = ex_rel_ids.size(); i += 1 # Count
+	layout[i] = 5
+	i += 1  # Marker for EXCLUDE_RELATIONSHIPS domain
+	layout[i] = ex_rel_ids.size()
+	i += 1  # Count
 	for id in ex_rel_ids:
-		layout[i] = id; i += 1 # Sorted exclude relationship IDs
+		layout[i] = id
+		i += 1  # Sorted exclude relationship IDs
 
 	# --- Domain: GROUPS ---
-	layout[i] = 6; i += 1 # Marker for GROUPS domain
-	layout[i] = group_ids.size(); i += 1 # Count
+	layout[i] = 6
+	i += 1  # Marker for GROUPS domain
+	layout[i] = group_ids.size()
+	i += 1  # Count
 	for id in group_ids:
-		layout[i] = id; i += 1 # Sorted group name hashes
+		layout[i] = id
+		i += 1  # Sorted group name hashes
 
 	# --- Domain: EXCLUDE_GROUPS ---
-	layout[i] = 7; i += 1 # Marker for EXCLUDE_GROUPS domain
-	layout[i] = ex_group_ids.size(); i += 1 # Count
+	layout[i] = 7
+	i += 1  # Marker for EXCLUDE_GROUPS domain
+	layout[i] = ex_group_ids.size()
+	i += 1  # Count
 	for id in ex_group_ids:
-		layout[i] = id; i += 1 # Sorted exclude group name hashes
+		layout[i] = id
+		i += 1  # Sorted exclude group name hashes
 
 	# Hash the structural layout -> 64-bit key
 	return layout.hash()

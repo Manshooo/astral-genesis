@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bprksygox7mbg"]
 
-[ext_resource type="Script" uid="uid://cocf1f7qtvkf1" path="res://entities/player/player.gd" id="1_symyc"]
+[ext_resource type="Script" uid="uid://cocf1f7qtvkf1" path="res://entities/player/e_player.gd" id="1_symyc"]
 [ext_resource type="Script" uid="uid://61xi4h4tist1" path="res://entities/player/camera_mount.gd" id="2_sglur"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_37kl0"]
@@ -10,24 +10,20 @@
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_8uh7m"]
 material = SubResource("StandardMaterial3D_37kl0")
 
-[node name="Player" type="CharacterBody3D" unique_id=254995031]
+[node name="Node3D" type="Node3D" unique_id=203831200]
 script = ExtResource("1_symyc")
 
-[node name="CameraMount" type="Node3D" parent="." unique_id=254861652]
+[node name="Player" type="CharacterBody3D" parent="." unique_id=254995031]
+
+[node name="CameraMount" type="Node3D" parent="Player" unique_id=254861652]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76791286, 0)
 script = ExtResource("2_sglur")
 
-[node name="CamYaw" type="Node3D" parent="CameraMount" unique_id=1922580721]
+[node name="Camera3D" type="Camera3D" parent="Player/CameraMount" unique_id=1009209839]
 
-[node name="CamPitch" type="SpringArm3D" parent="CameraMount/CamYaw" unique_id=492141011]
-transform = Transform3D(1, 0, 0, 0, 0.8900219, 0.45591775, 0, -0.45591775, 0.8900219, 0, 1.7044153, 2.7531316)
-spring_length = 2.0
-
-[node name="Camera3D" type="Camera3D" parent="CameraMount/CamYaw/CamPitch" unique_id=1009209839]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1942624027]
 shape = SubResource("CapsuleShape3D_37kl0")
 
-[node name="Player_model" type="MeshInstance3D" parent="CollisionShape3D" unique_id=238945308]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player" unique_id=238945308]
 gi_mode = 2
 mesh = SubResource("CapsuleMesh_8uh7m")

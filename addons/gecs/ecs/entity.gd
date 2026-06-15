@@ -34,12 +34,16 @@ signal component_property_changed(
 	component: Resource,
 	property_name: String,
 	old_value: Variant,
-	new_value: Variant
+	new_value: Variant,
 )
 ## Emit when a [Relationship] is added to the [Entity]
 signal relationship_added(entity: Entity, relationship: Relationship)
 ## Emit when a [Relationship] is removed from the [Entity]
 signal relationship_removed(entity: Entity, relationship: Relationship)
+## Emitted when multiple [Relationship]s are added in a batch via [method add_relationships]
+signal relationships_batch_added(entity: Entity, _relationships: Array)
+## Emitted when multiple [Relationship]s are removed in a batch via [method remove_relationships]
+signal relationships_batch_removed(entity: Entity, _relationships: Array)
 
 #endregion Signals
 
@@ -63,20 +67,34 @@ signal relationship_removed(entity: Entity, relationship: Relationship)
 #endregion Exported Variables
 
 #region Public Variables
-## [Component]s attached to the [Entity] in the form of Dict[resource_path:String, Component]
+## [Component]s attached to the [Entity] in the form of Dict[int (script_instance_id), Component]
 var components: Dictionary = {}
 
 ## Relationships attached to the entity
 var relationships: Array[Relationship] = []
 
-## Cache for component resource paths to avoid repeated .get_script().resource_path calls
-var _component_path_cache: Dictionary = {}
+## Cache for component keys to avoid repeated .get_script().get_instance_id() calls
+var _component_key_cache: Dictionary = {}
+
+
+## Returns the int key used for component dictionary lookups.
+## Accepts either a Script (class reference) or a Component instance.
+static func _comp_key(c) -> int:
+	if c is Script:
+		return c.get_instance_id()
+	return c.get_script().get_instance_id()
+
 
 ## Logger for entities to only log to a specific domain
 var _entityLogger = GECSLogger.new().domain("Entity")
 
 ## We can store ephemeral state on the entity
 var _state = {}
+
+## Stable integer ID assigned by World during registration.
+## Used for deterministic relationship slot key generation (not the same as the string UUID `id`).
+## Value is 0 until the entity is registered with a World.
+var ecs_id: int = 0
 
 #endregion Public Variables
 
@@ -104,7 +122,9 @@ func _initialize(_components: Array = []) -> void:
 
 	# remove any component_resources that are already defined in components
 	# This is useful for when you instantiate an entity from a scene and want to overide components
-	component_resources = component_resources.filter(func(comp): return not has_component(comp.get_script()))
+	component_resources = component_resources.filter(
+		func(comp): return not has_component(comp.get_script())
+	)
 
 	# Add components passed in directly to the _initialize method to override everything else
 	component_resources.append_array(_components)
@@ -131,6 +151,7 @@ func _initialize(_components: Array = []) -> void:
 	# Call the lifecycle method on_ready
 	on_ready()
 
+
 #endregion Built-in Virtual Methods
 
 
@@ -145,6 +166,7 @@ func get_effective_serialize_config() -> GECSSerializeConfig:
 	var fallback = GECSSerializeConfig.new()
 	return fallback
 
+
 #region Components
 
 
@@ -153,29 +175,32 @@ func get_effective_serialize_config() -> GECSSerializeConfig:
 ## [b]Example[/b]:
 ## [codeblock]entity.add_component(HealthComponent)[/codeblock]
 func add_component(component: Resource) -> void:
-	# Cache the resource path to avoid repeated calls
-	var resource_path = component.get_script().resource_path
+	# Cache the component key to avoid repeated calls
+	var comp_key = _comp_key(component)
 
 	# If a component of this type already exists, remove it first
-	if components.has(resource_path):
-		var existing_component = components[resource_path]
+	if components.has(comp_key):
+		var existing_component = components[comp_key]
 		remove_component(existing_component)
 
-	_component_path_cache[component] = resource_path
-	components[resource_path] = component
+	_component_key_cache[component] = comp_key
+	components[comp_key] = component
 	component.parent = self
 	if not component.property_changed.is_connected(_on_component_property_changed):
 		component.property_changed.connect(_on_component_property_changed)
 	## Adding components happens through a signal
-	component_added.emit(self , component)
-	_entityLogger.trace("Added Component: ", resource_path)
+	component_added.emit(self, component)
+	_entityLogger.trace("Added Component: ", comp_key)
 
 
 func _on_component_property_changed(
-	component: Resource, property_name: String, old_value: Variant, new_value: Variant
+	component: Resource,
+	property_name: String,
+	old_value: Variant,
+	new_value: Variant,
 ) -> void:
 	# Pass this signal on to the world
-	component_property_changed.emit(self , component, property_name, old_value, new_value)
+	component_property_changed.emit(self, component, property_name, old_value, new_value)
 
 
 ## Adds multiple components to the entity.[br]
@@ -193,9 +218,9 @@ func add_components(_components: Array):
 	for component in _components:
 		if component == null:
 			continue
-		var component_path = component.get_script().resource_path
-		if not components.has(component_path):
-			components[component_path] = component
+		var comp_key = _comp_key(component)
+		if not components.has(comp_key):
+			components[comp_key] = component
 			added_components.append(component)
 
 	# If no new components were actually added, return early
@@ -203,19 +228,19 @@ func add_components(_components: Array):
 		return
 
 	# OPTIMIZATION: Move to final archetype only once, after all components are added
-	if ECS.world and ECS.world.entity_to_archetype.has(self ):
-		var old_archetype = ECS.world.entity_to_archetype[ self ]
-		var new_signature = ECS.world._calculate_entity_signature(self )
-		var comp_types = components.keys()
+	if ECS.world and ECS.world.entity_to_archetype.has(self):
+		var old_archetype = ECS.world.entity_to_archetype[self]
+		var new_signature = ECS.world._calculate_entity_signature(self)
+		var comp_types = ECS.world._get_entity_archetype_keys(self)
 		var new_archetype = ECS.world._get_or_create_archetype(new_signature, comp_types)
 
 		# Only move if we actually need a different archetype
 		if old_archetype != new_archetype:
 			# Remove from old archetype
-			old_archetype.remove_entity(self )
+			old_archetype.remove_entity(self)
 			# Add to new archetype
-			new_archetype.add_entity(self )
-			ECS.world.entity_to_archetype[ self ] = new_archetype
+			new_archetype.add_entity(self)
+			ECS.world.entity_to_archetype[self] = new_archetype
 
 			# Clean up empty old archetype
 			if old_archetype.is_empty():
@@ -223,13 +248,13 @@ func add_components(_components: Array):
 		else:
 			# Same archetype - just update the column data for new components
 			for component in added_components:
-				var comp_path = component.get_script().resource_path
-				var entity_index = old_archetype.entity_to_index[ self ]
-				old_archetype.columns[comp_path][entity_index] = component
+				var comp_key = _comp_key(component)
+				var entity_index = old_archetype.entity_to_index[self]
+				old_archetype.columns[comp_key][entity_index] = component
 
 	# Emit signals for all added components
 	for component in added_components:
-		component_added.emit(self , component)
+		component_added.emit(self, component)
 
 
 ## Removes a single component from the entity.[br]
@@ -237,21 +262,20 @@ func add_components(_components: Array):
 ## [b]Example:[/b]
 ##     [codeblock]entity.remove_component(HealthComponent)[/codeblock]
 func remove_component(component: Resource) -> void:
-	# Use cached path if available, otherwise get it from the component class
-	var resource_path: String
-	if _component_path_cache.has(component):
-		resource_path = _component_path_cache[component]
-		_component_path_cache.erase(component)
+	# Use cached key if available, otherwise derive it
+	var comp_key: int
+	if _component_key_cache.has(component):
+		comp_key = _component_key_cache[component]
+		_component_key_cache.erase(component)
 	else:
-		# Component parameter should be a class/script, consistent with has_component
-		resource_path = component.resource_path
+		comp_key = _comp_key(component)
 
-	if components.has(resource_path):
-		var component_instance = components[resource_path]
-		components.erase(resource_path)
+	if components.has(comp_key):
+		var component_instance = components[comp_key]
+		components.erase(comp_key)
 
 		# Clean up cache entry for the component instance
-		_component_path_cache.erase(component_instance)
+		_component_key_cache.erase(component_instance)
 
 		# OBS-03: Disconnect property_changed before emitting removal signal.
 		# Without this, phantom on_component_changed callbacks arrive whenever
@@ -259,9 +283,9 @@ func remove_component(component: Resource) -> void:
 		if component_instance.property_changed.is_connected(_on_component_property_changed):
 			component_instance.property_changed.disconnect(_on_component_property_changed)
 
-		component_removed.emit(self , component_instance)
+		component_removed.emit(self, component_instance)
 		# ARCHETYPE: Signal handler (_on_entity_component_removed) handles archetype update
-		_entityLogger.trace("Removed Component: ", resource_path)
+		_entityLogger.trace("Removed Component: ", comp_key)
 
 
 func deferred_remove_component(component: Resource) -> void:
@@ -294,12 +318,12 @@ func remove_components(_components: Array):
 			comp_to_remove = _component
 
 		if comp_to_remove:
-			var component_path = comp_to_remove.get_script().resource_path
-			if components.has(component_path):
-				components.erase(component_path)
+			var comp_key = _comp_key(comp_to_remove)
+			if components.has(comp_key):
+				components.erase(comp_key)
 				# Clean up cache entries for both the class and instance
-				_component_path_cache.erase(_component)
-				_component_path_cache.erase(comp_to_remove)
+				_component_key_cache.erase(_component)
+				_component_key_cache.erase(comp_to_remove)
 				# OBS-03: Disconnect property_changed before emitting removal signal.
 				if comp_to_remove.property_changed.is_connected(_on_component_property_changed):
 					comp_to_remove.property_changed.disconnect(_on_component_property_changed)
@@ -310,19 +334,19 @@ func remove_components(_components: Array):
 		return
 
 	# OPTIMIZATION: Move to final archetype only once, after all components are removed
-	if ECS.world and ECS.world.entity_to_archetype.has(self ):
-		var old_archetype = ECS.world.entity_to_archetype[ self ]
-		var new_signature = ECS.world._calculate_entity_signature(self )
-		var comp_types = components.keys()
+	if ECS.world and ECS.world.entity_to_archetype.has(self):
+		var old_archetype = ECS.world.entity_to_archetype[self]
+		var new_signature = ECS.world._calculate_entity_signature(self)
+		var comp_types = ECS.world._get_entity_archetype_keys(self)
 		var new_archetype = ECS.world._get_or_create_archetype(new_signature, comp_types)
 
 		# Only move if we actually need a different archetype
 		if old_archetype != new_archetype:
 			# Remove from old archetype
-			old_archetype.remove_entity(self )
+			old_archetype.remove_entity(self)
 			# Add to new archetype
-			new_archetype.add_entity(self )
-			ECS.world.entity_to_archetype[ self ] = new_archetype
+			new_archetype.add_entity(self)
+			ECS.world.entity_to_archetype[self] = new_archetype
 
 			# Clean up empty old archetype
 			if old_archetype.is_empty():
@@ -330,7 +354,7 @@ func remove_components(_components: Array):
 
 	# Emit signals for all removed components
 	for component in removed_components:
-		component_removed.emit(self , component)
+		component_removed.emit(self, component)
 
 
 ##  Removes all components from the entity.[br]
@@ -347,14 +371,15 @@ func remove_all_components() -> void:
 ## [b]Example:[/b]
 ##     [codeblock]var transform = entity.get_component(Transform)[/codeblock]
 func get_component(component: Resource) -> Component:
-	return components.get(component.resource_path, null)
+	return components.get(_comp_key(component), null)
 
 
 ## Check to see if an entity has a  specific component on it.[br]
 ## This is useful when you're checking to see if it has a component and not going to use the component itself.[br]
 ## If you plan on getting and using the component, use [method get_component] instead.
 func has_component(component: Resource) -> bool:
-	return components.has(component.resource_path)
+	return components.has(_comp_key(component))
+
 
 #endregion Components
 
@@ -366,16 +391,22 @@ func has_component(component: Resource) -> bool:
 func add_relationship(relationship: Relationship) -> void:
 	assert(
 		not relationship._is_query_relationship,
-		"Cannot add query relationships to entities. Query relationships (created with dictionaries) are for matching only, not for storage."
+		"Cannot add query relationships to entities. Query relationships (created with dictionaries) are for matching only, not for storage.",
 	)
 	relationship.source = self
 	relationships.append(relationship)
-	relationship_added.emit(self , relationship)
+	relationship_added.emit(self, relationship)
 
 
 func add_relationships(_relationships: Array):
 	for relationship in _relationships:
-		add_relationship(relationship)
+		assert(
+			not relationship._is_query_relationship,
+			"Cannot add query relationships to entities. Query relationships (created with dictionaries) are for matching only, not for storage.",
+		)
+		relationship.source = self
+		relationships.append(relationship)
+	relationships_batch_added.emit(self, _relationships)
 
 
 ## Removes a relationship from the entity.[br]
@@ -419,15 +450,35 @@ func remove_relationship(relationship: Relationship, limit: int = -1) -> void:
 
 	for rel in to_remove:
 		relationships.erase(rel)
-		relationship_removed.emit(self , rel)
+		relationship_removed.emit(self, rel)
 
 
 ## Removes multiple relationships from the entity.[br]
 ## [param _relationships] Array of [Relationship]s to remove.[br]
-## [param limit] Maximum number of relationships to remove per relationship type. -1 = all (default), 0 = none, >0 = up to that many.
+## [param limit] Maximum number of relationships to remove per relationship type. -1 = all (default), 0 = none, >0 = up to that many.[br]
+## Emits [signal relationship_removed] per removed rel as the removal happens, so
+## multi-rel observer queries see the entity in its correct pre-removal state for
+## each individual removal (rather than all rels gone at once).
 func remove_relationships(_relationships: Array, limit: int = -1):
 	for relationship in _relationships:
-		remove_relationship(relationship, limit)
+		if limit == 0:
+			continue
+		var to_remove = []
+		var removed_count = 0
+		var pattern_remove = true
+		if relationships.has(relationship):
+			to_remove.append(relationship)
+			pattern_remove = false
+		if pattern_remove:
+			for rel in relationships:
+				if rel.matches(relationship):
+					to_remove.append(rel)
+					removed_count += 1
+					if limit > 0 and removed_count >= limit:
+						break
+		for rel in to_remove:
+			relationships.erase(rel)
+			relationship_removed.emit(self, rel)
 
 
 ## Removes all relationships from the entity.
@@ -435,7 +486,7 @@ func remove_all_relationships() -> void:
 	var to_remove = relationships.duplicate()
 	for rel in to_remove:
 		relationships.erase(rel)
-		relationship_removed.emit(self , rel)
+		relationship_removed.emit(self, rel)
 
 
 ## Retrieves a specific [Relationship] from the entity.
@@ -452,12 +503,12 @@ func get_relationship(relationship: Relationship) -> Relationship:
 			# Remove invalid relationships before returning
 			for invalid_rel in to_remove:
 				relationships.erase(invalid_rel)
-				relationship_removed.emit(self , invalid_rel)
+				relationship_removed.emit(self, invalid_rel)
 			return rel
 	# Remove invalid relationships
 	for rel in to_remove:
 		relationships.erase(rel)
-		relationship_removed.emit(self , rel)
+		relationship_removed.emit(self, rel)
 	return null
 
 
@@ -477,14 +528,19 @@ func get_relationships(relationship: Relationship) -> Array[Relationship]:
 	# Remove invalid relationships
 	for rel in to_remove:
 		relationships.erase(rel)
-		relationship_removed.emit(self , rel)
+		relationship_removed.emit(self, rel)
 	return results
 
 
 ## Checks if the entity has a specific relationship.[br]
+## Fast path — skips validation/cleanup (use get_relationship when you need the value).[br]
 ## [param relationship] The [Relationship] to check for.
 func has_relationship(relationship: Relationship) -> bool:
-	return get_relationship(relationship) != null
+	for rel in relationships:
+		if rel.matches(relationship):
+			return true
+	return false
+
 
 #endregion Relationships
 
@@ -526,13 +582,13 @@ func define_components() -> Array:
 ## INTERNAL: Called when entity.enabled changes to move entity between archetypes
 func _on_enabled_changed(old_value: bool, new_value: bool) -> void:
 	# Only handle if entity is already in a world
-	if not ECS.world or not ECS.world.entity_to_archetype.has(self ):
+	if not ECS.world or not ECS.world.entity_to_archetype.has(self):
 		return
 
 	# OPTIMIZATION: Update bitset instead of moving between archetypes
 	# This eliminates the need for separate enabled/disabled archetypes
-	var archetype = ECS.world.entity_to_archetype[ self ]
-	archetype.update_entity_enabled_state(self , new_value)
+	var archetype = ECS.world.entity_to_archetype[self]
+	archetype.update_entity_enabled_state(self, new_value)
 
 	# Invalidate query cache since entity enabled state changed.
 	# Route through _invalidate_cache so batch suppression (_begin_suppress/_end_suppress)

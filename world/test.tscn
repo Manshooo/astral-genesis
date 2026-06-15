@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://ofknb0q803yb"]
 
-[ext_resource type="Script" uid="uid://bkgyc06h33pma" path="res://autoloads/ecs_world.gd" id="1_uyesf"]
+[ext_resource type="Script" path="res://autoloads/ecs_world.gd" id="1_uyesf"]
 [ext_resource type="PackedScene" uid="uid://bprksygox7mbg" path="res://entities/player/player.tscn" id="2_fs0fj"]
-[ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://components/health.gd" id="3_kxray"]
+[ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://components/gameplay/c_health.gd" id="3_kxray"]
 [ext_resource type="Environment" uid="uid://dt6nbx8xwsp5s" path="res://assets/environment.tres" id="4_fs0fj"]
 
 [sub_resource type="Resource" id="Resource_ppyta"]

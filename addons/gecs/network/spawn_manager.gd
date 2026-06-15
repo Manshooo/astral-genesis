@@ -47,8 +47,7 @@ func serialize_entity(entity: Entity) -> Dictionary:
 	var components_data := {}
 	var script_paths := {}
 
-	for comp_path in entity.components.keys():
-		var comp = entity.components[comp_path]
+	for comp in entity.components.values():
 		var script = comp.get_script()
 
 		var comp_type: String
@@ -58,7 +57,9 @@ func serialize_entity(entity: Entity) -> Dictionary:
 			comp_type = script.get_global_name()
 			if comp_type == "":
 				comp_type = script.resource_path.get_file().get_basename()
-				push_warning("SpawnManager: Component without class_name: %s" % script.resource_path)
+				push_warning(
+					"SpawnManager: Component without class_name: %s" % script.resource_path
+				)
 
 		components_data[comp_type] = comp.serialize()
 		if script != null and script.resource_path != "":
@@ -75,7 +76,7 @@ func serialize_entity(entity: Entity) -> Dictionary:
 		"components": components_data,
 		"script_paths": script_paths,
 		"relationships": relationships,
-		"session_id": _ns._game_session_id
+		"session_id": _ns._game_session_id,
 	}
 	var node_pos = entity.get("global_position")
 	if node_pos != null:
@@ -247,14 +248,16 @@ func _inject_authority_markers(entity: Entity, net_id: CN_NetworkIdentity) -> vo
 
 	# CN_LocalAuthority: local peer's own entity
 	# Also: server gets CN_LocalAuthority on server-owned entities (server "is local" for them)
-	if net_id.is_local(_ns.net_adapter) or (_ns.net_adapter.is_server() and net_id.is_server_owned()):
+	if (
+		net_id.is_local(_ns.net_adapter)
+		or (_ns.net_adapter.is_server() and net_id.is_server_owned())
+	):
 		entity.add_component(CN_LocalAuthority.new())
 
 
 ## Find a component on an entity by its type name string.
 func _find_component_by_type(entity: Entity, comp_type: String) -> Component:
-	for comp_path in entity.components.keys():
-		var comp = entity.components[comp_path]
+	for comp in entity.components.values():
 		var script = comp.get_script()
 		var ct: String
 		if script == null:

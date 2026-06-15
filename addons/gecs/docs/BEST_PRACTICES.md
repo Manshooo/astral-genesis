@@ -177,11 +177,11 @@ func process(entities: Array[Entity], components: Array, delta: float):
             ECS.world.remove_entity(entities[i])  # Modifies array during iteration
 ```
 
-**Flush Modes** control when queued commands execute:
+**Flush Modes** (`command_buffer_flush_mode: FlushMode`) control when queued commands execute:
 
-- **PER_SYSTEM** (default) — executes after each system completes
-- **PER_GROUP** — executes after all systems in the group complete
-- **MANUAL** — requires explicit `ECS.world.flush_command_buffers()` call
+- **FlushMode.PER_SYSTEM** (default) — executes after each system completes
+- **FlushMode.PER_GROUP** — executes after all systems in the group complete
+- **FlushMode.MANUAL** — requires explicit `ECS.world.flush_command_buffers()` call
 
 ## Code Organization Patterns
 
@@ -238,6 +238,138 @@ project/
 └── observers/
     └── o_transform.gd   # Reactive systems
 ```
+
+## Entity Glue Code: What Belongs on the Entity vs. a Component
+
+An `Entity` subclass is the bridge between Godot's scene tree and the ECS world. It's the right home for **glue** — handles and setup logic that don't meet the bar for becoming a component. Getting this split right keeps components lean (and serializable) and keeps systems fast (no unnecessary indirection).
+
+**Put it on the Entity subclass as glue when:**
+
+- It's a reference to the entity's OWN scene-tree child (`NavigationAgent3D`, `CollisionShape3D`, `AnimationPlayer`, camera anchor, skeleton attachment).
+- It never changes at runtime — no system ever adds, removes, or swaps it.
+- No system ever queries by it. You will never write `q.with_all([C_ThatThing])`.
+- It can't serialize as data anyway — Node references aren't `Resource`-safe.
+
+**Put it in a `C_*` component instead when:**
+
+- Multiple entity types share the concept and should be queried uniformly.
+- A system filters on its presence/absence (`with_all`, `with_none`).
+- It can appear, disappear, or be hot-swapped at runtime.
+- It's pure data (numbers, vectors, enums, arrays, strings).
+
+**Canonical example — caching a child node once at `_ready`:**
+
+```gdscript
+class_name Sheep
+extends Entity
+
+## Cached handle to our own scene child. Resolved once; systems read it
+## directly instead of doing get_node_or_null(...) per frame per sheep.
+@onready var nav_agent: NavigationAgent3D = get_node_or_null(^"NavigationAgent3D")
+
+func define_components() -> Array:
+    return [C_Sheep.new(), C_Wander.new(), C_Velocity.new()]
+```
+
+```gdscript
+# In the system — no per-frame scene-tree walk, no Dictionary lookup.
+func process(entities: Array[Entity], components: Array, delta: float) -> void:
+    for i in entities.size():
+        var sheep := entities[i] as Sheep
+        var agent := sheep.nav_agent
+        ...
+```
+
+**Anti-pattern — making it a component for no reason:**
+
+```gdscript
+# DON'T: C_NavAgent with a NavigationAgent3D field. Resource can't serialize
+# a Node reference cleanly, no system queries by presence of this, and the
+# hot loop now pays an entity.get_component() Dictionary lookup to unwrap it.
+class_name C_NavAgent
+extends Component
+@export var agent: NavigationAgent3D  # ← don't
+```
+
+**Rule of thumb:** if you removed the field from the Entity subclass, would any system's **query** break? If yes → component. If no (only a specific system's *internals* change) → entity glue.
+
+## Casting an Entity to Its Class (and the Node3D Pitfall)
+
+`Entity extends Node`. Your `class_name MyEntity extends Entity` script is attached to a scene whose root is typically `Node3D` (or `CharacterBody3D`, `Area3D`, etc.) — but the **static type** of `MyEntity` is still just `Entity`, i.e. a `Node`. Godot's static type checker doesn't propagate the scene-root type into the script's class hierarchy.
+
+This has two practical consequences in hot-loop systems.
+
+### 1. One cast covers both APIs
+
+Once you have a `MyEntity`-typed local, you can read **both** the Entity API (`get_component`, `get_relationships`, `add_component`) **and** the runtime Node3D properties on the scene root (`global_position`, `global_transform`, custom `@onready` glue) directly off the same variable. Godot's editor resolves Node3D properties against the script's scene root for class_name'd scripts.
+
+```gdscript
+# Single cast — both APIs work off `sheep`.
+for i in entities.size():
+    var sheep := entities[i] as Sheep
+    if sheep == null:
+        continue
+    var c_wander := sheep.get_component(C_Wander) as C_Wander  # Entity API
+    var pos: Vector3 = sheep.global_position                     # Scene-root API
+    var agent := sheep.nav_agent                                 # Entity glue
+```
+
+**Don't** double-cast through `Node` to get `Node3D` access:
+
+```gdscript
+# Anti-pattern — three casts and a redundant null check for the same object.
+var sheep_entity := entity as Sheep
+var sheep := (entity as Node) as Node3D
+if sheep == null or sheep_entity == null:
+    continue
+```
+
+### 2. Sibling casts are rejected — relax helper signatures
+
+The static checker rejects `Entity → CharacterBody3D` and `Entity → Node3D` because `Entity` and `Node3D` are siblings under `Node`, not in an ancestor-descendant chain. Two situations hit this:
+
+**a) Inside the system, when you need a typed Node3D / CharacterBody3D variable:**
+
+Upcast to `Node` first (free since `Entity extends Node`), then downcast:
+
+```gdscript
+# Heterogeneous query — entities[] contains different scene-root types.
+var node: Node = entities[i]
+var body := node as CharacterBody3D
+if body:
+    body.velocity = ...
+    body.move_and_slide()
+    continue
+var node_3d := node as Node3D
+if node_3d:
+    node_3d.global_position += ...
+```
+
+**b) When passing entities to helper functions:**
+
+If a helper is typed `func face(node: Node3D, ...)`, calling `face(sheep, ...)` is rejected. The fix is **on the helper**, not at the call site — relax the parameter to `Node` and downcast inside:
+
+```gdscript
+# Helper accepts any Node, downcasts internally. Now Sheep / Shepherd / any
+# Entity-typed thing can be passed in without ceremony.
+static func face(node: Node, direction: Vector3, speed: float, delta: float) -> void:
+    var node_3d := node as Node3D
+    if node_3d == null:
+        return
+    # ... use node_3d.global_transform ...
+```
+
+For helpers that need *both* the Entity API and Node3D properties (e.g. flocking, which reads `global_position` *and* `get_relationships`), take the entity's class type directly:
+
+```gdscript
+# Was: compute(self_node: Node3D, self_entity: Entity, ...) — same sheep twice.
+static func compute(self_sheep: Sheep, c_flocking: C_Flocking) -> Vector3:
+    var self_pos: Vector3 = self_sheep.global_position
+    var rels := self_sheep.get_relationships(R_AnyFlockmate)
+    ...
+```
+
+**Rule of thumb:** in systems, do `var x := entities[i] as MyEntity` once and use `x` for everything. If a helper rejects the typed entity, fix the helper's signature (take `Node` or the concrete entity class) — don't add casts at every call site.
 
 ## Common Game Patterns
 

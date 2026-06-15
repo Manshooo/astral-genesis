@@ -25,7 +25,11 @@ signal component_added(entity: Entity, component: Variant)
 signal component_removed(entity: Entity, component: Variant)
 ## Emitted when a component property changes on an entity
 signal component_changed(
-	entity: Entity, component: Variant, property: String, new_value: Variant, old_value: Variant
+	entity: Entity,
+	component: Variant,
+	property: String,
+	new_value: Variant,
+	old_value: Variant,
 )
 ## Emitted when a relationship is added to an entity
 signal relationship_added(entity: Entity, relationship: Relationship)
@@ -51,8 +55,16 @@ signal cache_invalidated
 var entities: Array[Entity] = []
 ## All the [Observer]s in the world.
 var observers: Array[Observer] = []
-## PERF-02: Cache for observer watch() results — populated at add_observer() time, cleared at remove_observer()
-var _observer_watch_cache: Dictionary = {} # Observer -> Resource (component script reference)
+## Per-event observer dispatch index. Key = [enum Observer.Event] int flag. Value = Array of
+## dispatch entries: [code]{observer, query, callable, watched_paths, is_monitor, ...}[/code].
+## Rebuilt per observer by [method _register_observer_entries] / [method _unregister_observer_entries].
+var _obs_entries_by_event: Dictionary = {}
+## Per-custom-event observer dispatch index. Key = [StringName]. Same entry shape as
+## [member _obs_entries_by_event].
+var _obs_entries_by_custom_event: Dictionary = {}
+## All observer/sub-observer entries belonging to a given [Observer], keyed by observer instance.
+## Used for O(1) cleanup on [method remove_observer].
+var _obs_entries_by_observer: Dictionary = {}
 ## All the [System]s by group Dictionary[String, Array[System]]
 var systems_by_group: Dictionary[String, Array] = {}
 ## All the [System]s in the world flattened into a single array
@@ -63,44 +75,60 @@ var systems: Array[System]:
 			all_systems.append_array(systems_by_group[group])
 		return all_systems
 ## ID to [Entity] registry - Prevents duplicate IDs and enables fast ID lookups and singleton behavior
-var entity_id_registry: Dictionary = {} # String (id) -> Entity
+var entity_id_registry: Dictionary = {}  # String (id) -> Entity
 ## ARCHETYPE STORAGE - Entity storage by component signature for O(1) queries
 ## Maps archetype signature (FNV-1a hash) -> Archetype instance
-var archetypes: Dictionary = {} # int -> Archetype
+var archetypes: Dictionary = {}  # int -> Archetype
 ## Fast lookup: Entity -> its current Archetype
-var entity_to_archetype: Dictionary = {} # Entity -> Archetype
+var entity_to_archetype: Dictionary = {}  # Entity -> Archetype
 ## The [QueryBuilder] instance for this world used to build and execute queries.
 ## Anytime we request a query we want to connect the cache invalidated signal to the query
 ## so that all queries are invalidated anytime we emit cache_invalidated.
 var query: QueryBuilder:
 	get:
-		var q: QueryBuilder = QueryBuilder.new(self )
+		var q: QueryBuilder = QueryBuilder.new(self)
 		if not cache_invalidated.is_connected(q.invalidate_cache):
 			cache_invalidated.connect(q.invalidate_cache)
 		return q
-## Index for relationships to entities (Optional for optimization)
-var relationship_entity_index: Dictionary = {}
+## Incrementing counter for stable entity IDs (assigned in add_entity)
+var _next_entity_id: int = 1
+
+## Relation-type archetype index: maps relation resource_path -> { archetype_signature -> Archetype }
+## Enables O(1) wildcard relationship queries (find all archetypes with any (RelationType, *) pair)
+var _relation_type_archetype_index: Dictionary = {}  # String -> Dictionary[int, Archetype]
 ## Logger for the world to only log to a specific domain
 var _worldLogger = GECSLogger.new().domain("World")
 ## Cache for commonly used query results - stores matching archetypes, not entities
 ## This dramatically reduces cache invalidation since archetypes are stable
-var _query_archetype_cache: Dictionary = {} # query_sig -> Array[Archetype]
+var _query_archetype_cache: Dictionary = {}  # query_sig -> Array[Archetype]
 ## Track cache hits for performance monitoring
 var _cache_hits: int = 0
 var _cache_misses: int = 0
 ## Track cache invalidations for debugging
 var _cache_invalidation_count: int = 0
-var _cache_invalidation_reasons: Dictionary = {} # reason -> count
-## Global cache: resource_path -> Script (loaded once, reused forever)
-var _component_script_cache: Dictionary = {} # String -> Script
+## Monotonic version counter — incremented on every structural cache invalidation.
+## QueryBuilder checks this to detect stale cached results without relying on signal delivery.
+var cache_version: int = 0
+var _cache_invalidation_reasons: Dictionary = {}  # reason -> count
+## Global cache: script_instance_id (int) -> Script (loaded once, reused forever)
+var _component_script_cache: Dictionary = {}  # int -> Script
 ## OPTIMIZATION: Depth counter to suppress cache invalidation during batch operations.
 ## > 0 means we are inside a batch; invalidation is deferred until _end_suppress().
 var _suppress_invalidation_depth: int = 0
 var _pending_invalidation: bool = false
+## Guard flag: true when a batch relationship handler is emitting per-entity signals.
+## Prevents _on_entity_relationship_added/removed from doing redundant archetype moves.
+var _in_batch_relationship_emit: bool = false
+## One-shot guard: fires push_error once when archetype count first exceeds 500 in debug mode
+var _archetype_explosion_warned: bool = false
 ## Frame + accumulated performance metrics (debug-only)
-var _perf_metrics := {"frame": {}, "accum": {}} # Per-frame aggregated timings  # Long-lived totals (cleared manually)
+var _perf_metrics := {"frame": {}, "accum": {}}  # Per-frame aggregated timings  # Long-lived totals (cleared manually)
 ## Queue of systems waiting for setup after ECS.world is assigned
 var _deferred_setup_systems: Array[System] = []
+## Per-group unique SystemTimers to advance each frame (rebuilt lazily when _timers_dirty)
+var _group_timers: Dictionary = {}  # group_name -> Array[SystemTimer]
+## True when systems have been added/removed and _group_timers needs rebuilding
+var _timers_dirty: bool = true
 
 
 ## Internal perf helper (debug only)
@@ -143,6 +171,7 @@ func perf_reset_accum() -> void:
 	if ECS.debug:
 		_perf_metrics.accum.clear()
 
+
 #endregion Public Variables
 
 
@@ -177,10 +206,17 @@ func initialize():
 
 	# Add systems from scene tree - setup will be deferred until ECS.world is set
 	var _systems = get_node(system_nodes_root).find_children("*", "System") as Array[System]
-	add_systems(_systems, true) # and sort them after they're added
+	add_systems(_systems, true)  # and sort them after they're added
 	_worldLogger.debug("_initialize Added Systems from Scene Tree and dep sorted: ", _systems)
 
 	# Add observers from scene tree
+	# NOTE: Observers register BEFORE scene-tree entities load, so an observer with
+	# yield_existing=true iterates an empty entities list and retro-fires nothing.
+	# That's the intended behavior — entities added after the observer registers are
+	# delivered through normal dispatch (component_added → _dispatch_observer_event),
+	# so every scene-tree entity still triggers the observer via its structural add.
+	# yield_existing only matters for observers added at runtime AFTER entities already
+	# exist (where natural dispatch wouldn't cover them).
 	var _observers = get_node(system_nodes_root).find_children("*", "Observer") as Array[Observer]
 	add_observers(_observers)
 	_worldLogger.debug("_initialize Added Observers from Scene Tree: ", _observers)
@@ -191,7 +227,7 @@ func initialize():
 	_worldLogger.debug("_initialize Added Entities from Scene Tree: ", _entities)
 
 	if ECS.debug:
-		assert(GECSEditorDebuggerMessages.world_init(self ), "")
+		assert(GECSEditorDebuggerMessages.world_init(self), "")
 		# Register debugger message handler for entity polling
 		if (
 			not Engine.is_editor_hint()
@@ -208,17 +244,21 @@ func finalize_system_setup() -> void:
 	if _deferred_setup_systems.is_empty():
 		return
 
-	_worldLogger.debug(
-		"finalize_system_setup Executing deferred setup for ",
-		_deferred_setup_systems.size(),
-		" systems"
+	(
+		_worldLogger
+		.debug(
+			"finalize_system_setup Executing deferred setup for ",
+			_deferred_setup_systems.size(),
+			" systems",
+		)
 	)
 	for system in _deferred_setup_systems:
-		system._internal_setup() # Now safe to call setup() with ECS.world available
+		system._internal_setup()  # Now safe to call setup() with ECS.world available
 		_worldLogger.trace("finalize_system_setup Completed setup for system: ", system)
 
 	_deferred_setup_systems.clear()
 	_worldLogger.debug("finalize_system_setup All deferred system setups completed")
+
 
 #endregion Built-in Virtual Methods
 
@@ -231,6 +271,12 @@ func process(delta: float, group: String = "") -> void:
 	# PERF: Reset frame metrics at start of processing step
 	perf_reset_frame()
 	if systems_by_group.has(group):
+		# Advance all unique timers for this group BEFORE running systems
+		if _timers_dirty:
+			_rebuild_group_timers()
+		if _group_timers.has(group):
+			for timer in _group_timers[group]:
+				timer.advance(delta)
 		var system_index = 0
 		for system in systems_by_group[group]:
 			if system.active:
@@ -240,20 +286,23 @@ func process(delta: float, group: String = "") -> void:
 					system.lastRunData["execution_order"] = system_index
 					assert(
 						GECSEditorDebuggerMessages.system_last_run_data(system, system.lastRunData),
-						""
+						"",
 					)
 					system_index += 1
 
 		# Flush PER_GROUP command buffers after all systems in the group complete
 		for system in systems_by_group[group]:
-			if system.command_buffer_flush_mode == "PER_GROUP" and system.has_pending_commands():
+			if (
+				system.command_buffer_flush_mode == System.FlushMode.PER_GROUP
+				and system.has_pending_commands()
+			):
 				system.cmd.execute()
 	if ECS.debug:
 		assert(GECSEditorDebuggerMessages.process_world(delta, group), "")
 
 
 ## Manually flush all command buffers with MANUAL flush mode.[br]
-## This executes all queued commands from systems that use command_buffer_flush_mode = "MANUAL".[br]
+## This executes all queued commands from systems that use command_buffer_flush_mode = FlushMode.MANUAL.[br]
 ## [b]Example:[/b]
 ## [codeblock]
 ## func _process(delta):
@@ -264,8 +313,19 @@ func process(delta: float, group: String = "") -> void:
 func flush_command_buffers() -> void:
 	for group_key in systems_by_group.keys():
 		for system in systems_by_group[group_key]:
-			if system.command_buffer_flush_mode == "MANUAL" and system.has_pending_commands():
+			if (
+				system.command_buffer_flush_mode == System.FlushMode.MANUAL
+				and system.has_pending_commands()
+			):
 				system.cmd.execute()
+	# Observers with MANUAL flush mode share the same drain point — otherwise their
+	# queued commands would never execute.
+	for obs in observers:
+		if (
+			obs.command_buffer_flush_mode == Observer.FlushMode.MANUAL
+			and obs.has_pending_commands()
+		):
+			obs.cmd.execute()
 
 
 ## Updates the pause behavior for all systems based on the provided paused state.
@@ -291,20 +351,33 @@ func update_pause_state(paused: bool) -> void:
 func add_entity(entity: Entity, components = null, add_to_tree = true) -> void:
 	# Check for ID collision - if entity with same ID exists, replace it
 	var entity_id = GECSIO.uuid() if not entity.id else entity.id
-	entity.id = entity_id # update entity with it's new id
+	entity.id = entity_id  # update entity with it's new id
 
 	if entity_id in entity_id_registry:
 		var existing_entity = entity_id_registry[entity_id]
-		_worldLogger.debug(
-			"ID collision detected, replacing entity: ",
-			existing_entity.name,
-			" with: ",
-			entity.name
+		(
+			_worldLogger
+			.debug(
+				"ID collision detected, replacing entity: ",
+				existing_entity.name,
+				" with: ",
+				entity.name,
+			)
 		)
 		remove_entity(existing_entity)
 
 	# Register this entity's ID
 	entity_id_registry[entity_id] = entity
+
+	# Assign stable numeric entity ID for relationship slot key generation
+	if entity.ecs_id == 0:
+		_ensure_entity_ecs_id(entity)
+
+	# Stabilize target IDs before archetype key/signature generation so entities
+	# with pre-registered relationship targets don't get stale entity#0 slot keys.
+	for relationship in entity.relationships:
+		if relationship.target is Entity:
+			_ensure_entity_ecs_id(relationship.target)
 
 	# ID will auto-generate in _enter_tree if empty, or via property getter on first access
 
@@ -320,6 +393,10 @@ func add_entity(entity: Entity, components = null, add_to_tree = true) -> void:
 		entity.relationship_added.connect(_on_entity_relationship_added)
 	if not entity.relationship_removed.is_connected(_on_entity_relationship_removed):
 		entity.relationship_removed.connect(_on_entity_relationship_removed)
+	if not entity.relationships_batch_added.is_connected(_on_entity_relationships_batch_added):
+		entity.relationships_batch_added.connect(_on_entity_relationships_batch_added)
+	if not entity.relationships_batch_removed.is_connected(_on_entity_relationships_batch_removed):
+		entity.relationships_batch_removed.connect(_on_entity_relationships_batch_removed)
 
 	#  Add the entity to the tree if it's not already there after hooking up the signals
 	# This ensures that any _ready methods on the entity or its components are called after setup
@@ -377,12 +454,12 @@ func add_entities(_entities: Array, components = null):
 ## [br]
 ## [b]Teardown order (guaranteed):[/b][br]
 ## 1. Entity signals are disconnected first to prevent re-entrancy during observer callbacks.[br]
-## 2. [signal Observer.on_component_removed] fires for each watched component — entity is still valid.[br]
+## 2. Observers with [code].on_removed()[/code] fire via [method Observer.each] for each component — entity is still valid.[br]
 ## 3. Entity is removed from the entity list and archetype.[br]
 ## 4. [method Entity.on_destroy] is called, then [code]queue_free[/code].[br]
 ## [br]
-## [b]Observer callback safety:[/b] It is safe to read [param entity] state inside [method Observer.on_component_removed].[br]
-## The order in which components trigger [method Observer.on_component_removed] is unspecified.[br]
+## [b]Observer callback safety:[/b] It is safe to read [param entity] state inside a REMOVED callback.[br]
+## The order in which components trigger the REMOVED event is unspecified.[br]
 ## [br]
 ## [param entity] The [Entity] to remove.[br]
 ## [b]Example:[/b]
@@ -395,8 +472,11 @@ func remove_entity(entity: Entity) -> void:
 	for processor in ECS.entity_postprocessors:
 		processor.call(entity)
 
+	# REMOVE policy: Clean up relationships pointing TO this entity from other entities
+	_cleanup_relationships_to_target(entity)
+
 	# Disconnect entity signals before notifying observers to prevent re-entrancy:
-	# if an observer's on_component_removed calls entity.remove_component() as a side effect,
+	# if a REMOVED observer callback calls entity.remove_component() as a side effect,
 	# the signal must not be connected or it will double-notify observers watching that component.
 	if entity.component_added.is_connected(_on_entity_component_added):
 		entity.component_added.disconnect(_on_entity_component_added)
@@ -406,12 +486,19 @@ func remove_entity(entity: Entity) -> void:
 		entity.relationship_added.disconnect(_on_entity_relationship_added)
 	if entity.relationship_removed.is_connected(_on_entity_relationship_removed):
 		entity.relationship_removed.disconnect(_on_entity_relationship_removed)
+	if entity.relationships_batch_added.is_connected(_on_entity_relationships_batch_added):
+		entity.relationships_batch_added.disconnect(_on_entity_relationships_batch_added)
+	if entity.relationships_batch_removed.is_connected(_on_entity_relationships_batch_removed):
+		entity.relationships_batch_removed.disconnect(_on_entity_relationships_batch_removed)
 
 	# Emit component_removed for each component before teardown
 	# so observers learn about removal when an entity is destroyed
 	for comp in entity.components.values():
 		component_removed.emit(entity, comp)
 		_handle_observer_component_removed(entity, comp)
+
+	# Unmatch monitor queries this entity was in — fires on_unmatch and clears membership
+	_drop_entity_from_monitors(entity)
 
 	entity_removed.emit(entity)
 	_worldLogger.debug("remove_entity Removing Entity: ", entity)
@@ -433,16 +520,17 @@ func remove_entity(entity: Entity) -> void:
 	# ARCHETYPE: Remove entity from archetype system (parallel)
 	_remove_entity_from_archetype(entity)
 
+	# Notify debugger before freeing (entity must still be valid)
+	if ECS.debug:
+		var path = entity.get_path() if entity.is_inside_tree() else str(entity)
+		assert(GECSEditorDebuggerMessages.entity_removed(entity.get_instance_id(), path), "")
+
 	# Destroy entity normally
 	entity.on_destroy()
 	if entity.is_inside_tree():
 		entity.queue_free()
 	else:
 		entity.free()
-
-	# Notify debugger before freeing (entity must still be valid)
-	if ECS.debug:
-		assert(GECSEditorDebuggerMessages.entity_removed(entity_id), "")
 
 
 ## Removes an Array of [Entity] from the world.[br]
@@ -468,7 +556,7 @@ func remove_entities(_entities: Array) -> void:
 ##      [codeblock]world.disable_entity(player_entity)[/codeblock]
 func disable_entity(entity) -> Entity:
 	entity = entity as Entity
-	entity.enabled = false # This will trigger _on_entity_enabled_changed via setter
+	entity.enabled = false  # This will trigger _on_entity_enabled_changed via setter
 	entity_disabled.emit(entity)
 	_worldLogger.debug("disable_entity Disabling Entity: ", entity)
 
@@ -480,6 +568,10 @@ func disable_entity(entity) -> Entity:
 		entity.relationship_added.disconnect(_on_entity_relationship_added)
 	if entity.relationship_removed.is_connected(_on_entity_relationship_removed):
 		entity.relationship_removed.disconnect(_on_entity_relationship_removed)
+	if entity.relationships_batch_added.is_connected(_on_entity_relationships_batch_added):
+		entity.relationships_batch_added.disconnect(_on_entity_relationships_batch_added)
+	if entity.relationships_batch_removed.is_connected(_on_entity_relationships_batch_removed):
+		entity.relationships_batch_removed.disconnect(_on_entity_relationships_batch_removed)
 	entity.on_disable()
 	entity.set_process(false)
 	entity.set_physics_process(false)
@@ -514,7 +606,7 @@ func disable_entities(_entities: Array) -> void:
 func enable_entity(entity: Entity, components = null) -> void:
 	# Update index
 	_worldLogger.debug("enable_entity Enabling Entity to World: ", entity)
-	entity.enabled = true # This will trigger _on_entity_enabled_changed via setter
+	entity.enabled = true  # This will trigger _on_entity_enabled_changed via setter
 	entity_enabled.emit(entity)
 
 	# Connect to entity signals for components so we can track global component state
@@ -526,6 +618,10 @@ func enable_entity(entity: Entity, components = null) -> void:
 		entity.relationship_added.connect(_on_entity_relationship_added)
 	if not entity.relationship_removed.is_connected(_on_entity_relationship_removed):
 		entity.relationship_removed.connect(_on_entity_relationship_removed)
+	if not entity.relationships_batch_added.is_connected(_on_entity_relationships_batch_added):
+		entity.relationships_batch_added.connect(_on_entity_relationships_batch_added)
+	if not entity.relationships_batch_removed.is_connected(_on_entity_relationships_batch_removed):
+		entity.relationships_batch_removed.connect(_on_entity_relationships_batch_removed)
 
 	if components:
 		entity.add_components(components)
@@ -550,6 +646,7 @@ func get_entity_by_id(id: String) -> Entity:
 func has_entity_with_id(id: String) -> bool:
 	return id in entity_id_registry
 
+
 #region Systems
 
 
@@ -570,12 +667,17 @@ func add_system(system: System, topo_sort: bool = false) -> void:
 	if not systems_by_group.has(system.group):
 		systems_by_group[system.group] = []
 	systems_by_group[system.group].push_back(system)
+	_timers_dirty = true
 	system_added.emit(system)
 
-	# ALWAYS DEFER SETUP: Queue system setup until ECS.world is assigned
-	# This ensures setup() methods can safely access ECS.world
-	_deferred_setup_systems.append(system)
-	_worldLogger.trace("add_system Deferring setup for system: ", system)
+	# If ECS.world is already this world, setup immediately since finalize_system_setup()
+	# has already run. Otherwise defer until finalize_system_setup() is called.
+	if ECS.world == self:
+		system._internal_setup()
+		_worldLogger.trace("add_system Immediate setup for system: ", system)
+	else:
+		_deferred_setup_systems.append(system)
+		_worldLogger.trace("add_system Deferring setup for system: ", system)
 
 	if topo_sort:
 		ArrayExtensions.topological_sort(systems_by_group)
@@ -604,6 +706,7 @@ func add_systems(_systems: Array, topo_sort: bool = false):
 func remove_system(system, topo_sort: bool = false) -> void:
 	_worldLogger.debug("remove_system Removing System: ", system)
 	systems_by_group[system.group].erase(system)
+	_timers_dirty = true
 	if systems_by_group[system.group].size() == 0:
 		systems_by_group.erase(system.group)
 	system_removed.emit(system)
@@ -648,7 +751,9 @@ func purge(should_free = true, keep := []) -> void:
 		remove_entity(entity)
 
 	# Clear relationship indexes after purging entities
-	relationship_entity_index.clear()
+	_relation_type_archetype_index.clear()
+	if keep.is_empty():
+		_next_entity_id = 1
 	_worldLogger.debug("Cleared relationship indexes after purge")
 
 	# ARCHETYPE: Clear archetype system
@@ -677,6 +782,7 @@ func purge(should_free = true, keep := []) -> void:
 	if should_free:
 		queue_free()
 
+
 ## Executes a query to retrieve entities based on component criteria.[br]
 ## [param all_components] [Component]s that [Entity]s must have all of.[br]
 ## [param any_components] [Component]s that [Entity]s must have at least one of.[br]
@@ -690,6 +796,27 @@ func purge(should_free = true, keep := []) -> void:
 
 #endregion Systems
 
+#region Timer Management
+
+
+## Rebuild the per-group unique timer sets from current systems.
+## Called lazily when _timers_dirty is true (after add_system / remove_system).
+func _rebuild_group_timers() -> void:
+	_group_timers.clear()
+	for group_key in systems_by_group.keys():
+		var seen := {}  # instance_id -> true (dedup shared timers)
+		var timers: Array = []
+		for system in systems_by_group[group_key]:
+			if system.tick_source and not seen.has(system.tick_source.get_instance_id()):
+				seen[system.tick_source.get_instance_id()] = true
+				timers.append(system.tick_source)
+		if not timers.is_empty():
+			_group_timers[group_key] = timers
+	_timers_dirty = false
+
+
+#endregion Timer Management
+
 #region Signal Callbacks
 
 
@@ -700,9 +827,12 @@ func _on_entity_component_added(entity: Entity, component: Resource) -> void:
 	# ARCHETYPE: Move entity to new archetype
 	if entity_to_archetype.has(entity):
 		var old_archetype = entity_to_archetype[entity]
-		var comp_path = component.get_script().resource_path
+		var comp_key = component.get_script().get_instance_id()
 		var new_archetype = _move_entity_to_new_archetype_fast(
-			entity, old_archetype, comp_path, true
+			entity,
+			old_archetype,
+			comp_key,
+			true,
 		)
 		# Always invalidate: even if no new archetype was created, entity membership
 		# within archetypes changed, so cached query results are stale.
@@ -711,6 +841,8 @@ func _on_entity_component_added(entity: Entity, component: Resource) -> void:
 	# Emit Signal
 	component_added.emit(entity, component)
 	_handle_observer_component_added(entity, component)
+	if component != null and component.get_script() != null:
+		_evaluate_monitors_for_entity(entity, [component.get_script().resource_path])
 	if not entity.component_property_changed.is_connected(_on_entity_component_property_change):
 		entity.component_property_changed.connect(_on_entity_component_property_change)
 	if ECS.debug:
@@ -729,18 +861,31 @@ func _on_entity_component_property_change(
 	component: Resource,
 	property_name: String,
 	old_value: Variant,
-	new_value: Variant
+	new_value: Variant,
 ) -> void:
 	# Notify the World to trigger observers
 	_handle_observer_component_changed(entity, component, property_name, new_value, old_value)
+	# Re-evaluate monitor queries whose filters include property-query criteria on this
+	# component. Monitor sensitivity is keyed by component script path; property-query
+	# components live in the same path so this catches "hp dropped below threshold"-style
+	# transitions without any structural mutation.
+	if component != null and component.get_script() != null:
+		_evaluate_monitors_for_entity(entity, [component.get_script().resource_path])
 	# ARCHETYPE: No cache invalidation - property changes don't affect archetype membership
 	# Send the message to the debugger if we're in debug
 	if ECS.debug:
 		assert(
-			GECSEditorDebuggerMessages.entity_component_property_changed(
-				entity, component, property_name, old_value, new_value
+			(
+				GECSEditorDebuggerMessages
+				.entity_component_property_changed(
+					entity,
+					component,
+					property_name,
+					old_value,
+					new_value,
+				)
 			),
-			""
+			"",
 		)
 
 
@@ -750,9 +895,12 @@ func _on_entity_component_property_change(
 func _on_entity_component_removed(entity, component: Resource) -> void:
 	if entity_to_archetype.has(entity):
 		var old_archetype = entity_to_archetype[entity]
-		var comp_path = component.resource_path
+		var comp_key = component.get_script().get_instance_id()
 		var new_archetype = _move_entity_to_new_archetype_fast(
-			entity, old_archetype, comp_path, false
+			entity,
+			old_archetype,
+			comp_key,
+			false,
 		)
 		# Always invalidate: even if no new archetype was created, entity membership
 		# within archetypes changed, so cached query results are stale.
@@ -760,38 +908,51 @@ func _on_entity_component_removed(entity, component: Resource) -> void:
 
 	component_removed.emit(entity, component)
 	_handle_observer_component_removed(entity, component)
+	if component != null and component.get_script() != null:
+		_evaluate_monitors_for_entity(entity, [component.get_script().resource_path])
 	if ECS.debug:
 		assert(GECSEditorDebuggerMessages.entity_component_removed(entity, component), "")
 
 
-## (Optional) Update index when a relationship is added.
+## Update index when a relationship is added and move entity to new archetype.
 func _on_entity_relationship_added(entity: Entity, relationship: Relationship) -> void:
-	var key = relationship.relation.resource_path
-	if not relationship_entity_index.has(key):
-		relationship_entity_index[key] = []
-	relationship_entity_index[key].append(entity)
+	# Skip archetype move when called from batch handler re-emitting per-entity signals
+	if not _in_batch_relationship_emit:
+		# STRUCTURAL: Move entity to new archetype including the pair slot key
+		if entity_to_archetype.has(entity):
+			var old_archetype = entity_to_archetype[entity]
+			var slot_key = _relationship_slot_key(relationship)
+			if slot_key != "":
+				_move_entity_to_new_archetype_fast(entity, old_archetype, slot_key, true)
+			_invalidate_cache("entity_relationship_added")
 
-	# PERFORMANCE: Do NOT invalidate archetype cache on relationship changes
-	# Relationships do not alter archetype membership (structural component sets)
-	# QueryBuilder.execute() performs relationship filtering on entity results.
-	# Systems use archetypes() + per-entity filtering, so invalidation here only
-	# increases cache churn without improving correctness.
-
-	# Emit Signal
 	relationship_added.emit(entity, relationship)
+	_dispatch_observer_event(Observer.Event.RELATIONSHIP_ADDED, entity, relationship)
+	var rel_path_added = _get_relationship_relation_path(relationship)
+	if rel_path_added != "":
+		_evaluate_monitors_for_entity(entity, [rel_path_added])
 	if ECS.debug:
 		assert(GECSEditorDebuggerMessages.entity_relationship_added(entity, relationship), "")
 
 
-## (Optional) Update index when a relationship is removed.
+## Update index when a relationship is removed and move entity to archetype without the pair slot key.
 func _on_entity_relationship_removed(entity: Entity, relationship: Relationship) -> void:
-	var key = relationship.relation.resource_path
-	if relationship_entity_index.has(key):
-		relationship_entity_index[key].erase(entity)
+	# Dispatch observer RELATIONSHIP_REMOVED BEFORE archetype move so the entity still
+	# structurally satisfies match() queries that reference the relationship type.
+	_dispatch_observer_event(Observer.Event.RELATIONSHIP_REMOVED, entity, relationship)
+	var rel_path_removed = _get_relationship_relation_path(relationship)
+	if rel_path_removed != "":
+		_evaluate_monitors_for_entity(entity, [rel_path_removed])
+	# Skip archetype move when called from batch handler re-emitting per-entity signals
+	if not _in_batch_relationship_emit:
+		# STRUCTURAL: Move entity to archetype without the pair slot key
+		if entity_to_archetype.has(entity):
+			var old_archetype = entity_to_archetype[entity]
+			var slot_key = _relationship_slot_key(relationship)
+			if slot_key != "":
+				_move_entity_to_new_archetype_fast(entity, old_archetype, slot_key, false)
+			_invalidate_cache("entity_relationship_removed")
 
-	# PERFORMANCE: No cache invalidation (see comment in _on_entity_relationship_added)
-
-	# Emit Signal
 	relationship_removed.emit(entity, relationship)
 	if ECS.debug:
 		assert(GECSEditorDebuggerMessages.entity_relationship_removed(entity, relationship), "")
@@ -807,11 +968,15 @@ func add_observer(_observer: Observer) -> void:
 	_worldLogger.trace("add_observer Adding Observer: ", _observer)
 	observers.append(_observer)
 
-	# Initialize the query builder for the observer
-	_observer.q = QueryBuilder.new(self )
+	# Wire world reference — observer's `q` property is a getter that returns a fresh
+	# QueryBuilder on every access (mirrors System.q), so we don't assign it directly.
+	_observer._world = self
 
-	# Cache watch() result — called once at registration, not on every notification
-	_observer_watch_cache[_observer] = _observer.watch()
+	# Call user setup() after world/query are wired up
+	_observer.setup()
+
+	# Build dispatch entries for this observer from query() + sub_observers()
+	_register_observer_entries(_observer)
 
 
 ## Adds multiple [Observer]s to the [World].
@@ -829,11 +994,16 @@ func add_observers(_observers: Array):
 ##      [codeblock]world.remove_observer(health_system)[/codeblock]
 func remove_observer(observer: Observer) -> void:
 	_worldLogger.debug("remove_observer Removing Observer: ", observer)
+	# Drain any MANUAL-mode pending commands before teardown — otherwise they'd be silently
+	# dropped when the observer is freed. Safe to flush with the observer still registered
+	# the lambdas do their own is_instance_valid guards.
+	if is_instance_valid(observer) and observer.has_pending_commands():
+		observer.cmd.execute()
 	observers.erase(observer)
 	# if ECS.debug:
 	# 	# Don't use system_removed as it expects a System not ReactiveSystem
 	# 	GECSEditorDebuggerMessages.exit_world()  # Just send a general update
-	_observer_watch_cache.erase(observer) # Prevent memory leak on observer churn
+	_unregister_observer_entries(observer)
 	observer.queue_free()
 
 
@@ -844,7 +1014,11 @@ func remove_observer(observer: Observer) -> void:
 ## [param new_value] The new value of the property
 ## [param old_value] The previous value of the property
 func handle_component_changed(
-	entity: Entity, component: Resource, property: String, new_value: Variant, old_value: Variant
+	entity: Entity,
+	component: Resource,
+	property: String,
+	new_value: Variant,
+	old_value: Variant,
 ) -> void:
 	# Emit the general signal
 	component_changed.emit(entity, component, property, new_value, old_value)
@@ -853,82 +1027,715 @@ func handle_component_changed(
 	_handle_observer_component_changed(entity, component, property, new_value, old_value)
 
 
-## Notify observers when a component is added
+## Thin wrapper: routes component-added events through the unified observer dispatch pipeline.
 func _handle_observer_component_added(entity: Entity, component: Resource) -> void:
-	for reactive_system in observers:
-		# Get the component that this system is watching
-		var watch_component = _observer_watch_cache.get(reactive_system)
-		if (
-			watch_component
-			and component
-			and component.get_script()
-			and watch_component.resource_path == component.get_script().resource_path
-		):
-			# Check if the entity matches the system's query
-			var query_builder = reactive_system.match()
-			var matches = true
-
-			if query_builder:
-				# Use the _query method instead of trying to use query as a function
-				var entities_matching = _query(
-					query_builder._all_components,
-					query_builder._any_components,
-					query_builder._exclude_components
-				)
-				# Check if our entity is in the result set
-				matches = entities_matching.has(entity)
-
-			if matches:
-				reactive_system.on_component_added(entity, component)
+	_dispatch_observer_event(Observer.Event.ADDED, entity, component)
 
 
-## Notify observers when a component is removed
+## Thin wrapper: routes component-removed events through the unified observer dispatch pipeline.
 func _handle_observer_component_removed(entity: Entity, component: Resource) -> void:
-	for reactive_system in observers:
-		# Get the component that this system is watching
-		var watch_component = _observer_watch_cache.get(reactive_system)
-		if (
-			watch_component
-			and component
-			and component.get_script()
-			and watch_component.resource_path == component.get_script().resource_path
-		):
-			# For removal, we don't check the query since the component is already removed
-			# Just notify the system
-			reactive_system.on_component_removed(entity, component)
+	_dispatch_observer_event(Observer.Event.REMOVED, entity, component)
 
 
-## Notify observers when a component property changes
+## Thin wrapper: routes component-changed events through the unified observer dispatch pipeline.
 func _handle_observer_component_changed(
-	entity: Entity, component: Resource, property: String, new_value: Variant, old_value: Variant
+	entity: Entity,
+	component: Resource,
+	property: String,
+	new_value: Variant,
+	old_value: Variant,
 ) -> void:
-	for reactive_system in observers:
-		# Get the component that this system is watching
-		var watch_component = _observer_watch_cache.get(reactive_system)
+	var payload: Dictionary = {
+		"component": component,
+		"property": property,
+		"new_value": new_value,
+		"old_value": old_value,
+	}
+	_dispatch_observer_event(Observer.Event.CHANGED, entity, payload)
+
+
+#region Observer Registration & Dispatch
+## Build and register all dispatch entries for an [Observer]. Called from
+## [method add_observer] after [method Observer.setup] returns.
+## Creates one entry for the top-level [method Observer.query] plus entries for every
+## tuple returned by [method Observer.sub_observers]. Each entry is indexed by the events
+## its query declares.
+func _register_observer_entries(_observer: Observer) -> void:
+	var entries: Array = []
+
+	var top_query: QueryBuilder = _observer.query()
+
+	if top_query != null and top_query.has_observer_events():
+		# Watched paths for component ADDED/REMOVED/CHANGED events are the union of
+		# with_all/with_any components — adding/removing any of those could change the
+		# entity's membership in the query.
+		var entry := {
+			"observer": _observer,
+			"query": top_query,
+			"callable": Callable(_observer, "each"),
+			"watched_paths": _collect_watched_paths(top_query),
+			"is_monitor":
+			(
+				top_query.has_event(Observer.Event.MATCH)
+				or top_query.has_event(Observer.Event.UNMATCH)
+			),
+			"monitor_sensitivity": top_query._component_sensitivity(),
+			"membership": {},  # entity -> true, populated for monitor queries
+		}
+		entries.append(entry)
+	elif top_query != null and OS.has_feature("editor"):
+		# User declared query() but forgot to chain any event modifiers (.on_added() etc.).
+		# Without events nothing is registered and the observer silently never fires —
+		# catch this at editor/dev time with a push_warning.
+		var _path: String = (
+			_observer.get_script().resource_path if _observer.get_script() else "<unknown>"
+		)
+		push_warning(
+			(
+				"%s: Observer.query() returned a QueryBuilder with no event modifiers (.on_added / .on_removed / .on_changed / .on_match / .on_unmatch / .on_relationship_added / .on_relationship_removed / .on_event). This observer will never fire — did you forget to chain an event?"
+				% _path
+			),
+		)
+
+	# sub_observers: each tuple becomes its own virtual entry. Queries carry their own
+	# event modifiers; callables receive the same (event, entity, payload) shape as each().
+	# Tuple shape: [QueryBuilder, Callable, optional yield_existing_override]
+	# The 3rd element lets a specific sub-observer opt in/out of yield_existing independently
+	# of the parent Observer's flag.
+	var subs: Array = _observer.sub_observers()
+	for tuple in subs:
+		if tuple.size() < 2:
+			_worldLogger.warning("sub_observers tuple must be [QueryBuilder, Callable]: ", tuple)
+			continue
+		if not (tuple[0] is QueryBuilder):
+			(
+				_worldLogger
+				.warning(
+					"sub_observers tuple[0] must be QueryBuilder, got: ",
+					tuple[0],
+				)
+			)
+			continue
+		var sub_q: QueryBuilder = tuple[0]
+		var sub_callable: Callable = tuple[1] as Callable
+		if not sub_callable.is_valid():
+			_worldLogger.warning("sub_observers invalid callable: ", tuple)
+			continue
+		if not sub_q.has_observer_events():
+			_worldLogger.warning("sub_observers query declares no events: ", sub_q)
+			continue
+		var yield_override = null
+		if tuple.size() >= 3:
+			yield_override = tuple[2]
+		(
+			entries
+			.append(
+				{
+					"observer": _observer,
+					"query": sub_q,
+					"callable": sub_callable,
+					"watched_paths": _collect_watched_paths(sub_q),
+					"is_monitor":
+					(
+						sub_q.has_event(Observer.Event.MATCH)
+						or sub_q.has_event(Observer.Event.UNMATCH)
+					),
+					"monitor_sensitivity": sub_q._component_sensitivity(),
+					"membership": {},
+					"yield_existing_override": yield_override,
+				},
+			)
+		)
+
+	_obs_entries_by_observer[_observer] = entries
+	var observer_is_live: bool = _observer.active and not _observer.paused
+	for entry in entries:
+		_index_observer_entry(entry)
+		# yield_existing can be overridden per sub-observer tuple (4th tuple element).
+		# null override → fall back to the parent observer's yield_existing flag.
+		var yield_override = entry.get("yield_existing_override", null)
+		var should_yield: bool = (
+			yield_override if yield_override != null else _observer.yield_existing
+		)
+		# Monitor membership is ALWAYS seeded, even when the observer is inactive/paused.
+		# This is framework bookkeeping — without it, flipping `active = true` later would
+		# leave pre-existing entities out of the membership set permanently, so MATCH/UNMATCH
+		# transitions never fire for them. The retroactive MATCH invocation itself is gated
+		# on live state inside _seed_monitor_membership.
+		if entry.get("is_monitor", false):
+			_seed_monitor_membership(entry, should_yield and observer_is_live)
+		elif should_yield and observer_is_live:
+			# Non-monitor yield_existing pass: only fire retroactive ADDEDs when live.
+			_yield_existing_for_entry(entry)
+
+
+## Union of [code]with_all[/code] + [code]with_any[/code] component script paths. These are
+## the components whose add/remove/change events could affect this query's membership.
+func _collect_watched_paths(q: QueryBuilder) -> Array[String]:
+	var paths: Array[String] = []
+	for c in q._all_components:
+		if c is Script and c.resource_path != "" and not paths.has(c.resource_path):
+			paths.append(c.resource_path)
+	for c in q._any_components:
+		if c is Script and c.resource_path != "" and not paths.has(c.resource_path):
+			paths.append(c.resource_path)
+	return paths
+
+
+func _index_observer_entry(entry: Dictionary) -> void:
+	var q: QueryBuilder = entry.query
+	if q == null:
+		return
+	# Index by Observer.Event bit flags
+	for e in [
+		Observer.Event.ADDED,
+		Observer.Event.REMOVED,
+		Observer.Event.CHANGED,
+		Observer.Event.MATCH,
+		Observer.Event.UNMATCH,
+		Observer.Event.RELATIONSHIP_ADDED,
+		Observer.Event.RELATIONSHIP_REMOVED,
+	]:
+		if q.has_event(e):
+			var arr: Array = _obs_entries_by_event.get(e, [])
+			arr.append(entry)
+			_obs_entries_by_event[e] = arr
+	# Index by custom event StringName
+	for ev_name in q._observer_event_names:
+		var arr2: Array = _obs_entries_by_custom_event.get(ev_name, [])
+		arr2.append(entry)
+		_obs_entries_by_custom_event[ev_name] = arr2
+
+
+## Remove all dispatch entries belonging to [param _observer] from the event indexes.
+func _unregister_observer_entries(_observer: Observer) -> void:
+	var entries: Array = _obs_entries_by_observer.get(_observer, [])
+	if entries.is_empty():
+		_obs_entries_by_observer.erase(_observer)
+		return
+	for e_key in _obs_entries_by_event.keys():
+		var arr: Array = _obs_entries_by_event[e_key]
+		var kept: Array = []
+		for entry in arr:
+			if entry.observer != _observer:
+				kept.append(entry)
+		_obs_entries_by_event[e_key] = kept
+	for ev_name in _obs_entries_by_custom_event.keys():
+		var arr2: Array = _obs_entries_by_custom_event[ev_name]
+		var kept2: Array = []
+		for entry in arr2:
+			if entry.observer != _observer:
+				kept2.append(entry)
+		_obs_entries_by_custom_event[ev_name] = kept2
+	_obs_entries_by_observer.erase(_observer)
+
+
+## Unified observer event dispatch. Called by the three legacy `_handle_observer_component_*`
+## wrappers and (in later steps) by relationship / monitor / custom-event paths.
+## [param event] An [enum Observer.Event] int flag or a [StringName] custom event.
+## [param entity] The entity the event concerns.
+## [param payload] Event-specific data — see [Observer.each] doc for the shape table.
+func _dispatch_observer_event(event: Variant, entity: Entity, payload: Variant) -> void:
+	var entries: Array
+	if event is StringName:
+		entries = _obs_entries_by_custom_event.get(event, [])
+	else:
+		entries = _obs_entries_by_event.get(event, [])
+	if entries.is_empty():
+		return
+	# Snapshot so re-entrant add_observer/remove_observer inside a callback cannot
+	# mutate the list we're iterating (new observers would otherwise receive the
+	# event that caused their creation).
+	entries = entries.duplicate()
+	# Snapshot deferred-mode observers at the end (so callback invocations happen
+	# below and deferred observers drain later).
+	# Component-lifecycle events (ADDED/REMOVED/CHANGED) are keyed by the specific
+	# component that triggered them — we can cheaply reject entries whose watched_paths
+	# don't include that component's script path BEFORE running any world query.
+	# This avoids stale-cache false negatives by sidestepping the archetype index.
+	var is_int_event := not (event is StringName)
+	var component_path: String = ""
+	if is_int_event:
+		if event == Observer.Event.ADDED or event == Observer.Event.REMOVED:
+			if payload != null and payload is Resource and payload.get_script() != null:
+				component_path = payload.get_script().resource_path
+		elif event == Observer.Event.CHANGED:
+			if payload is Dictionary and payload.has("component"):
+				var comp = payload.component
+				if comp != null and comp.get_script() != null:
+					component_path = comp.get_script().resource_path
+	for entry in entries:
+		var obs: Observer = entry.observer
+		if obs == null or not is_instance_valid(obs):
+			continue
+		if not obs.active or obs.paused:
+			continue
+		# Watched-component filter for lifecycle events
+		if component_path != "":
+			var watched: Array = entry.get("watched_paths", [])
+			if not watched.is_empty() and not watched.has(component_path):
+				continue
+		# Property filter for CHANGED events (from on_changed([&"prop"]))
+		if is_int_event and event == Observer.Event.CHANGED:
+			var q_prop: QueryBuilder = entry.query
+			if q_prop != null and not q_prop._observer_changed_props.is_empty():
+				if payload is Dictionary and payload.has("property"):
+					var prop_name := StringName(payload.property)
+					if not q_prop._observer_changed_props.has(prop_name):
+						continue
+		# Relationship-type filter for RELATIONSHIP_ADDED/REMOVED events
 		if (
-			watch_component
-			and component
-			and component.get_script()
-			and watch_component.resource_path == component.get_script().resource_path
+			is_int_event
+			and (
+				event == Observer.Event.RELATIONSHIP_ADDED
+				or event == Observer.Event.RELATIONSHIP_REMOVED
+			)
 		):
-			# Check if the entity matches the system's query
-			var query_builder = reactive_system.match()
-			var matches = true
-
-			if query_builder:
-				# Use the _query method instead of trying to use query as a function
-				var entities_matching = _query(
-					query_builder._all_components,
-					query_builder._any_components,
-					query_builder._exclude_components
+			var q_b: QueryBuilder = entry.query
+			if q_b != null and payload is Relationship:
+				var type_filter: Array = (
+					q_b._observer_rel_add_types
+					if event == Observer.Event.RELATIONSHIP_ADDED
+					else q_b._observer_rel_remove_types
 				)
-				# Check if our entity is in the result set
-				matches = entities_matching.has(entity)
+				if (
+					not type_filter.is_empty()
+					and not _relationship_matches_types(payload, type_filter)
+				):
+					continue
+		# Entity query filter. For REMOVED / RELATIONSHIP_REMOVED the removed piece has
+		# already been dropped from the entity at signal time, so a naive has_component /
+		# has_relationship check would always fail even for entities that DID satisfy the
+		# filter before removal. Use a "match-before-removal" check that virtually treats
+		# the removed piece as still present.
+		# For custom (StringName) events with a null entity, skip the filter entirely —
+		# emit_event(name, null, data) is a broadcast to every subscriber.
+		if not is_int_event and entity == null:
+			pass  # broadcast — no entity filter applicable
+		elif is_int_event and event == Observer.Event.REMOVED:
+			if not _observer_entry_matched_before_component_removal(
+				entry, entity, component_path, payload
+			):
+				continue
+		elif is_int_event and event == Observer.Event.RELATIONSHIP_REMOVED:
+			var removed_rel_path := ""
+			if payload is Relationship:
+				removed_rel_path = _get_relationship_relation_path(payload)
+			if not _observer_entry_matched_before_relationship_removal(
+				entry, entity, removed_rel_path, payload
+			):
+				continue
+		elif not _observer_entry_entity_matches(entry, entity):
+			continue
+		# Invoke the callable.
+		entry.callable.call(event, entity, payload)
+		# Flush command buffer if PER_CALLBACK mode
+		if (
+			obs.has_pending_commands()
+			and obs.command_buffer_flush_mode == Observer.FlushMode.PER_CALLBACK
+		):
+			obs.cmd.execute()
 
-			if matches:
-				reactive_system.on_component_changed(
-					entity, component, property, new_value, old_value
-				)
+
+func _observer_entry_entity_matches(entry: Dictionary, entity: Entity) -> bool:
+	var q: QueryBuilder = entry.query
+	if q == null:
+		return true
+	# Direct per-entity check instead of world-level _query() — this avoids hitting a
+	# stale archetype cache while observer events fire inside a suppressed batch (e.g.
+	# during add_entity's _initialize loop). Query matching here mirrors
+	# QueryBuilder.matches() for a single entity.
+	for c in q._all_components:
+		if not entity.has_component(c):
+			return false
+	if not q._any_components.is_empty():
+		var any_ok := false
+		for c in q._any_components:
+			if entity.has_component(c):
+				any_ok = true
+				break
+		if not any_ok:
+			return false
+	for c in q._exclude_components:
+		if entity.has_component(c):
+			return false
+	for rel in q._relationships:
+		if not entity.has_relationship(rel):
+			return false
+	for rel in q._exclude_relationships:
+		if entity.has_relationship(rel):
+			return false
+	if not _evaluate_property_queries(q, entity):
+		return false
+	if not _evaluate_group_enabled_filters(q, entity):
+		return false
+	return true
+
+
+## Match-before-removal check for component REMOVED events. Mirrors
+## [method _observer_entry_entity_matches] but treats [param removed_path] as still
+## present on the entity so observers with a [code]with_all[/code] filter only fire
+## REMOVED for entities that satisfied the full filter prior to removal. When
+## [param removed_component] is non-null, property queries keyed on [param removed_path]
+## are evaluated against the detached instance — preserving the pre-removal state.
+func _observer_entry_matched_before_component_removal(
+	entry: Dictionary, entity: Entity, removed_path: String, removed_component: Variant = null
+) -> bool:
+	var q: QueryBuilder = entry.query
+	if q == null:
+		return true
+	for c in q._all_components:
+		if c is Script and c.resource_path == removed_path:
+			continue
+		if not entity.has_component(c):
+			return false
+	if not q._any_components.is_empty():
+		var any_ok := false
+		for c in q._any_components:
+			if c is Script and c.resource_path == removed_path:
+				any_ok = true
+				break
+			if entity.has_component(c):
+				any_ok = true
+				break
+		if not any_ok:
+			return false
+	for c in q._exclude_components:
+		# If the removed component matches an exclude, the entity DID fail exclusion
+		# before removal, so was NOT matching — return false.
+		if c is Script and c.resource_path == removed_path:
+			return false
+		if entity.has_component(c):
+			return false
+	for rel in q._relationships:
+		if not entity.has_relationship(rel):
+			return false
+	for rel in q._exclude_relationships:
+		if entity.has_relationship(rel):
+			return false
+	if not _evaluate_property_queries(q, entity, removed_path, removed_component):
+		return false
+	if not _evaluate_group_enabled_filters(q, entity):
+		return false
+	return true
+
+
+## Match-before-removal check for relationship REMOVED events. Treats
+## [param removed_rel] as still present (by matching against [param removed_rel_path] or
+## equality with the removed [Relationship]) when evaluating the query filter.
+func _observer_entry_matched_before_relationship_removal(
+	entry: Dictionary, entity: Entity, removed_rel_path: String, removed_rel: Relationship
+) -> bool:
+	var q: QueryBuilder = entry.query
+	if q == null:
+		return true
+	for c in q._all_components:
+		if not entity.has_component(c):
+			return false
+	if not q._any_components.is_empty():
+		var any_ok := false
+		for c in q._any_components:
+			if entity.has_component(c):
+				any_ok = true
+				break
+		if not any_ok:
+			return false
+	for c in q._exclude_components:
+		if entity.has_component(c):
+			return false
+	for rel in q._relationships:
+		# Treat the removed relationship as still present — but only if it actually
+		# satisfied the query rel's criteria. For property-query relationships the
+		# detached instance is evaluated via Relationship.matches(); if it doesn't
+		# satisfy, fall through to has_relationship so another still-present rel
+		# can satisfy the query.
+		if removed_rel_path != "" and _get_relationship_relation_path(rel) == removed_rel_path:
+			if removed_rel != null and rel.matches(removed_rel):
+				continue
+		if not entity.has_relationship(rel):
+			return false
+	for rel in q._exclude_relationships:
+		# Only treat the removed rel as "still excluded" if it actually matched the
+		# exclude query — a low-damage rel being removed shouldn't fail an exclude
+		# that's scoped to high-damage.
+		if removed_rel_path != "" and _get_relationship_relation_path(rel) == removed_rel_path:
+			if removed_rel != null and rel.matches(removed_rel):
+				# The entity DID have this excluded relationship before removal.
+				return false
+		if entity.has_relationship(rel):
+			return false
+	if not _evaluate_property_queries(q, entity):
+		return false
+	if not _evaluate_group_enabled_filters(q, entity):
+		return false
+	return true
+
+
+## Evaluate property-query filters on a query against an entity. Used by all three
+## observer match helpers. When [param skip_path] is non-empty and [param removed_component]
+## is non-null, property queries keyed on [param skip_path] are evaluated against the
+## detached instance instead of the entity — this lets match-before-removal callers
+## check the removed component's pre-removal property state. If [param removed_component]
+## is null (or not a Resource), the property check for the skipped path is treated as
+## satisfied (fallback for cases where the instance isn't available).
+func _evaluate_property_queries(
+	q: QueryBuilder, entity: Entity, skip_path: String = "", removed_component: Variant = null
+) -> bool:
+	if not q._all_components_queries.is_empty():
+		for i in range(q._all_components.size()):
+			if i >= q._all_components_queries.size():
+				break
+			var query_dict = q._all_components_queries[i]
+			if query_dict.is_empty():
+				continue
+			var c_type = q._all_components[i]
+			if skip_path != "" and c_type is Script and c_type.resource_path == skip_path:
+				# Use the detached removed instance when available; otherwise treat as satisfied.
+				if removed_component != null and removed_component is Resource:
+					if not ComponentQueryMatcher.matches_query(removed_component, query_dict):
+						return false
+				continue
+			var comp = entity.get_component(c_type)
+			if comp == null:
+				return false
+			if not ComponentQueryMatcher.matches_query(comp, query_dict):
+				return false
+	if not q._any_components_queries.is_empty():
+		# Only evaluate when there are actual property queries.
+		var has_any_prop_query := false
+		for qd in q._any_components_queries:
+			if not qd.is_empty():
+				has_any_prop_query = true
+				break
+		if has_any_prop_query:
+			var any_prop_ok := false
+			for i in range(q._any_components.size()):
+				if i >= q._any_components_queries.size():
+					break
+				var query_dict = q._any_components_queries[i]
+				if query_dict.is_empty():
+					continue
+				var c_type = q._any_components[i]
+				if skip_path != "" and c_type is Script and c_type.resource_path == skip_path:
+					# Check the detached removed instance if available; fall back to "satisfied".
+					if removed_component != null and removed_component is Resource:
+						if ComponentQueryMatcher.matches_query(removed_component, query_dict):
+							any_prop_ok = true
+							break
+					else:
+						any_prop_ok = true
+						break
+					continue
+				var comp = entity.get_component(c_type)
+				if comp != null and ComponentQueryMatcher.matches_query(comp, query_dict):
+					any_prop_ok = true
+					break
+			if not any_prop_ok:
+				return false
+	return true
+
+
+## Evaluate group and enabled/disabled filters on a query against an entity.
+## Mirrors the group/enabled semantics in [method QueryBuilder.execute]. These were
+## silently ignored by observer dispatch prior to v8.0.0.
+func _evaluate_group_enabled_filters(q: QueryBuilder, entity: Entity) -> bool:
+	if not q._groups.is_empty():
+		for g in q._groups:
+			if not entity.is_in_group(g):
+				return false
+	if not q._exclude_groups.is_empty():
+		for g in q._exclude_groups:
+			if entity.is_in_group(g):
+				return false
+	if q._enabled_filter != null and entity.enabled != q._enabled_filter:
+		return false
+	return true
+
+
+## True if [param relationship]'s relation component script path matches any entry in
+## [param type_filter]. Accepts both Script references and component instances — any
+## entry whose resolved resource_path matches the relation's script path counts.
+func _relationship_matches_types(relationship: Relationship, type_filter: Array) -> bool:
+	var rel_path = _get_relationship_relation_path(relationship)
+	if rel_path == "":
+		return false
+	for t in type_filter:
+		var p: String = ""
+		if t is Script:
+			p = t.resource_path
+		elif t is Resource and t.get_script() != null:
+			p = t.get_script().resource_path
+		if p != "" and p == rel_path:
+			return true
+	return false
+
+
+## yield_existing pass for non-monitor observers: fire ADDED for every pre-existing
+## component instance on entities that currently satisfy the entry's entity filter.
+## Only fires events the entry's query declared (e.g. skipped if only .on_changed()).
+func _yield_existing_for_entry(entry: Dictionary) -> void:
+	var q: QueryBuilder = entry.query
+	if q == null:
+		return
+	var obs: Observer = entry.observer
+	if obs == null or not is_instance_valid(obs) or not obs.active or obs.paused:
+		return
+	var fires_added: bool = q.has_event(Observer.Event.ADDED)
+	if not fires_added:
+		return
+	var watched: Array = entry.get("watched_paths", [])
+	# Snapshot entities and components: a user callback invoked via _invoke_entry may
+	# mutate either list (remove_entity, remove_component, etc). Iterating the live
+	# arrays would skip or crash; duplicate so iteration is stable.
+	for entity in entities.duplicate():
+		if not is_instance_valid(entity):
+			continue
+		if not _observer_entry_entity_matches(entry, entity):
+			continue
+		# Re-check active between iterations in case a callback flips it.
+		if not obs.active or obs.paused:
+			return
+		for comp in entity.components.values().duplicate():
+			if not is_instance_valid(comp) or comp.get_script() == null:
+				continue
+			var cp: String = comp.get_script().resource_path
+			if watched.is_empty() or watched.has(cp):
+				_invoke_entry(entry, Observer.Event.ADDED, entity, comp)
+
+
+## When an entity is removed from the world, evict it from all monitor membership sets
+## and fire UNMATCH on monitors that had it.
+func _drop_entity_from_monitors(entity: Entity) -> void:
+	# Dedup: monitors with both MATCH and UNMATCH are indexed under both keys.
+	var seen: Dictionary = {}
+	var candidates: Array = []
+	for e_key in [Observer.Event.UNMATCH, Observer.Event.MATCH]:
+		for entry in _obs_entries_by_event.get(e_key, []):
+			if seen.has(entry):
+				continue
+			seen[entry] = true
+			candidates.append(entry)
+	# Iterate the snapshot — callbacks mutating observer registration stay safe.
+	for entry in candidates:
+		if not entry.get("is_monitor", false):
+			continue
+		if entry.membership.has(entity):
+			entry.membership.erase(entity)
+			var q: QueryBuilder = entry.query
+			if q != null and q.has_event(Observer.Event.UNMATCH):
+				var obs: Observer = entry.observer
+				if obs != null and is_instance_valid(obs) and obs.active and not obs.paused:
+					_invoke_entry(entry, Observer.Event.UNMATCH, entity, null)
+
+
+## Populate a monitor entry's membership set with entities currently matching its query.
+## If the observer has [code]yield_existing[/code], also fires MATCH for each seeded entity.
+func _seed_monitor_membership(entry: Dictionary, yield_existing: bool = false) -> void:
+	var q: QueryBuilder = entry.query
+	var obs: Observer = entry.observer
+	if q == null or obs == null or not is_instance_valid(obs):
+		return
+	# Walk existing entities (can't rely on query.execute() for monitor-only queries
+	# that declared only on_event; but for MATCH we need the query's structural filters).
+	# Membership population is framework bookkeeping and happens even when the observer
+	# is inactive/paused — see §1.4 fix. The retroactive MATCH fire is gated on
+	# active/paused. [param yield_existing] resolves parent-observer vs per-tuple
+	# override at the caller.
+	# Snapshot entities: a MATCH callback may mutate the world's entities array.
+	for entity in entities.duplicate():
+		if not is_instance_valid(entity):
+			continue
+		if _observer_entry_entity_matches(entry, entity):
+			entry.membership[entity] = true
+			if (
+				yield_existing
+				and q.has_event(Observer.Event.MATCH)
+				and obs.active
+				and not obs.paused
+			):
+				_invoke_entry(entry, Observer.Event.MATCH, entity, null)
+
+
+## Re-evaluate monitor-mode observers whose sensitivity set intersects [param touched_paths].
+## Fires MATCH / UNMATCH on membership delta for [param entity].
+func _evaluate_monitors_for_entity(entity: Entity, touched_paths: Array) -> void:
+	if entity == null or not is_instance_valid(entity):
+		return
+	# Walk monitor entries once; dedup by entry identity since MATCH + UNMATCH share entries.
+	var seen: Dictionary = {}
+	var candidates: Array = []
+	for e_key in [Observer.Event.MATCH, Observer.Event.UNMATCH]:
+		for entry in _obs_entries_by_event.get(e_key, []):
+			if seen.has(entry):
+				continue
+			seen[entry] = true
+			candidates.append(entry)
+	for entry in candidates:
+		if not entry.get("is_monitor", false):
+			continue
+		var obs: Observer = entry.observer
+		if obs == null or not is_instance_valid(obs) or not obs.active or obs.paused:
+			continue
+		# Cheap rejection by sensitivity
+		if not touched_paths.is_empty():
+			var sens: Array = entry.get("monitor_sensitivity", [])
+			if not sens.is_empty():
+				var touches := false
+				for p in touched_paths:
+					if sens.has(p):
+						touches = true
+						break
+				if not touches:
+					continue
+		var was_matching: bool = entry.membership.has(entity)
+		var now_matches: bool = _observer_entry_entity_matches(entry, entity)
+		if now_matches and not was_matching:
+			entry.membership[entity] = true
+			var q: QueryBuilder = entry.query
+			if q != null and q.has_event(Observer.Event.MATCH):
+				_invoke_entry(entry, Observer.Event.MATCH, entity, null)
+		elif was_matching and not now_matches:
+			entry.membership.erase(entity)
+			var q2: QueryBuilder = entry.query
+			if q2 != null and q2.has_event(Observer.Event.UNMATCH):
+				_invoke_entry(entry, Observer.Event.UNMATCH, entity, null)
+
+
+## Invoke the callable on an observer entry with the standard (event, entity, payload)
+## shape, flushing [member Observer.cmd] per the observer's flush mode. The callable
+## validity check is defensive — protects against observers queue-freed mid-dispatch.
+func _invoke_entry(entry: Dictionary, event: Variant, entity: Entity, payload: Variant) -> void:
+	var obs: Observer = entry.observer
+	var c: Callable = entry.callable
+	if c.is_valid():
+		c.call(event, entity, payload)
+	if (
+		obs.has_pending_commands()
+		and obs.command_buffer_flush_mode == Observer.FlushMode.PER_CALLBACK
+	):
+		obs.cmd.execute()
+
+
+## Emit a custom observer event. Observers whose [QueryBuilder] declared
+## [code].on_event(event_name)[/code] will receive this event through their [method Observer.each]
+## callback (dispatch respects the observer's entity filter via [method QueryBuilder.match]).[br]
+## [param event_name] Name of the event (use [StringName] literals like [code]&"damage_dealt"[/code]).[br]
+## [param entity] The [Entity] the event concerns; passed through to observer callbacks.[br]
+## [param data] Arbitrary user payload delivered to observers as the third argument.[br]
+## [b]Example:[/b]
+## [codeblock]
+## ECS.world.emit_event(&"damage_dealt", target, {"amount": 10, "source": attacker})
+## [/codeblock]
+func emit_event(event_name: StringName, entity: Entity = null, data: Variant = null) -> void:
+	# null entity is explicitly permitted for custom events — broadcasts to every
+	# subscriber regardless of entity filter (the filter can't be evaluated without
+	# an entity). Filtered int events still require a valid entity.
+	if entity != null and not is_instance_valid(entity):
+		return
+	_dispatch_observer_event(event_name, entity, data)
+
+
+#endregion Observer Registration & Dispatch
 
 #endregion Signal Callbacks
 
@@ -942,19 +1749,31 @@ func _query(
 	any_components = [],
 	exclude_components = [],
 	enabled_filter = null,
-	precalculated_cache_key: int = -1
+	precalculated_cache_key: int = -1,
+	rel_slot_keys: Array = [],
+	wildcard_rel_types: Array = [],
+	ex_rel_slot_keys: Array = [],
+	wildcard_ex_rel_types: Array = [],
 ) -> Array:
 	var _perf_start_total := 0
 	if ECS.debug:
 		_perf_start_total = Time.get_ticks_usec()
-	# Early return if no components specified - return all entities
-	if all_components.is_empty() and any_components.is_empty() and exclude_components.is_empty():
+	# Early return if no components and no structural relationships specified - return all entities
+	if (
+		all_components.is_empty()
+		and any_components.is_empty()
+		and exclude_components.is_empty()
+		and rel_slot_keys.is_empty()
+		and wildcard_rel_types.is_empty()
+		and ex_rel_slot_keys.is_empty()
+		and wildcard_ex_rel_types.is_empty()
+	):
 		if enabled_filter == null:
 			if ECS.debug:
 				perf_mark(
 					"query_all_entities",
 					Time.get_ticks_usec() - _perf_start_total,
-					{"returned": entities.size()}
+					{"returned": entities.size()},
 				)
 			return entities
 		else:
@@ -966,7 +1785,7 @@ func _query(
 				perf_mark(
 					"query_all_entities_filtered",
 					Time.get_ticks_usec() - _perf_start_total,
-					{"returned": filtered.size(), "enabled_filter": enabled_filter}
+					{"returned": filtered.size(), "enabled_filter": enabled_filter},
 				)
 			return filtered
 
@@ -995,13 +1814,34 @@ func _query(
 		if ECS.debug:
 			_perf_start_scan = Time.get_ticks_usec()
 		# Find all archetypes that match this query
-		var map_resource_path = func(x): return x.resource_path
-		var _all := all_components.map(map_resource_path)
-		var _any := any_components.map(map_resource_path)
-		var _exclude := exclude_components.map(map_resource_path)
+		var map_to_key = func(x): return x.get_instance_id()
+		var _all := all_components.map(map_to_key)
+		var _any := any_components.map(map_to_key)
+		var _exclude := exclude_components.map(map_to_key)
 
-		for archetype in archetypes.values():
+		# Determine candidate archetypes: use wildcard index if available
+		var candidates: Array = []
+		if not wildcard_rel_types.is_empty():
+			# Narrow candidates using _relation_type_archetype_index intersection
+			candidates = _get_archetypes_with_all_relation_types(wildcard_rel_types)
+		else:
+			candidates = archetypes.values()
+		var has_structural_rels := (
+			not rel_slot_keys.is_empty()
+			or not ex_rel_slot_keys.is_empty()
+			or not wildcard_ex_rel_types.is_empty()
+		)
+		for archetype in candidates:
 			if archetype.matches_query(_all, _any, _exclude):
+				if has_structural_rels:
+					if not archetype.matches_relationship_query(rel_slot_keys, ex_rel_slot_keys):
+						continue
+					# Check wildcard exclusion: archetype must not have any of the excluded rel types
+					if (
+						not wildcard_ex_rel_types.is_empty()
+						and _archetype_has_any_relation_type(archetype, wildcard_ex_rel_types)
+					):
+						continue
 				matching_archetypes.append(archetype)
 		# Cache the matching archetypes (not the entity arrays!)
 		_query_archetype_cache[cache_key] = matching_archetypes
@@ -1009,7 +1849,7 @@ func _query(
 			perf_mark(
 				"query_archetype_scan",
 				Time.get_ticks_usec() - _perf_start_scan,
-				{"archetypes": matching_archetypes.size()}
+				{"archetypes": matching_archetypes.size()},
 			)
 
 	# OPTIMIZATION: If there's only ONE matching archetype with no filtering, return it directly
@@ -1019,7 +1859,7 @@ func _query(
 			perf_mark(
 				"query_single_archetype",
 				Time.get_ticks_usec() - _perf_start_total,
-				{"entities": matching_archetypes[0].entities.size()}
+				{"entities": matching_archetypes[0].entities.size()},
 			)
 		return matching_archetypes[0].entities
 
@@ -1039,10 +1879,12 @@ func _query(
 		perf_mark(
 			"query_flatten",
 			Time.get_ticks_usec() - _perf_start_flatten,
-			{"returned": result.size(), "archetypes": matching_archetypes.size()}
+			{"returned": result.size(), "archetypes": matching_archetypes.size()},
 		)
 		perf_mark(
-			"query_total", Time.get_ticks_usec() - _perf_start_total, {"returned": result.size()}
+			"query_total",
+			Time.get_ticks_usec() - _perf_start_total,
+			{"returned": result.size()},
 		)
 
 	return result
@@ -1085,7 +1927,7 @@ func group_entities_by_archetype(entities: Array) -> Dictionary:
 ##     # NEW WAY (fast):
 ##     var archetypes = ECS.world.get_matching_archetypes(q.with_all([C_Velocity]))
 ##     for archetype in archetypes:
-##         var velocities = archetype.get_column(C_Velocity.resource_path)
+##         var velocities = archetype.get_column(C_Velocity.get_instance_id())
 ##         for i in range(velocities.size()):
 ##             # Process with cache-friendly column access
 ## [/codeblock]
@@ -1093,44 +1935,68 @@ func get_matching_archetypes(query_builder: QueryBuilder) -> Array[Archetype]:
 	var _perf_start := 0
 	if ECS.debug:
 		_perf_start = Time.get_ticks_usec()
-	# PERFORMANCE: Archetype matching is based ONLY on structural components.
-	# Relationship/group filters are evaluated per-entity in System execution.
-	# This avoids double-scanning entities (World + System) and reduces cache churn.
 	var all_components = query_builder._all_components
 	var any_components = query_builder._any_components
 	var exclude_components = query_builder._exclude_components
 
-	# Use a COMPONENT-ONLY cache key (ignore relationships/groups)
-	var cache_key = QueryCacheKey.build(all_components, any_components, exclude_components)
+	# Extract structural relationship info from query builder
+	var rel_slot_keys = query_builder._structural_rel_keys
+	var wildcard_rel_types = query_builder._wildcard_rel_types
+	var ex_rel_slot_keys = query_builder._structural_ex_rel_keys
+	var wildcard_ex_rel_types = query_builder._wildcard_ex_rel_types
+
+	# Use the relationship-aware cache key from query builder
+	var cache_key = query_builder.get_cache_key()
 
 	if _query_archetype_cache.has(cache_key):
 		if ECS.debug:
 			perf_mark("archetypes_cache_hit", Time.get_ticks_usec() - _perf_start)
 		return _query_archetype_cache[cache_key]
 
-	var map_resource_path = func(x): return x.resource_path
-	var _all := all_components.map(map_resource_path)
-	var _any := any_components.map(map_resource_path)
-	var _exclude := exclude_components.map(map_resource_path)
+	var map_to_key = func(x): return x.get_instance_id()
+	var _all := all_components.map(map_to_key)
+	var _any := any_components.map(map_to_key)
+	var _exclude := exclude_components.map(map_to_key)
 
 	var matching: Array[Archetype] = []
 	var _perf_scan_start := 0
 	if ECS.debug:
 		_perf_scan_start = Time.get_ticks_usec()
-	for archetype in archetypes.values():
+	# Determine candidate archetypes: use wildcard index if available
+	var candidates: Array = []
+	if not wildcard_rel_types.is_empty():
+		candidates = _get_archetypes_with_all_relation_types(wildcard_rel_types)
+	else:
+		candidates = archetypes.values()
+	var has_structural_rels := (
+		not rel_slot_keys.is_empty()
+		or not ex_rel_slot_keys.is_empty()
+		or not wildcard_ex_rel_types.is_empty()
+	)
+	for archetype in candidates:
 		if archetype.matches_query(_all, _any, _exclude):
+			if has_structural_rels:
+				if not archetype.matches_relationship_query(rel_slot_keys, ex_rel_slot_keys):
+					continue
+				if (
+					not wildcard_ex_rel_types.is_empty()
+					and _archetype_has_any_relation_type(archetype, wildcard_ex_rel_types)
+				):
+					continue
 			matching.append(archetype)
 	if ECS.debug:
 		perf_mark(
 			"archetypes_scan",
 			Time.get_ticks_usec() - _perf_scan_start,
-			{"archetypes": matching.size()}
+			{"archetypes": matching.size()},
 		)
 
 	_query_archetype_cache[cache_key] = matching
 	if ECS.debug:
 		perf_mark(
-			"archetypes_total", Time.get_ticks_usec() - _perf_start, {"archetypes": matching.size()}
+			"archetypes_total",
+			Time.get_ticks_usec() - _perf_start,
+			{"archetypes": matching.size()},
 		)
 	return matching
 
@@ -1146,7 +2012,7 @@ func get_cache_stats() -> Dictionary:
 		"cached_queries": _query_archetype_cache.size(),
 		"total_archetypes": archetypes.size(),
 		"invalidation_count": _cache_invalidation_count,
-		"invalidation_reasons": _cache_invalidation_reasons.duplicate()
+		"invalidation_reasons": _cache_invalidation_reasons.duplicate(),
 	}
 
 
@@ -1173,12 +2039,29 @@ func _invalidate_cache(reason: String) -> void:
 
 	_pending_invalidation = false
 	_query_archetype_cache.clear()
+	cache_version += 1
 	cache_invalidated.emit()
 
-	# Track invalidation stats (debug mode only)
-	if ECS.debug:
-		_cache_invalidation_count += 1
-		_cache_invalidation_reasons[reason] = _cache_invalidation_reasons.get(reason, 0) + 1
+	_cache_invalidation_count += 1
+	_cache_invalidation_reasons[reason] = _cache_invalidation_reasons.get(reason, 0) + 1
+
+
+func _ensure_entity_ecs_id(entity: Entity) -> int:
+	if entity == null:
+		return 0
+	if entity.ecs_id == 0:
+		entity.ecs_id = _next_entity_id
+		_next_entity_id += 1
+	return entity.ecs_id
+
+
+func _get_relationship_relation_path(relationship: Relationship) -> String:
+	if relationship == null or relationship.relation == null:
+		return ""
+	var rel_script = relationship.relation.get_script()
+	if rel_script:
+		return rel_script.resource_path
+	return relationship.relation.resource_path
 
 
 ## Begin a batch suppression window — increments depth counter.
@@ -1193,29 +2076,242 @@ func _end_suppress() -> void:
 		_invalidate_cache("deferred_pending")
 
 
+## Get the stable ecs_id of a relationship's target entity.
+## Returns 0 if target is not an Entity.
+func _get_relationship_target_id(relationship: Relationship) -> int:
+	if relationship.target is Entity:
+		return _ensure_entity_ecs_id(relationship.target)
+	return 0
+
+
+## Handle batch relationship additions — single archetype transition for N relationships.
+func _on_entity_relationships_batch_added(entity: Entity, _relationships: Array) -> void:
+	_begin_suppress()
+	var moved := false
+
+	# STRUCTURAL: Single archetype transition using fully-updated signature
+	if entity_to_archetype.has(entity):
+		var old_archetype = entity_to_archetype[entity]
+		var new_signature = _calculate_entity_signature(entity)
+		var comp_types = _get_entity_archetype_keys(entity)
+		var new_archetype = _get_or_create_archetype(new_signature, comp_types)
+		if old_archetype != new_archetype:
+			old_archetype.remove_entity(entity)
+			new_archetype.add_entity(entity)
+			entity_to_archetype[entity] = new_archetype
+			if old_archetype.is_empty():
+				_delete_archetype(old_archetype)
+			moved = true
+
+	_end_suppress()
+	# If entity moved to an existing archetype, _end_suppress may not have
+	# triggered invalidation (no new archetype → no _pending_invalidation).
+	if moved:
+		_invalidate_cache("batch_relationship_added")
+
+	# Emit per-relationship signals on the entity so external listeners
+	# (e.g. network_sync) see each change. Guard prevents our own single
+	# handler from doing redundant archetype moves.
+	_in_batch_relationship_emit = true
+	for relationship in _relationships:
+		entity.relationship_added.emit(entity, relationship)
+	_in_batch_relationship_emit = false
+
+
+## Handle batch relationship removals — single archetype transition for N relationships.
+## Vestigial as of v8.0.0: Entity.remove_relationships now emits per-rel as it goes,
+## so this handler is only invoked if external code (e.g. a future network layer)
+## emits the relationships_batch_removed signal directly. Kept for API stability.
+func _on_entity_relationships_batch_removed(entity: Entity, _relationships: Array) -> void:
+	_begin_suppress()
+	var moved := false
+
+	# STRUCTURAL: Single archetype transition
+	if entity_to_archetype.has(entity):
+		var old_archetype = entity_to_archetype[entity]
+		var new_signature = _calculate_entity_signature(entity)
+		var comp_types = _get_entity_archetype_keys(entity)
+		var new_archetype = _get_or_create_archetype(new_signature, comp_types)
+		if old_archetype != new_archetype:
+			old_archetype.remove_entity(entity)
+			new_archetype.add_entity(entity)
+			entity_to_archetype[entity] = new_archetype
+			if old_archetype.is_empty():
+				_delete_archetype(old_archetype)
+			moved = true
+
+	_end_suppress()
+	if moved:
+		_invalidate_cache("batch_relationship_removed")
+
+	# Emit per-relationship signals on the entity so external listeners
+	# (e.g. network_sync) see each change.
+	_in_batch_relationship_emit = true
+	for relationship in _relationships:
+		entity.relationship_removed.emit(entity, relationship)
+	_in_batch_relationship_emit = false
+
+
+## REMOVE policy: Clean up relationships pointing TO a target entity being removed.
+## Called inside remove_entity() before the target is freed.
+func _cleanup_relationships_to_target(target: Entity) -> void:
+	var target_ecs_id = target.ecs_id
+	if target_ecs_id == 0:
+		return
+
+	# Find all entities in archetypes that hold a slot key pointing to this target.
+	# Slot key format: "rel://relation_path::target_ecs_id"
+	var suffix = "::entity#" + str(target_ecs_id)
+	var source_entities: Array[Entity] = []
+
+	for rel_path in _relation_type_archetype_index.keys():
+		var type_archetypes: Dictionary = _relation_type_archetype_index[rel_path]
+		for archetype in type_archetypes.values():
+			for rel_key in archetype.relationship_types:
+				if rel_key.ends_with(suffix):
+					source_entities.append_array(archetype.entities.duplicate())
+					break  # found one matching slot in this archetype — all entities match
+
+	if source_entities.is_empty():
+		return
+
+	_begin_suppress()
+
+	for source_entity in source_entities:
+		if not is_instance_valid(source_entity):
+			continue
+		var rels_to_remove: Array = []
+		for rel in source_entity.relationships:
+			if rel.target is Entity and rel.target == target:
+				rels_to_remove.append(rel)
+		# Go through the documented Entity.remove_relationship API so any future
+		# bookkeeping there (beyond erase+emit) stays consistent with other removal paths.
+		for rel in rels_to_remove:
+			source_entity.remove_relationship(rel)
+
+	_end_suppress()
+
+
 ## Calculate archetype signature for an entity based on its components
 ## Uses the same hash function as queries for consistency
 ## An entity signature is just a query with all its components (no any/exclude)
 func _calculate_entity_signature(entity: Entity) -> int:
-	# Get component resource paths
-	var comp_paths = entity.components.keys()
-	comp_paths.sort() # Sort paths for consistent ordering
+	# Get component keys (script instance ids)
+	var comp_keys = entity.components.keys()
+	comp_keys.sort()  # Sort keys for consistent ordering
 
-	# Convert paths to Script objects using cached scripts (load once, reuse forever)
+	# Convert keys to Script objects using cached scripts (load once, reuse forever)
 	var comp_scripts = []
-	for comp_path in comp_paths:
+	for comp_key in comp_keys:
 		# Check cache first
-		if not _component_script_cache.has(comp_path):
+		if not _component_script_cache.has(comp_key):
 			# Load once and cache
-			var component = entity.components[comp_path]
-			_component_script_cache[comp_path] = component.get_script()
-		comp_scripts.append(_component_script_cache[comp_path])
+			var component = entity.components[comp_key]
+			_component_script_cache[comp_key] = component.get_script()
+		comp_scripts.append(_component_script_cache[comp_key])
+
+	# Collect structural relationships for signature hash
+	# Property-query relationships are excluded (they remain post-filter only)
+	var structural_rels: Array = []
+	for rel in entity.relationships:
+		if not rel._is_query_relationship and _get_relationship_relation_path(rel) != "":
+			structural_rels.append(rel)
 
 	# Use the SAME hash function as queries - entity is just "all components, no any/exclude"
 	# OPTIMIZATION: Removed enabled_marker from signature - now handled by bitset in archetype
-	var signature = QueryCacheKey.build(comp_scripts, [], [])
+	var signature = QueryCacheKey.build(comp_scripts, [], [], structural_rels)
 
 	return signature
+
+
+## Get archetypes that contain ALL specified relation types (wildcard index intersection)
+func _get_archetypes_with_all_relation_types(rel_types: Array) -> Array:
+	var result = null
+	for rel_path in rel_types:
+		var type_archetypes = _relation_type_archetype_index.get(rel_path, {})
+		if result == null:
+			result = type_archetypes.duplicate()
+		else:
+			for sig in result.keys():
+				if not type_archetypes.has(sig):
+					result.erase(sig)
+	return result.values() if result else []
+
+
+## Check if archetype has any relationship of the specified types
+func _archetype_has_any_relation_type(archetype: Archetype, rel_types: Array) -> bool:
+	for rel_path in rel_types:
+		if _relation_type_archetype_index.has(rel_path):
+			if _relation_type_archetype_index[rel_path].has(archetype.signature):
+				return true
+	return false
+
+
+## Compute the archetype slot key string for a relationship pair.
+## Format: "rel://<relation_resource_path>::<target_key>"
+func _relationship_slot_key(rel: Relationship) -> String:
+	var rel_path = _get_relationship_relation_path(rel)
+	if rel_path == "":
+		return ""
+	return _relationship_slot_key_from_parts(rel_path, rel.target)
+
+
+func _relationship_slot_key_from_parts(rel_path: String, target: Variant) -> String:
+	var target_key: String
+	if target is Entity:
+		target_key = "entity#" + str(_ensure_entity_ecs_id(target))
+	elif target is Component:
+		target_key = "comp://" + target.get_script().resource_path
+	elif target is Script:
+		target_key = "script://" + target.resource_path
+	else:
+		target_key = "*"
+	return "rel://" + rel_path + "::" + target_key
+
+
+func _get_compatible_relationship_slot_keys(rel: Relationship) -> Array:
+	var rel_path = _get_relationship_relation_path(rel)
+	if rel_path == "":
+		return []
+
+	var keys: Array = []
+	var primary_key = _relationship_slot_key(rel)
+	if primary_key != "":
+		keys.append(primary_key)
+
+	if rel.target is Entity or rel.target is Component:
+		var target_script = rel.target.get_script()
+		if target_script:
+			var script_key = _relationship_slot_key_from_parts(rel_path, target_script)
+			if not keys.has(script_key):
+				keys.append(script_key)
+		var wildcard_key = _relationship_slot_key_from_parts(rel_path, null)
+		if not keys.has(wildcard_key):
+			keys.append(wildcard_key)
+
+	return keys
+
+
+## Get the full set of archetype keys for an entity (int component keys + String relationship slot keys)
+func _get_entity_archetype_keys(entity: Entity) -> Array:
+	var keys = entity.components.keys().duplicate()
+	for rel in entity.relationships:
+		if not rel._is_query_relationship:
+			var slot_key = _relationship_slot_key(rel)
+			if slot_key != "":
+				keys.append(slot_key)
+	return keys
+
+
+## Extract the relation resource path from a rel:// slot key.
+## Input: "rel://res://path/to/component.gd::entity#42"
+## Output: "res://path/to/component.gd"
+func _extract_relation_path_from_slot_key(slot_key: String) -> String:
+	var content = slot_key.substr(6)  # everything after "rel://"
+	var sep_pos = content.find("::")
+	if sep_pos == -1:
+		return ""
+	return content.substr(0, sep_pos)
 
 
 ## Get or create an archetype for the given signature and component types
@@ -1225,6 +2321,25 @@ func _get_or_create_archetype(signature: int, component_types: Array) -> Archety
 		var archetype = Archetype.new(signature, component_types)
 		archetypes[signature] = archetype
 		_worldLogger.trace("Created new archetype: ", archetype)
+		if ECS.debug and not _archetype_explosion_warned and archetypes.size() > 500:
+			_archetype_explosion_warned = true
+			(
+				_worldLogger
+				.error(
+					(
+						"Archetype explosion: %d archetypes created. Each unique (Relation, Target) pair creates a new archetype — check for unintended relationship cardinality."
+						% archetypes.size()
+					)
+				)
+			)
+
+		# Register in wildcard index: for each rel:// key, extract relation path
+		for rel_key in archetype.relationship_types:
+			var rel_path = _extract_relation_path_from_slot_key(rel_key)
+			if rel_path != "":
+				if not _relation_type_archetype_index.has(rel_path):
+					_relation_type_archetype_index[rel_path] = {}
+				_relation_type_archetype_index[rel_path][archetype.signature] = archetype
 
 		# ARCHETYPE OPTIMIZATION: Only invalidate cache when NEW archetype is created
 		# This is rare compared to entities moving between existing archetypes
@@ -1238,8 +2353,8 @@ func _add_entity_to_archetype(entity: Entity) -> void:
 	# Calculate signature based on entity's components (enabled state now handled by bitset)
 	var signature = _calculate_entity_signature(entity)
 
-	# Get component type paths for this entity
-	var comp_types = entity.components.keys()
+	# Get component type paths for this entity (includes relationship slot keys)
+	var comp_types = _get_entity_archetype_keys(entity)
 
 	# Get or create archetype (no longer needs enabled filter value)
 	var archetype = _get_or_create_archetype(signature, comp_types)
@@ -1277,6 +2392,14 @@ func _remove_entity_from_archetype(entity: Entity) -> bool:
 ## Delete an archetype from the world, cleaning up reverse edges in all neighbor archetypes.
 ## Replaces all three inline deletion sites for consistent cleanup.
 func _delete_archetype(archetype: Archetype) -> void:
+	# Clean up wildcard index entries for this archetype's relationship types
+	for rel_key in archetype.relationship_types:
+		var rel_path = _extract_relation_path_from_slot_key(rel_key)
+		if rel_path != "" and _relation_type_archetype_index.has(rel_path):
+			_relation_type_archetype_index[rel_path].erase(archetype.signature)
+			if _relation_type_archetype_index[rel_path].is_empty():
+				_relation_type_archetype_index.erase(rel_path)
+
 	# Clean incoming edges: iterate neighbors (archetypes that point TO this one)
 	# and remove any edge they have pointing to this archetype
 	for neighbor in archetype.neighbors.values():
@@ -1312,41 +2435,51 @@ func _delete_archetype(archetype: Archetype) -> void:
 ## This avoids expensive set comparisons to find the difference
 ## Returns the new archetype the entity was moved to
 func _move_entity_to_new_archetype_fast(
-	entity: Entity, old_archetype: Archetype, comp_path: String, is_add: bool
+	entity: Entity,
+	old_archetype: Archetype,
+	comp_key: Variant,
+	is_add: bool,
 ) -> Archetype:
 	# Try to use archetype edge for O(1) transition
 	var new_archetype: Archetype = null
 
 	if is_add:
 		# Check if we have a cached edge for this component addition
-		new_archetype = old_archetype.get_add_edge(comp_path)
+		new_archetype = old_archetype.get_add_edge(comp_key)
 	else:
 		# Check if we have a cached edge for this component removal
-		new_archetype = old_archetype.get_remove_edge(comp_path)
+		new_archetype = old_archetype.get_remove_edge(comp_key)
 
 	# ARCH-01: Guard against stale edge cache references
 	# Archetype was deleted when empty — clear edge and fall through to find/create.
 	if new_archetype != null and not archetypes.has(new_archetype.signature):
 		# Stale edge — archetype was deleted when empty. Clear edge and fall through to find/create.
 		if is_add:
-			old_archetype.add_edges.erase(comp_path)
+			old_archetype.add_edges.erase(comp_key)
 		else:
-			old_archetype.remove_edges.erase(comp_path)
+			old_archetype.remove_edges.erase(comp_key)
 		new_archetype = null
 
 	# If no cached edge, calculate signature and find/create archetype
 	if new_archetype == null:
 		var new_signature = _calculate_entity_signature(entity)
-		var comp_types = entity.components.keys()
+		var comp_types = _get_entity_archetype_keys(entity)
 		new_archetype = _get_or_create_archetype(new_signature, comp_types)
 
-		# Cache the edge for next time (archetype graph optimization)
-		if is_add:
-			old_archetype.set_add_edge(comp_path, new_archetype)
-			new_archetype.set_remove_edge(comp_path, old_archetype)
-		else:
-			old_archetype.set_remove_edge(comp_path, new_archetype)
-			new_archetype.set_add_edge(comp_path, old_archetype)
+		# Only cache edges when source and target differ — self-referencing edges
+		# arise during _initialize() (clear + re-add same components) and cause
+		# subsequent remove_component to "move" the entity back to the same archetype.
+		if new_archetype != old_archetype:
+			if is_add:
+				old_archetype.set_add_edge(comp_key, new_archetype)
+				new_archetype.set_remove_edge(comp_key, old_archetype)
+			else:
+				old_archetype.set_remove_edge(comp_key, new_archetype)
+				new_archetype.set_add_edge(comp_key, old_archetype)
+
+	# Skip move if entity is already in the target archetype (e.g. re-add of existing component)
+	if new_archetype == old_archetype:
+		return old_archetype
 
 	# Remove from old archetype
 	old_archetype.remove_entity(entity)
@@ -1363,80 +2496,6 @@ func _move_entity_to_new_archetype_fast(
 
 	return new_archetype
 
-
-## Move entity from one archetype to another (when components change)
-## Uses archetype edges for O(1) transitions when possible
-## NOTE: This slow path compares sets - only used when we don't know which component changed
-func _move_entity_to_new_archetype(entity: Entity, old_archetype: Archetype) -> void:
-	# Determine which component was added/removed by comparing old archetype with current entity
-	var old_comp_set = {}
-	for comp_path in old_archetype.component_types:
-		old_comp_set[comp_path] = true
-
-	var new_comp_set = {}
-	for comp_path in entity.components.keys():
-		new_comp_set[comp_path] = true
-
-	# Find the difference (added or removed component)
-	var added_comp: String = ""
-	var removed_comp: String = ""
-
-	for comp_path in new_comp_set.keys():
-		if not old_comp_set.has(comp_path):
-			added_comp = comp_path
-			break
-
-	for comp_path in old_comp_set.keys():
-		if not new_comp_set.has(comp_path):
-			removed_comp = comp_path
-			break
-
-	# Try to use archetype edge for O(1) transition
-	var new_archetype: Archetype = null
-
-	if added_comp != "":
-		# Check if we have a cached edge for this component addition
-		new_archetype = old_archetype.get_add_edge(added_comp)
-	elif removed_comp != "":
-		# Check if we have a cached edge for this component removal
-		new_archetype = old_archetype.get_remove_edge(removed_comp)
-
-	# ARCH-02: Guard against stale edge cache references
-	if new_archetype != null and not archetypes.has(new_archetype.signature):
-		if added_comp != "":
-			old_archetype.add_edges.erase(added_comp)
-		elif removed_comp != "":
-			old_archetype.remove_edges.erase(removed_comp)
-		new_archetype = null
-	# NOTE: _move_entity_to_new_archetype is currently dead code (no production callers).
-	# Staleness guard added per ARCH-02 for correctness if this path is ever activated.
-
-	# If no cached edge, calculate signature and find/create archetype
-	if new_archetype == null:
-		var new_signature = _calculate_entity_signature(entity)
-		var comp_types = entity.components.keys()
-		new_archetype = _get_or_create_archetype(new_signature, comp_types)
-
-		# Cache the edge for next time (archetype graph optimization)
-		if added_comp != "":
-			old_archetype.set_add_edge(added_comp, new_archetype)
-			new_archetype.set_remove_edge(added_comp, old_archetype)
-		elif removed_comp != "":
-			old_archetype.set_remove_edge(removed_comp, new_archetype)
-			new_archetype.set_add_edge(removed_comp, old_archetype)
-
-	# Remove from old archetype
-	old_archetype.remove_entity(entity)
-
-	# Add to new archetype
-	new_archetype.add_entity(entity)
-	entity_to_archetype[entity] = new_archetype
-
-	_worldLogger.trace("Moved entity ", entity.name, " from ", old_archetype, " to ", new_archetype)
-
-	# Clean up empty old archetype
-	if old_archetype.is_empty():
-		_delete_archetype(old_archetype)
 
 #endregion Utility Methods
 
@@ -1460,6 +2519,11 @@ func _handle_debugger_message(message: String, data: Array) -> bool:
 				return true
 
 		return false
+	elif message == "reset_system_metrics":
+		# Editor requested to clear accumulated min/max/avg across all systems.
+		for sys in systems:
+			sys.reset_performance_metrics()
+		return true
 	elif message == "poll_entity":
 		# Editor requested a component poll for a specific entity
 		var entity_id = data[0]
@@ -1500,7 +2564,12 @@ func _handle_debugger_message(message: String, data: Array) -> bool:
 					var prop_value = node.get(prop_name)
 
 					var prop_info: Array = [
-						prop_name, prop_type, prop_hint, prop_hint_string, prop_usage, prop_value
+						prop_name,
+						prop_type,
+						prop_hint,
+						prop_hint_string,
+						prop_usage,
+						prop_value,
 					]
 					properties.append(prop_info)
 
@@ -1513,7 +2582,7 @@ func _handle_debugger_message(message: String, data: Array) -> bool:
 					_class_name,
 					", ",
 					properties.size(),
-					" props]"
+					" props]",
 				)
 				EngineDebugger.send_message("scene:inspect_object", msg_data)
 		else:
@@ -1535,8 +2604,8 @@ func _poll_entity_for_debugger(entity_id: int) -> void:
 		return
 
 	# Re-send all component data with fresh serialize() calls
-	for comp_path in entity.components.keys():
-		var comp = entity.components[comp_path]
+	for comp_key in entity.components.keys():
+		var comp = entity.components[comp_key]
 		if comp and comp is Resource:
 			# Send updated component data
 			GECSEditorDebuggerMessages.entity_component_added(entity, comp)

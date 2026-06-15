@@ -1,15 +1,28 @@
 [gd_scene format=3 uid="uid://dc2nnwj2qeosf"]
 
 [ext_resource type="Script" uid="uid://cdu5tlyk72uu4" path="res://addons/gecs/ecs/world.gd" id="1_6xmxd"]
+[ext_resource type="Script" uid="uid://dnjtb1bxfp3vs" path="res://world/main.gd" id="1_mmdvd"]
 [ext_resource type="PackedScene" uid="uid://bprksygox7mbg" path="res://entities/player/player.tscn" id="2_4717r"]
 [ext_resource type="Environment" uid="uid://dt6nbx8xwsp5s" path="res://assets/environment.tres" id="3_h5o24"]
+[ext_resource type="Script" uid="uid://b3vi2ingux88g" path="res://addons/gecs/lib/system_group.gd" id="4_mmdvd"]
 
-[node name="World" type="Node" unique_id=1902375300]
+[node name="Main" type="Node" unique_id=579631464]
+script = ExtResource("1_mmdvd")
+
+[node name="World" type="Node" parent="." unique_id=1902375300]
 script = ExtResource("1_6xmxd")
 metadata/_custom_type_script = "uid://cdu5tlyk72uu4"
 
-[node name="Player" parent="." unique_id=254995031 instance=ExtResource("2_4717r")]
+[node name="Entities" type="Node" parent="World" unique_id=1153856176]
+
+[node name="Player" parent="World/Entities" unique_id=254995031 instance=ExtResource("2_4717r")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="Systems" type="Node" parent="World" unique_id=364591345]
+
+[node name="SystemGroup" type="Node" parent="World/Systems" unique_id=1306121008]
+script = ExtResource("4_mmdvd")
+metadata/_custom_type_script = "uid://b3vi2ingux88g"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1356276932]
 environment = ExtResource("3_h5o24")

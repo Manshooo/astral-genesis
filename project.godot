@@ -12,17 +12,17 @@ config_version=5
 
 config/name="Astral Genesis"
 config/description="Пост-апокалиптический roguelike-dungeon-crawler."
-config/version="0.0.1"
+config/version="0.0.2"
+config/tags=PackedStringArray("dungeon_crawler", "first_person", "roguelike")
 run/main_scene="uid://ci8w1crckg7u4"
 config/features=PackedStringArray("4.6", "Forward Plus")
 run/max_fps=90
-config/icon="res://icon.svg"
+config/icon="uid://ct0tm8e2y0nmp"
 
 [autoload]
 
-EcsWorld="*uid://bkgyc06h33pma"
-SettingsManager="*uid://b3rnljshci5d7"
 ECS="*uid://dfqwl5njvdnmq"
+SettingsManager="*uid://b3rnljshci5d7"
 
 [display]
 
@@ -38,6 +38,20 @@ version_control/autoload_on_startup=true
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gecs/plugin.cfg")
+
+[file_customization]
+
+folder_colors={
+"res://assets/": "gray",
+"res://autoloads/": "gray",
+"res://components/": "yellow",
+"res://dev/": "gray",
+"res://entities/": "green",
+"res://resources/": "gray",
+"res://systems/": "purple",
+"res://ui/": "red",
+"res://world/": "gray"
+}
 
 [gui]
 
