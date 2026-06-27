@@ -22,7 +22,7 @@ metadata/_custom_type_script = "uid://cdu5tlyk72uu4"
 [node name="Entities" type="Node" parent="World" unique_id=1153856176]
 
 [node name="E_Player" parent="World/Entities" unique_id=203831200 instance=ExtResource("3_l0av5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5015678, 2.5922909, 0.20450139)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8388615, 1.4406209, 1.0845976)
 id = "0_play"
 
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
@@ -63,9 +63,11 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 environment = ExtResource("3_h5o24")
 
 [node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=560681883]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2999995, -0.025878906, 1.70813)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.310293, -0.025878906, 1.7148854)
+use_collision = true
 size = Vector3(13, 0.9482422, 14.605127)
 
-[node name="CSGBox3D" type="CSGBox3D" parent="CSGBox3D" unique_id=1182607750]
-transform = Transform3D(0.96794826, 0, 0.2511496, 0, 1, 0, -0.2511496, 0, 0.96794826, -2.7157028, 1.5089264, 5.407712)
+[node name="CSGBox3D2" type="CSGBox3D" parent="." unique_id=1182607750]
+transform = Transform3D(0.96794826, 0, 0.2511496, 0, 1, 0, -0.2511496, 0, 0.96794826, -1.4068732, 1.4830475, 7.145849)
+use_collision = true
 size = Vector3(7.4382324, 2.140625, 1)

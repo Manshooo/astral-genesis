@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://cqns1x7xqi0bw"]
+
+[ext_resource type="PackedScene" uid="uid://bix7vb7fq07pm" path="res://assets/menu_map/menu_map.glb" id="1_7fvru"]
+
+[node name="menu_map" unique_id=318512815 instance=ExtResource("1_7fvru")]

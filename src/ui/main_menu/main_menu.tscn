@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ci8w1crckg7u4"]
 
-[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui_themes/default_theme.tres" id="1_0dkrt"]
-[ext_resource type="Script" uid="uid://cpw5p3egtmbik" path="res://src/ui/main_menu.gd" id="2_wk0pr"]
+[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui_themes/default_theme.tres" id="1_4ux21"]
+[ext_resource type="Script" uid="uid://cpw5p3egtmbik" path="res://src/ui/main_menu/main_menu.gd" id="2_osdni"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_5f3v2"]
 font_size = 24
@@ -18,8 +18,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_0dkrt")
-script = ExtResource("2_wk0pr")
+theme = ExtResource("1_4ux21")
+script = ExtResource("2_osdni")
 
 [node name="Panel" type="Panel" parent="." unique_id=2057447361]
 custom_minimum_size = Vector2(250, 200)
@@ -36,7 +36,7 @@ offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
 pivot_offset_ratio = Vector2(0.5, 0.5)
-theme = ExtResource("1_0dkrt")
+theme = ExtResource("1_4ux21")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=740551870]
 layout_mode = 1
