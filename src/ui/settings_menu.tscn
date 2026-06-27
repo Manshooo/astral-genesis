@@ -1,0 +1,169 @@
+[gd_scene format=3 uid="uid://ddtds8bmcvnwr"]
+
+[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui_themes/default_theme.tres" id="1_sett"]
+[ext_resource type="Script" uid="uid://crscukie12pyp" path="res://src/ui/settings_menu.gd" id="2_sett"]
+
+[node name="SettingsMenu" type="Control" unique_id=11110001]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_sett")
+script = ExtResource("2_sett")
+
+[node name="Panel" type="Panel" parent="." unique_id=11110002]
+custom_minimum_size = Vector2(320, 420)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -210.0
+offset_right = 160.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_sett")
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=11110003]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=11110004]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Panel/MarginContainer/VBox" unique_id=11110005]
+layout_mode = 2
+text = "Настройки"
+horizontal_alignment = 1
+
+[node name="Sensitivity" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110010]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Sensitivity" unique_id=11110011]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Чувствительность"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Sensitivity" unique_id=11110012]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.5
+max_value = 10.0
+step = 0.1
+value = 2.0
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Sensitivity" unique_id=11110013]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+text = "2.0"
+horizontal_alignment = 2
+
+[node name="Speed" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110020]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Speed" unique_id=11110021]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Скорость"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Speed" unique_id=11110022]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 20.0
+step = 0.5
+value = 5.0
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Speed" unique_id=11110023]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+text = "5"
+horizontal_alignment = 2
+
+[node name="Jump" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110030]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Jump" unique_id=11110031]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Прыжок"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Jump" unique_id=11110032]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 2.0
+max_value = 15.0
+step = 0.5
+value = 6.0
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Jump" unique_id=11110033]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+text = "6.0"
+horizontal_alignment = 2
+
+[node name="FOV" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110040]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/FOV" unique_id=11110041]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "FOV"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/FOV" unique_id=11110042]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 60.0
+max_value = 120.0
+value = 90.0
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/FOV" unique_id=11110043]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+text = "90"
+horizontal_alignment = 2
+
+[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBox" unique_id=11110050]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110060]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Back" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110061]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Отмена"
+
+[node name="Reset" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110062]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Сброс"
+
+[node name="Apply" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110063]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Применить"
+
+[connection signal="value_changed" from="Panel/MarginContainer/VBox/Sensitivity/HSlider" to="." method="_on_sensitivity_changed"]
+[connection signal="value_changed" from="Panel/MarginContainer/VBox/Speed/HSlider" to="." method="_on_speed_changed"]
+[connection signal="value_changed" from="Panel/MarginContainer/VBox/Jump/HSlider" to="." method="_on_jump_changed"]
+[connection signal="value_changed" from="Panel/MarginContainer/VBox/FOV/HSlider" to="." method="_on_fov_changed"]
+[connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Reset" to="." method="_on_reset_pressed"]
+[connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Apply" to="." method="_on_apply_pressed"]

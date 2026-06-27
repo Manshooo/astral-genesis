@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://bprksygox7mbg"]
+
+[ext_resource type="Script" uid="uid://cocf1f7qtvkf1" path="res://src/entities/player/e_player.gd" id="1_yrckd"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_txhfs"]
+[ext_resource type="Script" uid="uid://dg5mcn5wabvf2" path="res://src/components/gameplay/c_fpsCamera.gd" id="3_6qelm"]
+[ext_resource type="Script" uid="uid://bxvdso6ek0oyg" path="res://src/components/gameplay/c_playerInput.gd" id="4_fyfga"]
+[ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="5_0tiaq"]
+
+[sub_resource type="Resource" id="Resource_yrckd"]
+script = ExtResource("3_6qelm")
+metadata/_custom_type_script = "uid://dg5mcn5wabvf2"
+
+[sub_resource type="Resource" id="Resource_78jcs"]
+script = ExtResource("4_fyfga")
+metadata/_custom_type_script = "uid://bxvdso6ek0oyg"
+
+[sub_resource type="Resource" id="Resource_h1k6i"]
+script = ExtResource("5_0tiaq")
+metadata/_custom_type_script = "uid://d3y7smdoj10p1"
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_37kl0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_37kl0"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_8uh7m"]
+material = SubResource("StandardMaterial3D_37kl0")
+
+[node name="CharacterBody3D" type="CharacterBody3D" unique_id=254995031]
+script = ExtResource("1_yrckd")
+component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i")])
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1009209839]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76791286, -0.5561242)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
+shape = SubResource("CapsuleShape3D_37kl0")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
+gi_mode = 2
+mesh = SubResource("CapsuleMesh_8uh7m")

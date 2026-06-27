@@ -12,10 +12,10 @@ config_version=5
 
 config/name="Astral Genesis"
 config/description="Пост-апокалиптический roguelike-dungeon-crawler."
-config/version="0.0.2"
+config/version="0.0.4"
 config/tags=PackedStringArray("dungeon_crawler", "first_person", "roguelike")
 run/main_scene="uid://ci8w1crckg7u4"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.7", "Forward Plus")
 run/max_fps=90
 config/icon="uid://ct0tm8e2y0nmp"
 
@@ -26,8 +26,8 @@ SettingsManager="*uid://b3rnljshci5d7"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=640
+window/size/viewport_width=1497
+window/size/viewport_height=720
 window/stretch/scale_mode="integer"
 
 [editor]
@@ -42,15 +42,13 @@ enabled=PackedStringArray("res://addons/gecs/plugin.cfg")
 [file_customization]
 
 folder_colors={
-"res://assets/": "gray",
-"res://autoloads/": "gray",
-"res://components/": "yellow",
-"res://dev/": "gray",
-"res://entities/": "green",
-"res://resources/": "gray",
-"res://systems/": "purple",
-"res://ui/": "red",
-"res://world/": "gray"
+"res://src/autoloads/": "gray",
+"res://src/components/": "yellow",
+"res://src/entities/": "green",
+"res://src/resources/": "gray",
+"res://src/systems/": "purple",
+"res://src/ui/": "red",
+"res://src/world/": "blue"
 }
 
 [gui]
