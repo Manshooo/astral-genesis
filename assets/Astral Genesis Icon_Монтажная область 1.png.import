@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ct0tm8e2y0nmp"
-path="res://.godot/imported/Astral Genesis Icon_Монтажная область 1.png-4e1b376187f38db842ac330f2a7e3adc.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://assets/Astral Genesis Icon_Монтажная область 1.png"
-dest_files=["res://.godot/imported/Astral Genesis Icon_Монтажная область 1.png-4e1b376187f38db842ac330f2a7e3adc.ctex"]
 
 [params]
 

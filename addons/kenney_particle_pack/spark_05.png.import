@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cn0l4coquhq4r"
-path="res://.godot/imported/spark_05.png-b79596ab24169d29e58c4e40317a2373.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/spark_05.png"
-dest_files=["res://.godot/imported/spark_05.png-b79596ab24169d29e58c4e40317a2373.ctex"]
 
 [params]
 

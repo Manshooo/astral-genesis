@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://flw0m7ruy1h4"
-path="res://.godot/imported/muzzle_05_rotated.png-e1cbfde5943e4e01c81ca7fcdfe40ff9.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/rotated/muzzle_05_rotated.png"
-dest_files=["res://.godot/imported/muzzle_05_rotated.png-e1cbfde5943e4e01c81ca7fcdfe40ff9.ctex"]
 
 [params]
 

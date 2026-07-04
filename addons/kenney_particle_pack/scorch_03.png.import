@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://caqay63gxfx4n"
-path="res://.godot/imported/scorch_03.png-44e72463b931759356bc18eeb22da879.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/scorch_03.png"
-dest_files=["res://.godot/imported/scorch_03.png-44e72463b931759356bc18eeb22da879.ctex"]
 
 [params]
 

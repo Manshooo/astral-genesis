@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bbdy7qrq542uc"
-path="res://.godot/imported/scratch_01.png-1291aab6b34bb80847cb4eb62a74be13.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/scratch_01.png"
-dest_files=["res://.godot/imported/scratch_01.png-1291aab6b34bb80847cb4eb62a74be13.ctex"]
 
 [params]
 

@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dt3yhjcva2v3q"
-path="res://.godot/imported/smoke_02.png-342637ac1f576012e5f69daefc0dde85.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/smoke_02.png"
-dest_files=["res://.godot/imported/smoke_02.png-342637ac1f576012e5f69daefc0dde85.ctex"]
 
 [params]
 

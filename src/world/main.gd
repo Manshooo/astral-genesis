@@ -5,7 +5,7 @@ extends Node
 
 func _ready() -> void:
 	ECS.world = world
-	print (ECS.world)
+	PauseHandler.enabled = true
 
 func _process(delta: float) -> void:
 	ECS.process(delta, "gameplay")

@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dohkk71eldb0c"
-path="res://.godot/imported/window_02.png-809ff2971e76cfdd56278cce523ebe02.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/window_02.png"
-dest_files=["res://.godot/imported/window_02.png-809ff2971e76cfdd56278cce523ebe02.ctex"]
 
 [params]
 

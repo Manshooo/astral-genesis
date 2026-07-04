@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://di810m31yqdtc"
-path="res://.godot/imported/flame_05_rotated.png-4f7db43db56a63ea24f41df7b1265024.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/rotated/flame_05_rotated.png"
-dest_files=["res://.godot/imported/flame_05_rotated.png-4f7db43db56a63ea24f41df7b1265024.ctex"]
 
 [params]
 

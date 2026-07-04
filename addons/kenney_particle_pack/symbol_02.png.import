@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bynjo5wg84xu5"
-path="res://.godot/imported/symbol_02.png-0442f22573016e9a11996f6923840860.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/symbol_02.png"
-dest_files=["res://.godot/imported/symbol_02.png-0442f22573016e9a11996f6923840860.ctex"]
 
 [params]
 

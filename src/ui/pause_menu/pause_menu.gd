@@ -16,7 +16,9 @@ func _on_settings_pressed() -> void:
 
 func _on_exit_to_menu_pressed() -> void:
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://src/ui/main_menu.tscn")
+	PauseHandler.enabled = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	get_tree().change_scene_to_file("res://src/ui/main_menu/main_menu.tscn")
 
 func _close() -> void:
 	get_tree().paused = false

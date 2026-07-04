@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dsi6j5r51kngp"
-path="res://.godot/imported/slash_03.png-5959d060c2fedede512f4722f832cfd2.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/slash_03.png"
-dest_files=["res://.godot/imported/slash_03.png-5959d060c2fedede512f4722f832cfd2.ctex"]
 
 [params]
 

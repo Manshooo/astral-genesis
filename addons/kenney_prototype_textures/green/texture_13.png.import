@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d16tde1do2mie"
-path="res://.godot/imported/texture_13.png-f5b9867fd39cd83793f3a92217d9eac6.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_prototype_textures/green/texture_13.png"
-dest_files=["res://.godot/imported/texture_13.png-f5b9867fd39cd83793f3a92217d9eac6.ctex"]
 
 [params]
 

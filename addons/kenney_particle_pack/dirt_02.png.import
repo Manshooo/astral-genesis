@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cp54mn0c8d8kk"
-path="res://.godot/imported/dirt_02.png-a9eb45487bc447ad74cc4761331e9d85.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/dirt_02.png"
-dest_files=["res://.godot/imported/dirt_02.png-a9eb45487bc447ad74cc4761331e9d85.ctex"]
 
 [params]
 

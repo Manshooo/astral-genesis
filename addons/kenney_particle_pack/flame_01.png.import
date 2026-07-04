@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://blmx4cucdilyo"
-path="res://.godot/imported/flame_01.png-578039d34a9ea6c8d8af8e6077b372a7.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/flame_01.png"
-dest_files=["res://.godot/imported/flame_01.png-578039d34a9ea6c8d8af8e6077b372a7.ctex"]
 
 [params]
 

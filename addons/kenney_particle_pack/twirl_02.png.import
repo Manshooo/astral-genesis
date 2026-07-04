@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://btgxrb4thihau"
-path="res://.godot/imported/twirl_02.png-8a207734234698b1193ac6a5b3833f15.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/twirl_02.png"
-dest_files=["res://.godot/imported/twirl_02.png-8a207734234698b1193ac6a5b3833f15.ctex"]
 
 [params]
 

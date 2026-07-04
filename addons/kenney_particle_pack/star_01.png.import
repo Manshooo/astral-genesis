@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cxr55om708hxb"
-path="res://.godot/imported/star_01.png-2dd44d962bf03e0b028a090023fd1976.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/star_01.png"
-dest_files=["res://.godot/imported/star_01.png-2dd44d962bf03e0b028a090023fd1976.ctex"]
 
 [params]
 

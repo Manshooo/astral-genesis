@@ -12,9 +12,12 @@ func define_components() -> Array:
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
-	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		return
 	if event is InputEventMouseMotion:
 		var inp := get_component(C_PlayerInput) as C_PlayerInput
 		if inp:
 			inp.mouse_delta += event.relative
+
+	if event.is_action_pressed("jump") and not event.is_echo():
+		var inp := get_component(C_PlayerInput) as C_PlayerInput
+		if inp:
+			inp.jump_pressed = true

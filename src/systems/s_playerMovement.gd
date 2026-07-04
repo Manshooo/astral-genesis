@@ -23,9 +23,10 @@ func process(entities: Array[Entity], components: Array, delta: float) -> void:
 			vel.velocity.y = max(vel.velocity.y, 0.0)
 
 		# Прыжок
-		if inp.jump_pressed and player.is_on_floor():
-			vel.velocity.y = s.jump_velocity
-			print("jump_pressed (movement)")
+		if inp.jump_pressed:
+			if player.is_on_floor():
+				vel.velocity.y = s.jump_velocity
+			inp.jump_pressed = false  # consumed — неважно, сработал прыжок или нет
 
 		# Горизонталь относительно направления взгляда
 		if inp.move_direction != Vector3.ZERO:

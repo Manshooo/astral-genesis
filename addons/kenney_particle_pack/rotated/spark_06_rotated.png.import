@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bgeaahcovdsr4"
-path="res://.godot/imported/spark_06_rotated.png-a13828006144443ae6058582986a928a.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://addons/kenney_particle_pack/rotated/spark_06_rotated.png"
-dest_files=["res://.godot/imported/spark_06_rotated.png-a13828006144443ae6058582986a928a.ctex"]
 
 [params]
 
