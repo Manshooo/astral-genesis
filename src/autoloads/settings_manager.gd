@@ -11,7 +11,6 @@ extends Node
 const SETTINGS_PATH := "user://settings.tres"
 const DEFAULT_SETTINGS := preload("res://data/settings.tres")
 
-# Текущие активные настройки. Читай отсюда в системах.
 var settings: RS_Settings
 
 func _ready() -> void:

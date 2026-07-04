@@ -3,7 +3,7 @@
 # Глобально слушает Escape и открывает/закрывает паузу
 extends Node
 
-const PAUSE_MENU_SCENE = preload("res://src/ui/pause_menu.tscn")
+const PAUSE_MENU_SCENE = preload("res://src/ui/pause_menu/pause_menu.tscn")
 
 var _pause_menu: Control = null
 

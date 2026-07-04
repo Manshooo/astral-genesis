@@ -1,5 +1,78 @@
 [gd_scene format=3 uid="uid://cqns1x7xqi0bw"]
 
 [ext_resource type="PackedScene" uid="uid://bix7vb7fq07pm" path="res://assets/menu_map/menu_map.glb" id="1_7fvru"]
+[ext_resource type="Material" uid="uid://ea50ju4432cy" path="res://assets/menu_map/materials/m_chain_link_fence.tres" id="2_ljnmr"]
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_70fp6"]
+cull_mode = 2
 
 [node name="menu_map" unique_id=318512815 instance=ExtResource("1_7fvru")]
+
+[node name="cetka_optimized_002" parent="." index="8" unique_id=1289604344]
+material_override = SubResource("ORMMaterial3D_70fp6")
+
+[node name="cetka_optimized_001" parent="." index="9" unique_id=861151720]
+material_override = ExtResource("2_ljnmr")
+
+[node name="CollisionShape3D" parent="cetka_optimized_001/StaticBody3D" parent_id_path=PackedInt32Array(1962655873) index="0" unique_id=1646017757]
+transform = Transform3D(1, 0, -3.7252903e-09, 0, 1, 0, 3.7252903e-09, 0, 1, 0, 0, 0)
+
+[node name="cetka_optimized_003" parent="." index="10" unique_id=1637602572]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_004" parent="." index="11" unique_id=1398737834]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_005" parent="." index="12" unique_id=32821934]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_006" parent="." index="13" unique_id=2091279393]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_007" parent="." index="14" unique_id=1672320923]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_008" parent="." index="15" unique_id=1226785005]
+material_override = ExtResource("2_ljnmr")
+
+[node name="CollisionShape3D" parent="cetka_optimized_008/StaticBody3D" parent_id_path=PackedInt32Array(312650307) index="0" unique_id=222106334]
+transform = Transform3D(0.99999994, 0, 2.9802322e-08, 0, 0.99999994, 0, -2.9802322e-08, 0, 0.99999994, 0, 0, 0)
+
+[node name="cetka_optimized_009" parent="." index="16" unique_id=939948558]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_010" parent="." index="17" unique_id=1991522215]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_011" parent="." index="18" unique_id=267448042]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_012" parent="." index="19" unique_id=1252122649]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_013" parent="." index="20" unique_id=2131390600]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_014" parent="." index="21" unique_id=1318412524]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_015" parent="." index="22" unique_id=1303744539]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_016" parent="." index="23" unique_id=1085086606]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_017" parent="." index="24" unique_id=1079742511]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_018" parent="." index="25" unique_id=666639201]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_019" parent="." index="26" unique_id=525615659]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_020" parent="." index="27" unique_id=1313753347]
+material_override = ExtResource("2_ljnmr")
+
+[node name="cetka_optimized_021" parent="." index="28" unique_id=1268972137]
+material_override = ExtResource("2_ljnmr")

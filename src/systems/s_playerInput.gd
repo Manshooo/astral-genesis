@@ -18,7 +18,8 @@ func process(entities: Array[Entity], components: Array, _delta: float) -> void:
 		inp.move_direction = move_dir
 		
 		inp.jump_pressed = jump
-			
+		print("jump_pressed (input)")
+		
 		if toggle_mouse:
 			inp.mouse_captured = !inp.mouse_captured
 			

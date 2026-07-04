@@ -25,6 +25,7 @@ func process(entities: Array[Entity], components: Array, delta: float) -> void:
 		# Прыжок
 		if inp.jump_pressed and player.is_on_floor():
 			vel.velocity.y = s.jump_velocity
+			print("jump_pressed (movement)")
 
 		# Горизонталь относительно направления взгляда
 		if inp.move_direction != Vector3.ZERO:
