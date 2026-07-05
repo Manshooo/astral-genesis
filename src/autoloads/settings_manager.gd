@@ -8,6 +8,7 @@ var settings: RS_Settings
 
 func _ready() -> void:
 	settings = _load()
+	Engine.max_fps = settings.max_fps
 
 func save() -> void:
 	var err := ResourceSaver.save(settings, SETTINGS_PATH)

@@ -7,7 +7,7 @@ var caller_node: Control = null
 
 var _controls: Array = []
 
-## Черновик — независимая копия настроек. Все контролы читают/пишут ТОЛЬКО сюда.
+## Черновик — независимая копия настроек. Все контролы читают/пишут только сюда.
 ## SettingsManager.settings трогается один-единственный раз — в _on_apply_pressed().
 var _draft: RS_Settings
 var _baseline: Dictionary = {}

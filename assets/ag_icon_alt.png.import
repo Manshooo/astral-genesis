@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ct0tm8e2y0nmp"
-valid=false
+uid="uid://cnayo3g3s4noj"
+path="res://.godot/imported/ag_icon_alt.png-6a724205e90f2b16f82f6d7f531fd870.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
-source_file="res://assets/Astral Genesis Icon_Монтажная область 1.png"
+source_file="res://assets/ag_icon_alt.png"
+dest_files=["res://.godot/imported/ag_icon_alt.png-6a724205e90f2b16f82f6d7f531fd870.ctex"]
 
 [params]
 
@@ -20,7 +24,7 @@ compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
 mipmaps/generate=false
-mipmaps/limit=-1
+mipmaps/limit=3
 roughness/mode=0
 roughness/src_normal=""
 process/channel_remap/red=0

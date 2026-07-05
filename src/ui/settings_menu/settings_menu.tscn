@@ -77,56 +77,6 @@ layout_mode = 2
 text = "2.0"
 horizontal_alignment = 2
 
-[node name="Speed" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110020]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Speed" unique_id=11110021]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Скорость"
-
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Speed" unique_id=11110022]
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 1.0
-max_value = 20.0
-step = 0.5
-value = 5.0
-script = ExtResource("3_kktd5")
-setting_key = "move_speed"
-value_label_path = NodePath("../Value")
-
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Speed" unique_id=11110023]
-custom_minimum_size = Vector2(32, 0)
-layout_mode = 2
-text = "5"
-horizontal_alignment = 2
-
-[node name="Jump" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110030]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Jump" unique_id=11110031]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Прыжок"
-
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Jump" unique_id=11110032]
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 2.0
-max_value = 15.0
-step = 0.5
-value = 6.0
-script = ExtResource("3_kktd5")
-setting_key = "jump_velocity"
-value_label_path = NodePath("../Value")
-
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Jump" unique_id=11110033]
-custom_minimum_size = Vector2(32, 0)
-layout_mode = 2
-text = "6.0"
-horizontal_alignment = 2
-
 [node name="FOV" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110040]
 layout_mode = 2
 
@@ -149,6 +99,35 @@ value_label_path = NodePath("../Value")
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 text = "90"
+horizontal_alignment = 2
+
+[node name="Max FPS" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=1474224488]
+layout_mode = 2
+tooltip_text = "Если установлено значение ```0```, то ограничения не будет"
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Max FPS" unique_id=148233911]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Max FPS"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Max FPS" unique_id=758032795]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 144.0
+value = 60.0
+rounded = true
+tick_count = 5
+ticks_on_borders = true
+ticks_position = 3
+script = ExtResource("3_kktd5")
+setting_key = "max_fps"
+display_format = "%d"
+value_label_path = NodePath("../Value")
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Max FPS" unique_id=539927681]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+text = "60"
 horizontal_alignment = 2
 
 [node name="Spacer" type="Control" parent="Panel/MarginContainer/VBox" unique_id=11110050]
@@ -176,10 +155,6 @@ disabled = true
 text = "Применить"
 flat = true
 
-[connection signal="value_changed" from="Panel/MarginContainer/VBox/Sensitivity/HSlider" to="." method="_on_sensitivity_changed"]
-[connection signal="value_changed" from="Panel/MarginContainer/VBox/Speed/HSlider" to="." method="_on_speed_changed"]
-[connection signal="value_changed" from="Panel/MarginContainer/VBox/Jump/HSlider" to="." method="_on_jump_changed"]
-[connection signal="value_changed" from="Panel/MarginContainer/VBox/FOV/HSlider" to="." method="_on_fov_changed"]
 [connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Back" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Reset" to="." method="_on_reset_pressed"]
 [connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Apply" to="." method="_on_apply_pressed"]

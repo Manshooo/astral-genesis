@@ -33,6 +33,7 @@ metadata/_custom_type_script = "uid://b3vi2ingux88g"
 
 [node name="S_PlayerInput" type="Node" parent="World/Systems/input" unique_id=31306032]
 script = ExtResource("5_l0av5")
+group = &"input"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="gameplay" type="Node" parent="World/Systems" unique_id=1306121008]
@@ -41,6 +42,7 @@ metadata/_custom_type_script = "uid://b3vi2ingux88g"
 
 [node name="S_FPSLook" type="Node" parent="World/Systems/gameplay" unique_id=623113337]
 script = ExtResource("5_hg6dy")
+group = &"gameplay"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]
@@ -49,10 +51,12 @@ metadata/_custom_type_script = "uid://b3vi2ingux88g"
 
 [node name="S_PlayerMovement" type="Node" parent="World/Systems/physics" unique_id=201843321]
 script = ExtResource("7_ocs7n")
+group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_Movement" type="Node" parent="World/Systems/physics" unique_id=1607163903]
 script = ExtResource("8_jsigt")
+group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1356276932]

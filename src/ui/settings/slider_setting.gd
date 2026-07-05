@@ -6,6 +6,13 @@ extends HSlider
 @export var setting_key: String = ""
 ## Множитель для отображения (например mouse_sensitivity хранится как 0.002, а на слайдере — 2.0)
 @export var display_multiplier: float = 1.0
+## Формат отображения значения в текстовой метке.[br]
+## Примеры использования:[br]
+## [code]"%d"[/code]    -> Целое число без дробной части (пример: 42)[br]
+## [code]"%.0f"[/code]  -> Округление до целого числа (пример: 42)[br]
+## [code]"%.1f"[/code]  -> Один знак после запятой (пример: 42.0)[br]
+## [code]"%.2f"[/code]  -> Два знака после запятой (пример: 42.00)[br]
+## [code]"%d%%"[/code]  -> Целое число со знаком процента (пример: 42%)[br]
 @export var display_format: String = "%.1f"
 @export var value_label_path: NodePath
 
