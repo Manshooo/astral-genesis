@@ -72,16 +72,10 @@ func _on_apply_pressed() -> void:
 	_load_values()  # новый _draft = свежая копия применённых настроек, baseline сбрасывается
 
 func _on_back_pressed() -> void:
-	# Черновик просто отбрасывается — SettingsManager.settings не трогали ни разу
-	# во время редактирования, так что откатывать физически нечего.
-	_go_back()
+	PauseHandler.close_top()
+	
 
 func _on_reset_pressed() -> void:
 	_draft = SettingsManager.default_settings()
 	_apply_draft_to_controls()
 	_update_apply_button()  # baseline НЕ трогаем — Reset это тоже "незафиксированное" изменение
-
-func _go_back() -> void:
-	if caller_node:
-		caller_node.show()
-	queue_free()
