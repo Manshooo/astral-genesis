@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://uxxvljhmbg86"]
+
+[ext_resource type="PackedScene" uid="uid://cqafxti0mv8br" path="res://assets/hub/hub.glb" id="1_h75h4"]
+
+[node name="hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]

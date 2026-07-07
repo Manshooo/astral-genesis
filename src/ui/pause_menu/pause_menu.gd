@@ -11,4 +11,4 @@ func _on_settings_pressed() -> void:
 func _on_exit_to_menu_pressed() -> void:
 	PauseHandler.close_all()
 	PauseHandler.enabled = false
-	get_tree().change_scene_to_file("res://src/levels/L_menu_map.tscn")
+	get_tree().change_scene_to_file("res://src/levels/menu_map/L_menu_map.tscn")

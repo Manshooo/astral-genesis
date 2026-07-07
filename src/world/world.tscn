@@ -9,6 +9,10 @@
 [ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/s_playerInput.gd" id="5_l0av5"]
 [ext_resource type="Script" uid="uid://creg13w8xbee0" path="res://src/systems/s_playerMovement.gd" id="7_ocs7n"]
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/s_movement.gd" id="8_jsigt"]
+[ext_resource type="PackedScene" uid="uid://dwrh5gb2d3n7d" path="res://src/levels/hub/L_hub.tscn" id="9_hg6dy"]
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
+auto_exposure_enabled = true
 
 [node name="Main" type="Node" unique_id=579631464]
 script = ExtResource("1_mmdvd")
@@ -22,7 +26,7 @@ metadata/_custom_type_script = "uid://cdu5tlyk72uu4"
 [node name="Entities" type="Node" parent="World" unique_id=1153856176]
 
 [node name="E_Player" parent="World/Entities" unique_id=203831200 instance=ExtResource("3_l0av5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8388615, 1.4406209, 1.0845976)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.119229436, 1.9849274, 6.4965677)
 id = "0_play"
 
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
@@ -59,15 +63,17 @@ script = ExtResource("8_jsigt")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1356276932]
+[node name="hub" parent="." unique_id=524552180 instance=ExtResource("9_hg6dy")]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]
 environment = ExtResource("3_h5o24")
+camera_attributes = SubResource("CameraAttributesPractical_3owqy")
 
-[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=560681883]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.310293, -0.025878906, 1.7148854)
-use_collision = true
-size = Vector3(13, 0.9482422, 14.605127)
-
-[node name="CSGBox3D2" type="CSGBox3D" parent="." unique_id=1182607750]
-transform = Transform3D(0.96794826, 0, 0.2511496, 0, 1, 0, -0.2511496, 0, 0.96794826, -1.4068732, 1.4830475, 7.145849)
-use_collision = true
-size = Vector3(7.4382324, 2.140625, 1)
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=963491771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.335608, -1.2593608)
+light_color = Color(0.6785903, 0.6589958, 0.5934914, 1)
+light_energy = 2.0
+light_indirect_energy = 1.124
+shadow_enabled = true
+omni_range = 4.940852
