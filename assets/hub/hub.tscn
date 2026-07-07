@@ -1,5 +1,9 @@
 [gd_scene format=3 uid="uid://uxxvljhmbg86"]
 
 [ext_resource type="PackedScene" uid="uid://cqafxti0mv8br" path="res://assets/hub/hub.glb" id="1_h75h4"]
+[ext_resource type="Script" uid="uid://bin0h22anh3cl" path="res://src/entities/incubator/e_incubator.gd" id="2_k166h"]
 
 [node name="hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
+
+[node name="Incubator" parent="." index="0" unique_id=1980247635]
+script = ExtResource("2_k166h")

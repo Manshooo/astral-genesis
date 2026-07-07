@@ -1,3 +1,4 @@
+@tool
 class_name E_Incubator
 extends Entity
 
