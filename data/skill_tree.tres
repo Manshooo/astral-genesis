@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="RS_SkillTree" format=3 uid="uid://ba7gwngkjgkxa"]
+
+[ext_resource type="Script" uid="uid://1b4pm2xpbsvc" path="res://src/resources/skills/rs_skill_tree.gd" id="1_r03fv"]
+[ext_resource type="Script" uid="uid://csxedle0e5j8g" path="res://src/resources/skills/rs_skill_definition.gd" id="2_ign7e"]
+
+[resource]
+script = ExtResource("1_r03fv")
+metadata/_custom_type_script = "uid://1b4pm2xpbsvc"

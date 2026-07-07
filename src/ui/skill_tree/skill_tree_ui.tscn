@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://bs4mhbbdotjwg"]
+
+[ext_resource type="Script" uid="uid://hqbvgrlg6emm" path="res://src/ui/skill_tree/skill_tree_ui.gd" id="1_4ij35"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_3owqy"]
+font_size = 48
+
+[node name="SkillTreeUI" type="Control" unique_id=577831709]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_4ij35")
+
+[node name="Panel" type="Panel" parent="." unique_id=2046033238]
+propagate_maximum_size = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -443.4928
+offset_top = -280.0
+offset_right = 443.4928
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=254126271]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer" unique_id=101044741]
+layout_mode = 2
+size_flags_vertical = 6
+text = "Улучшения"
+label_settings = SubResource("LabelSettings_3owqy")
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[node name="GraphEdit" type="GraphEdit" parent="Panel/VBoxContainer" unique_id=1811305437]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 9.0
+show_grid = false
+minimap_enabled = false
+show_menu = false
+
+[node name="GraphElement" type="GraphElement" parent="Panel/VBoxContainer/GraphEdit" unique_id=1704284912]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -50.0
+offset_right = 50.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
+position_offset = Vector2(264.0078, 45.640007)
+
+[node name="Sprite2D" type="Sprite2D" parent="Panel/VBoxContainer/GraphEdit/GraphElement" unique_id=1015450000]

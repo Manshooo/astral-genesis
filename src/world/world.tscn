@@ -5,10 +5,10 @@
 [ext_resource type="Environment" uid="uid://dt6nbx8xwsp5s" path="res://assets/environment.tres" id="3_h5o24"]
 [ext_resource type="PackedScene" uid="uid://bprksygox7mbg" path="res://src/entities/player/e_player.tscn" id="3_l0av5"]
 [ext_resource type="Script" uid="uid://b3vi2ingux88g" path="res://addons/gecs/lib/system_group.gd" id="4_mmdvd"]
-[ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/s_fpsLook.gd" id="5_hg6dy"]
-[ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/s_playerInput.gd" id="5_l0av5"]
-[ext_resource type="Script" uid="uid://creg13w8xbee0" path="res://src/systems/s_playerMovement.gd" id="7_ocs7n"]
-[ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/s_movement.gd" id="8_jsigt"]
+[ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/gameplay/s_fpsLook.gd" id="5_hg6dy"]
+[ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/input/s_playerInput.gd" id="5_l0av5"]
+[ext_resource type="Script" uid="uid://creg13w8xbee0" path="res://src/systems/physics/s_playerMovement.gd" id="7_ocs7n"]
+[ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
 [ext_resource type="PackedScene" uid="uid://dwrh5gb2d3n7d" path="res://src/levels/hub/L_hub.tscn" id="9_hg6dy"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
@@ -38,6 +38,13 @@ metadata/_custom_type_script = "uid://b3vi2ingux88g"
 [node name="S_PlayerInput" type="Node" parent="World/Systems/input" unique_id=31306032]
 script = ExtResource("5_l0av5")
 group = &"input"
+process_empty = null
+active = null
+parallel_processing = null
+parallel_threshold = null
+command_buffer_flush_mode = null
+safe_iteration = null
+performance_monitor = null
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="gameplay" type="Node" parent="World/Systems" unique_id=1306121008]
@@ -47,6 +54,13 @@ metadata/_custom_type_script = "uid://b3vi2ingux88g"
 [node name="S_FPSLook" type="Node" parent="World/Systems/gameplay" unique_id=623113337]
 script = ExtResource("5_hg6dy")
 group = &"gameplay"
+process_empty = null
+active = null
+parallel_processing = null
+parallel_threshold = null
+command_buffer_flush_mode = null
+safe_iteration = null
+performance_monitor = null
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

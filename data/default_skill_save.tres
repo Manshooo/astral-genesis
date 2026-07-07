@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="PlayerSkillSave" format=3 uid="uid://dgy8xjvi7u70f"]
+
+[ext_resource type="Script" uid="uid://f6n6iuv80gol" path="res://src/resources/skills/player_skill_save.gd" id="1_kxk5s"]
+
+[resource]
+script = ExtResource("1_kxk5s")
+metadata/_custom_type_script = "uid://f6n6iuv80gol"
