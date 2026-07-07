@@ -13,13 +13,13 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not enabled:
+	if not event.is_action_pressed("pause_game") or event.is_echo():
 		return
-	if event.is_action_pressed("pause_game") and not event.is_echo():
-		if _stack.is_empty():
-			_open_pause_menu()
-		else:
-			close_top()
+	if not _stack.is_empty():
+		close_top()
+		get_viewport().set_input_as_handled()
+	elif enabled:
+		_open_pause_menu()
 		get_viewport().set_input_as_handled()
 
 func _open_pause_menu() -> void:
