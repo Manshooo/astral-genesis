@@ -1,4 +1,4 @@
-class_name SkillTreeUi
+class_name SkillTreeUI
 extends Control
 
 

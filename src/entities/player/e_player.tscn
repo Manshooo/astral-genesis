@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cocf1f7qtvkf1" path="res://src/entities/player/e_player.gd" id="1_yrckd"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_txhfs"]
-[ext_resource type="Script" uid="uid://dg5mcn5wabvf2" path="res://src/components/gameplay/c_fpsCamera.gd" id="3_6qelm"]
+[ext_resource type="Script" uid="uid://dg5mcn5wabvf2" path="res://src/components/gameplay/c_fps_camera.gd" id="3_6qelm"]
 [ext_resource type="Script" uid="uid://bxvdso6ek0oyg" path="res://src/components/gameplay/c_playerInput.gd" id="4_fyfga"]
 [ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="5_0tiaq"]
 
