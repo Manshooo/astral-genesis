@@ -2,7 +2,31 @@
 
 [ext_resource type="Script" uid="uid://1b4pm2xpbsvc" path="res://src/resources/skills/rs_skill_tree.gd" id="1_r03fv"]
 [ext_resource type="Script" uid="uid://csxedle0e5j8g" path="res://src/resources/skills/rs_skill_definition.gd" id="2_ign7e"]
+[ext_resource type="Script" uid="uid://cf7n86al5ghfw" path="res://src/resources/skills/rs_skill_requirement.gd" id="3_ign7e"]
+
+[sub_resource type="Resource" id="Resource_11kxi"]
+script = ExtResource("2_ign7e")
+id = &"body_snatch"
+display_name = "Захват тела"
+description = "Позволяет управлять трупами"
+branch = &"possession"
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_tcr6r"]
+script = ExtResource("3_ign7e")
+target_skill = &"body_snatch"
+metadata/_custom_type_script = "uid://cf7n86al5ghfw"
+
+[sub_resource type="Resource" id="Resource_o3xjp"]
+script = ExtResource("2_ign7e")
+id = &"lifespan"
+display_name = "Длительность жизни"
+description = "Увеличивает длительность времени, сколько можно находится в захваченном теле/вне лаборатории (?)"
+branch = &"survival"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [resource]
 script = ExtResource("1_r03fv")
+skills = Array[ExtResource("2_ign7e")]([SubResource("Resource_11kxi"), SubResource("Resource_o3xjp")])
 metadata/_custom_type_script = "uid://1b4pm2xpbsvc"

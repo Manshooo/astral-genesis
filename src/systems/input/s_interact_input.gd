@@ -4,7 +4,7 @@ extends System
 func query() -> QueryBuilder:
 	return q.with_all([C_Interactable, C_Highlighted])
 
-func process(entities: Array[Entity], components: Array, delta: float) -> void:
+func process(entities: Array[Entity], _components: Array, _delta: float) -> void:
 	if entities.is_empty():
 		return
 	if Input.is_action_just_pressed("interact"):

@@ -7,8 +7,11 @@
 [ext_resource type="Script" uid="uid://b3vi2ingux88g" path="res://addons/gecs/lib/system_group.gd" id="4_mmdvd"]
 [ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/gameplay/s_fpsLook.gd" id="5_hg6dy"]
 [ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/input/s_player_input.gd" id="5_l0av5"]
+[ext_resource type="Script" uid="uid://idnwtudukdc5" path="res://src/systems/input/s_interact_input.gd" id="6_0wvc1"]
 [ext_resource type="Script" uid="uid://creg13w8xbee0" path="res://src/systems/physics/s_player_movement.gd" id="7_ocs7n"]
+[ext_resource type="Script" uid="uid://5ej3l4vg2gbp" path="res://src/systems/gameplay/s_apply_skill_effects.gd" id="8_a20vb"]
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
+[ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
 [ext_resource type="PackedScene" uid="uid://dwrh5gb2d3n7d" path="res://src/levels/hub/L_hub.tscn" id="9_hg6dy"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
@@ -47,6 +50,10 @@ safe_iteration = null
 performance_monitor = null
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
+[node name="S_InteractInput" type="Node" parent="World/Systems/input" unique_id=944545362]
+script = ExtResource("6_0wvc1")
+metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
 [node name="gameplay" type="Node" parent="World/Systems" unique_id=1306121008]
 script = ExtResource("4_mmdvd")
 metadata/_custom_type_script = "uid://b3vi2ingux88g"
@@ -61,6 +68,15 @@ parallel_threshold = null
 command_buffer_flush_mode = null
 safe_iteration = null
 performance_monitor = null
+metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
+[node name="S_ApplySkillEffects" type="Node" parent="World/Systems/gameplay" unique_id=687585807]
+script = ExtResource("8_a20vb")
+group = &"gameplay"
+metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
+[node name="S_InteractionDetector" type="Node" parent="World/Systems/gameplay" unique_id=522144040]
+script = ExtResource("9_eo0a0")
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

@@ -27,7 +27,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		if e_3d == null:
 			continue
 		var d: float = player_pos.distance_to(e_3d.global_position)
-		if d <= c.range and d < best_dist:
+		if d <= c.range_cast and d < best_dist:
 			best = e
 			best_dist = d
 
