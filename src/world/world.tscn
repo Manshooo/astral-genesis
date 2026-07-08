@@ -34,7 +34,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.119229436, 1.9849274, 6.49
 id = "0_play"
 
 [node name="hub" parent="World/Entities" unique_id=524552180 instance=ExtResource("9_hg6dy")]
-transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 0)
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -0.00962007, 0, -0.0024883747)
 
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
 
@@ -99,9 +99,8 @@ script = ExtResource("8_jsigt")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
-[node name="Observer" type="Node" parent="World" unique_id=229755935]
+[node name="O_OutlineVisual" type="Node" parent="World/Systems" unique_id=229755935]
 script = ExtResource("13_a20vb")
-yield_existing = true
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]

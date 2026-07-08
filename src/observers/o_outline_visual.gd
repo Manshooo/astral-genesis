@@ -9,9 +9,7 @@ func query() -> QueryBuilder:
 func each(event: Variant, entity: Entity, _payload: Variant = null) -> void:
 	var mesh := _find_mesh(entity)
 	if mesh == null:
-		print('mesh is null')
 		return
-	print('mesh is not null')
 		
 	match event:
 		Observer.Event.ADDED:
