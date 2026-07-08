@@ -13,6 +13,7 @@
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
 [ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
 [ext_resource type="PackedScene" uid="uid://dwrh5gb2d3n7d" path="res://src/levels/hub/L_hub.tscn" id="9_hg6dy"]
+[ext_resource type="Script" uid="uid://dmfpvwuwtjkw" path="res://src/observers/o_outline_visual.gd" id="13_a20vb"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -97,6 +98,11 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 script = ExtResource("8_jsigt")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
+[node name="Observer" type="Node" parent="World" unique_id=229755935]
+script = ExtResource("13_a20vb")
+yield_existing = true
+metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]
 environment = ExtResource("3_h5o24")

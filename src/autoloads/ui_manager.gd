@@ -6,8 +6,8 @@ func open_skill_tree(skill_manager, tree_data: RS_SkillTree) -> void:
 	if _skill_ui:
 		return
 	_skill_ui = preload("res://src/ui/skill_tree/skill_tree_ui.tscn").instantiate()
-	_skill_ui.setup(skill_manager, tree_data)
 	get_tree().root.add_child(_skill_ui)
+	_skill_ui.setup(skill_manager, tree_data)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_set_player_input_blocked(true)
 
