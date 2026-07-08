@@ -1,9 +1,24 @@
 [gd_scene format=3 uid="uid://uxxvljhmbg86"]
 
 [ext_resource type="PackedScene" uid="uid://cqafxti0mv8br" path="res://assets/hub/hub.glb" id="1_h75h4"]
+[ext_resource type="Material" uid="uid://pmhavidvsh65" path="res://assets/shared/materials/outline.tres" id="2_8m2da"]
 [ext_resource type="Script" uid="uid://bin0h22anh3cl" path="res://src/entities/incubator/e_incubator.gd" id="2_k166h"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_is5eu"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7dvkg"]
+
+[sub_resource type="Resource" id="Resource_8m2da"]
+script = ExtResource("5_qlrq3")
+prompt_text = "Изучить"
+range_cast = 1.0
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [node name="hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
 
 [node name="Incubator" parent="." index="0" unique_id=1980247635]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 3.6396914)
+material_override = SubResource("StandardMaterial3D_7dvkg")
+material_overlay = ExtResource("2_8m2da")
 script = ExtResource("2_k166h")
+component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_8m2da")])

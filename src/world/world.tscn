@@ -32,6 +32,9 @@ metadata/_custom_type_script = "uid://cdu5tlyk72uu4"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.119229436, 1.9849274, 6.4965677)
 id = "0_play"
 
+[node name="hub" parent="World/Entities" unique_id=524552180 instance=ExtResource("9_hg6dy")]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 0)
+
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
 
 [node name="input" type="Node" parent="World/Systems" unique_id=1073895478]
@@ -52,6 +55,7 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_InteractInput" type="Node" parent="World/Systems/input" unique_id=944545362]
 script = ExtResource("6_0wvc1")
+group = &"input"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="gameplay" type="Node" parent="World/Systems" unique_id=1306121008]
@@ -77,6 +81,7 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_InteractionDetector" type="Node" parent="World/Systems/gameplay" unique_id=522144040]
 script = ExtResource("9_eo0a0")
+group = &"gameplay"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]
@@ -92,9 +97,6 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 script = ExtResource("8_jsigt")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
-
-[node name="hub" parent="." unique_id=524552180 instance=ExtResource("9_hg6dy")]
-transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 0)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]
 environment = ExtResource("3_h5o24")

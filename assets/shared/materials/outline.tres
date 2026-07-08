@@ -1,3 +1,23 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://pmhavidvsh65"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7dvkg"]
+render_priority = 2
+transparency = 1
+cull_mode = 1
+no_depth_test = true
+shading_mode = 0
+albedo_color = Color(0.20510218, 0.35119402, 0.7114654, 1)
+grow = true
+grow_amount = 0.06
+stencil_mode = 3
+stencil_flags = 1
+stencil_compare = 4
+
 [resource]
+next_pass = SubResource("StandardMaterial3D_7dvkg")
+shading_mode = 2
+diffuse_mode = 2
+stencil_mode = 3
+stencil_flags = 6
+stencil_compare = 6
+stencil_outline_thickness = 0.1
