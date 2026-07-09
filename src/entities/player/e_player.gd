@@ -12,6 +12,9 @@ func define_components() -> Array:
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
+	if has_component(C_UIBlocked):
+		return  # не копим mouse look, пока открыт UI
+		
 	if event is InputEventMouseMotion:
 		var inp := get_component(C_PlayerInput) as C_PlayerInput
 		if inp:

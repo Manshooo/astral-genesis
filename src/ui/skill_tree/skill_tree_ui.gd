@@ -1,4 +1,4 @@
-class_name SkillTreeUi
+class_name SkillTreeUI
 extends Control
 
 @onready var points_label: Label = $Panel/MarginContainer/VBox/Header/PointsLabel
@@ -97,10 +97,8 @@ func _refresh_row(def: RS_SkillDefinition) -> void:
 		unlock_button.text = "Прокачать (%d)" % cost
 		unlock_button.disabled = not _skill_manager.can_unlock(def.id)
 
-
 func _on_close_pressed() -> void:
-	UIManager._on_close_pressed()
-
+	UIManager.close_top()
 
 func _exit_tree() -> void:
 	if _skill_manager and _skill_manager.skill_unlocked.is_connected(_on_skill_unlocked):

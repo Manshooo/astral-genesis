@@ -72,7 +72,7 @@ func _on_apply_pressed() -> void:
 	_load_values()  # новый _draft = свежая копия применённых настроек, baseline сбрасывается
 
 func _on_back_pressed() -> void:
-	PauseHandler.close_top()
+	UIManager.close_top()
 	
 
 func _on_reset_pressed() -> void:
