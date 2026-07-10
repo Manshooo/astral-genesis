@@ -15,8 +15,6 @@ func process(entities: Array[Entity], components: Array, _delta: float) -> void:
 	for i in entities.size():
 		var vel := velocity_comps[i] as C_Velocity
 
-		# Ищем CharacterBody3D — либо entity сам является им (игрок),
-		# либо через upcast к Node и downcast (для гетерогенных entity)
 		var node: Node = entities[i]
 		var body := node as CharacterBody3D
 		if not body:
@@ -25,6 +23,4 @@ func process(entities: Array[Entity], components: Array, _delta: float) -> void:
 		body.velocity = vel.velocity
 		body.move_and_slide()
 
-		# move_and_slide может скорректировать velocity (стена, потолок) —
-		# пишем обратно чтобы следующий кадр знал реальную скорость
 		vel.velocity = body.velocity

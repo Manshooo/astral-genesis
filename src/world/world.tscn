@@ -15,11 +15,11 @@
 [ext_resource type="Script" uid="uid://creg13w8xbee0" path="res://src/systems/physics/s_player_movement.gd" id="7_ocs7n"]
 [ext_resource type="Script" uid="uid://5ej3l4vg2gbp" path="res://src/systems/gameplay/s_apply_skill_effects.gd" id="8_a20vb"]
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
-[ext_resource type="Script" uid="uid://cw8cw3e5v1e5v" path="res://src/world/node_3d.gd" id="9_8p8v4"]
 [ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
 [ext_resource type="PackedScene" uid="uid://dwrh5gb2d3n7d" path="res://src/levels/hub/L_hub.tscn" id="9_hg6dy"]
-[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="10_kiqqj"]
 [ext_resource type="Script" uid="uid://dmfpvwuwtjkw" path="res://src/observers/o_outline_visual.gd" id="13_a20vb"]
+[ext_resource type="Texture2D" uid="uid://cdoe6n1qiukrf" path="res://addons/kenney_textures/PNG/Light/texture_06.png" id="19_kiqqj"]
+[ext_resource type="Texture2D" uid="uid://dlxq6jgef6fpo" path="res://addons/kenney_textures/PNG/Green/texture_01.png" id="20_m8idb"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("5_8p8v4")
@@ -33,12 +33,19 @@ metadata/_custom_type_script = "uid://bxvdso6ek0oyg"
 script = ExtResource("7_m8idb")
 metadata/_custom_type_script = "uid://d3y7smdoj10p1"
 
-[sub_resource type="Resource" id="Resource_8p8v4"]
-script = ExtResource("10_kiqqj")
-metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
-
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m8idb"]
+albedo_texture = ExtResource("19_kiqqj")
+uv1_scale = Vector3(50, 50, 50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3owqy"]
+albedo_texture = ExtResource("20_m8idb")
+uv1_scale = Vector3(39.355, 39.355, 39.355)
+uv1_triplanar = true
+uv1_world_triplanar = true
+grow_amount = 7.168
 
 [node name="Main" type="Node" unique_id=579631464]
 script = ExtResource("1_mmdvd")
@@ -57,15 +64,7 @@ id = "0_play"
 component_resources = Array[ExtResource("4_2xmcn")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i")])
 
 [node name="hub" parent="World/Entities" unique_id=524552180 instance=ExtResource("9_hg6dy")]
-transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -0.00962007, 0, -0.0024883747)
-
-[node name="CSGBox3D" type="CSGBox3D" parent="World/Entities" unique_id=957990728]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0548455, 0)
-use_collision = true
-collision_layer = 9
-collision_mask = 9
-script = ExtResource("9_8p8v4")
-component_resources = Array[ExtResource("4_2xmcn")]([SubResource("Resource_8p8v4")])
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -0.01, 0.31, -0.002)
 
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
 
@@ -80,6 +79,7 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_InteractInput" type="Node" parent="World/Systems/input" unique_id=944545362]
 script = ExtResource("6_0wvc1")
+group = &"input"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="gameplay" type="Node" parent="World/Systems" unique_id=1306121008]
@@ -102,6 +102,7 @@ metadata/_custom_type_script = "uid://b3vi2ingux88g"
 
 [node name="S_PlayerMovement" type="Node" parent="World/Systems/physics" unique_id=201843321]
 script = ExtResource("7_ocs7n")
+group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_Movement" type="Node" parent="World/Systems/physics" unique_id=1607163903]
@@ -129,3 +130,14 @@ light_energy = 2.0
 light_indirect_energy = 1.124
 shadow_enabled = true
 omni_range = 4.940852
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1553004646]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1395300612]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9574814, -0.5135002, 2.1432848)
+material_override = SubResource("StandardMaterial3D_m8idb")
+use_collision = true
+size = Vector3(96, 2.4140625, 96)
+material = SubResource("StandardMaterial3D_3owqy")

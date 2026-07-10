@@ -14,6 +14,9 @@ metadata/_stencil_owned = true
 
 [resource]
 next_pass = SubResource("StandardMaterial3D_chsjf")
+shading_mode = 0
+albedo_color = Color(1, 1, 1, 0)
+disable_receive_shadows = true
 stencil_mode = 1
 stencil_flags = 2
 stencil_color = Color(0.22745098, 0.36078432, 0.7137255, 1)
