@@ -15,5 +15,8 @@ extends Resource
 @export_group("Camera")
 @export var fov: float = 103.0
 
+@export_group("Interaction")
+@export var interact_range: float = 3.0        ## Дальность луча взаимодействия
+
 @export_group("Graphics")
 @export var max_fps: int = 60

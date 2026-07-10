@@ -4,6 +4,7 @@ class_name E_Player
 extends Entity
 
 @onready var camera: Camera3D = $Camera3D
+@onready var interact_ray: RayCast3D = $Camera3D/InteractRay
 
 func define_components() -> Array:
 	return [C_PlayerInput.new(), C_FPSCamera.new(), C_Health.new()]
@@ -14,7 +15,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if has_component(C_UIBlocked):
 		return  # не копим mouse look, пока открыт UI
-		
+
 	if event is InputEventMouseMotion:
 		var inp := get_component(C_PlayerInput) as C_PlayerInput
 		if inp:
