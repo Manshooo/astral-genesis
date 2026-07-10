@@ -6,8 +6,7 @@ class_name RS_LevelNode
 extends Resource
 
 @export var id: StringName = &""
-## L3 = 3 ... L0 = 0, соответствует слоям из ТЗ.
-@export var depth: int = 3
+@export var depth: int
 ## Путь до .tscn выбранного пресета комнаты. Заполняется генератором,
 ## не редактируется руками.
 @export var room_scene_path: String = ""
