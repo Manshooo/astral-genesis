@@ -30,7 +30,7 @@ script = ExtResource("1_yrckd")
 component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i")])
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1009209839]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76791286, -0.5561242)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -0.5)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
 shape = SubResource("CapsuleShape3D_37kl0")
@@ -38,3 +38,7 @@ shape = SubResource("CapsuleShape3D_37kl0")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
 gi_mode = 2
 mesh = SubResource("CapsuleMesh_8uh7m")
+
+[node name="RayCast3D" type="RayCast3D" parent="." unique_id=900551378]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.7, 0)
+target_position = Vector3(0, -2, 0)
