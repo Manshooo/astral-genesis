@@ -6,9 +6,6 @@ extends Entity
 @onready var camera: Camera3D = $Camera3D
 @onready var interact_ray: RayCast3D = $Camera3D/InteractRay
 
-func define_components() -> Array:
-	return [C_PlayerInput.new(), C_FPSCamera.new(), C_Health.new()]
-
 
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():

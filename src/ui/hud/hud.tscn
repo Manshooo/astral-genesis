@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://djqvcaym05lgv" path="res://src/ui/hud/crosshair.gd" id="2_cvkdw"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
+layer = -1
 
 [node name="Hud" type="Control" parent="." unique_id=876157346]
 layout_mode = 3

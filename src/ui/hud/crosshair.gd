@@ -4,13 +4,25 @@ extends Control
 @export var dot_radius: float = 2.0
 @export var hover_dot_radius: float = 5.0
 @export var dot_color: Color = Color(1, 1, 1, 0.85)
+@export var animation_speed: float = 10.0
 
 var _hovering: bool = false
+var _hover_progress: float = 0.0
 
 func _ready() -> void:
 	if ECS.world:
 		_connect_world_signals(ECS.world)
 	ECS.world_changed.connect(_on_world_changed)
+
+func _process(delta: float) -> void:
+	# Определяем цель: 1.0 если навели, 0.0 если убрали мышь
+	var target := 1.0 if _hovering else 0.0
+	
+	var new_progress := move_toward(_hover_progress, target, animation_speed * delta)
+	if new_progress != _hover_progress:
+		_hover_progress = new_progress
+		queue_redraw() # Заставляет вызвать _draw() на следующем кадре
+
 
 
 func _on_world_changed(world: World) -> void:
@@ -41,5 +53,5 @@ func _on_component_removed(_entity: Entity, component: Variant) -> void:
 
 func _draw() -> void:
 	var center := size / 2.0
-	var radius := hover_dot_radius if _hovering else dot_radius
+	var radius: float = lerpf(dot_radius, hover_dot_radius, _hover_progress)
 	draw_circle(center, radius, dot_color)

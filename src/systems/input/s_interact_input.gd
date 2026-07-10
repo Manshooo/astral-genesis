@@ -9,5 +9,5 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		return
 	if Input.is_action_just_pressed("interact"):
 		var target = entities[0]
-		if target.has_method("open_skill_menu"):
-			target.open_skill_menu()
+		assert(target.has_method("interact"), "Сущность '%s' имеет компонент C_Interactable, но не реализует функцию interact()" % target.name)
+		target.interact()
