@@ -10,7 +10,6 @@ extends Resource
 @export_group("Movement")
 @export var move_speed: float = 5.0
 @export var jump_velocity: float = 6.0
-@export var gravity: float = 9.8
 
 @export_group("Camera")
 @export var fov: float = 103.0

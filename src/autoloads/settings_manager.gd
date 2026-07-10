@@ -4,11 +4,17 @@ extends Node
 const SETTINGS_PATH := "user://settings.tres"
 const DEFAULT_SETTINGS := preload("res://data/settings.tres")
 
-var settings: RS_Settings
+## Эмитится каждый раз, когда settings меняются (загрузка, Apply, Reset) —
+## подписывайтесь, если системе/UI нужно среагировать на смену настроек.
+signal settings_changed(settings: RS_Settings)
+
+var settings: RS_Settings:
+	set(value):
+		settings = value
+		_apply_runtime_effects()
 
 func _ready() -> void:
-	settings = _load()
-	Engine.max_fps = settings.max_fps
+	settings = _load()  # проходит через сеттер -> сразу применяет эффекты
 
 func save() -> void:
 	var err := ResourceSaver.save(settings, SETTINGS_PATH)
@@ -16,9 +22,8 @@ func save() -> void:
 		push_error("SettingsManager: не удалось сохранить настройки, код ошибки %d" % err)
 
 func reset() -> void:
-	settings = DEFAULT_SETTINGS.duplicate()
+	settings = DEFAULT_SETTINGS.duplicate()  # тоже через сеттер
 
-## Даёт независимую копию дефолтов — для черновиков в UI, не трогает SettingsManager.settings.
 func default_settings() -> RS_Settings:
 	return DEFAULT_SETTINGS.duplicate()
 
@@ -29,3 +34,12 @@ func _load() -> RS_Settings:
 			return loaded
 		push_warning("SettingsManager: файл настроек повреждён, загружаю дефолтные")
 	return DEFAULT_SETTINGS.duplicate()
+
+## Побочные эффекты, которые должны применяться немедленно при смене настроек,
+## а не только на старте игры.
+func _apply_runtime_effects() -> void:
+	if settings == null:
+		return
+	Engine.max_fps = settings.max_fps
+	settings_changed.emit(settings)
+	

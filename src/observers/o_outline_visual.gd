@@ -7,19 +7,19 @@ func query() -> QueryBuilder:
 	return q.with_all([C_Highlighted]).on_added().on_removed()
 
 func each(event: Variant, entity: Entity, _payload: Variant = null) -> void:
-	var mesh := _find_mesh(entity)
-	if mesh == null:
+	var geo := _find_geometry(entity)
+	if geo == null:
 		return
-		
+
 	match event:
 		Observer.Event.ADDED:
-			mesh.material_overlay = OUTLINE_MATERIAL
+			geo.material_overlay = OUTLINE_MATERIAL
 		Observer.Event.REMOVED:
-			mesh.material_overlay = null
+			geo.material_overlay = null
 
-func _find_mesh(entity: Entity) -> MeshInstance3D:
+func _find_geometry(entity: Entity) -> GeometryInstance3D:
 	var node: Node = entity
-	var self_mesh := node as MeshInstance3D
-	if self_mesh:
-		return self_mesh
-	return node.get_node_or_null("MeshInstance3D") as MeshInstance3D
+	var self_geo := node as GeometryInstance3D
+	if self_geo:
+		return self_geo
+	return node.get_node_or_null("MeshInstance3D") as GeometryInstance3D

@@ -18,6 +18,7 @@
 [ext_resource type="Script" uid="uid://cw8cw3e5v1e5v" path="res://src/world/node_3d.gd" id="9_8p8v4"]
 [ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
 [ext_resource type="PackedScene" uid="uid://dwrh5gb2d3n7d" path="res://src/levels/hub/L_hub.tscn" id="9_hg6dy"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="10_kiqqj"]
 [ext_resource type="Script" uid="uid://dmfpvwuwtjkw" path="res://src/observers/o_outline_visual.gd" id="13_a20vb"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
@@ -31,6 +32,10 @@ metadata/_custom_type_script = "uid://bxvdso6ek0oyg"
 [sub_resource type="Resource" id="Resource_h1k6i"]
 script = ExtResource("7_m8idb")
 metadata/_custom_type_script = "uid://d3y7smdoj10p1"
+
+[sub_resource type="Resource" id="Resource_8p8v4"]
+script = ExtResource("10_kiqqj")
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -60,6 +65,7 @@ use_collision = true
 collision_layer = 9
 collision_mask = 9
 script = ExtResource("9_8p8v4")
+component_resources = Array[ExtResource("4_2xmcn")]([SubResource("Resource_8p8v4")])
 
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
 
@@ -96,7 +102,6 @@ metadata/_custom_type_script = "uid://b3vi2ingux88g"
 
 [node name="S_PlayerMovement" type="Node" parent="World/Systems/physics" unique_id=201843321]
 script = ExtResource("7_ocs7n")
-group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_Movement" type="Node" parent="World/Systems/physics" unique_id=1607163903]

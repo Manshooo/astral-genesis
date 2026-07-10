@@ -16,19 +16,16 @@ func process(entities: Array[Entity], components: Array, delta: float) -> void:
 		var vel := velocity_comps[i] as C_Velocity
 		var player := entities[i] as E_Player
 
-		# Гравитация
 		if not player.is_on_floor():
-			vel.velocity.y -= s.gravity * delta
+			vel.velocity.y -= GameConfig.config.gravity * delta
 		else:
 			vel.velocity.y = max(vel.velocity.y, 0.0)
 
-		# Прыжок
 		if inp.jump_pressed:
 			if player.is_on_floor():
 				vel.velocity.y = s.jump_velocity
-			inp.jump_pressed = false  # consumed — неважно, сработал прыжок или нет
+			inp.jump_pressed = false
 
-		# Горизонталь относительно направления взгляда
 		if inp.move_direction != Vector3.ZERO:
 			var wish = (player.transform.basis * inp.move_direction).normalized()
 			vel.velocity.x = wish.x * s.move_speed
