@@ -4,7 +4,7 @@
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_u26sm"]
 _surfaces = [{
-"aabb": AABB(-1, 0.02081883, -1, 2, 1.9999999, 2),
+"aabb": AABB(-1, 0.02081883, -2, 2, 1.9999999, 4),
 "format": 34896613377,
 "index_count": 84,
 "index_data": PackedByteArray("AAABAAIAAwAAAAIAAwACAAEAAwAEAAAABQAAAAQABQABAAAABgAEAAMAAwABAAYABQAEAAcABgAHAAQAAQAFAAgACQAGAAEACQABAAgABgAKAAcACQAKAAYACwAFAAcACwAHAAoACAAFAAsADAAJAAgADQALAAoACgAJAA0ADAAOAAkADQAJAA4ACAAPAAwACAALAA8ADwAOAAwADQAPAAsADwANAA4A"),
@@ -18,7 +18,7 @@ blend_shape_mode = 0
 [resource]
 resource_name = "buildings_desk_A"
 _surfaces = [{
-"aabb": AABB(-1, 0.02081883, -1, 2, 1.9999999, 2),
+"aabb": AABB(-1, 0.02081883, -2, 2, 1.9999999, 4),
 "attribute_data": PackedByteArray("/18M6/+f////X///tJsM6/+f/7+0m5PB/1+Twf9f/7//X/+//5//f/+f/7//X/9//19rfv+f/3//X/9/tJtrfv+f/z+0m/FU/1/xVP9f/z//X/8//58AAP+f/z//XwAA/1//P/8f8VT/H/8//1/xVP8fa37/X/9//x//f/9fa37/n/9//9//P//f/3//n/8/SmSljP+f77T/n6WMSmTvtP+fDwtKZFkz/59ZM0pkDwvv1P9/paz/P6Ws/3/v1P8/"),
 "format": 34896613399,
 "index_count": 84,

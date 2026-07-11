@@ -4,7 +4,7 @@
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_uulg5"]
 _surfaces = [{
-"aabb": AABB(-1, 0.004051268, -1, 2, 2, 2),
+"aabb": AABB(-0.5, 0.008102536, -1, 1, 4, 2),
 "format": 34896613377,
 "index_count": 84,
 "index_data": PackedByteArray("AAABAAIAAwACAAEAAAAEAAEABAADAAEABQAAAAIABAAAAAUAAwAGAAIABQACAAYABAAHAAMABAAFAAcACAADAAcACQAGAAMACQADAAgACgAFAAYACgAGAAkACwAHAAUACwAFAAoACAAHAAsACQAMAAoACwANAAgACAAOAAkACQAOAAwACAANAA4ACgAMAA8ACgAPAAsADwAMAA4ACwAPAA0ADwAOAA0A"),
@@ -18,7 +18,7 @@ blend_shape_mode = 0
 [resource]
 resource_name = "buildings_shelf_B"
 _surfaces = [{
-"aabb": AABB(-1, 0.004051268, -1, 2, 2, 2),
+"aabb": AABB(-0.5, 0.008102536, -1, 1, 4, 2),
 "attribute_data": PackedByteArray("/1////+f/7//n////1//v/9f/7//n/9//5//v/9f/3/9ngJBAWECQQFhAkH9ngJB/1//P/+fAAD/n/8//18AAP8f/3//X/8//1//f/8f/z//n/9//9//P//f/3//n/8//Z79fv9f/38BYf1+/1//P/+f/38BYQJB/Z4CQf+f/z8BYf1+/Z4CQf2e/X4BYQJBAWECQQFh/X4BYf1+AWECQf2e/X79ngJB/Z4CQf2e/X4BYf1+/Z79fv2e/X4BYf1+"),
 "format": 34896613399,
 "index_count": 84,
