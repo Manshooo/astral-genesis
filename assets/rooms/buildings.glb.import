@@ -3,7 +3,7 @@
 importer="MeshLibrary"
 importer_version=1
 type="MeshLibrary"
-uid="uid://drqwv0rip560u"
+uid="uid://dh03yue6o8y3a"
 path="res://.godot/imported/buildings.glb-0b5cf6b986b8e261aef30b21438b7eef.res"
 
 [deps]
@@ -13,10 +13,10 @@ dest_files=["res://.godot/imported/buildings.glb-0b5cf6b986b8e261aef30b21438b7ee
 
 [params]
 
-nodes/root_type=""
+nodes/root_type="Node3D"
 nodes/root_name=""
 nodes/root_script=null
-mesh_library/use_node_names_as_mesh_names=false
+mesh_library/use_node_names_as_mesh_names=true
 array_mesh/deduplicate_surfaces=true
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
@@ -41,158 +41,131 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "meshes": {
-"buildings_Cube_001": {
+"buildings_bath_box": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_001.tres",
-"save_to_file/path": "uid://b5alc3bdnkvb4"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_bath_box.tres",
+"save_to_file/path": "uid://cmgki6jefsh1t"
 },
-"buildings_Cube_002": {
+"buildings_book_shelf_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_002.tres",
-"save_to_file/path": "uid://jxbxmmhpii8g"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_book_shelf_A.tres",
+"save_to_file/path": "uid://bhmot45by3ksp"
 },
-"buildings_Cube_003": {
+"buildings_chair_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_003.tres",
-"save_to_file/path": "uid://c20u272uirbbx"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_chair_A.tres",
+"save_to_file/path": "uid://gn0cwl78xw3y"
 },
-"buildings_Cube_004": {
+"buildings_corridor_long": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_004.tres",
-"save_to_file/path": "uid://chmh7xvhwv632"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_corridor_long.tres",
+"save_to_file/path": "uid://ceja3dcwjalff"
 },
-"buildings_Cube_005": {
+"buildings_corridor_short": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_005.tres",
-"save_to_file/path": "uid://dao14r5g3y8c"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_corridor_short.tres",
+"save_to_file/path": "uid://df0bqvpf15v3m"
 },
-"buildings_Cube_011": {
+"buildings_desk_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_011.tres",
-"save_to_file/path": "uid://bpwpm2qg0uw5j"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_desk_A.tres",
+"save_to_file/path": "uid://d25li7spdkjpw"
 },
-"buildings_Cube_012": {
+"buildings_pot_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_012.tres",
-"save_to_file/path": "uid://bgqmc3lwqsk4r"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_pot_A.tres",
+"save_to_file/path": "uid://bak0o6bru8mni"
 },
-"buildings_Cube_013": {
+"buildings_room_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_013.tres",
-"save_to_file/path": "uid://b3i4puli0xwct"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A.tres",
+"save_to_file/path": "uid://i3ejv67lu47x"
 },
-"buildings_Cube_014": {
+"buildings_room_B": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_014.tres",
-"save_to_file/path": "uid://s274h83tpbpy"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B.tres",
+"save_to_file/path": "uid://b0tpcvs8ft0op"
 },
-"buildings_Cube_024": {
+"buildings_room_C": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_024.tres",
-"save_to_file/path": "uid://bfr4dvkm55bqy"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_C.tres",
+"save_to_file/path": "uid://c1aenh1gvix7r"
 },
-"buildings_Cube_033": {
+"buildings_room_library": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_033.tres",
-"save_to_file/path": "uid://c7xs6hv3ywppi"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_library.tres",
+"save_to_file/path": "uid://ph07ld4n5kh7"
 },
-"buildings_Cube_034": {
+"buildings_shelf_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Cube_034.tres",
-"save_to_file/path": "uid://drqh0rjodajhs"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_shelf_A.tres",
+"save_to_file/path": "uid://0ialr7jinkxs"
 },
-"buildings_Plane_001": {
+"buildings_shelf_B": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Plane_001.res",
-"save_to_file/path": "uid://doeksf07ioj62"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_shelf_B.tres",
+"save_to_file/path": "uid://cyvbqj465pcft"
 },
-"buildings_Plane_002": {
+"buildings_wc": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Plane_002.tres",
-"save_to_file/path": "uid://y7icamc7121v"
-},
-"buildings_Plane_003": {
-"generate/lightmap_uv": 0,
-"generate/lods": 0,
-"generate/shadow_meshes": 0,
-"lods/normal_merge_angle": 20.0,
-"save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Plane_003.tres",
-"save_to_file/path": "uid://tk8indwd1lyj"
-},
-"buildings_Plane_006": {
-"generate/lightmap_uv": 0,
-"generate/lods": 0,
-"generate/shadow_meshes": 0,
-"lods/normal_merge_angle": 20.0,
-"save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Plane_006.tres",
-"save_to_file/path": "uid://ckdetb8pysc18"
-},
-"buildings_Plane_010": {
-"generate/lightmap_uv": 0,
-"generate/lods": 0,
-"generate/shadow_meshes": 0,
-"lods/normal_merge_angle": 20.0,
-"save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/buildings_Plane_010.tres",
-"save_to_file/path": "uid://c5tb680f2iql5"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_wc.tres",
+"save_to_file/path": "uid://bcj1md655ad8x"
 }
 }
 }
