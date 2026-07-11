@@ -19,7 +19,7 @@ uv1_world_triplanar = true
 [sub_resource type="BoxMesh" id="BoxMesh_3owqy"]
 size = Vector3(3.2373047, 3.2196045, 0.09820557)
 
-[sub_resource type="Resource" id="Resource_ywyho"]
+[sub_resource type="Resource" id="Resource_bfruy"]
 script = ExtResource("4_qd5pf")
 metadata/_custom_type_script = "uid://bpurxo8bbxd37"
 
@@ -34,7 +34,7 @@ size = Vector3(3.4768066, 3.343689, 0.6937256)
 material_override = SubResource("StandardMaterial3D_8upip")
 mesh = SubResource("BoxMesh_3owqy")
 script = ExtResource("2_tkmj8")
-actions = Array[ExtResource("3_cehsg")]([SubResource("Resource_ywyho")])
+actions = Array[ExtResource("3_cehsg")]([SubResource("Resource_bfruy")])
 component_resources = Array[ExtResource("3_3hoce")]([SubResource("Resource_8ssbo")])
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1818445843]

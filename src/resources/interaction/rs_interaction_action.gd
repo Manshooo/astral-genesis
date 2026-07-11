@@ -14,7 +14,7 @@ extends Resource
 ## [param entity] интерактивная entity, на которой висит действие.
 ## [param interactor] кто взаимодействует (обычно игрок). Не обязателен -
 ## большинству действий не нужен.
-func execute(entity: Entity, interactor: Node = null) -> void:
+func execute(_entity: Entity, _interactor: Node = null) -> void:
 	push_warning(
 		"RS_InteractionAction.execute() не переопределён в %s" % get_script().resource_path
 	)

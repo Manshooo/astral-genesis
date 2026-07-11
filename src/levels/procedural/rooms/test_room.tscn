@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://dokr7rxaddh4a"]
+
+[ext_resource type="Script" uid="uid://droghbcanxxxu" path="res://src/levels/procedural/rooms/test_room.gd" id="1_6ov03"]
+
+[node name="TestRoom" type="Node3D" unique_id=1655569409]
+script = ExtResource("1_6ov03")
+
+[node name="BuildingsCube003" type="MeshInstance3D" parent="." unique_id=1476485149]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.526102, 0, -0.25358582)
+
+[node name="BuildingsCube012" type="MeshInstance3D" parent="BuildingsCube003" unique_id=1616089570]
+transform = Transform3D(1.3038526, 0, 0, 0, 1, 0, 0, 0, 0.61256874, 2.3379636, 0.058163345, 2.3900003)
