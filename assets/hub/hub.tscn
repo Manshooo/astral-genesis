@@ -21,6 +21,10 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 [sub_resource type="BoxShape3D" id="BoxShape3D_3owqy"]
 size = Vector3(3.5, 5.5, 3.5)
 
+[sub_resource type="Resource" id="Resource_oeda6"]
+script = ExtResource("3_da6hf")
+metadata/_custom_type_script = "uid://bbm1wuaam7ku2"
+
 [node name="hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
 
 [node name="Incubator" parent="." index="0" unique_id=1980247635]
@@ -40,3 +44,4 @@ shape = SubResource("BoxShape3D_3owqy")
 
 [node name="Door" parent="." index="1" unique_id=1986258941 instance=ExtResource("5_is5eu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.0443382, -7.799738)
+actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_oeda6")])

@@ -8,5 +8,5 @@ extends RS_InteractionAction
 @export var tree_data: RS_SkillTree
 
 
-func execute(entity: Entity, interactor: Node = null) -> void:
+func execute(_entity: Entity, _interactor: Node = null) -> void:
 	UIManager.open_skill_tree(SkillManager, tree_data if tree_data else SkillManager.SKILL_TREE)
