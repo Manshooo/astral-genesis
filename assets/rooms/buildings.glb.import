@@ -101,8 +101,8 @@ _subresources={
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_1.res",
-"save_to_file/path": "uid://c83k8qa6ontrj"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_1.tres",
+"save_to_file/path": "uid://jqbho7y4c7dn"
 },
 "buildings_room_B_2": {
 "generate/lightmap_uv": 0,
@@ -110,8 +110,8 @@ _subresources={
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_2.res",
-"save_to_file/path": "uid://bc52la8prscj0"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_2.tres",
+"save_to_file/path": "uid://bmq72tcl1abtv"
 },
 "buildings_room_B_2C": {
 "generate/lightmap_uv": 0,
@@ -119,8 +119,8 @@ _subresources={
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_2C.res",
-"save_to_file/path": "uid://csin7acxjexsw"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_2C.tres",
+"save_to_file/path": "uid://dlisuugk4clwq"
 },
 "buildings_room_B_3": {
 "generate/lightmap_uv": 0,
@@ -128,8 +128,8 @@ _subresources={
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_3.res",
-"save_to_file/path": "uid://chp85y28j62o0"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_3.tres",
+"save_to_file/path": "uid://nxqthitxg6hp"
 },
 "buildings_room_B_4": {
 "generate/lightmap_uv": 0,
@@ -137,8 +137,8 @@ _subresources={
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_4.res",
-"save_to_file/path": "uid://gim5jcfmn6no"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_4.tres",
+"save_to_file/path": "uid://dhikyqmlb2qy3"
 },
 "buildings_room_C": {
 "generate/lightmap_uv": 0,
