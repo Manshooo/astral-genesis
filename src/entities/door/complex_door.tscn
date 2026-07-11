@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://4kk8ci8ah8h1"]
+
+[ext_resource type="Texture2D" uid="uid://b0unb0bru0yjw" path="res://addons/kenney_patterns/Vector/pattern_04.svg" id="1_gx737"]
+[ext_resource type="Script" uid="uid://id4kvc8cui16" path="res://src/entities/door/e_complex_door.gd" id="2_tkmj8"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="3_3hoce"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_cehsg"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8upip"]
+albedo_color = Color(0.97180814, 0.8654046, 0.5775204, 1)
+albedo_texture = ExtResource("1_gx737")
+metallic = 1.0
+metallic_texture = ExtResource("1_gx737")
+uv1_scale = Vector3(12, 12, 12)
+uv1_triplanar_sharpness = 0.070747465
+uv1_world_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_3owqy"]
+size = Vector3(3.2373047, 3.2196045, 0.09820557)
+
+[sub_resource type="Resource" id="Resource_8ssbo"]
+script = ExtResource("4_cehsg")
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dpga7"]
+size = Vector3(3.4768066, 3.343689, 0.6937256)
+
+[node name="Door" type="MeshInstance3D" unique_id=1986258941]
+material_override = SubResource("StandardMaterial3D_8upip")
+mesh = SubResource("BoxMesh_3owqy")
+script = ExtResource("2_tkmj8")
+component_resources = Array[ExtResource("3_3hoce")]([SubResource("Resource_8ssbo")])
+
+[node name="InteractBody" type="StaticBody3D" parent="." unique_id=1818445843]
+collision_layer = 9
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=838414485]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015533447, -0.028518677)
+shape = SubResource("BoxShape3D_dpga7")

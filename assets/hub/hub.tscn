@@ -2,10 +2,17 @@
 
 [ext_resource type="PackedScene" uid="uid://cqafxti0mv8br" path="res://assets/hub/hub.glb" id="1_h75h4"]
 [ext_resource type="Script" uid="uid://bin0h22anh3cl" path="res://src/entities/incubator/e_incubator.gd" id="2_k166h"]
+[ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_da6hf"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_is5eu"]
+[ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/rs_open_skill_tree_action.gd" id="4_oeda6"]
+[ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_is5eu"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7dvkg"]
+
+[sub_resource type="Resource" id="Resource_hhfa8"]
+script = ExtResource("4_oeda6")
+metadata/_custom_type_script = "uid://bi6krwy7ber7m"
 
 [sub_resource type="Resource" id="Resource_fyfga"]
 script = ExtResource("5_qlrq3")
@@ -20,6 +27,7 @@ size = Vector3(3.5, 5.5, 3.5)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 3.6396914)
 material_override = SubResource("StandardMaterial3D_7dvkg")
 script = ExtResource("2_k166h")
+actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_hhfa8")])
 component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_fyfga")])
 
 [node name="InteractBody" type="StaticBody3D" parent="Incubator" index="1" unique_id=812994738]
@@ -29,3 +37,6 @@ collision_mask = 15
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Incubator/InteractBody" index="0" unique_id=2061081687]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8985596, 0)
 shape = SubResource("BoxShape3D_3owqy")
+
+[node name="Door" parent="." index="1" unique_id=1986258941 instance=ExtResource("5_is5eu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.0443382, -7.799738)

@@ -21,21 +21,24 @@ func generate_run(level_seed: int) -> RS_LevelGraph:
 	graph.merge([l3, l2, l1, l0])
 	return graph
 
-func _generate_layer(rng: RandomNumberGenerator, depth: int, room_count: int) -> RS_LevelGraph:
-	return RS_LevelGraph.new()
+func _generate_layer(rng: RandomNumberGenerator, depth: int, room_count: int) -> RS_LevelLayer :
+	return RS_LevelLayer.new()
 
 func _connect_layers(
 	rng: RandomNumberGenerator,
-	layer_from: RS_LevelGraph,
-	layer_to: RS_LevelGraph,
+	layer_from: RS_LevelLayer,
+	layer_to: RS_LevelLayer,
 	connector_count: int,
-	guarantee_one_open: bool = false # Значение по умолчанию через '='
+	guarantee_one_open: bool = false
 	) -> void:
 	pass
 
-func _place_exits(rng: RandomNumberGenerator, layer: RS_LevelGraph, exit_count: int = 2) -> void:
+func _place_exits(rng: RandomNumberGenerator, layer: RS_LevelLayer, exit_count: int = 2) -> void:
 	pass
 
+func get_node_data(node_id: String) -> RS_LevelNode:
+	return RS_LevelNode.new()
+
 ## Для слияния слоёв в один граф
-func merge(layers: Array[RS_LevelGraph]) -> void:
+func merge(layers: Array[RS_LevelLayer]) -> void:
 	pass

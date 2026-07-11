@@ -26,6 +26,7 @@ GameConfig="*uid://c2loo5mfx0ufk"
 SettingsManager="*uid://b3rnljshci5d7"
 SkillManager="*uid://bwpci4sr0qv4f"
 UIManager="*uid://d13q83ngp0nm4"
+RunManager="*uid://c6536kxev8382"
 
 [display]
 

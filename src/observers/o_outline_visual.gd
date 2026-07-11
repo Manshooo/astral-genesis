@@ -1,7 +1,7 @@
 class_name O_OutlineVisual
 extends Observer
 
-const OUTLINE_MATERIAL: Material = preload("res://assets/shared/materials/outline.tres")
+const OUTLINE_MATERIAL: Material = preload("res://assets/shared/materials/outline_alt.tres")
 
 func query() -> QueryBuilder:
 	return q.with_all([C_Highlighted]).on_added().on_removed()
