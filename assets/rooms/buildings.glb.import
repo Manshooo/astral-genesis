@@ -50,15 +50,6 @@ _subresources={
 "save_to_file/fallback_path": "res://assets/rooms/models/buildings_bath_box.tres",
 "save_to_file/path": "uid://cmgki6jefsh1t"
 },
-"buildings_book_shelf_A_001": {
-"generate/lightmap_uv": 0,
-"generate/lods": 0,
-"generate/shadow_meshes": 0,
-"lods/normal_merge_angle": 20.0,
-"save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_book_shelf_A_001.res",
-"save_to_file/path": "uid://duiiksp50du4w"
-},
 "buildings_chair_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
