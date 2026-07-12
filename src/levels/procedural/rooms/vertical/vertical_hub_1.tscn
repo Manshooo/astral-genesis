@@ -13,6 +13,9 @@ script = ExtResource("1_nf0ae")
 [node name="BuildingsRoomB1" type="MeshInstance3D" parent="." unique_id=1316407927]
 mesh = ExtResource("2_3rh27")
 
+[node name="RoomDoor" type="Node3D" parent="BuildingsRoomB1" unique_id=2114439351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 11.1)
+
 [node name="StaticBody3D" type="StaticBody3D" parent="BuildingsRoomB1" unique_id=1860624005]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="BuildingsRoomB1/StaticBody3D" unique_id=1693595713]
