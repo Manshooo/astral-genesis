@@ -56,6 +56,10 @@ folder_colors={
 "res://src/world/": "blue"
 }
 
+[gecs]
+
+settings/debug_mode=true
+
 [gui]
 
 theme/custom="uid://dddq7rbmi4xdo"

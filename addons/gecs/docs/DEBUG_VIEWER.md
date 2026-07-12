@@ -115,7 +115,7 @@ Entity #123 : /root/World/Player
 ├── C_Transform
 │   └── position: (15.2, 0.0, 23.8)
 └── C_Velocity
-    └── velocity: (2.5, 0.0, 1.3)
+	└── velocity: (2.5, 0.0, 1.3)
 ```
 
 ### Viewing Relationships
