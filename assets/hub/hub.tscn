@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://bin0h22anh3cl" path="res://src/entities/incubator/e_incubator.gd" id="2_k166h"]
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_da6hf"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_is5eu"]
-[ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/rs_open_skill_tree_action.gd" id="4_oeda6"]
+[ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/a_open_skill_tree.gd" id="4_oeda6"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_is5eu"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
 
@@ -23,7 +23,7 @@ size = Vector3(3.5, 5.5, 3.5)
 
 [node name="hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
 
-[node name="Incubator" parent="." index="0" unique_id=584254100]
+[node name="Incubator" parent="." index="0" unique_id=29663830]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 3.6396914)
 material_override = SubResource("StandardMaterial3D_7dvkg")
 script = ExtResource("2_k166h")
@@ -39,4 +39,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8985596, 0)
 shape = SubResource("BoxShape3D_3owqy")
 
 [node name="Door" parent="." index="1" unique_id=1986258941 instance=ExtResource("5_is5eu")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.0443382, -7.799738)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0640976, 2.0443382, -7.799738)

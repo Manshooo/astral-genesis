@@ -1,9 +1,18 @@
 [gd_scene format=3 uid="uid://xjfub63bx1s"]
 
 [ext_resource type="Script" uid="uid://ebxavm5qyxcf" path="res://src/entities/interactable/e_interactable_object.gd" id="1_ywyho"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_cyl8l"]
+[ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="2_rea0r"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="3_rea0r"]
+
+[sub_resource type="Resource" id="Resource_5myjd"]
+script = ExtResource("3_rea0r")
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [node name="InteractableObject" type="Node3D" unique_id=1972028151]
 script = ExtResource("1_ywyho")
+actions = Array[ExtResource("2_rea0r")]([null])
+component_resources = Array[ExtResource("2_cyl8l")]([SubResource("Resource_5myjd")])
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1922674725]
 collision_layer = 8

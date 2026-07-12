@@ -1,7 +1,7 @@
 ## res://src/resources/interaction/rs_open_skill_tree_action.gd
 ## Открывает дерево навыков через UIManager. Не привязан жёстко к инкубатору -
 ## можно повесить на любой другой E_InteractableObject.
-class_name RS_OpenSkillTreeAction
+class_name A_OpenSkillTree
 extends RS_InteractionAction
 
 ## Если не задано - берётся дефолтное SkillManager.SKILL_TREE.

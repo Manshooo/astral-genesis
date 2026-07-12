@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="3_3hoce"]
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_cehsg"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_cehsg"]
-[ext_resource type="Script" uid="uid://bpurxo8bbxd37" path="res://src/resources/interaction/rs_start_new_run.gd" id="4_qd5pf"]
+[ext_resource type="Script" uid="uid://bpurxo8bbxd37" path="res://src/resources/interaction/a_start_new_run.gd" id="4_qd5pf"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8upip"]
 albedo_color = Color(0.97180814, 0.8654046, 0.5775204, 1)

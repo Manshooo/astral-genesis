@@ -2,17 +2,16 @@
 ## Базовая основа для всех интерактивных объектов (см.
 ## docs/astral-genesis/how-to/Взаимодействие.md для требований к коллайдеру/слою).
 ##
-## Три способа расширения (можно комбинировать):
-## 1. Data-driven: назначить actions[] в инспекторе - без кода вообще.
-## 2. Signal: подписаться на `interacted` снаружи - для разовых сценарных триггеров.
-## 3. Override: унаследовать скрипт и переопределить interact() полностью
-##    (можно вызвать super.interact(), чтобы сохранить actions[]/signal и
-##    добавить что-то до/после - см. e_incubator.gd).
-##
-## C_Interactable сюда НЕ добавляется через define_components() - он
+## Три способа расширения (можно комбинировать):[br]
+## 1. Data-driven: назначить actions[] в инспекторе - без кода вообще.[br]
+## 2. Signal: подписаться на `interacted` снаружи - для разовых сценарных триггеров.[br]
+## 3. Override: унаследовать скрипт и переопределить interact() полностью[br]
+##    (можно вызвать super.interact(), чтобы сохранить actions[]/signal и[br]
+##    добавить что-то до/после - см. e_incubator.gd).[br]
+## [br]
+## C_Interactable сюда не добавляется через define_components() - он
 ## настраивается через component_resources в самой сцене (Inspector), иначе
-## сработает известный баг: define_components() затирает Inspector-значения
-## дублирующегося компонента.
+## define_components() затирает Inspector-значения дублирующегося компонента.
 @tool
 class_name E_InteractableObject
 extends Entity

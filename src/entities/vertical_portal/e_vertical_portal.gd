@@ -1,0 +1,3 @@
+@tool
+class_name E_VerticalPortal
+extends E_InteractableObject
