@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="3_b8d6q"]
 [ext_resource type="Script" uid="uid://cyg0dgtskxbxb" path="res://src/entities/vertical_portal/a_use_portal.gd" id="4_660ut"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_l4b6j"]
+[ext_resource type="Material" uid="uid://by1nhfhnrvyii" path="res://assets/shared/materials/portal_mat.tres" id="7_660ut"]
 
 [sub_resource type="Resource" id="Resource_b8d6q"]
 script = ExtResource("4_660ut")
@@ -17,14 +18,11 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="Curve" id="Curve_8upip"]
 _limits = [0.0, 2.0, 0.0, 1.0]
-_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.5, 1.5), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+_data = [Vector2(0, 1.4311928), 0.0, 0.3582945, 0, 0, Vector2(0.51557094, 0.733945), 0.13256931, 0.13256931, 0, 0, Vector2(1, 1.3027524), -0.270549, 0.0, 0, 0]
 point_count = 3
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_drsw1"]
-albedo_color = Color(0.4042875, 0.62378347, 0.61889064, 1)
-
 [sub_resource type="TubeTrailMesh" id="TubeTrailMesh_4o3bb"]
-material = SubResource("StandardMaterial3D_drsw1")
+material = ExtResource("7_660ut")
 sections = 7
 section_length = 1.0
 cap_top = false
@@ -32,7 +30,8 @@ cap_bottom = false
 curve = SubResource("Curve_8upip")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_3owqy"]
-height = 7.0
+radius = 0.8769531
+height = 7.734375
 
 [node name="VerticalPortal" unique_id=1972028151 instance=ExtResource("1_4o3bb")]
 script = ExtResource("2_4o3bb")
@@ -44,5 +43,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5723822, 0)
 mesh = SubResource("TubeTrailMesh_4o3bb")
 
 [node name="CollisionShape3D" parent="InteractBody" parent_id_path=PackedInt32Array(1922674725) index="0" unique_id=52145449]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6247163, 0)
 shape = SubResource("CapsuleShape3D_3owqy")

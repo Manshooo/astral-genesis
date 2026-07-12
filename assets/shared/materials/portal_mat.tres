@@ -1,0 +1,97 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://by1nhfhnrvyii"]
+
+[sub_resource type="Shader" id="Shader_5myjd"]
+code = "shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+group_uniforms Albedo;
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+
+group_uniforms Specular;
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+
+group_uniforms uvSettings;
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+
+group_uniforms Waving;
+uniform float wave_amplitude : hint_range(0.0, 1.0, 0.001) = 0.08;
+uniform float wave_frequency : hint_range(0.0, 20.0, 0.1) = 4.0;
+uniform float spiral_speed : hint_range(-5.0, 5.0, 0.05) = 1.0;
+uniform float secondary_amplitude : hint_range(0.0, 1.0, 0.001) = 0.03;
+uniform float secondary_frequency : hint_range(0.0, 40.0, 0.1) = 11.0;
+
+group_uniforms Stripes;
+uniform float stripe_count : hint_range(1.0, 64.0, 1) = 10.0;    // сколько полос по кругу трубы
+uniform float stripe_sharpness : hint_range(0.1, 2, 0.1) = 1.0; // резкость краёв (больше = чётче контраст)
+uniform float stripe_scroll_speed : hint_range(-5.0, 5.0, 0.01) = 1.5; // скорость \"бегущих\" полос вверх
+uniform vec4 stripe_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);   // цвет \"светлых\" полос
+
+group_uniforms VertexOffset;
+uniform float vertex_displacement : hint_range(0.0, 1.0, 0.001) = 0.1;
+uniform float vertex_wave_scale : hint_range(0.0, 2.0, 0.01) = 1.0;
+
+group_uniforms Glowing;
+uniform float glowing_speed: hint_range(0, 2.0, 0.05) = 1;
+uniform float emission_energy : hint_range(0.0, 10.0, 0.1) = 2.0;
+
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+
+	float v_uv_y = UV.y + spiral_speed * TIME;
+	float v_wave = sin(v_uv_y * wave_frequency * TAU + TIME * spiral_speed) * wave_amplitude;
+	float v_wave2 = sin(v_uv_y * secondary_frequency * TAU - TIME * spiral_speed * 1.7) * secondary_amplitude;
+
+	float displacement = (v_wave + v_wave2) * vertex_displacement * vertex_wave_scale;
+	VERTEX += NORMAL * displacement;
+}
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	vec2 moving_uv = base_uv + vec2(0.0, spiral_speed * TIME);
+
+	float wave = sin(moving_uv.y * wave_frequency * TAU + TIME * spiral_speed) * wave_amplitude;
+	float wave2 = sin(moving_uv.y * secondary_frequency * TAU - TIME * spiral_speed * 1.7) * secondary_amplitude;
+
+	vec2 distorted_uv = moving_uv;
+	distorted_uv.x += wave + wave2;
+
+	// --- полосы ---
+	float stripe_phase = (distorted_uv.x * stripe_count) - (base_uv.y * stripe_count * 0.4) - (TIME * stripe_scroll_speed);
+	float stripe_raw = sin(stripe_phase * TAU) * 0.5 + 0.5;
+	float stripe_mask = smoothstep(0.5 - 1.0 / stripe_sharpness, 0.5 + 1.0 / stripe_sharpness, stripe_raw);
+
+	vec4 albedo_tex = texture(texture_albedo, distorted_uv); // на случай если текстуру всё же подключат
+	vec3 base_color = albedo.rgb * albedo_tex.rgb;
+
+	ALBEDO = mix(base_color, stripe_color.rgb, stripe_mask);
+
+	EMISSION = stripe_color.rgb * stripe_mask * (sin(emission_energy * TIME * glowing_speed) + 1.0);
+
+	SPECULAR = specular;
+}
+"
+
+[resource]
+render_priority = 0
+shader = SubResource("Shader_5myjd")
+shader_parameter/albedo = Color(0.25067514, 0.61120135, 0.8451, 1)
+shader_parameter/specular = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 0)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/wave_amplitude = 0.0990000047025
+shader_parameter/wave_frequency = 1.30000001937156
+shader_parameter/spiral_speed = 0.15000007674118
+shader_parameter/secondary_amplitude = 0.12800000608
+shader_parameter/secondary_frequency = 3.20000004768384
+shader_parameter/stripe_count = 8.0
+shader_parameter/stripe_sharpness = 3.0
+shader_parameter/stripe_scroll_speed = 1.5
+shader_parameter/stripe_color = Color(0.3108071, 0.39872357, 0.4625615, 1)
+shader_parameter/vertex_displacement = 0.6450000306375
+shader_parameter/vertex_wave_scale = 1.0099999774244801
+shader_parameter/glowing_speed = 0.7500000111759
+shader_parameter/emission_energy = 5.5000000819566
