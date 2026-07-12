@@ -2,11 +2,17 @@
 
 [ext_resource type="PackedScene" uid="uid://cqafxti0mv8br" path="res://assets/hub/hub.glb" id="1_h75h4"]
 [ext_resource type="Script" uid="uid://bin0h22anh3cl" path="res://src/entities/incubator/e_incubator.gd" id="2_k166h"]
+[ext_resource type="Script" uid="uid://clp828keyyihu" path="res://src/levels/hub/hub.gd" id="2_oeda6"]
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_da6hf"]
+[ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="4_18pe2"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_is5eu"]
 [ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/a_open_skill_tree.gd" id="4_oeda6"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_is5eu"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
+
+[sub_resource type="Resource" id="Resource_oeda6"]
+script = ExtResource("4_18pe2")
+metadata/_custom_type_script = "uid://0747vic3c1i4"
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7dvkg"]
 
@@ -21,7 +27,9 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 [sub_resource type="BoxShape3D" id="BoxShape3D_3owqy"]
 size = Vector3(3.5, 5.5, 3.5)
 
-[node name="hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
+[node name="Room" unique_id=1623291969 instance=ExtResource("1_h75h4")]
+script = ExtResource("2_oeda6")
+component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_oeda6")])
 
 [node name="Incubator" parent="." index="0" unique_id=29663830]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 3.6396914)
@@ -40,3 +48,8 @@ shape = SubResource("BoxShape3D_3owqy")
 
 [node name="Door" parent="." index="1" unique_id=1986258941 instance=ExtResource("5_is5eu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0640976, 2.0443382, -7.799738)
+
+[node name="Doors" type="Node" parent="." index="17" unique_id=901771904]
+
+[node name="RoomDoor" type="Node3D" parent="Doors" index="0" unique_id=1260885057]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, -8)

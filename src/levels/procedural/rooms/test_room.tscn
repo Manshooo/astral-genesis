@@ -16,17 +16,19 @@ data = PackedVector3Array(-9, 0, 9, -9, 6, -9, -9, 0, -9, -9, 0, 9, -9, 6, 9, -9
 script = ExtResource("1_6ov03")
 component_resources = Array[ExtResource("2_cjxtr")]([SubResource("Resource_qcjgo")])
 
-[node name="SpawnPoint" type="Node3D" parent="." unique_id=88028626]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -7.4)
-
-[node name="BuildingsRoomB1" type="MeshInstance3D" parent="." unique_id=141821171]
+[node name="room" type="MeshInstance3D" parent="." unique_id=141821171]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.9604645e-08, 0)
 mesh = ExtResource("4_bfruy")
 
-[node name="RoomDoor" type="Node3D" parent="BuildingsRoomB1" unique_id=97066973]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09999994, 11.1)
+[node name="StaticBody3D" type="StaticBody3D" parent="room" unique_id=1146147706]
 
-[node name="StaticBody3D" type="StaticBody3D" parent="BuildingsRoomB1" unique_id=1146147706]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BuildingsRoomB1/StaticBody3D" unique_id=1807940839]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="room/StaticBody3D" unique_id=1807940839]
 shape = SubResource("ConcavePolygonShape3D_bfruy")
+
+[node name="Doors" type="Node" parent="room" unique_id=755826966]
+
+[node name="RoomDoor" type="Node3D" parent="room/Doors" unique_id=97066973]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 11.1)
+
+[node name="SpawnPoint" type="Node3D" parent="." unique_id=88028626]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -7.4)
