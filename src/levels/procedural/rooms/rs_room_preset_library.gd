@@ -1,0 +1,2 @@
+class_name RS_RoomPresetLibrary
+extends Resource
