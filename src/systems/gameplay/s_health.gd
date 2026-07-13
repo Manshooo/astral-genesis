@@ -1,54 +1,33 @@
+# res://src/systems/gameplay/s_health.gd
+# Группа: "gameplay".
+# Базовая система здоровья. Следит за C_Health у ВСЕХ сущностей (игрок, враги,
+# захваченные тела) и делает ровно две вещи:
+#   1. Держит current в пределах [0, maximum] — защита от переотхила/ухода в минус.
+#   2. Когда HP падает до нуля, ОДИН раз объявляет о смерти: вешает тег C_Dead и
+#      шлёт событие "entity_died" (GECS emit_event -> Observer.on_event).
+#      Событие несёт саму сущность, поэтому наблюдатели могут фильтровать, чью
+#      именно смерть обрабатывать (напр. только игрока: with_all([C_PlayerInput])).
+#
+# Чего система намеренно НЕ делает:
+#   - не наносит урон (это дело боевых систем — они меняют C_Health.current);
+#   - не удаляет тело из мира и не решает, что значит смерть для конкретной
+#     сущности. На "entity_died" подписываются те, кому это важно: игрок
+#     (конец забега / перенос сознания), враг (дроп лута), и т.д.
 class_name S_Health
 extends System
 
-# Remember: Systems contain the meat and potatos of everything and can delete
-# themselves or add other systems etc. System order matters.
-## Override this method to define the [System]s that this system depends on.[br]
-## If not overridden the system will run based on the order of the systems in the [World][br]
-## and the order of the systems in the [World] will be based on the order they were added to the [World].[br]
-func deps() -> Dictionary[int, Array]:
-	return {
-		Runs.After: [],
-		Runs.Before: [],
-	}
 
-
-## Override this method and return a [QueryBuilder] to define the required [Component]s for the system.[br]
-## If not overridden, the system will run on every update with no entities.
+## Только живые сущности со здоровьем. C_Dead исключает уже обработанные трупы,
+## поэтому смерть гарантированно объявляется единожды.
 func query() -> QueryBuilder:
-	return q.with_all([C_Health]) # Use q.with_all([YourComponent])
+	return q.with_all([C_Health]).with_none([C_Dead])
 
 
-## Runs once after the system has been added to the [World] to setup anything on the system one time[br]
-# func setup():
-# 	pass
-
-
-## Override this method to define any sub-systems that should be processed by this system.[br]
-# func sub_systems() -> Array[Array]:
-# 	return [
-# 		[q.with_all([YourComponent]), process_subsystem]
-# 	]
-#
-# func process_subsystem(entities: Array[Entity], components: Array, delta: float):
-# 	pass
-
-
-## The main processing function for the system.[br]
-## Override this method to define your system's behavior.[br]
-## [param entities] Array of entities matching the system's query[br]
-## [param components] Array of component arrays (in order from iterate()), or empty if no iterate() call[br]
-## [param delta] The time elapsed since the last frame[br][br]
-## [b]Simple approach:[/b] Loop through entities and use get_component()[br]
-## [b]Fast approach:[/b] Use iterate() in query and access component arrays directly
-func process(entities: Array[Entity], components: Array, delta: float) -> void:
-	# Per-entity processing (simple)
+func process(entities: Array[Entity], _components: Array, _delta: float) -> void:
 	for entity in entities:
-		var health = entity.get_component(C_Health) as C_Health
-		if health.current <= 0.0:
-			print("Entity died: ", entity.name)
+		var health := entity.get_component(C_Health) as C_Health
+		health.current = clampf(health.current, 0.0, health.maximum)
 
-	# OR batch processing (fast) - requires query().iterate([Components])
-	# var your_components = components[0]
-	# for i in entities.size():
-	# 	# Process entities[i] with your_components[i]
+		if health.current <= 0.0:
+			cmd.add_component(entity, C_Dead.new())
+			ECS.world.emit_event(&"entity_died", entity)

@@ -1,7 +1,7 @@
 class_name C_LevelNode
 extends Component
 
-@export var node_id: String = &""
+@export var node_id: StringName = &""
 @export var doors: Array[NodePath] = []
 
 # TODO: компонент по идее сам должен шерстить Doors и добавлять в себя узлы/ссылки на узлы.
