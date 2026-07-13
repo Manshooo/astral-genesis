@@ -3,3 +3,7 @@ extends Component
 
 @export var capture_range: float = 2.0
 @export var capture_success_chance: float = 0.5
+
+## Транзиентный запрос захвата на этот кадр: ставит E_Player по ЛКМ, сбрасывает
+## S_BodySnatch. Не экспортируется — живёт только в рантайме, в сцену не пишется.
+var capture_requested := false

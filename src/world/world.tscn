@@ -108,7 +108,6 @@ metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]
 script = ExtResource("8_a20vb")
-group = &"gameplay"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]

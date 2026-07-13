@@ -7,6 +7,13 @@ extends Entity
 @onready var interact_ray: RayCast3D = $Camera3D/InteractRay
 
 
+## Компоненты-идентичность БФЖ, живущие независимо от текущего тела (см. ADR-0002).
+## Здесь, а не в сцене — чтобы «душа» всегда имела их, и чтобы S_ApplySkillEffects
+## (запрос C_Lifespan+C_BodySnatch) наконец матчил игрока.
+func define_components() -> Array:
+	return [C_BodySnatch.new(), C_Lifespan.new()]
+
+
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
@@ -22,3 +29,11 @@ func _input(event: InputEvent) -> void:
 		var inp := get_component(C_PlayerInput) as C_PlayerInput
 		if inp:
 			inp.jump_pressed = true
+
+	# Захват тела — ЛКМ. Раскладку ввода не трогаем: читаем кнопку напрямую,
+	# сам захват выполняет S_BodySnatch (см. ADR-0002).
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed and not event.is_echo():
+		var bs := get_component(C_BodySnatch) as C_BodySnatch
+		if bs:
+			bs.capture_requested = true

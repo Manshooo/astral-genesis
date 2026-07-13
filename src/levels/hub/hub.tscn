@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/a_open_skill_tree.gd" id="4_oeda6"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_is5eu"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
+[ext_resource type="Script" uid="uid://bpurxo8bbxd37" path="res://src/resources/interaction/a_start_new_run.gd" id="10_alaum"]
 
 [sub_resource type="Resource" id="Resource_oeda6"]
 script = ExtResource("4_18pe2")
@@ -26,6 +27,10 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_3owqy"]
 size = Vector3(3.5, 5.5, 3.5)
+
+[sub_resource type="Resource" id="Resource_alaum"]
+script = ExtResource("10_alaum")
+metadata/_custom_type_script = "uid://bpurxo8bbxd37"
 
 [node name="Room" unique_id=1623291969 instance=ExtResource("1_h75h4")]
 script = ExtResource("2_oeda6")
@@ -48,6 +53,7 @@ shape = SubResource("BoxShape3D_3owqy")
 
 [node name="Door" parent="." index="1" unique_id=1986258941 instance=ExtResource("5_is5eu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0640976, 2.0443382, -7.799738)
+actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_alaum")])
 
 [node name="Doors" type="Node" parent="." index="17" unique_id=901771904]
 
