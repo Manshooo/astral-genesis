@@ -20,7 +20,10 @@ const FLOOR_COUNT_MAX := 3
 const INTER_LAYER_CONNECTOR_COUNT := 3
 
 
-func generate_run(level_seed: int) -> RS_LevelGraph:
+## [param library] если задана — на финальном проходе подбирает каждому узлу
+## реальную сцену комнаты по его тегам и числу рёбер (см. ADR-0003). null =
+## оставить placeholder у всех узлов (поведение до появления библиотеки).
+func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_LevelGraph:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = level_seed
 	var graph := RS_LevelGraph.new()
@@ -57,6 +60,10 @@ func generate_run(level_seed: int) -> RS_LevelGraph:
 	for depth in DEPTHS:
 		all_layers.append(layers_by_depth[depth])
 	graph.merge(all_layers)
+
+	# Подстановка реальных сцен комнат — ТОЛЬКО здесь, когда все connections уже
+	# проставлены (иначе select_preset не знает нужного числа слотов).
+	graph._assign_room_scenes(rng, library)
 
 	graph.entry_node_id = home_entry.id
 
@@ -224,6 +231,18 @@ func merge(layers: Array[RS_LevelLayer]) -> void:
 	for layer in layers:
 		for node in layer.nodes:
 			nodes[node.id] = node
+
+
+## Финальный проход: подбирает каждому узлу сцену комнаты через библиотеку
+## пресетов. Узлам, которым пресет не нашёлся (или library == null), остаётся
+## заранее проставленный PLACEHOLDER_ROOM_SCENE — генерация не падает.
+func _assign_room_scenes(rng: RandomNumberGenerator, library: RS_RoomPresetLibrary) -> void:
+	if library == null:
+		return
+	for node in nodes.values():
+		var preset := library.select_preset(node, rng)
+		if preset and preset.scene:
+			node.room_scene_path = preset.scene.resource_path
 
 
 func _link_nodes(a: RS_LevelNode, b: RS_LevelNode, type: RS_LevelConnection.Type) -> void:

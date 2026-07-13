@@ -23,7 +23,7 @@ func enter_complex(run_seed: int = -1) -> void:
 	if run_seed == -1:
 		run_seed = randi()
 
-	current_graph = RS_LevelGraph.new().generate_run(run_seed)
+	current_graph = RS_LevelGraph.new().generate_run(run_seed, GameConfig.config.room_preset_library)
 	complex_entered.emit(current_graph)
 	_spawn_room(current_graph.entry_node_id)
 
