@@ -136,7 +136,7 @@ func _place_player_in_room(room: Entity, came_from: StringName) -> void:
 	var target: Transform3D
 	var return_door := _find_return_door(came_from)
 	if return_door:
-		target = (return_door as Node3D).global_transform
+		target = (return_door as Node as Node3D).global_transform
 	else:
 		var spawn_point := room.get_node_or_null(^"SpawnPoint") as Node3D
 		target = spawn_point.global_transform if spawn_point else room.global_transform
