@@ -17,6 +17,7 @@
 [ext_resource type="Script" uid="uid://5ej3l4vg2gbp" path="res://src/systems/gameplay/s_apply_skill_effects.gd" id="8_a20vb"]
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
 [ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
+[ext_resource type="Script" uid="uid://1davl1dw2ge4" path="res://src/systems/gameplay/s_health.gd" id="13_8p8v4"]
 [ext_resource type="Script" uid="uid://dmfpvwuwtjkw" path="res://src/observers/o_outline_visual.gd" id="13_a20vb"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
@@ -77,10 +78,10 @@ script = ExtResource("5_hg6dy")
 group = &"gameplay"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
-[node name="O_ApplySkillEffects" type="Node" parent="World/Systems/gameplay" unique_id=687585807]
-script = ExtResource("8_a20vb")
+[node name="S_Health" type="Node" parent="World/Systems/gameplay" unique_id=1200823422]
+script = ExtResource("13_8p8v4")
 group = &"gameplay"
-metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+metadata/_custom_type_script = "uid://1davl1dw2ge4"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]
 script = ExtResource("4_mmdvd")
@@ -104,6 +105,11 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 [node name="O_OutlineVisual" type="Node" parent="World/Systems" unique_id=229755935]
 script = ExtResource("13_a20vb")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
+
+[node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]
+script = ExtResource("8_a20vb")
+group = &"gameplay"
+metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]
 environment = ExtResource("3_h5o24")
