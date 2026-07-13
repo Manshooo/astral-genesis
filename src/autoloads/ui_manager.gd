@@ -34,6 +34,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _open_pause_menu() -> void:
 	push_screen(PAUSE_MENU_SCENE.instantiate(), true)
 
+func _any_paused() -> bool:
+	for entry in _stack:
+		if entry.paused:
+			return true
+	return false
 
 ## Показывает экран, помещая его на верх общего стека.
 ## [param pause] — ставит игру (SceneTree) на паузу, пока экран открыт (меню паузы).
@@ -85,7 +90,7 @@ func close_top() -> void:
 		if entry.return_to and is_instance_valid(entry.return_to):
 			entry.return_to.show()
 		if entry.paused:
-			get_tree().paused = false
+			get_tree().paused = _any_paused()
 		if enabled:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 

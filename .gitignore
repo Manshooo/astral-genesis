@@ -4,3 +4,6 @@
 
 .obsidian/
 builds/
+
+*.tscn[0-9]*.tmp
+*.tscn.tmp

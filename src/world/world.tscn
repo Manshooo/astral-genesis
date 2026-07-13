@@ -77,7 +77,7 @@ script = ExtResource("5_hg6dy")
 group = &"gameplay"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
-[node name="S_ApplySkillEffects" type="Node" parent="World/Systems/gameplay" unique_id=687585807]
+[node name="O_ApplySkillEffects" type="Node" parent="World/Systems/gameplay" unique_id=687585807]
 script = ExtResource("8_a20vb")
 group = &"gameplay"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
