@@ -24,6 +24,7 @@ script = ExtResource("6_6qelm")
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_37kl0"]
+radius = 0.63183594
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_37kl0"]
 

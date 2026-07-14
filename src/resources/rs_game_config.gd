@@ -6,6 +6,9 @@
 class_name RS_GameConfig
 extends Resource
 
+@export_group("FPS")
+@export var pitch_limit: float = 1.4           ## ~80° в радианах
+
 @export_group("Physics")
 @export var gravity: float = 9.8
 
