@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dr1idwpmrw3s7"]
 
-[ext_resource type="Script" path="res://dev/gen_verifier.gd" id="1_gv"]
+[ext_resource type="Script" uid="uid://cbk3aflhpfis4" path="res://dev/gen_verifier.gd" id="1_gv"]
 
-[node name="GenVerifier" type="Node"]
+[node name="GenVerifier" type="Node" unique_id=758468528]
 script = ExtResource("1_gv")

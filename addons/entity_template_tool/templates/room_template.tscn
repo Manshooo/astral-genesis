@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://c62ss6s5311xw"]
+
+[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://addons/entity_template_tool/templates/room_template.gd" id="1_osxyt"]
+
+[node name="RoomName" type="Node3D" unique_id=620451068]
+script = ExtResource("1_osxyt")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1492272158]
+
+[node name="Doors" type="Node" parent="." unique_id=1730526942]
+
+[node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)

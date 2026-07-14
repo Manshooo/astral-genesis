@@ -26,6 +26,7 @@ GameConfig="*uid://c2loo5mfx0ufk"
 SettingsManager="*uid://b3rnljshci5d7"
 SkillManager="*uid://bwpci4sr0qv4f"
 UIManager="*uid://d13q83ngp0nm4"
+WorldSave="*res://src/autoloads/world_save.gd"
 RunManager="*uid://c6536kxev8382"
 
 [display]
@@ -41,7 +42,7 @@ version_control/autoload_on_startup=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gecs/plugin.cfg")
+enabled=PackedStringArray("res://addons/entity_template_tool/plugin.cfg", "res://addons/gecs/plugin.cfg")
 
 [file_customization]
 

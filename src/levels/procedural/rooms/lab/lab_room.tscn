@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://dmh4r1axj6m5"]
+
+[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://addons/entity_template_tool/templates/room_template.gd" id="1_f0wrg"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_2ub76"]
+[ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_gbsua"]
+
+[sub_resource type="Resource" id="Resource_2oaqr"]
+script = ExtResource("3_gbsua")
+metadata/_custom_type_script = "uid://0747vic3c1i4"
+
+[node name="lab_room" type="Node3D" unique_id=620451068]
+script = ExtResource("1_f0wrg")
+component_resources = Array[ExtResource("2_2ub76")]([SubResource("Resource_2oaqr")])
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1492272158]
+
+[node name="Doors" type="Node" parent="." unique_id=1730526942]
+
+[node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3 uid="uid://cxwq3u6nqe5hh"]
+
+[ext_resource type="PackedScene" uid="uid://cr68o3xwhlxkx" path="res://src/levels/procedural/rooms/default/default_room.tscn" id="1_0c4g1"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_w5rn1"]
+
+[resource]
+script = ExtResource("2_w5rn1")
+display_name = "Стандартная комната 4"
+scene = ExtResource("1_0c4g1")
+slot_count = 4
+metadata/_custom_type_script = "uid://wiaffa7aebsm"

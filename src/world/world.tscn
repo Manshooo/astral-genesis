@@ -13,7 +13,6 @@
 [ext_resource type="Script" uid="uid://bxvdso6ek0oyg" path="res://src/components/gameplay/c_playerInput.gd" id="6_kiqqj"]
 [ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="7_m8idb"]
 [ext_resource type="Script" uid="uid://creg13w8xbee0" path="res://src/systems/physics/s_player_movement.gd" id="7_ocs7n"]
-[ext_resource type="PackedScene" uid="uid://uxxvljhmbg86" path="res://src/levels/hub/hub.tscn" id="8_2xmcn"]
 [ext_resource type="Script" uid="uid://5ej3l4vg2gbp" path="res://src/systems/gameplay/s_apply_skill_effects.gd" id="8_a20vb"]
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
 [ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
@@ -50,8 +49,6 @@ metadata/_custom_type_script = "uid://cdu5tlyk72uu4"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.119229436, 1.9849274, 6.4965677)
 id = "0_play"
 component_resources = Array[ExtResource("4_2xmcn")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i")])
-
-[node name="Room" parent="World/Entities" unique_id=1623291969 instance=ExtResource("8_2xmcn")]
 
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
 
