@@ -18,6 +18,9 @@
 [ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
 [ext_resource type="Script" uid="uid://1davl1dw2ge4" path="res://src/systems/gameplay/s_health.gd" id="13_8p8v4"]
 [ext_resource type="Script" uid="uid://dmfpvwuwtjkw" path="res://src/observers/o_outline_visual.gd" id="13_a20vb"]
+[ext_resource type="Script" uid="uid://b7pl1mxb1o0du" path="res://src/systems/gameplay/s_body_snatch.gd" id="14_bsnatch"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_lifespan.gd" id="15_lifespan"]
+[ext_resource type="Script" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("5_8p8v4")
@@ -80,6 +83,10 @@ script = ExtResource("13_8p8v4")
 group = &"gameplay"
 metadata/_custom_type_script = "uid://1davl1dw2ge4"
 
+[node name="S_Lifespan" type="Node" parent="World/Systems/gameplay"]
+script = ExtResource("15_lifespan")
+group = &"gameplay"
+
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]
 script = ExtResource("4_mmdvd")
 metadata/_custom_type_script = "uid://b3vi2ingux88g"
@@ -99,8 +106,17 @@ script = ExtResource("9_eo0a0")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
+[node name="S_BodySnatch" type="Node" parent="World/Systems/physics"]
+script = ExtResource("14_bsnatch")
+group = &"physics"
+metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
 [node name="O_OutlineVisual" type="Node" parent="World/Systems" unique_id=229755935]
 script = ExtResource("13_a20vb")
+metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
+
+[node name="O_ExpelFromBody" type="Node" parent="World/Systems"]
+script = ExtResource("16_expel")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]

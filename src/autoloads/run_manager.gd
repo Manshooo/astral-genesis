@@ -19,8 +19,13 @@ const MENU_SCENE := "res://src/levels/menu_map/L_menu_map.tscn"
 var current_graph: RS_LevelGraph
 var current_node_id: StringName = &""
 var _current_room_entity: Entity
-## Двери текущей комнаты — держим отдельно, т.к. add_entity(room) НЕ регистрирует
-## вложенные сущности, и remove_entity(room) их не снимает (см. _despawn_current_room).
+## Вложенные сущности комнаты — держим отдельно, т.к. add_entity(room) регистрирует
+## ТОЛЬКО саму комнату (обхода дерева в поисках вложенных Entity в GECS нет), а
+## remove_entity(room) их не снимает. Регистрируем/снимаем их явно (см.
+## _register_room_children и _despawn_current_room).
+var _current_room_children: Array[Entity] = []
+## Подмножество _current_room_children — двери (с C_DoorSlot). Нужно для поиска
+## двери, ведущей обратно (_find_return_door).
 var _current_room_doors: Array[Entity] = []
 
 
@@ -80,34 +85,66 @@ func _spawn_room(node_id: StringName, came_from: StringName = &"") -> void:
 		ref.node_id = node_id
 
 	_current_room_entity = room
-	_current_room_doors = _register_and_bind_doors(room, node_data)
+	_current_room_children = _register_room_children(room)
+	_current_room_doors = _bind_doors(node_data)
 	current_node_id = node_id
 	room_changed.emit(node_id)
 	_place_player_in_room(room, came_from)
 
 
-## Снимает текущую комнату. Сначала двери (иначе после queue_free комнаты они
-## остались бы битыми ссылками в реестре мира), затем саму комнату.
+## Снимает текущую комнату. Сначала вложенные сущности (иначе после queue_free
+## комнаты они остались бы битыми ссылками в реестре мира), затем саму комнату.
+##
+## Ссылки могут указывать на УЖЕ ОСВОБОЖДЁННЫЕ сущности: RunManager — autoload и
+## переживает смену сцены, так что после «Выхода в меню» прошлый забег улетает
+## вместе со сценой мира, а ссылки остаются битыми. remove_entity(entity: Entity)
+## типизирован — freed-объект роняет проверку типа ещё ДО тела функции (там, где
+## стоит is_instance_valid), поэтому отсеиваем невалидные заранее.
 func _despawn_current_room() -> void:
-	if not _current_room_doors.is_empty():
-		ECS.world.remove_entities(_current_room_doors)
-		_current_room_doors.clear()
-	if _current_room_entity and is_instance_valid(_current_room_entity):
+	_remove_valid_entities(_current_room_children)
+	_current_room_children.clear()
+	_current_room_doors.clear()  # подмножество children — уже сняты выше
+	if is_instance_valid(_current_room_entity):
 		ECS.world.remove_entity(_current_room_entity)
-		_current_room_entity = null
+	_current_room_entity = null
 
 
-## Находит двери комнаты (Entity с C_DoorSlot), регистрирует их в мире
-## (add_entity(room) их не берёт) и штампует C_DoorPortal по рёбрам узла.
+## remove_entities только для живых сущностей — см. про freed-ссылки в
+## _despawn_current_room.
+func _remove_valid_entities(list: Array[Entity]) -> void:
+	var valid: Array[Entity] = []
+	for e in list:
+		if is_instance_valid(e):
+			valid.append(e)
+	if not valid.is_empty():
+		ECS.world.remove_entities(valid)
+
+
+## Регистрирует в мире все вложенные сущности комнаты (Incubator, двери и т.п.).
+## Нужно, т.к. add_entity(room) кладёт в мир ТОЛЬКО саму комнату — обхода дерева
+## в поисках вложенных Entity в GECS нет.
+func _register_room_children(room: Entity) -> Array[Entity]:
+	var children: Array[Entity] = []
+	# owned=false — иначе сущности, вставленные как инстансы под-сцены, не находятся.
+	for node in room.find_children("*", "Entity", true, false):
+		var e := node as Entity
+		if e:
+			children.append(e)
+	if not children.is_empty():
+		ECS.world.add_entities(children)
+	return children
+
+
+## Штампует C_DoorPortal на двери комнаты (подмножество _current_room_children с
+## C_DoorSlot) по рёбрам узла. Сами двери уже зарегистрированы в мире
+## _register_room_children — здесь только биндинг рёбер к слотам.
 ## Сопоставление сейчас по порядку slot_id ↔ порядку connections — это
 ## временный бутстрап Варианта A из ADR-0001. Умное сопоставление слот↔ребро
 ## приедет с RS_RoomPresetLibrary (Фаза 2), когда пресет начнёт объявлять слоты.
-func _register_and_bind_doors(room: Entity, node_data: RS_LevelNode) -> Array[Entity]:
+func _bind_doors(node_data: RS_LevelNode) -> Array[Entity]:
 	var doors: Array[Entity] = []
-	# owned=false — иначе двери, вставленные как инстансы под-сцены, не находятся.
-	for node in room.find_children("*", "Entity", true, false):
-		var e := node as Entity
-		if e and e.has_component(C_DoorSlot):
+	for e in _current_room_children:
+		if e.has_component(C_DoorSlot):
 			doors.append(e)
 	if doors.is_empty():
 		return doors
@@ -115,8 +152,6 @@ func _register_and_bind_doors(room: Entity, node_data: RS_LevelNode) -> Array[En
 	# Детерминированный порядок независимо от раскладки нод в дереве.
 	# Через String(): StringName сравнивается по внутреннему указателю, не лексикографически.
 	doors.sort_custom(func(a, b): return String(_slot_id_of(a)) < String(_slot_id_of(b)))
-
-	ECS.world.add_entities(doors)
 
 	var connections := node_data.connections
 	for i in doors.size():

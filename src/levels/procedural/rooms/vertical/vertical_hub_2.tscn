@@ -55,4 +55,4 @@ component_resources = Array[ExtResource("2_pw0oc")]([SubResource("Resource_8ssbo
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -6)
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=921574482]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -2.6010575)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.4925244, -2.6010575)

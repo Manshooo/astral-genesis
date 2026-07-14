@@ -7,7 +7,8 @@ func query() -> QueryBuilder:
 	return q.with_all([C_PlayerInput, C_FPSCamera]).iterate([C_PlayerInput, C_FPSCamera]).with_none([C_UIBlocked])
 
 func process(entities: Array[Entity], components: Array, _delta: float) -> void:
-	var s := SettingsManager.settings  
+	var s := SettingsManager.settings
+	var gc := GameConfig.config
 
 	var input_comps: Array = components[0]
 	var camera_comps: Array = components[1]
@@ -24,8 +25,9 @@ func process(entities: Array[Entity], components: Array, _delta: float) -> void:
 
 		cam_comp.pitch = clamp(
 			cam_comp.pitch - inp.mouse_delta.y * s.mouse_sensitivity,
-			-s.pitch_limit,
-			s.pitch_limit
+			-gc.pitch_limit,
+			gc.pitch_limit
+			# need to fix
 		)
 		player.camera.rotation.x = cam_comp.pitch
 

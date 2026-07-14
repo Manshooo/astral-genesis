@@ -5,7 +5,6 @@ extends Resource
 
 @export_group("Mouse")
 @export var mouse_sensitivity: float = 0.0015  ## Умножается на 1000
-@export var pitch_limit: float = 1.4           ## ~80° в радианах
 
 @export_group("Movement")
 @export var move_speed: float = 5.0
