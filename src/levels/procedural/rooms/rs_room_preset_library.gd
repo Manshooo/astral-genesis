@@ -90,7 +90,7 @@ func validate() -> Array[String]:
 			continue
 		var inst := p.scene.instantiate()
 		var actual := inst.find_children("*", "Entity", true, false).filter(
-			func(n): return n is Entity and n.has_component(C_DoorSlot)
+			func(n): return _has_door_slot(n)
 		).size()
 		inst.free()
 		if actual != p.slot_count:
@@ -99,3 +99,18 @@ func validate() -> Array[String]:
 				% [p.display_name, p.slot_count, actual]
 			)
 	return problems
+
+
+## Есть ли на сущности слот двери. Проверяем И has_component (когда сущность в
+## дереве и её _ready уже отработал), И component_resources (когда сцена
+## инстанцирована detached — тогда _ready не звался и компоненты ещё «не разложены»).
+func _has_door_slot(n: Node) -> bool:
+	if not (n is Entity):
+		return false
+	var e := n as Entity
+	if e.has_component(C_DoorSlot):
+		return true
+	for c in e.component_resources:
+		if c is C_DoorSlot:
+			return true
+	return false

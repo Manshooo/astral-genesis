@@ -9,6 +9,12 @@ extends Node
 
 signal complex_entered(graph: RS_LevelGraph)
 signal room_changed(node_id: StringName)
+## Игрок сбежал на поверхность — забег (и пока вся игра) окончен победой.
+signal run_finished
+
+## Заглушка «игра окончена»: экрана концовки пока нет — уходим в меню, как и
+## «выход в меню» из паузы.
+const MENU_SCENE := "res://src/levels/menu_map/L_menu_map.tscn"
 
 var current_graph: RS_LevelGraph
 var current_node_id: StringName = &""
@@ -21,11 +27,27 @@ var _current_room_doors: Array[Entity] = []
 ## Вызывается дверью в хабе.
 func enter_complex(run_seed: int = -1) -> void:
 	if run_seed == -1:
-		run_seed = randi()
+		run_seed = WorldSave.save.run_seed()  # детерминированно из (world_seed, death_count)
 
 	current_graph = RS_LevelGraph.new().generate_run(run_seed, GameConfig.config.room_preset_library)
 	complex_entered.emit(current_graph)
 	_spawn_room(current_graph.entry_node_id)
+
+
+## Побег на поверхность = ОКОНЧАНИЕ ИГРЫ (победа). Это НЕ возврат в хаб — тот
+## происходит только при смерти (пока не реализовано, нужен death_count/состояния).
+## Зовётся A_FinishRun из комнаты-выхода (тег level_exit).
+func finish_run() -> void:
+	if current_graph == null:
+		return  # не в забеге — выходить неоткуда
+
+	_despawn_current_room()
+	current_graph = null
+	current_node_id = &""
+	run_finished.emit()
+
+	# TODO: экран концовки/победы. Пока — в меню, как «выход в меню» из паузы.
+	get_tree().change_scene_to_file(MENU_SCENE)
 
 
 ## Переход в другой узел графа (вызывается A_TravelThroughDoor).
@@ -128,8 +150,12 @@ func _slot_id_of(door: Entity) -> StringName:
 	return slot.slot_id if slot else &""
 
 
+func _get_player() -> E_Player:
+	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as E_Player
+
+
 func _place_player_in_room(room: Entity, came_from: StringName) -> void:
-	var player := ECS.world.query.with_all([C_PlayerInput]).execute_one() as E_Player
+	var player := _get_player()
 	if player == null:
 		return
 

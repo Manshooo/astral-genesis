@@ -9,6 +9,9 @@ extends Resource
 const EXTRA_EDGE_RATIO := 0.25
 ## ВРЕМЕННО: пока нет RS_RoomPresetLibrary с реальными пресетами комнат.
 const PLACEHOLDER_ROOM_SCENE := "res://src/levels/procedural/rooms/test_room.tscn"
+## Домашний узел (entry) — это хаб: уникальная авторская сцена, а не пресет из
+## библиотеки. Игрок стартует здесь и уходит в комплекс через её дверь.
+const HUB_ROOM_SCENE := "res://src/levels/hub/hub.tscn"
 
 ## От самого глубокого к поверхности. Домашний слой игрока — L3, он НЕ центр
 ## и не концентратор — это гарантируется отдельно ниже (_generate_floor).
@@ -18,6 +21,10 @@ const ROOMS_PER_FLOOR := 4
 const FLOOR_COUNT_MIN := 1
 const FLOOR_COUNT_MAX := 3
 const INTER_LAYER_CONNECTOR_COUNT := 3
+## Потолок степени узла: не больше стольких рёбер (= дверей) на комнату. Гварды
+## ниже держат его на всех необязательных рёбрах и коннекторах; остовное дерево
+## имеет приоритет над лимитом (связность важнее).
+const MAX_ROOM_DEGREE := 4
 
 
 ## [param library] если задана — на финальном проходе подбирает каждому узлу
@@ -66,6 +73,8 @@ func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_L
 	graph._assign_room_scenes(rng, library)
 
 	graph.entry_node_id = home_entry.id
+	# Хаб перекрывает подбор из библиотеки: домашний узел всегда — сцена хаба.
+	graph.nodes[home_entry.id].room_scene_path = HUB_ROOM_SCENE
 
 	return graph
 
@@ -133,7 +142,7 @@ func _generate_floor(
 	var root: int = tree_indices[0]
 	var connected_indices: Array[int] = [root]
 	for idx in _shuffled_array(rng, tree_indices.slice(1)):
-		var other_idx: int = connected_indices[rng.randi_range(0, connected_indices.size() - 1)]
+		var other_idx: int = _pick_open_index(rng, layer, connected_indices)
 		_link_nodes(layer.nodes[idx], layer.nodes[other_idx], RS_LevelConnection.Type.CORRIDOR)
 		connected_indices.append(idx)
 
@@ -145,10 +154,12 @@ func _generate_floor(
 			continue
 		if layer.nodes[a].get_connection_to(layer.nodes[b].id) != null:
 			continue
+		if _degree(layer.nodes[a]) >= MAX_ROOM_DEGREE or _degree(layer.nodes[b]) >= MAX_ROOM_DEGREE:
+			continue  # доп.ребро необязательно — не превышаем лимит степени
 		_link_nodes(layer.nodes[a], layer.nodes[b], RS_LevelConnection.Type.DOOR)
 
 	if dead_end_index != -1:
-		var attach_to: int = connected_indices[rng.randi_range(0, connected_indices.size() - 1)]
+		var attach_to: int = _pick_open_index(rng, layer, connected_indices)
 		_link_nodes(layer.nodes[dead_end_index], layer.nodes[attach_to], RS_LevelConnection.Type.CORRIDOR)
 
 	return layer
@@ -167,8 +178,12 @@ func _connect_layers(
 	hub_tag: StringName = &"vertical_hub",
 	excluded_ids: Array[StringName] = [],
 ) -> void:
-	var from_candidates := layer_from.nodes.filter(func(n): return not excluded_ids.has(n.id))
-	var to_candidates := layer_to.nodes.filter(func(n): return not excluded_ids.has(n.id))
+	var from_candidates := layer_from.nodes.filter(
+		func(n): return not excluded_ids.has(n.id) and _degree(n) < MAX_ROOM_DEGREE
+	)
+	var to_candidates := layer_to.nodes.filter(
+		func(n): return not excluded_ids.has(n.id) and _degree(n) < MAX_ROOM_DEGREE
+	)
 	var upper_pool := _shuffled_array(rng, from_candidates)
 	var lower_pool := _shuffled_array(rng, to_candidates)
 	connector_count = min(connector_count, upper_pool.size(), lower_pool.size())
@@ -255,6 +270,19 @@ func _link_nodes(a: RS_LevelNode, b: RS_LevelNode, type: RS_LevelConnection.Type
 	backward.target_node_id = a.id
 	backward.type = type
 	b.connections.append(backward)
+
+
+func _degree(node: RS_LevelNode) -> int:
+	return node.connections.size()
+
+
+## Индекс из pool (индексы в layer.nodes) с приоритетом узлов, у которых ещё есть
+## место (degree < MAX_ROOM_DEGREE). Свободных нет — берём любой: рвать остовное
+## дерево ради лимита степени нельзя, связность важнее.
+func _pick_open_index(rng: RandomNumberGenerator, layer: RS_LevelLayer, pool: Array[int]) -> int:
+	var open := pool.filter(func(ci): return _degree(layer.nodes[ci]) < MAX_ROOM_DEGREE)
+	var chosen: Array = open if not open.is_empty() else pool
+	return chosen[rng.randi_range(0, chosen.size() - 1)]
 
 
 func _shuffled_array(rng: RandomNumberGenerator, source: Array) -> Array:

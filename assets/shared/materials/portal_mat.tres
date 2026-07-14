@@ -31,6 +31,8 @@ uniform vec4 stripe_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);   // цве
 group_uniforms VertexOffset;
 uniform float vertex_displacement : hint_range(0.0, 1.0, 0.001) = 0.1;
 uniform float vertex_wave_scale : hint_range(0.0, 2.0, 0.01) = 1.0;
+uniform float displacement_min : hint_range(-1.0, 1.0, 0.001) = -1.0; // минимум, на который меш может сжаться
+uniform float displacement_max : hint_range(-1.0, 1.0, 0.001) = 1.0;  // максимум, на который меш может расшириться
 
 group_uniforms Glowing;
 uniform float glowing_speed: hint_range(0, 2.0, 0.05) = 1;
@@ -45,6 +47,7 @@ void vertex() {
 	float v_wave2 = sin(v_uv_y * secondary_frequency * TAU - TIME * spiral_speed * 1.7) * secondary_amplitude;
 
 	float displacement = (v_wave + v_wave2) * vertex_displacement * vertex_wave_scale;
+	displacement = clamp(displacement, displacement_min, displacement_max);
 	VERTEX += NORMAL * displacement;
 }
 
@@ -80,7 +83,7 @@ render_priority = 0
 shader = SubResource("Shader_5myjd")
 shader_parameter/albedo = Color(0.25067514, 0.61120135, 0.8451, 1)
 shader_parameter/specular = 0.0
-shader_parameter/uv1_scale = Vector3(1, 1, 0)
+shader_parameter/uv1_scale = Vector3(1, 1.5, 0)
 shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/wave_amplitude = 0.0990000047025
 shader_parameter/wave_frequency = 1.30000001937156
@@ -92,6 +95,8 @@ shader_parameter/stripe_sharpness = 3.0
 shader_parameter/stripe_scroll_speed = 1.5
 shader_parameter/stripe_color = Color(0.3108071, 0.39872357, 0.4625615, 1)
 shader_parameter/vertex_displacement = 0.6450000306375
-shader_parameter/vertex_wave_scale = 1.0099999774244801
+shader_parameter/vertex_wave_scale = 1.999999955296
+shader_parameter/displacement_min = -0.5999999810000001
+shader_parameter/displacement_max = 0.2200000579500001
 shader_parameter/glowing_speed = 0.7500000111759
 shader_parameter/emission_energy = 5.5000000819566

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3 uid="uid://cmp4ddibc3adc"]
+
+[ext_resource type="PackedScene" uid="uid://dokr7rxaddh4a" path="res://src/levels/procedural/rooms/test_room.tscn" id="1_a6qyk"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_tb7ye"]
+
+[resource]
+script = ExtResource("2_tb7ye")
+display_name = "Комната заглушка"
+scene = ExtResource("1_a6qyk")
+slot_count = 4
+metadata/_custom_type_script = "uid://wiaffa7aebsm"

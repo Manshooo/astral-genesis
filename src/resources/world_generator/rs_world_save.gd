@@ -9,3 +9,9 @@ extends Resource
 
 @export var world_seed: int = 0
 @export var death_count: int = 0
+
+
+## Детерминированный сид генерации комплекса из состояния прохождения. Каждая
+## смерть (death_count++) даёт другую раскладку при том же world_seed.
+func run_seed() -> int:
+	return hash([world_seed, death_count])

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3 uid="uid://dbhqt6q30yvd4"]
+
+[ext_resource type="PackedScene" uid="uid://drklhavb607br" path="res://src/levels/procedural/rooms/vertical/vertical_hub_1.tscn" id="1_tfbt4"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="1_w1qcw"]
+
+[resource]
+script = ExtResource("1_w1qcw")
+display_name = "Одиночный портал"
+scene = ExtResource("1_tfbt4")
+tags = Array[StringName]([&"vertical_hub", &"floor_hub", &"level_exit"])
+metadata/_custom_type_script = "uid://wiaffa7aebsm"

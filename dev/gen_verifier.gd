@@ -106,9 +106,24 @@ func _doors_in_scene(scene_path: String) -> int:
 	if scene_path != "" and ResourceLoader.exists(scene_path):
 		var inst := (load(scene_path) as PackedScene).instantiate()
 		var slots := inst.find_children("*", "Entity", true, false).filter(
-			func(n): return n is Entity and n.has_component(C_DoorSlot)
+			func(n): return _has_door_slot(n)
 		)
 		count = slots.size()
 		inst.free()
 	_door_count_cache[scene_path] = count
 	return count
+
+
+## Есть ли на сущности слот двери. См. пояснение в rs_room_preset_library.gd:
+## detached-инстанс не проходит _ready, поэтому has_component пуст — тогда
+## смотрим component_resources (@export, доступен сразу после instantiate).
+func _has_door_slot(n: Node) -> bool:
+	if not (n is Entity):
+		return false
+	var e := n as Entity
+	if e.has_component(C_DoorSlot):
+		return true
+	for c in e.component_resources:
+		if c is C_DoorSlot:
+			return true
+	return false

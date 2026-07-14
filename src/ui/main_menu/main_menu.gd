@@ -6,6 +6,7 @@ func _ready() -> void:
 	UIManager.enabled = false
 
 func _on_new_game_pressed() -> void:
+	WorldSave.new_game()  # катим новый world_seed до загрузки мира
 	get_tree().change_scene_to_file("res://src/world/world.tscn")
 
 func _on_settings_pressed() -> void:

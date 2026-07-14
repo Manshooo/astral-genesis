@@ -1,8 +1,10 @@
 [gd_resource type="Resource" script_class="RS_GameConfig" format=3 uid="uid://ducppkpid2b73"]
 
 [ext_resource type="Script" uid="uid://cgku22fjosvnp" path="res://src/resources/rs_game_config.gd" id="1_pwh6o"]
+[ext_resource type="Resource" uid="uid://dae1owxxtyib1" path="res://data/room_preset_library.tres" id="2_lib"]
 
 [resource]
 script = ExtResource("1_pwh6o")
 gravity = 12.0
+room_preset_library = ExtResource("2_lib")
 metadata/_custom_type_script = "uid://cgku22fjosvnp"

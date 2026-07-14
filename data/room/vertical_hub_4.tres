@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3 uid="uid://bqexuu8imwkej"]
+
+[ext_resource type="PackedScene" uid="uid://ch8h7c3ft6q1t" path="res://src/levels/procedural/rooms/vertical/vertical_hub_4.tscn" id="1_jn24m"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_7me8n"]
+
+[resource]
+script = ExtResource("2_7me8n")
+display_name = "Четверной портал"
+scene = ExtResource("1_jn24m")
+tags = Array[StringName]([&"vertical_hub", &"floor_hub", &"level_exit"])
+slot_count = 4
+metadata/_custom_type_script = "uid://wiaffa7aebsm"
