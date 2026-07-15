@@ -2,7 +2,15 @@
 extends Node
 
 const SETTINGS_PATH := "user://settings.tres"
-const DEFAULT_SETTINGS := preload("res://data/settings.tres")
+## Не preload: preload резолвится на компиляции и в debug/export-сборке падает на
+## кастомном ресурсе («Cannot get class ''», godotengine/godot#100100). Грузим в
+## рантайме через load() в _init — поэтому var, а не const.
+const DEFAULT_SETTINGS_PATH := "res://data/settings.tres"
+var DEFAULT_SETTINGS: RS_Settings
+
+
+func _init() -> void:
+	DEFAULT_SETTINGS = load(DEFAULT_SETTINGS_PATH)
 
 ## Эмитится каждый раз, когда settings меняются (загрузка, Apply, Reset) —
 ## подписывайтесь, если системе/UI нужно среагировать на смену настроек.

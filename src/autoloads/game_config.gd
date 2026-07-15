@@ -4,6 +4,13 @@
 ## в инспекторе Godot.
 extends Node
 
-const DEFAULT_CONFIG := preload("res://data/game_config.tres")
+## Путь, а не preload: preload резолвится на этапе компиляции и в debug/export-
+## сборке падает на вложенном кастомном ресурсе («Cannot get class ''», см.
+## godotengine/godot#100100). Грузим ресурс в рантайме через load() в _init.
+const DEFAULT_CONFIG_PATH := "res://data/game_config.tres"
 
-var config: RS_GameConfig = DEFAULT_CONFIG
+var config: RS_GameConfig
+
+
+func _init() -> void:
+	config = load(DEFAULT_CONFIG_PATH)

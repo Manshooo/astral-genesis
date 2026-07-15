@@ -4,10 +4,20 @@ extends Node
 signal skill_unlocked(id: StringName, new_rank: int)
 
 const SAVE_PATH := "user://skills.tres"
-const DEFAULT_SAVE := preload("res://data/default_skill_save.tres")
-const SKILL_TREE: RS_SkillTree = preload("res://data/skill_tree.tres")
+## Не preload: preload резолвится на компиляции и в debug/export-сборке падает на
+## кастомном ресурсе («Cannot get class ''», godotengine/godot#100100). Грузим в
+## рантайме через load() в _init — поэтому var, а не const.
+const DEFAULT_SAVE_PATH := "res://data/default_skill_save.tres"
+const SKILL_TREE_PATH := "res://data/skill_tree.tres"
+var DEFAULT_SAVE: PlayerSkillSave
+var SKILL_TREE: RS_SkillTree
 
 var save: PlayerSkillSave
+
+
+func _init() -> void:
+	DEFAULT_SAVE = load(DEFAULT_SAVE_PATH)
+	SKILL_TREE = load(SKILL_TREE_PATH)
 
 
 func _ready() -> void:

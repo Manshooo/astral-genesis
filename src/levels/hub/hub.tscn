@@ -36,7 +36,7 @@ metadata/_custom_type_script = "uid://dibrg03qygmfk"
 script = ExtResource("2_oeda6")
 component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_oeda6")])
 
-[node name="Incubator" parent="." index="0" unique_id=29663830]
+[node name="Incubator" parent="." index="0" unique_id=1162994375]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 3.6396914)
 material_override = SubResource("StandardMaterial3D_7dvkg")
 script = ExtResource("2_k166h")

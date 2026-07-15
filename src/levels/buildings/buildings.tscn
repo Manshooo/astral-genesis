@@ -1,5 +1,0 @@
-[gd_scene format=3 uid="uid://ktk2weofgtjc"]
-
-[ext_resource type="PackedScene" uid="uid://efymmgnia0ew" path="res://assets/rooms/buildings.blend" id="1_6hwgh"]
-
-[node name="buildings" unique_id=1031941430 instance=ExtResource("1_6hwgh")]

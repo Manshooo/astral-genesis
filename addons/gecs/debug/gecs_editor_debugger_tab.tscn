@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://cbykprebt3jaa"]
+[gd_scene format=3 uid="uid://cbykprebt3jaa"]
 
 [ext_resource type="Script" uid="uid://ca7erogu58fca" path="res://addons/gecs/debug/gecs_editor_debugger_tab.gd" id="1_8dl00"]
 
-[node name="GECSEditorDebuggerTab" type="Control"]
+[node name="GECSEditorDebuggerTab" type="Control" unique_id=2121161469]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_8dl00")
 
-[node name="DebugModeOverlay" type="Panel" parent="."]
+[node name="DebugModeOverlay" type="Panel" parent="." unique_id=1789340245]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -23,7 +23,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="DebugModeOverlay"]
+[node name="CenterContainer" type="CenterContainer" parent="DebugModeOverlay" unique_id=1903905797]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -31,30 +31,30 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="DebugModeOverlay/CenterContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="DebugModeOverlay/CenterContainer" unique_id=332861360]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="DebugModeOverlay/CenterContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="DebugModeOverlay/CenterContainer/VBoxContainer" unique_id=1405700050]
 layout_mode = 2
 theme_type_variation = &"HeaderLarge"
 text = "Debug Mode Disabled"
 horizontal_alignment = 1
 
-[node name="Message" type="Label" parent="DebugModeOverlay/CenterContainer/VBoxContainer"]
+[node name="Message" type="Label" parent="DebugModeOverlay/CenterContainer/VBoxContainer" unique_id=796616512]
 layout_mode = 2
 text = "Enable Debug Mode in Project Settings to show Debug Data"
 horizontal_alignment = 1
 
-[node name="HSpacer" type="Control" parent="DebugModeOverlay/CenterContainer/VBoxContainer"]
+[node name="HSpacer" type="Control" parent="DebugModeOverlay/CenterContainer/VBoxContainer" unique_id=1113915175]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="Instructions" type="Label" parent="DebugModeOverlay/CenterContainer/VBoxContainer"]
+[node name="Instructions" type="Label" parent="DebugModeOverlay/CenterContainer/VBoxContainer" unique_id=1543530758]
 layout_mode = 2
 text = "Project Settings > General > GECS > Settings > Debug Mode"
 horizontal_alignment = 1
 
-[node name="HSplit" type="HSplitContainer" parent="."]
+[node name="HSplit" type="HSplitContainer" parent="." unique_id=1745598120]
 process_mode = 3
 layout_mode = 1
 anchors_preset = 15
@@ -65,57 +65,54 @@ grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="HSplitContainer" type="HSplitContainer" parent="HSplit"]
+[node name="HSplitContainer" type="HSplitContainer" parent="HSplit" unique_id=1193578182]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="EntitiesVBox" type="VBoxContainer" parent="HSplit/HSplitContainer"]
+[node name="EntitiesVBox" type="VBoxContainer" parent="HSplit/HSplitContainer" unique_id=1173198874]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HSplit/HSplitContainer/EntitiesVBox"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplit/HSplitContainer/EntitiesVBox" unique_id=1313129365]
 layout_mode = 2
 
-[node name="EntitiesQueryLineEdit" type="LineEdit" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer"]
+[node name="EntitiesQueryLineEdit" type="LineEdit" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer" unique_id=1569318562]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Entities filter....."
 
-[node name="CollapseAllBtn" type="Button" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer"]
+[node name="CollapseAllBtn" type="Button" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer" unique_id=411783354]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Collapse All"
 
-[node name="ExpandAllBtn" type="Button" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer"]
+[node name="ExpandAllBtn" type="Button" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer" unique_id=294408023]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Expand All"
 
-[node name="QueryBuilderCheckBox" type="CheckBox" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer"]
+[node name="QueryBuilderCheckBox" type="CheckBox" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer" unique_id=878002037]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 text = "QueryBuilder"
 
-[node name="PollRateLabel" type="Label" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer"]
+[node name="PollRateLabel" type="Label" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer" unique_id=927761359]
 layout_mode = 2
+tooltip_text = "How often to refresh component data for expanded entities (0 = disabled)"
 text = "Poll Hz:"
-tooltip_text = "How often to refresh component data for expanded entities (0 = disabled)"
 
-[node name="PollRateSpinBox" type="SpinBox" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer"]
+[node name="PollRateSpinBox" type="SpinBox" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainer" unique_id=500165943]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(70, 0)
-min_value = 0.0
-max_value = 30.0
-step = 1.0
-value = 10.0
-suffix = ""
+layout_mode = 2
 tooltip_text = "How often to refresh component data for expanded entities (0 = disabled)"
+max_value = 30.0
+value = 10.0
 
-[node name="EntitiesTree" type="Tree" parent="HSplit/HSplitContainer/EntitiesVBox"]
+[node name="EntitiesTree" type="Tree" parent="HSplit/HSplitContainer/EntitiesVBox" unique_id=397974623]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -124,53 +121,53 @@ column_titles_visible = true
 allow_rmb_select = true
 hide_root = true
 
-[node name="HBoxContainerEntitiesStatus" type="HBoxContainer" parent="HSplit/HSplitContainer/EntitiesVBox"]
+[node name="HBoxContainerEntitiesStatus" type="HBoxContainer" parent="HSplit/HSplitContainer/EntitiesVBox" unique_id=1143616783]
 custom_minimum_size = Vector2(0, 33)
 layout_mode = 2
 
-[node name="EntityStatusBar" type="TextEdit" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainerEntitiesStatus"]
+[node name="EntityStatusBar" type="TextEdit" parent="HSplit/HSplitContainer/EntitiesVBox/HBoxContainerEntitiesStatus" unique_id=864517535]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Entities: 0 | Components: 0 | Relationships: 0"
 editable = false
 
-[node name="SystemsVBox" type="VBoxContainer" parent="HSplit/HSplitContainer"]
+[node name="SystemsVBox" type="VBoxContainer" parent="HSplit/HSplitContainer" unique_id=831888111]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HSplit/HSplitContainer/SystemsVBox"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplit/HSplitContainer/SystemsVBox" unique_id=1229606755]
 layout_mode = 2
 
-[node name="SystemsQueryLineEdit" type="LineEdit" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer"]
+[node name="SystemsQueryLineEdit" type="LineEdit" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer" unique_id=1701540150]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Systems filter...."
 
-[node name="SystemsCollapseAllBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer"]
+[node name="SystemsCollapseAllBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer" unique_id=31326051]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Collapse All"
 
-[node name="SystemsExpandAllBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer"]
+[node name="SystemsExpandAllBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer" unique_id=806522676]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Expand All"
 
-[node name="SystemsResetMetricsBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer"]
+[node name="SystemsResetMetricsBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer" unique_id=1256774999]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Reset Metrics"
 tooltip_text = "Clear min/max/avg history for all systems. Useful after a one-time spike (e.g. scene load) has polluted the max."
+text = "Reset Metrics"
 
-[node name="PopOutBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer"]
+[node name="PopOutBtn" type="Button" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainer" unique_id=1806835938]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Pop Out"
 
-[node name="SystemsTree" type="Tree" parent="HSplit/HSplitContainer/SystemsVBox"]
+[node name="SystemsTree" type="Tree" parent="HSplit/HSplitContainer/SystemsVBox" unique_id=524317603]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -179,11 +176,11 @@ column_titles_visible = true
 hide_root = true
 select_mode = 2
 
-[node name="HBoxContainerSystemsStatus" type="HBoxContainer" parent="HSplit/HSplitContainer/SystemsVBox"]
+[node name="HBoxContainerSystemsStatus" type="HBoxContainer" parent="HSplit/HSplitContainer/SystemsVBox" unique_id=1152332856]
 custom_minimum_size = Vector2(0, 33)
 layout_mode = 2
 
-[node name="SystemsStatusBar" type="TextEdit" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainerSystemsStatus"]
+[node name="SystemsStatusBar" type="TextEdit" parent="HSplit/HSplitContainer/SystemsVBox/HBoxContainerSystemsStatus" unique_id=154284881]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

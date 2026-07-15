@@ -189,19 +189,49 @@ func _get_player() -> E_Player:
 	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as E_Player
 
 
+## На сколько метров вглубь комнаты отступать от двери, чтобы капсула игрока не
+## оказалась в стене/проёме (радиус капсулы ~0.63, проём ~2.8 в ширину).
+const ARRIVAL_OFFSET := 1.5
+
+
 func _place_player_in_room(room: Entity, came_from: StringName) -> void:
 	var player := _get_player()
 	if player == null:
 		return
 
+	var spawn_point := room.get_node_or_null(^"SpawnPoint") as Node3D
 	var target: Transform3D
 	var return_door := _find_return_door(came_from)
 	if return_door:
-		target = (return_door as Node as Node3D).global_transform
+		# НЕ трансформ самой двери: её origin — в плоскости стены и на высоте
+		# центра полотна (~2.3 м). Ставим игрока ПЕРЕД дверью, вглубь комнаты, на
+		# высоте пола, лицом внутрь — иначе капсулу спавнит в геометрии и роняет.
+		target = _arrival_transform_for_door(return_door, room, spawn_point)
+	elif spawn_point:
+		target = spawn_point.global_transform
 	else:
-		var spawn_point := room.get_node_or_null(^"SpawnPoint") as Node3D
-		target = spawn_point.global_transform if spawn_point else room.global_transform
+		target = room.global_transform
 	(player as Node as Node3D).global_transform = target
+
+
+## Безопасная точка прибытия у двери [param door]: горизонтально отступаем от
+## двери к центру комнаты (направление надёжно независимо от ориентации двери —
+## в пресете двери не сориентированы внутрь единообразно), высоту берём от
+## SpawnPoint (пол), разворачиваем игрока лицом вглубь комнаты.
+func _arrival_transform_for_door(door: Entity, room: Entity, spawn_point: Node3D) -> Transform3D:
+	var door_origin := (door as Node as Node3D).global_transform.origin
+	var room_origin := (room as Node as Node3D).global_transform.origin
+
+	var into_room := room_origin - door_origin
+	into_room.y = 0.0
+	if into_room.length() < 0.001:
+		into_room = -(door as Node as Node3D).global_transform.basis.z  # запасной вариант
+	into_room = into_room.normalized()
+
+	var pos := door_origin + into_room * ARRIVAL_OFFSET
+	pos.y = spawn_point.global_transform.origin.y if spawn_point else room_origin.y
+
+	return Transform3D.IDENTITY.translated(pos).looking_at(pos + into_room, Vector3.UP)
 
 
 ## Дверь текущей комнаты, ведущая обратно в came_from — чтобы игрок появился у
