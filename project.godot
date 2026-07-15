@@ -12,9 +12,10 @@ config_version=5
 
 config/name="Astral Genesis"
 config/description="Пост-апокалиптический roguelike-dungeon-crawler."
-config/version="0.1.1.1"
+config/version="alpha-0.2.0"
 config/tags=PackedStringArray("dungeon_crawler", "first_person", "roguelike")
 run/main_scene="uid://cnoq0anpv63fs"
+config/use_custom_user_dir=true
 config/features=PackedStringArray("4.7", "Forward Plus")
 run/max_fps=60
 config/icon="uid://074x3puupfnm"

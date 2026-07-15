@@ -11,6 +11,6 @@ metadata/_custom_type_script = "uid://0747vic3c1i4"
 
 [resource]
 script = ExtResource("2_kptbr")
-display_name = "DefaultRoom"
+display_name = "Комната"
 base_scene = ExtResource("1_kptbr")
 components = Array[ExtResource("1_oc7rj")]([SubResource("Resource_gu6d5")])
