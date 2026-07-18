@@ -3,15 +3,10 @@
 [ext_resource type="Script" uid="uid://cdu5tlyk72uu4" path="res://addons/gecs/ecs/world.gd" id="1_6xmxd"]
 [ext_resource type="Script" uid="uid://dnjtb1bxfp3vs" path="res://src/world/main.gd" id="1_mmdvd"]
 [ext_resource type="Environment" uid="uid://dt6nbx8xwsp5s" path="res://assets/environment.tres" id="3_h5o24"]
-[ext_resource type="PackedScene" uid="uid://bprksygox7mbg" path="res://src/entities/player/e_player.tscn" id="3_l0av5"]
-[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_2xmcn"]
 [ext_resource type="Script" uid="uid://b3vi2ingux88g" path="res://addons/gecs/lib/system_group.gd" id="4_mmdvd"]
-[ext_resource type="Script" uid="uid://dg5mcn5wabvf2" path="res://src/components/gameplay/c_fps_camera.gd" id="5_8p8v4"]
 [ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/gameplay/s_fpsLook.gd" id="5_hg6dy"]
 [ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/input/s_player_input.gd" id="5_l0av5"]
 [ext_resource type="Script" uid="uid://idnwtudukdc5" path="res://src/systems/input/s_interact_input.gd" id="6_0wvc1"]
-[ext_resource type="Script" uid="uid://bxvdso6ek0oyg" path="res://src/components/gameplay/c_playerInput.gd" id="6_kiqqj"]
-[ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="7_m8idb"]
 [ext_resource type="Script" uid="uid://creg13w8xbee0" path="res://src/systems/physics/s_player_movement.gd" id="7_ocs7n"]
 [ext_resource type="Script" uid="uid://5ej3l4vg2gbp" path="res://src/systems/gameplay/s_apply_skill_effects.gd" id="8_a20vb"]
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
@@ -21,18 +16,6 @@
 [ext_resource type="Script" uid="uid://b7pl1mxb1o0du" path="res://src/systems/gameplay/s_body_snatch.gd" id="14_bsnatch"]
 [ext_resource type="Script" uid="uid://blc2ipv5016mt" path="res://src/systems/gameplay/s_lifespan.gd" id="15_lifespan"]
 [ext_resource type="Script" uid="uid://bmffrjcgeesnb" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
-
-[sub_resource type="Resource" id="Resource_yrckd"]
-script = ExtResource("5_8p8v4")
-metadata/_custom_type_script = "uid://dg5mcn5wabvf2"
-
-[sub_resource type="Resource" id="Resource_78jcs"]
-script = ExtResource("6_kiqqj")
-metadata/_custom_type_script = "uid://bxvdso6ek0oyg"
-
-[sub_resource type="Resource" id="Resource_h1k6i"]
-script = ExtResource("7_m8idb")
-metadata/_custom_type_script = "uid://d3y7smdoj10p1"
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -47,11 +30,6 @@ system_nodes_root = NodePath("Systems")
 metadata/_custom_type_script = "uid://cdu5tlyk72uu4"
 
 [node name="Entities" type="Node" parent="World" unique_id=1153856176]
-
-[node name="E_Player" parent="World/Entities" unique_id=203831200 instance=ExtResource("3_l0av5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.119229436, 1.9849274, 6.4965677)
-id = "0_play"
-component_resources = Array[ExtResource("4_2xmcn")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i")])
 
 [node name="Systems" type="Node" parent="World" unique_id=364591345]
 
