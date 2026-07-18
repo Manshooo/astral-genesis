@@ -105,14 +105,6 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 environment = ExtResource("3_h5o24")
 camera_attributes = SubResource("CameraAttributesPractical_3owqy")
 
-[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=963491771]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.335608, -1.2593608)
-light_color = Color(0.6785903, 0.6589958, 0.5934914, 1)
-light_energy = 2.0
-light_indirect_energy = 1.124
-shadow_enabled = true
-omni_range = 4.940852
-
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1553004646]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
 shadow_enabled = true

@@ -13,7 +13,7 @@ extends Resource
 @export var gravity: float = 9.8
 
 @export_group("World generation")
-## Библиотека пресетов комнат для процедурной генерации (см. ADR-0003).
+## Библиотека пресетов комнат для процедурной генерации.
 ## Пусто = все узлы получают placeholder-комнату (поведение до появления
 ## библиотеки). Назначается в инспекторе на data/game_config.tres.
 @export var room_preset_library: RS_RoomPresetLibrary

@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Astral Genesis** — a first-person post-apocalyptic roguelike dungeon-crawler in **Godot 4.7** (Forward+). The player is a disembodied consciousness ("БФЖ"/"Бифиж") escaped from a lab; the core mechanic is **body-snatching** enemies to survive (see ADR-0002). The project, docs, and code comments are written in **Russian** — match that language when adding comments and docs.
+**Astral Genesis** — a first-person post-apocalyptic roguelike dungeon-crawler in **Godot 4.7** (Forward+). The player is a disembodied consciousness ("БФЖ"/"Бифиж") escaped from a lab; the core mechanic is **body-snatching** enemies to survive. The project, docs, and code comments are written in **Russian** — match that language when adding comments and docs.
 
-Engine specifics from `project.godot`: **Jolt Physics** (3D), Windows renderer forced to **d3d12**, physics runs on a separate thread, main scene is `src/world/world.tscn`.
+Engine specifics from `project.godot`: **Jolt Physics** (3D), Windows renderer forced to **d3d12**, physics runs on a separate thread. The **boot scene** is `src/levels/menu_map/L_menu_map.tscn` (the main menu with an animated 3D background); **New Game** loads the gameplay scene `src/world/world.tscn`.
 
 ## Running & building
 
-- **Run/debug**: open the project in the Godot 4.7 editor and play the main scene, or use the Zed launch configs in `.zed/debug.json` (adapter `godot`). There is no CLI test suite.
+- **Run/debug**: open the project in the Godot 4.7 editor and play the project (boots to the main menu → **New Game** enters `world.tscn`), or play `world.tscn` directly to skip straight into a run. Zed launch configs live in `.zed/debug.json` (adapter `godot`). There is no CLI test suite.
 - **Generator sanity check**: run `dev/gen_verifier.tscn` (F6) — it prints, across 20 seeds, room-preset library validation, "door undercapacity" (nodes with fewer doors than graph edges), and reachability from entry both by graph and by doors. Run this after touching world generation, `RS_RoomPresetLibrary`, or door/slot wiring.
 - **Custom engine build**: `Dev.gdbuild` is a Godot build-profile that strips unused classes/modules (no 2D physics, no XR, no animation, etc.) for a lean export. Note it disables many classes — don't rely on 2D nodes, `Area3D`, `RayCast2D`, animation nodes, etc. in shipping code.
 - **Assets** (`.glb`, `.svg`, images, etc.) are tracked via **Git LFS** (see `.gitattributes`). Text files are normalized to LF; source uses **hard tabs** (`.zed/settings.json`, `.editorconfig`).
@@ -30,7 +30,7 @@ Core model:
 - `_process` → `"input"` then `"gameplay"`
 - `_physics_process` → `"physics"`
 
-Systems are placed under `World/Systems/<group>` (a `SystemGroup` node) in `world.tscn`; the node name is the group. **Physics-raycasting systems (interaction detection, body-snatch) belong in the `"physics"` group** because Jolt runs on a separate thread and space-state queries are only safe from `_physics_process`.
+Systems are placed under `World/Systems/<group>` in `world.tscn`; each `<group>` is a plain `Node` whose **name** is the group (`input`/`gameplay`/`physics`), and the `World` node points GECS at them via `system_nodes_root = NodePath("Systems")`. **Physics-raycasting systems (interaction detection, body-snatch) belong in the `"physics"` group** because Jolt runs on a separate thread and space-state queries are only safe from `_physics_process`.
 
 New-script templates live in `src/script_templates/` (Godot picks these up when creating scripts) — use them so new components/systems/entities/observers follow the base-class conventions above.
 
@@ -76,11 +76,12 @@ Autoloads (`project.godot [autoload]`, scripts in `src/autoloads/`): `ECS`, `Gam
 
 A "run" is a **graph**, not a linear level. Key pieces:
 
-- **`RS_LevelGraph.generate_run(seed, library)`** (`src/resources/world_generator/rs_level_graph.gd`) deterministically builds the whole complex: layers by depth `[4,3,2,1,0]` (surface = 0), each layer = 1–3 floors of ~4 rooms connected by a spanning tree + extra edges, layers joined by vertical hub connectors (some `locked_by` a key). The player's home lab is a guaranteed **dead-end** at `HOME_DEPTH = 3`; exits (`level_exit` tag) are placed on the surface layer. Room scenes are assigned last via `RS_RoomPresetLibrary.select_preset(node, rng)`; the entry node is always overridden to the hand-authored **hub** scene.
+- **Entry point**: the game boots into the `L_menu_map.tscn` main menu. **New Game** (`src/ui/main_menu/main_menu.gd`) rolls a fresh seed via `WorldSave.new_game()` and loads `world.tscn`, whose root `main.gd` calls `RunManager.enter_complex()` in `_ready` — that is what actually starts a run.
+- **`RS_LevelGraph.generate_run(seed, library)`** (`src/resources/world_generator/rs_level_graph.gd`) deterministically builds the whole complex: layers by depth `[4,3,2,1,0]` (surface = 0), each layer = 1–3 floors of ~4 rooms connected by a spanning tree + extra edges (floors within a layer joined by `floor_hub` connectors), layers joined by `vertical_hub` connectors (some `locked_by` the `level_access_key`). The player's home lab is a guaranteed **dead-end** at `HOME_DEPTH = 3`; two exits (`level_exit` tag) are placed on the surface layer. Room scenes are assigned last via `RS_RoomPresetLibrary.select_preset(node, rng)`; the entry node is always overridden to the hand-authored **hub** scene.
 - **`RunManager`** (autoload) owns one active run: it spawns/despawns the single current room and teleports the player. It does **not** stream neighbors yet. Seed comes from `WorldSave.save.run_seed()` (derived from `world_seed` + `death_count`), so generation is reproducible.
 - **`WorldSave`** persists `RS_WorldSave` (`world_seed` + `death_count`) to `user://world_save.tres`. New Game rolls a new seed; death increments `death_count` (changing future generation) — the death flow itself is not wired yet.
 
-### Doors ↔ graph edges (ADR-0001) — read before touching room/door code
+### Doors ↔ graph edges — read before touching room/door code
 
 Graph edges (`RS_LevelConnection`) and physical room doors are bridged at spawn time, **not** authored by hand:
 - Each door is an interactable Entity carrying **`C_DoorSlot { slot_id }`** (stable per-prefab id).
@@ -88,7 +89,7 @@ Graph edges (`RS_LevelConnection`) and physical room doors are bridged at spawn 
 - Traversal goes through the interaction system: `A_TravelThroughDoor` reads its entity's `C_DoorPortal`, checks the lock, and calls `RunManager.travel_to(target_node_id)`. On arrival the player is placed at the door leading back to where they came from (fallback: the room's `SpawnPoint`).
 - **Caveat**: `world.add_entity(room)` registers ONLY the room itself — GECS does not walk the tree for nested `Entity` children. `RunManager` registers **all** nested entities (`Incubator`, doors, …) explicitly via `_register_room_children` and removes them in `_despawn_current_room` (`_current_room_children`, with `_current_room_doors` as the door subset). Keep that invariant when changing room spawn/despawn. Removal filters `is_instance_valid` first: `RunManager` is an autoload, so after an exit-to-menu the previous run's entity refs are dangling (freed with the old world), and `remove_entity`'s typed param rejects freed objects before its own guard runs.
 
-Current slot↔edge matching is by sorted order (bootstrap "Variant A"); the ADR's target is presets declaring their slots with `slots >= connections`. See `docs/astral-genesis/adr/`.
+Current slot↔edge matching is by sorted order (bootstrap "Variant A"); the target is presets declaring their slots with `slots >= connections`.
 
 ## Interaction system (see docs/astral-genesis/how-to/Взаимодействие.md)
 
@@ -96,5 +97,5 @@ An interactable object needs three things: a **`C_Interactable`** component, a c
 
 ## Conventions & docs
 
-- Architecture decisions are recorded as ADRs in `docs/astral-genesis/adr/` (Russian). Read the relevant ADR before reworking doors/graph (0001), body-snatch/embodiment (0002), or room presets (0003). The `docs/astral-genesis/` tree is an Obsidian vault.
+- Project docs live in `docs/astral-genesis/` (Russian), an Obsidian vault: `Состояние проекта.md` (implemented-state overview), how-to guides (`Взаимодействие.md`, `Цикл забега.md`), lore (`История.md`), and roadmap under `Задачи/`. Read the relevant how-to before reworking doors/graph or interaction.
 - Physics layers: 1 `colliders`, 2 `player`, 3 `enemies`, 4 `interactives`. Systems reference these by bit (e.g. body-snatch raycasts only `enemies` = `1 << 2`).

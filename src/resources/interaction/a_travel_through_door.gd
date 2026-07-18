@@ -1,7 +1,7 @@
 class_name A_TravelThroughDoor
 extends RS_InteractionAction
 ## Действие двери: уводит игрока в соседний узел графа, записанный в C_DoorPortal
-## этой двери (штампует RunManager при спавне). Учитывает замок. См. ADR-0001.
+## этой двери (штампует RunManager при спавне). Учитывает замок.
 ## Назначается на дверь-Entity через E_InteractableObject.actions в редакторе.
 
 func execute(entity: Entity, _interactor: Node = null) -> void:
