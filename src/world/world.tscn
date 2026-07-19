@@ -16,6 +16,7 @@
 [ext_resource type="Script" uid="uid://b7pl1mxb1o0du" path="res://src/systems/gameplay/s_body_snatch.gd" id="14_bsnatch"]
 [ext_resource type="Script" uid="uid://blc2ipv5016mt" path="res://src/systems/gameplay/s_lifespan.gd" id="15_lifespan"]
 [ext_resource type="Script" uid="uid://bmffrjcgeesnb" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
+[ext_resource type="Script" uid="uid://dvcwemjjoh26w" path="res://src/observers/o_run_ended.gd" id="17_runend"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -95,6 +96,10 @@ metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="O_ExpelFromBody" type="Node" parent="World/Systems" unique_id=1419506266]
 script = ExtResource("16_expel")
+metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
+
+[node name="O_RunEnded" type="Node" parent="World/Systems" unique_id=1632513265]
+script = ExtResource("17_runend")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]

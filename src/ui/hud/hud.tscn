@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://b8i20616pbfq3" path="res://src/ui/hud/hud.gd" id="1"]
 [ext_resource type="Script" uid="uid://djqvcaym05lgv" path="res://src/ui/hud/crosshair.gd" id="2_cvkdw"]
+[ext_resource type="Script" uid="uid://cetrqtobtab4t" path="res://src/ui/hud/hud_vitals.gd" id="3_vitals"]
+[ext_resource type="Script" uid="uid://dtwx60xc7p7vt" path="res://src/ui/hud/hud_prompt.gd" id="4_prompt"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -37,3 +39,72 @@ pivot_offset_ratio = Vector2(0.5, 0.5)
 [node name="Crosshair" type="Control" parent="Hud/CenterContainer" unique_id=80915207]
 layout_mode = 2
 script = ExtResource("2_cvkdw")
+
+[node name="Prompt" type="Label" parent="Hud"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = 34.0
+offset_right = 160.0
+offset_bottom = 60.0
+grow_horizontal = 2
+horizontal_alignment = 1
+script = ExtResource("4_prompt")
+
+[node name="Vitals" type="VBoxContainer" parent="Hud"]
+layout_mode = 1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -70.0
+offset_right = 320.0
+grow_vertical = 0
+theme_override_constants/separation = 6
+script = ExtResource("3_vitals")
+
+[node name="LifespanRow" type="HBoxContainer" parent="Hud/Vitals"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="Hud/Vitals/LifespanRow"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Распад"
+
+[node name="LifespanBar" type="ProgressBar" parent="Hud/Vitals/LifespanRow"]
+custom_minimum_size = Vector2(180, 18)
+layout_mode = 2
+self_modulate = Color(0.5, 0.8, 1, 1)
+max_value = 60.0
+value = 60.0
+show_percentage = false
+
+[node name="LifespanValue" type="Label" parent="Hud/Vitals/LifespanRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "60 с"
+
+[node name="HealthRow" type="HBoxContainer" parent="Hud/Vitals"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="Hud/Vitals/HealthRow"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Тело"
+
+[node name="HealthBar" type="ProgressBar" parent="Hud/Vitals/HealthRow"]
+custom_minimum_size = Vector2(180, 18)
+layout_mode = 2
+self_modulate = Color(1, 0.4, 0.4, 1)
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HealthValue" type="Label" parent="Hud/Vitals/HealthRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "100"

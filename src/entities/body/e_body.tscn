@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://c8b0dyq7sn4t0"]
+
+[ext_resource type="Script" uid="uid://pwn4fb4ktgml" path="res://src/entities/body/e_body.gd" id="1_body"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
+[ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="3_health"]
+[ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="4_snatch"]
+
+[sub_resource type="Resource" id="Resource_health"]
+script = ExtResource("3_health")
+metadata/_custom_type_script = "uid://5r77tfxtjy6p"
+
+[sub_resource type="Resource" id="Resource_snatch"]
+script = ExtResource("4_snatch")
+metadata/_custom_type_script = "uid://bgw8q60os3ln1"
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.45, 0.53, 0.4, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.4
+height = 1.8
+material = SubResource("StandardMaterial3D_body")
+
+[node name="Body" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_body")
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch")])
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_body")

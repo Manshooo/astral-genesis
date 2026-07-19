@@ -30,10 +30,10 @@ func _input(event: InputEvent) -> void:
 		if inp:
 			inp.jump_pressed = true
 
-	# Захват тела — ЛКМ. Раскладку ввода не трогаем: читаем кнопку напрямую,
-	# сам захват выполняет S_BodySnatch.
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
-			and event.pressed and not event.is_echo():
+	# Захват тела — действие "snatch_body" (по умолчанию ЛКМ, задаётся в
+	# project.godot [input], переназначаемо). Здесь только ставим запрос-флаг;
+	# сам захват (луч/бросок/вселение) выполняет S_BodySnatch по C_BodySnatch.capture_requested.
+	if event.is_action_pressed("snatch_body") and not event.is_echo():
 		var bs := get_component(C_BodySnatch) as C_BodySnatch
 		if bs:
 			bs.capture_requested = true

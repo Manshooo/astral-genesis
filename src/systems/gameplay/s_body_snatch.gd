@@ -1,8 +1,8 @@
 # res://src/systems/gameplay/s_body_snatch.gd
 # Группа: "physics" — как и S_InteractionDetector: кастует луч, а физика крутится
 # на отдельном потоке, поэтому space-state запросы безопаснее из _physics_process.
-# Ядро игры — захват тела. По запросу захвата (ЛКМ, ставит
-# E_Player в C_BodySnatch.capture_requested) кастует луч из камеры БФЖ по слою
+# Ядро игры — захват тела. По запросу захвата (действие "snatch_body", по умолчанию
+# ЛКМ; E_Player._input ставит C_BodySnatch.capture_requested) кастует луч из камеры БФЖ по слою
 # enemies, ищет тело с C_BodySnatchable в пределах capture_range, бросает кубик
 # на capture_success_chance и при успехе «вселяется»:
 #   - перенимает свежее здоровье из тела (C_Health);

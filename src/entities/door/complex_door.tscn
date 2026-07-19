@@ -25,6 +25,7 @@ script = ExtResource("4_qd5pf")
 
 [sub_resource type="Resource" id="Resource_8ssbo"]
 script = ExtResource("4_cehsg")
+prompt_text = "Пройти"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="Resource" id="Resource_qd5pf"]
