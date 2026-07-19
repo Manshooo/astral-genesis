@@ -11,10 +11,17 @@ signal complex_entered(graph: RS_LevelGraph)
 signal room_changed(node_id: StringName)
 ## Игрок сбежал на поверхность — забег (и пока вся игра) окончен победой.
 signal run_finished
+## БФЖ распался: запас жизни иссяк, пока душа была развоплощена (проигрыш).
+signal died
 
 ## Заглушка «игра окончена»: экрана концовки пока нет — уходим в меню, как и
 ## «выход в меню» из паузы.
 const MENU_SCENE := "res://src/levels/menu_map/L_menu_map.tscn"
+## Экран смерти: показывается после распада БФЖ (см. die).
+const DEATH_SCENE := "res://src/ui/death_screen/death_screen.tscn"
+## Сцена души-БФЖ. Спавним её скриптом при входе в забег, а не кладём в world.tscn:
+## игрок должен появляться в уже сгенерированном мире, у входного узла графа.
+const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 
 var current_graph: RS_LevelGraph
 var current_node_id: StringName = &""
@@ -34,9 +41,26 @@ func enter_complex(run_seed: int = -1) -> void:
 	if run_seed == -1:
 		run_seed = WorldSave.save.run_seed()  # детерминированно из (world_seed, death_count)
 
+	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
+	# затем входную комнату — _spawn_room → _place_player_in_room поставит её на место.
+	_spawn_player()
 	current_graph = RS_LevelGraph.new().generate_run(run_seed, GameConfig.config.room_preset_library)
 	complex_entered.emit(current_graph)
 	_spawn_room(current_graph.entry_node_id)
+
+
+## Инстанцирует душу-БФЖ и регистрирует её в мире, если её там ещё нет.
+## Позиционирование — на совести _place_player_in_room (при спавне входной комнаты).
+##
+## Учёт WorldSave/новой игры: сид забега уже выведен в enter_complex из
+## (world_seed, death_count); свежая E_Player несёт полный запас жизни — её
+## идентичность (C_BodySnatch, C_Lifespan) навешивает define_components(), а не
+## сцена, так что каждый новый забег стартует с непочатым C_Lifespan.
+func _spawn_player() -> void:
+	if _get_player() != null:
+		return  # уже в мире (напр. повторный enter_complex в той же сцене)
+	var player := (load(PLAYER_SCENE) as PackedScene).instantiate() as E_Player
+	ECS.world.add_entity(player)
 
 
 ## Побег на поверхность = ОКОНЧАНИЕ ИГРЫ (победа). Это НЕ возврат в хаб — тот
@@ -46,13 +70,36 @@ func finish_run() -> void:
 	if current_graph == null:
 		return  # не в забеге — выходить неоткуда
 
-	_despawn_current_room()
-	current_graph = null
-	current_node_id = &""
+	_end_run()
 	run_finished.emit()
 
 	# TODO: экран концовки/победы. Пока — в меню, как «выход в меню» из паузы.
 	get_tree().change_scene_to_file(MENU_SCENE)
+
+
+## Настоящая смерть БФЖ: запас распада иссяк, пока душа была РАЗВОПЛОЩЕНА
+## (событие "run_ended" от S_Lifespan). В отличие от finish_run (побег = победа),
+## смерть фиксируется в сейве — death_count++ меняет будущую генерацию — и уводит
+## на экран смерти. Зовётся отложенно из O_RunEnded (нельзя сносить забег в
+## середине прохода ECS по сущностям).
+func die() -> void:
+	if current_graph == null:
+		return  # не в забеге — умирать некому
+
+	WorldSave.record_death()  # death_count++ → следующий run_seed() иной
+	_end_run()
+	died.emit()
+
+	# TODO: анимация распада/затемнение перед экраном. Пока — сразу экран смерти.
+	get_tree().change_scene_to_file(DEATH_SCENE)
+
+
+## Общий снос забега для finish_run/die: убрать текущую комнату и обнулить граф.
+## Игрока и системы не трогаем — они уходят вместе со сценой мира при смене сцены.
+func _end_run() -> void:
+	_despawn_current_room()
+	current_graph = null
+	current_node_id = &""
 
 
 ## Переход в другой узел графа (вызывается A_TravelThroughDoor).

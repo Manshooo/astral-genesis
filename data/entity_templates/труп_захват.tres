@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="RS_EntityTemplate" format=3 uid="uid://db4yima0k8e4q"]
+
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="1_wg4ku"]
+[ext_resource type="Script" uid="uid://dflc1331xhtjy" path="res://src/resources/entity_template/rs_entity_template.gd" id="2_75as1"]
+
+[resource]
+script = ExtResource("2_75as1")
+display_name = "Труп (захват)"
