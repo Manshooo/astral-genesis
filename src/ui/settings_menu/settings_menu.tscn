@@ -1,6 +1,5 @@
 [gd_scene format=3 uid="uid://ddtds8bmcvnwr"]
 
-[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui/default_theme.tres" id="1_sett"]
 [ext_resource type="Script" uid="uid://crscukie12pyp" path="res://src/ui/settings_menu/settings_menu.gd" id="2_sett"]
 [ext_resource type="Script" uid="uid://dg1gkitvqvfdf" path="res://src/ui/settings/slider_setting.gd" id="3_kktd5"]
 [ext_resource type="Script" uid="uid://d25wxvtt5nxci" path="res://src/ui/settings/keybinds_setting.gd" id="4_keybd"]
@@ -12,7 +11,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_sett")
 script = ExtResource("2_sett")
 
 [node name="Panel" type="Panel" parent="." unique_id=11110002]
@@ -29,7 +27,6 @@ offset_right = 190.0
 offset_bottom = 330.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_sett")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=11110003]
 layout_mode = 1

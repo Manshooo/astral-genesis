@@ -111,6 +111,15 @@ func default_code_for(action: StringName) -> String:
 	return _default_codes.get(action, "")
 
 
+## Читаемое имя ТЕКУЩЕЙ привязки действия — для подсказок в HUD ("F", "ЛКМ").
+## Читает InputMap, а не сейв, поэтому остаётся верным сразу после
+## переназначения. "" — у действия нет ни клавиши, ни кнопки мыши (тогда
+## подсказке нечего показывать и префикс лучше не рисовать вовсе).
+func action_display_name(action: StringName) -> String:
+	var code := _first_code_of(action)
+	return code_display_name(code) if code != "" else ""
+
+
 ## Отображаемое имя привязки для UI: "F", "ЛКМ", "—" для пустого/битого кода.
 func code_display_name(code: String) -> String:
 	var event := code_to_event(code)

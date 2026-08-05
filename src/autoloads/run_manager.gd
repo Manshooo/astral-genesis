@@ -57,6 +57,13 @@ const DOOR_PROMPT_OPEN := "Пройти"
 const DOOR_PROMPT_LOCKED := "Заперто"
 const DOOR_PROMPT_SEALED := "Прохода нет"
 
+## Подсказки на вертикальных порталах. Вверх/вниз считаем по глубине цели, а не
+## по знаку depth_delta: у слоёв номер РАСТЁТ вглубь, и знак читается наоборот.
+const PORTAL_PROMPT_UP := "Подняться"
+const PORTAL_PROMPT_DOWN := "Спуститься"
+const PORTAL_PROMPT_LOCKED := "Портал заблокирован"
+const PORTAL_PROMPT_DEAD := "Портал мёртв"
+
 
 ## Одна заспавненная комната слоя. Вложенные сущности держим отдельно от самой
 ## комнаты, т.к. add_entity(room) регистрирует ТОЛЬКО саму комнату (обхода дерева
@@ -69,9 +76,18 @@ class SpawnedRoom:
 	## Вложенные сущности комнаты (Incubator, двери, тела) — регистрируются и
 	## снимаются явно, см. _register_room_children / _despawn_layer.
 	var children: Array[Entity] = []
-	## Подмножество children — двери (с C_DoorSlot). Нужно для поиска двери,
-	## ведущей обратно (_find_return_door).
+	## Подмножество children — двери (с C_DoorSlot). Нужно для поиска выхода,
+	## ведущего обратно (_find_return_exit).
 	var doors: Array[Entity] = []
+	## Подмножество children — вертикальные порталы. Им достаются рёбра со сменой
+	## глубины (см. _bind_portals); в остальном они такой же «выход», как дверь.
+	var portals: Array[Entity] = []
+
+	## Всё, что может нести C_DoorPortal, то есть вести в соседний узел графа.
+	func exits() -> Array[Entity]:
+		var all: Array[Entity] = doors.duplicate()
+		all.append_array(portals)
+		return all
 
 
 var current_graph: RS_LevelGraph
@@ -606,7 +622,17 @@ func _bind_doors(room: SpawnedRoom, node_data: RS_LevelNode, plan: LayerPlan) ->
 	for e in room.children:
 		if e.has_component(C_DoorSlot):
 			doors.append(e)
+
+	# Вертикальные рёбра (смена глубины) забирают ПОРТАЛЫ — ради этого они в
+	# комнате и стоят. Оставшиеся вертикальные рёбра (порталов меньше, чем таких
+	# рёбер) падают дальше в общий котёл и достаются двери.
+	var connections := _bind_portals(room, node_data)
 	if doors.is_empty():
+		if not connections.is_empty():
+			push_warning(
+				"RunManager: у узла '%s' не осталось дверей под %d рёбер"
+				% [node_data.id, connections.size()]
+			)
 		return doors
 
 	# Детерминированный порядок независимо от раскладки нод в дереве.
@@ -623,7 +649,7 @@ func _bind_doors(room: SpawnedRoom, node_data: RS_LevelNode, plan: LayerPlan) ->
 
 	var bound: Dictionary[Entity, bool] = {}
 	var pending: Array[RS_LevelConnection] = []
-	for conn: RS_LevelConnection in node_data.connections:
+	for conn: RS_LevelConnection in connections:
 		var direction := plan.direction_for(node_data.id, conn.target_node_id)
 		var door: Entity = door_by_direction.get(direction)
 		if door != null and not bound.has(door):
@@ -655,6 +681,52 @@ func _bind_doors(room: SpawnedRoom, node_data: RS_LevelNode, plan: LayerPlan) ->
 			% [node_data.id, node_data.connections.size(), doors.size()]
 		)
 	return doors
+
+
+## Раздаёт ВЕРТИКАЛЬНЫЕ рёбра (те, что меняют глубину) порталам комнаты и
+## возвращает рёбра, оставшиеся дверям. Портал без ребра «глушится» так же, как
+## лишняя дверь: остаётся интерактивным, но объясняет, что никуда не ведёт.
+##
+## Почему порталы, а не двери: узлы-коннекторы (`vertical_hub`) для того и несут
+## сцену с порталом, чтобы спуск/подъём между слоями выглядел спуском, а не ещё
+## одной дверью в стене.
+func _bind_portals(room: SpawnedRoom, node_data: RS_LevelNode) -> Array[RS_LevelConnection]:
+	var portals: Array[Entity] = []
+	for e in room.children:
+		if e is E_VerticalPortal:
+			portals.append(e)
+	room.portals = portals
+	if portals.is_empty():
+		return node_data.connections.duplicate()
+
+	# Порядок фиксируем по имени узла: раздача рёбер обязана быть детерминированной.
+	portals.sort_custom(func(a, b): return String(a.name) < String(b.name))
+
+	var rest: Array[RS_LevelConnection] = []
+	var free_portals := portals.duplicate()
+	for conn: RS_LevelConnection in node_data.connections:
+		var target := current_graph.get_node_data(conn.target_node_id)
+		var is_vertical := target != null and target.depth != node_data.depth
+		if is_vertical and not free_portals.is_empty():
+			var portal: Entity = free_portals.pop_front()
+			_stamp_portal(portal, conn)
+			_set_door_prompt(portal, _portal_prompt(node_data, target, conn))
+		else:
+			rest.append(conn)
+
+	for portal in free_portals:
+		_seal_door(portal)
+		_set_door_prompt(portal, PORTAL_PROMPT_DEAD, false)
+	return rest
+
+
+## Куда ведёт портал — вверх (к поверхности, depth меньше) или вниз.
+func _portal_prompt(
+	node_data: RS_LevelNode, target: RS_LevelNode, conn: RS_LevelConnection
+) -> String:
+	if conn.locked_by != &"":
+		return PORTAL_PROMPT_LOCKED
+	return PORTAL_PROMPT_UP if target.depth < node_data.depth else PORTAL_PROMPT_DOWN
 
 
 ## Свободная дверь, смотрящая в сторону цели ребра. Если позиции цели в этом
@@ -761,11 +833,11 @@ func _place_player_in_room(room: SpawnedRoom, came_from: StringName) -> void:
 	var room_node := room.entity as Node as Node3D
 	var spawn_point := room.entity.get_node_or_null(^"SpawnPoint") as Node3D
 
-	var return_door := _find_return_door(room, came_from)
-	if return_door:
+	var return_exit := _find_return_exit(room, came_from)
+	if return_exit:
 		# Меняем ТОЛЬКО origin: basis (рыскание) остаётся игроков. Тангаж живёт
 		# на камере (S_FPSLook) и сюда вообще не попадает.
-		player_node.global_position = _arrival_point(return_door, room_node, spawn_point)
+		player_node.global_position = _arrival_point(return_exit, room_node, spawn_point)
 		return
 
 	if spawn_point:
@@ -787,7 +859,9 @@ func _arrival_point(door: Entity, room_node: Node3D, spawn_point: Node3D) -> Vec
 	var room_origin := room_node.global_transform.origin
 
 	var into_room := Vector3.ZERO
-	var direction := RS_RoomLayout.door_direction(door_node, room_node)
+	# У портала стены нет — он стоит посреди комнаты, и «перпендикулярно стене»
+	# для него бессмысленно. Отходим от него к центру комнаты.
+	var direction := &"" if door is E_VerticalPortal else RS_RoomLayout.door_direction(door_node, room_node)
 	if direction != &"":
 		var offset: Vector2i = RS_RoomLayout.OFFSETS[direction]
 		into_room = -Vector3(offset.x, 0.0, offset.y)  # внутрь = против стороны двери
@@ -804,13 +878,14 @@ func _arrival_point(door: Entity, room_node: Node3D, spawn_point: Node3D) -> Vec
 	return point
 
 
-## Дверь комнаты [param room], ведущая обратно в came_from — чтобы игрок появился
-## у неё, а не в общем SpawnPoint. null, если пришли не через дверь (вход в забег).
-func _find_return_door(room: SpawnedRoom, came_from: StringName) -> Entity:
+## Выход комнаты [param room] (дверь ИЛИ портал), ведущий обратно в came_from —
+## чтобы игрок появился у него, а не в общем SpawnPoint. null, если пришли не
+## через выход (вход в забег, загрузка сейва).
+func _find_return_exit(room: SpawnedRoom, came_from: StringName) -> Entity:
 	if came_from == &"":
 		return null
-	for door in room.doors:
-		var portal := door.get_component(C_DoorPortal) as C_DoorPortal
+	for exit_entity in room.exits():
+		var portal := exit_entity.get_component(C_DoorPortal) as C_DoorPortal
 		if portal and portal.target_node_id == came_from:
-			return door
+			return exit_entity
 	return null
