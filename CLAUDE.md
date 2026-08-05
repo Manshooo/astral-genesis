@@ -17,7 +17,7 @@ Engine specifics from `project.godot`: **Jolt Physics** (3D), Windows renderer f
 
 ## GECS (Entity-Component-System)
 
-The entire game is built on **GECS** (`addons/gecs/`), a git **submodule** pinned to `release-v8.0.0` — do not edit files under `addons/gecs/` directly; they are upstream. Run `git submodule update --init` after cloning.
+The entire game is built on **GECS** (`addons/gecs/`), a git **submodule** pinned to `release-v9.2.0` — do not edit files under `addons/gecs/` directly; they are upstream. Run `git submodule update --init` after cloning.
 
 Core model:
 - **Components** (`Component`, `src/components/`) are pure data — no logic. Class names `C_*`, files `c_*.gd`.
@@ -34,6 +34,26 @@ Systems are placed under `World/Systems/<group>` in `world.tscn`; each `<group>`
 
 New-script templates live in `src/script_templates/` (Godot picks these up when creating scripts) — use them so new components/systems/entities/observers follow the base-class conventions above.
 
+### Правило v9: структурные изменения — только через `cmd` (командный буфер)
+
+С GECS v9 `System.safe_iteration` по умолчанию **`false`**: система обходит массивы архетипов **zero-copy**, без защитной копии (в v8 копия делалась каждый кадр). Отсюда главный инвариант:
+
+**Внутри `process()` нельзя менять СТРУКТУРУ мира напрямую** — `entity.add_component/remove_component`, `ECS.world.add_entity/remove_entity`, отношения. Такое изменение переносит сущность между архетипами через swap-remove и **пропускает** соседние сущности в текущем цикле; при `gecs/settings/debug_mode=true` (у нас включён) GECS дополнительно роняет `push_error` «structural change during zero-copy system iteration». Менять **поля** компонентов (`health.current -= x`) можно свободно — это не структурное изменение.
+
+Три способа, все применяются в проекте:
+- **`cmd.*` — по умолчанию.** `cmd.add_component/remove_component/add_entity/remove_entity` копятся и применяются сразу после `process()` этой системы (`FlushMode.PER_SYSTEM`), причём remove+add коалесцируются в ОДИН переезд архетипа. Примеры: `S_Health`, `S_Lifespan`, `S_InteractionDetector`, `S_BodySnatch`.
+  - Событие, которое должно уйти ПОСЛЕ применения правок, тоже кладём в буфер: `cmd.add_custom(func(): ECS.world.emit_event(&"body_snatched", soul))` — иначе наблюдатель увидит старое состояние (см. `S_BodySnatch._embody`).
+- **`call_deferred` — когда операция сносит комнату/меняет сцену.** Переход через дверь и конец забега трогают полмира, поэтому уходят за пределы прохода ECS целиком: `S_InteractInput` (`target.interact.call_deferred()`), `O_ExpelFromBody`, `O_RunEnded`. Наблюдатели, вызванные из `emit_event` внутри `process()`, находятся в том же окне итерации — на них правило распространяется.
+- **`safe_iteration = true`** в `_init()` конкретной системы — аварийный откат к v8-поведению. Не использовать без причины; проектный ключ `gecs/settings/safe_iteration_default` не трогаем.
+
+Прочее из v9, что стоит знать:
+- **Идентичность сущности** — `entity.id` теперь `int`-хэндл (не String UUID), выдаётся при `add_entity`; `ecs_id` больше нет. Имя-синглтон задаётся отдельным полем `entity.alias: StringName` (`world.get_entity_by_alias`), проверка живости — `world.is_alive(id)`. В нашем коде идентичность нигде не используется — при добавлении не изобретать String-id.
+- **Порядок `world.entities` нестабилен** (O(1) swap-remove при удалении) — не полагаться на порядок вставки, сортировать явно. Ср. `RunManager._bind_doors`, который специально сортирует двери по `slot_id`.
+- **Пустые архетипы не удаляются** (переиспользуются при спавн/деспавн-чурне комнат). Освободить их можно `world.compact()` в спокойный момент — кандидат на вызов при смене узла/конце забега, если профайлер покажет рост.
+- **`q.changed([C_X])`** — система получает только сущности, чей компонент писался с её прошлого прогона (детект по `property_changed`, после прямой мутации — `entity.mark_changed(component)`). Пока нигде не используем; полезно для дорогих реактивных систем.
+- **`GECSTracker.track(callable)`** (появился в 9.2.0) — прогоняет вычисление и возвращает его фактические зависимости: выполненные запросы (`.queries`) и прочитанные типы компонентов (`.reads`), видит их сквозь вложенные вызовы. Плюс `QueryBuilder.sensitivity()` — пути скриптов, чья мутация влияет на членство в запросе. Заготовка под реактивные производные и инвалидацию кэша; выключен по умолчанию, не реентерабелен (`track()` нельзя вкладывать). См. `addons/gecs/docs/DEPENDENCY_TRACKING.md`.
+- Обновление аддона: `git submodule update --remote addons/gecs` не годится — ветка пиннится в `.gitmodules` (`branch = release-v9.2.0`). Сменить версию = поправить `branch` и переключить сабмодуль на новую ветку. После смены версии переимпортировать проект; если менялся **путь** аддона — сначала **удалить `.godot/uid_cache.bin`**, иначе кэш UID помнит старые пути и ломает автолоад `ECS`.
+
 ### Знание: state machine в ECS — осторожно ([источник](https://ajmmertens.medium.com/why-storing-state-machines-in-ecs-is-a-bad-idea-742de7a18e59))
 
 Наивный подход «один тег-компонент на каждое состояние» (`C_Idle`, `C_Walking`, `C_Attacking`, …) — плохая идея:
@@ -46,7 +66,7 @@ New-script templates live in `src/script_templates/` (Godot picks these up when 
 
 ### Знание: полезные GECS-паттерны из example_card_game «WAR» ([источник](https://github.com/csprance/gecs/tree/main/example_card_game))
 
-Референс-реализация из репо GECS. Все API ниже сверены с нашим пиннутым `release-v8.0.0` и в аддоне присутствуют. Хорошая живая иллюстрация «FSM как данные» (см. заметку выше). Паттерны, которые стоит переиспользовать у нас:
+Референс-реализация из репо GECS. Все API ниже сверены с нашим пиннутым `release-v9.2.0` и в аддоне присутствуют. Хорошая живая иллюстрация «FSM как данные» (см. заметку выше). Паттерны, которые стоит переиспользовать у нас:
 
 - **Enum-FSM на синглтон-сущности** — `C_Phase { state: enum }`, сеттер эмитит `property_changed` вручную (прямое присваивание поля его не шлёт). Одна сущность матча/рана несёт текущую фазу. → применимо к флоу рана в `RunManager` (dealing/idle/travel/…), к флоу захвата тела и к death-флоу.
 - **Дробление системы по состоянию через `sub_systems()` + property-query** — вместо одной god-системы с `match state`: `sub_systems()` возвращает пары `[query, callable]`, где запрос фильтрует по значению enum: `q.with_all([C_Match, {C_Phase: {"state": {"_eq": C_Phase.State.RESOLVE}}}])`. Каждое состояние = свой обработчик, движок сам маршрутизирует.
@@ -72,28 +92,36 @@ New-script templates live in `src/script_templates/` (Godot picks these up when 
 
 Autoloads (`project.godot [autoload]`, scripts in `src/autoloads/`): `ECS`, `GameConfig` (loads `data/game_config.tres` → `RS_GameConfig`), `SettingsManager`, `SkillManager`, `UIManager`, `WorldSave`, `RunManager`. Tunable game data lives as `.tres` resources under `data/` (skill tree, room presets, game config, settings), edited in-editor rather than hardcoded.
 
+**Key rebinding** lives in `SettingsManager`: `RS_Settings.keybinds` maps an action to a short code string (`"key:70"`, `"mouse:1"` — codec `event_to_code`/`code_to_event`) and holds **only deltas** from `project.godot`. Applying always starts from `InputMap.load_from_project_settings()` and layers the overrides on top, so an empty dict *is* "defaults" and Reset needs no stored copy. `SettingsManager.REBINDABLE_ACTIONS` is the ordered action→label list the UI renders (`src/ui/settings/keybinds_setting.gd`, one settings-control for the whole dict); `pause_game` is deliberately excluded because Esc is a UI-wide invariant. Codes are strings, not `InputEvent` resources, because resources compare by reference and the settings draft would always look dirty. When adding a `Dictionary` setting, remember `Resource.duplicate()` shares it — use `RS_Settings.copy()`.
+
 ## World generation & run flow
 
 A "run" is a **graph**, not a linear level. Key pieces:
 
 - **Entry point**: the game boots into the `L_menu_map.tscn` main menu. **New Game** (`src/ui/main_menu/main_menu.gd`) rolls a fresh seed via `WorldSave.new_game()` and loads `world.tscn`, whose root `main.gd` calls `RunManager.enter_complex()` in `_ready` — that is what actually starts a run.
 - **`RS_LevelGraph.generate_run(seed, library)`** (`src/resources/world_generator/rs_level_graph.gd`) deterministically builds the whole complex: layers by depth `[4,3,2,1,0]` (surface = 0), each layer = 1–3 floors of ~4 rooms connected by a spanning tree + extra edges (floors within a layer joined by `floor_hub` connectors), layers joined by `vertical_hub` connectors (some `locked_by` the `level_access_key`). The player's home lab is a guaranteed **dead-end** at `HOME_DEPTH = 3`; two exits (`level_exit` tag) are placed on the surface layer. Room scenes are assigned last via `RS_RoomPresetLibrary.select_preset(node, rng)`; the entry node is always overridden to the hand-authored **hub** scene.
-- **`RunManager`** (autoload) owns one active run: it spawns/despawns the single current room and teleports the player. It does **not** stream neighbors yet. Seed comes from `WorldSave.save.run_seed()` (derived from `world_seed` + `death_count`), so generation is reproducible.
-- **`WorldSave`** persists `RS_WorldSave` (`world_seed` + `death_count`) to `user://world_save.tres`. New Game rolls a new seed; death increments `death_count` (changing future generation) — the death flow itself is not wired yet.
+- **`RunManager`** (autoload) owns one active run. The **streaming granule is a layer** — every node of one `depth` (`RS_LevelGraph.get_nodes_by_depth`) is spawned at once and laid out on a deterministic grid (`_layer_layout`: floors stacked by `FLOOR_SPACING`, rooms of a floor in a row by `ROOM_SPACING`, ordered by `index_in_layer`). Travel inside the layer is a pure teleport; travel to another depth despawns the layer and spawns the new one. Per-room bookkeeping lives in `SpawnedRoom` (entity + nested children + doors). Seed comes from `WorldSave.save.run_seed()` (derived from `world_seed` + `death_count`), so generation is reproducible.
+  - **Room-scene invariant:** the `Doors` container node must be a `Node3D`, not a plain `Node`. Godot's Node3D inherits its transform only from a **direct** Node3D parent — a plain `Node` in between silently detaches doors (and their colliders) from the room, leaving them at the world origin. Harmless while every room sat at the origin; fatal once layers are laid out on a grid.
+- **`WorldSave`** persists `RS_WorldSave` to `user://world_save.tres`: `world_seed` + `death_count` (they derive `run_seed()`) plus the run's progress — `run_in_progress`, `current_node_id`, `visited_node_ids`, `lifespan_remaining`. The complex is never serialized room-by-room; it is regenerated from the seed. `RunManager` checkpoints via `WorldSave.record_progress()` on every room change; `finish_run` clears the run, `die` clears it and increments `death_count`. Main-menu **Load** just switches to `world.tscn` (the save is already loaded) and is disabled while `WorldSave.has_save_file` is false.
 
 ### Doors ↔ graph edges — read before touching room/door code
 
 Graph edges (`RS_LevelConnection`) and physical room doors are bridged at spawn time, **not** authored by hand:
 - Each door is an interactable Entity carrying **`C_DoorSlot { slot_id }`** (stable per-prefab id).
-- On spawn, `RunManager._bind_doors` picks the room's `C_DoorSlot` entities (a subset of the already-registered nested entities), sorts them deterministically by `slot_id`, and **stamps `C_DoorPortal { target_node_id, locked_by }`** onto each from the node's `connections`. Surplus slots (more doors than edges) are **sealed** (`C_Interactable.enabled = false`). More edges than doors → warning, some nodes unreachable (that's what `gen_verifier` measures).
-- Traversal goes through the interaction system: `A_TravelThroughDoor` reads its entity's `C_DoorPortal`, checks the lock, and calls `RunManager.travel_to(target_node_id)`. On arrival the player is placed at the door leading back to where they came from (fallback: the room's `SpawnPoint`).
-- **Caveat**: `world.add_entity(room)` registers ONLY the room itself — GECS does not walk the tree for nested `Entity` children. `RunManager` registers **all** nested entities (`Incubator`, doors, …) explicitly via `_register_room_children` and removes them in `_despawn_current_room` (`_current_room_children`, with `_current_room_doors` as the door subset). Keep that invariant when changing room spawn/despawn. Removal filters `is_instance_valid` first: `RunManager` is an autoload, so after an exit-to-menu the previous run's entity refs are dangling (freed with the old world), and `remove_entity`'s typed param rejects freed objects before its own guard runs.
+- On spawn, `RunManager._bind_doors` picks the room's `C_DoorSlot` entities (a subset of the already-registered nested entities), sorts them deterministically by `slot_id`, and **stamps `C_DoorPortal { target_node_id, locked_by }`** onto each from the node's `connections`, plus the matching `prompt_text` ("Пройти"/"Заперто"). More edges than doors → warning, some nodes unreachable (that's what `gen_verifier` measures).
+- Surplus slots (more doors than edges) are **sealed** by `_seal_door`: an empty `C_DoorPortal` (empty `target_node_id` == "sealed") and the prompt "Прохода нет" with `show_key_hint = false`. Interaction stays **enabled** — a disabled `C_Interactable` is skipped by `S_InteractionDetector`, so the door would neither highlight nor explain itself and reads as a bug.
+- Traversal goes through the interaction system: `A_TravelThroughDoor` reads its entity's `C_DoorPortal`; a sealed or locked door posts a `C_ScreenMessage` on the player instead of travelling, otherwise it calls `RunManager.travel_to(target_node_id)`. On arrival the player is placed at the door leading back to where they came from (fallback: the room's `SpawnPoint`).
+- **Caveat**: `world.add_entity(room)` registers ONLY the room itself — GECS does not walk the tree for nested `Entity` children. `RunManager` registers **all** nested entities (`Incubator`, doors, …) explicitly via `_register_room_children` and removes them in `_despawn_layer` (per room: `SpawnedRoom.children`, with `SpawnedRoom.doors` as the door subset). Keep that invariant when changing room spawn/despawn. Removal filters `is_instance_valid` first: `RunManager` is an autoload, so after an exit-to-menu the previous run's entity refs are dangling (freed with the old world), and `remove_entity`'s typed param rejects freed objects before its own guard runs.
 
 Current slot↔edge matching is by sorted order (bootstrap "Variant A"); the target is presets declaring their slots with `slots >= connections`.
 
 ## Interaction system (see docs/astral-genesis/how-to/Взаимодействие.md)
 
 An interactable object needs three things: a **`C_Interactable`** component, a collider on the **`interactives` physics layer (layer_4, mask bit 8)**, and either an `interact()` method or `actions[]` of `RS_InteractionAction`. `S_InteractionDetector` raycasts from the player camera each physics frame and walks *up* the node tree from the hit collider to find the owning `Entity` (so the collider may live deep inside an imported scene, not on the Entity itself). It toggles `C_Highlighted`, which drives crosshair growth and the outline observer (`O_OutlineVisual`). Outline only finds meshes that are a `GeometryInstance3D` root or a child named exactly `MeshInstance3D`.
+
+Two distinct text channels — don't conflate them:
+- **Prompt** (`hud_prompt.gd`) — persistent while the crosshair is on the object. Shows `C_Interactable.prompt_text`, prefixed with the action key from `InputMap` unless `show_key_hint = false` (for objects that explain themselves but do nothing when pressed).
+- **Screen message** (`C_ScreenMessage` → `hud_message.gd`, expired by `S_ScreenMessage`) — a one-off line reacting to a press. Logic attaches the component to the player, the HUD renders it, the system removes it on timeout. Re-showing a message is a **remove + add** (direct field writes don't signal the world, so the HUD would miss the new text).
 
 ## Conventions & docs
 

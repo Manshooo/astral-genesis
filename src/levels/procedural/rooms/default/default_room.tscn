@@ -48,7 +48,7 @@ mesh = ExtResource("4_e328x")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=2108038327]
 shape = SubResource("ConcavePolygonShape3D_igkil")
 
-[node name="Doors" type="Node" parent="." unique_id=1730526942]
+[node name="Doors" type="Node3D" parent="." unique_id=1730526942]
 
 [node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_xqnoe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0673208, 2.2775016, -9.3485155)

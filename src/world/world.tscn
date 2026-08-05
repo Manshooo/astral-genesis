@@ -17,6 +17,7 @@
 [ext_resource type="Script" uid="uid://blc2ipv5016mt" path="res://src/systems/gameplay/s_lifespan.gd" id="15_lifespan"]
 [ext_resource type="Script" uid="uid://bmffrjcgeesnb" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
 [ext_resource type="Script" uid="uid://dvcwemjjoh26w" path="res://src/observers/o_run_ended.gd" id="17_runend"]
+[ext_resource type="Script" uid="uid://cr8trq4a1wwxw" path="res://src/systems/gameplay/s_screen_message.gd" id="18_screenmsg"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -64,6 +65,10 @@ metadata/_custom_type_script = "uid://1davl1dw2ge4"
 
 [node name="S_Lifespan" type="Node" parent="World/Systems/gameplay" unique_id=1979994347]
 script = ExtResource("15_lifespan")
+group = &"gameplay"
+
+[node name="S_ScreenMessage" type="Node" parent="World/Systems/gameplay" unique_id=1979994348]
+script = ExtResource("18_screenmsg")
 group = &"gameplay"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

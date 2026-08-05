@@ -36,7 +36,7 @@ func _on_component_added(entity: Entity, component: Variant) -> void:
 	var inter := entity.get_component(C_Interactable) as C_Interactable
 	if inter == null or inter.prompt_text == "":
 		return  # интерактив без подписи — крестик подсветит, но текста нет
-	var key := _interact_key_hint()
+	var key := _interact_key_hint() if inter.show_key_hint else ""
 	text = "[%s] %s" % [key, inter.prompt_text] if key != "" else inter.prompt_text
 	show()
 

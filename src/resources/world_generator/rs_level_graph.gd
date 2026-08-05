@@ -243,9 +243,9 @@ func get_node_data(node_id: StringName) -> RS_LevelNode:
 	return nodes.get(node_id)
 
 
-## Все узлы конкретного слоя (across всех его этажей). ПОКА НЕ ИСПОЛЬЗУЕТСЯ:
-## зарезервировано под будущую загрузку слоя ЦЕЛИКОМ (весь слой одновременно в
-## дереве сцены), а не по одной комнате, как сейчас делает RunManager.
+## Все узлы конкретного слоя (across всех его этажей). Это гранула стриминга:
+## RunManager грузит слой ЦЕЛИКОМ (все комнаты одновременно в дереве сцены) и
+## сносит его только при смене глубины — см. RunManager._spawn_layer.
 func get_nodes_by_depth(depth: int) -> Array[RS_LevelNode]:
 	var result: Array[RS_LevelNode] = []
 	for node in nodes.values():
