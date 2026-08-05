@@ -1,6 +1,5 @@
 [gd_scene format=3 uid="uid://bh8lmoc7bp0ej"]
 
-[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui_themes/default_theme.tres" id="1_ejwgg"]
 [ext_resource type="Script" uid="uid://b5na6n7med7u4" path="res://src/ui/pause_menu/pause_menu.gd" id="2_ejwgg"]
 
 [node name="PauseMenu" type="Control" unique_id=68340211]
@@ -10,7 +9,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_ejwgg")
 script = ExtResource("2_ejwgg")
 
 [node name="Panel" type="Panel" parent="." unique_id=2057447361]
@@ -28,7 +26,6 @@ offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
 pivot_offset_ratio = Vector2(0.5, 0.5)
-theme = ExtResource("1_ejwgg")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=740551870]
 layout_mode = 1

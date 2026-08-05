@@ -143,11 +143,11 @@ static func code_to_event(code: String) -> InputEvent:
 	match parts[0]:
 		"key":
 			var key := InputEventKey.new()
-			key.physical_keycode = int(parts[1])
+			key.physical_keycode = int(parts[1]) as Key
 			return key
 		"mouse":
 			var mouse := InputEventMouseButton.new()
-			mouse.button_index = int(parts[1])
+			mouse.button_index = int(parts[1]) as MouseButton
 			return mouse
 	return null
 

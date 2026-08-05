@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://drklhavb607br"]
 
 [ext_resource type="Script" uid="uid://cctjgttgw45u1" path="res://src/levels/procedural/rooms/vertical/vertical_hub_1.gd" id="1_nf0ae"]
-[ext_resource type="ArrayMesh" uid="uid://bopai8h7nvvcd" path="res://assets/rooms/models/buildings_room_B_1.tres" id="2_3rh27"]
+[ext_resource type="ArrayMesh" uid="uid://jqbho7y4c7dn" path="res://assets/rooms/models/buildings_room_B_1.tres" id="2_3rh27"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_ykosf"]
 [ext_resource type="PackedScene" uid="uid://cptqi40u604fy" path="res://src/entities/vertical_portal/e_vertical_portal.tscn" id="3_0833h"]
 [ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_y5cco"]

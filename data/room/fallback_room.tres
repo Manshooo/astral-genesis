@@ -7,5 +7,5 @@
 script = ExtResource("2_tb7ye")
 display_name = "Комната заглушка"
 scene = ExtResource("1_a6qyk")
-slot_count = 4
+slot_count = 1
 metadata/_custom_type_script = "uid://wiaffa7aebsm"

@@ -22,8 +22,8 @@ func each(_event: Variant, entity: Entity, _payload: Variant = null) -> void:
 
 
 ## Развоплощение: снять «во плоти» и здоровье тела, а также тег смерти (тело
-## умерло, но душа — нет). C_Lifespan остаётся и снова начинает тикать —
-## S_Lifespan матчит развоплощённую душу по with_none([C_Embodied]).
+## умерло, но душа — нет). C_Lifespan остаётся и снова начинает тикать на ПОЛНОЙ
+## скорости: во плоти S_Lifespan замедлял его на C_Lifespan.embodied_rate.
 func _expel(soul: Entity) -> void:
 	if not is_instance_valid(soul):
 		return

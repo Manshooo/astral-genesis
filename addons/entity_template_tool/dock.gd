@@ -64,8 +64,14 @@ func _build_ui() -> void:
 	create_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(create_btn)
 
+	# Статус — строго ОДНА строка с многоточием, а не autowrap. Label с autowrap
+	# считает минимальную высоту, перенося текст по минимальной ШИРИНЕ (а она до
+	# первой раскладки ~17 px), и требует под себя сотни пикселей. Эту минималку
+	# редактор спрашивает у ВСЕХ вкладок дока сразу, ещё до открытия, — из-за неё
+	# панели разъезжаются, пока вкладку не откроешь. Полный текст — в подсказке.
 	_status = Label.new()
-	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_status.modulate = Color(1, 1, 1, 0.7)
 	add_child(_status)
 
@@ -105,6 +111,13 @@ func _button(text: String, handler: Callable) -> Button:
 	b.text = text
 	b.pressed.connect(handler)
 	return b
+
+
+## Строка статуса обрезается многоточием (см. про autowrap в _build_ui), поэтому
+## целиком текст кладём в подсказку.
+func _set_status(text: String) -> void:
+	_status.text = text
+	_status.tooltip_text = text
 #endregion
 
 
@@ -151,11 +164,11 @@ func _selected_template() -> RS_EntityTemplate:
 
 func _update_status() -> void:
 	if _paths.is_empty():
-		_status.text = "Нет шаблонов. Жми «Новый»."
+		_set_status("Нет шаблонов. Жми «Новый».")
 	elif _selected_path() == "":
-		_status.text = "%d шаблонов. Выбери один." % _paths.size()
+		_set_status("%d шаблонов. Выбери один." % _paths.size())
 	else:
-		_status.text = _selected_path().get_file()
+		_set_status(_selected_path().get_file())
 #endregion
 
 
@@ -199,7 +212,7 @@ func _on_name_confirmed() -> void:
 		if _save_resource(tmpl, path):
 			_refresh(path)
 			_edit_resource(path)
-			_status.text = "Создан: " + path.get_file()
+			_set_status("Создан: " + path.get_file())
 	elif _name_mode == "rename":
 		var path := _selected_path()
 		var tmpl := ResourceLoader.load(path) as RS_EntityTemplate
@@ -227,7 +240,7 @@ func _on_duplicate_pressed() -> void:
 	var path := _unique_path(base + "_copy")
 	if _save_resource(copy, path):
 		_refresh(path)
-		_status.text = "Дубликат: " + path.get_file()
+		_set_status("Дубликат: " + path.get_file())
 
 
 func _on_delete_pressed() -> void:
@@ -249,7 +262,7 @@ func _on_delete_confirmed() -> void:
 		return
 	_rescan_filesystem()
 	_refresh()
-	_status.text = "Удалён: " + path.get_file()
+	_set_status("Удалён: " + path.get_file())
 
 
 func _on_edit_pressed() -> void:
@@ -258,7 +271,7 @@ func _on_edit_pressed() -> void:
 		_warn("Сначала выбери шаблон.")
 		return
 	EditorInterface.edit_resource(tmpl)
-	_status.text = "Открыт в инспекторе → правь компоненты."
+	_set_status("Открыт в инспекторе → правь компоненты.")
 
 
 func _on_create_entity_pressed() -> void:
@@ -292,7 +305,7 @@ func _on_entity_path_chosen(path: String) -> void:
 		return
 	_rescan_filesystem()
 	EditorInterface.open_scene_from_path(path)
-	_status.text = "Создана сущность: " + path.get_file()
+	_set_status("Создана сущность: " + path.get_file())
 #endregion
 
 
@@ -356,5 +369,5 @@ func _rescan_filesystem() -> void:
 
 
 func _warn(text: String) -> void:
-	_status.text = "⚠ " + text
+	_set_status("⚠ " + text)
 #endregion

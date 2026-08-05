@@ -36,10 +36,20 @@ animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
 import_script/path=""
-materials/extract=0
+materials/extract=1
 materials/extract_format=0
-materials/extract_path=""
+materials/extract_path="res://assets/rooms/materials"
 _subresources={
+"materials": {
+"@MATERIAL:14": {
+"use_external/enabled": true,
+"use_external/path": "uid://cnya23x5qxi1x"
+},
+"@MATERIAL:15": {
+"use_external/enabled": true,
+"use_external/path": "uid://8jj8ae88b4yc"
+}
+},
 "meshes": {
 "buildings_book_shelf_A": {
 "generate/lightmap_uv": 0,
@@ -103,24 +113,6 @@ _subresources={
 "save_to_file/enabled": true,
 "save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2C.tres",
 "save_to_file/path": "uid://bwywggcscny76"
-},
-"buildings_room_A_2_001": {
-"generate/lightmap_uv": 0,
-"generate/lods": 0,
-"generate/shadow_meshes": 0,
-"lods/normal_merge_angle": 20.0,
-"save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2_001.tres",
-"save_to_file/path": "uid://dsbmv03rpm5yb"
-},
-"buildings_room_A_2_002": {
-"generate/lightmap_uv": 0,
-"generate/lods": 0,
-"generate/shadow_meshes": 0,
-"lods/normal_merge_angle": 20.0,
-"save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2_002.tres",
-"save_to_file/path": "uid://18qbbebvo5lo"
 },
 "buildings_room_B_1": {
 "generate/lightmap_uv": 0,

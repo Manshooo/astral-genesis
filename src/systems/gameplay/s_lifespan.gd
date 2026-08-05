@@ -1,23 +1,32 @@
 # res://src/systems/gameplay/s_lifespan.gd
-# Группа: "gameplay". Тикает распад БФЖ, пока он РАЗВОПЛОЩЁН (нет C_Embodied).
-# Во плоти распад на паузе — тело держит сознание. Истечение
-# запаса в развоплощён — настоящая смерть: событие "run_ended" + тег C_Dead,
-# чтобы распад не объявлялся повторно каждый кадр. На "run_ended" подписан
-# O_RunEnded → RunManager.die() (запись смерти в сейв, снос забега, экран смерти).
+# Группа: "gameplay". Тикает распад БФЖ. Развоплощённая душа тает с полной
+# скоростью, во плоти — замедленно (C_Lifespan.embodied_rate): тело снимает
+# давление времени, но не отменяет его, иначе после первого же захвата забег
+# перестаёт торопить. Полный запас возвращает сам момент вселения
+# (S_BodySnatch._embody), так что охота за телами и остаётся способом выжить.
+#
+# Истечение запаса — настоящая смерть в любом состоянии: событие "run_ended" +
+# тег C_Dead, чтобы распад не объявлялся повторно каждый кадр. На "run_ended"
+# подписан O_RunEnded → RunManager.die() (запись смерти в сейв, снос забега,
+# экран смерти).
 class_name S_Lifespan
 extends System
 
 
-## Только развоплощённая душа: есть C_Lifespan, нет тела (C_Embodied) и ещё не
-## объявлена мёртвой (C_Dead). Враги/тела без C_Lifespan сюда не попадают.
+## Любая душа с запасом жизни, ещё не объявленная мёртвой. C_Embodied больше НЕ
+## исключает сущность из выборки — он только замедляет тик (см. process).
+## Враги/тела без C_Lifespan сюда не попадают.
 func query() -> QueryBuilder:
-	return q.with_all([C_Lifespan]).with_none([C_Embodied, C_Dead])
+	return q.with_all([C_Lifespan]).with_none([C_Dead])
 
 
 func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 	for entity in entities:
 		var life := entity.get_component(C_Lifespan) as C_Lifespan
-		life.current -= delta
+		var rate := life.embodied_rate if entity.has_component(C_Embodied) else 1.0
+		if rate <= 0.0:
+			continue
+		life.current -= delta * rate
 		if life.current <= 0.0:
 			life.current = 0.0
 			cmd.add_component(entity, C_Dead.new())

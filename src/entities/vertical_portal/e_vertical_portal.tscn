@@ -7,7 +7,8 @@
 [ext_resource type="Script" uid="uid://cyg0dgtskxbxb" path="res://src/entities/vertical_portal/a_use_portal.gd" id="4_660ut"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_l4b6j"]
 [ext_resource type="Material" uid="uid://by1nhfhnrvyii" path="res://assets/shared/materials/portal_mat.tres" id="7_660ut"]
-[ext_resource type="Texture2D" uid="uid://b5jpn52wfckdy" path="res://addons/kenney_patterns/Vector/pattern_02.svg" id="8_l606l"]
+[ext_resource type="Material" uid="uid://c3ptugjrya5vi" path="res://assets/shared/materials/portal_glass.tres" id="7_pykm4"]
+[ext_resource type="Material" uid="uid://c581rundb7b33" path="res://assets/shared/materials/portal_harding.tres" id="8_epiwm"]
 
 [sub_resource type="Resource" id="Resource_b8d6q"]
 script = ExtResource("4_660ut")
@@ -17,28 +18,6 @@ metadata/_custom_type_script = "uid://cyg0dgtskxbxb"
 script = ExtResource("4_l4b6j")
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_i1ivm"]
-frequency = 0.0087
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_16cgx"]
-width = 256
-height = 256
-noise = SubResource("FastNoiseLite_i1ivm")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_krgff"]
-transparency = 1
-albedo_color = Color(0.6431373, 0.65882355, 0.6039216, 0.3019608)
-roughness = 0.03
-roughness_texture = ExtResource("8_l606l")
-refraction_enabled = true
-refraction_scale = 0.08
-refraction_texture = SubResource("NoiseTexture2D_16cgx")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_l606l"]
-albedo_color = Color(0.3403393, 0.34033936, 0.34033924, 1)
-metallic = 1.0
-roughness_texture_channel = 2
-
 [sub_resource type="ArrayMesh" id="ArrayMesh_l606l"]
 lightmap_size_hint = Vector2i(214, 218)
 _surfaces = [{
@@ -47,7 +26,7 @@ _surfaces = [{
 "format": 34359742519,
 "index_count": 108,
 "index_data": PackedByteArray("AAABAAIAAwAEAAUAAwAGAAQABwACAAgACQAKAAsADAANAA4ADwAMAA4AEAARAAoAAQAAABIAAgAHAAAAEwAUABUAEwAVABYAEwAXABQAGAAZABoACgAJABAAGwAcAB0AEQAQAB4AHwAcABsAHwAgABwAIQAiACMAAwAkAAYAAwAlACQAJgAnACgAKQAqACsADwAOACwADwAsAC0ALgAvADAAMQAyAC8AJwAmADMANAA1ADYANwA4ADkAKgApADoALwAuADEAOwA8AD0APgA/AEAAMgAxAEEA"),
-"material": SubResource("StandardMaterial3D_krgff"),
+"material": ExtResource("7_pykm4"),
 "name": "glass",
 "primitive": 3,
 "uv_scale": Vector4(0, 0, 0, 0),
@@ -59,7 +38,7 @@ _surfaces = [{
 "format": 34359742519,
 "index_count": 960,
 "index_data": PackedByteArray("AAABAAIAAwAEAAUAAQAGAAIABwAIAAkAAwAFAAoABwALAAgADAANAA4ADwAQABEAEgATABQADAAVAA0ADwARABYAFgARABcAEgAYABMAGQAaABsAGQAcABoAHQAeAB8AIAAhACIABwAjAAsADAAOACQAGwAlACYADwAnACgAEgAUACkAHgAqAB8AIAArACEADgAsACQALQAoACcAIwAuAAsAKQAUAC8ALQAnADAAMQAyADMANAAmACUANAA1ACYANQA2ACYADwA3ADgADwA4ABAADwAoADcAGwA5ADoAGwA6ADsAGwA7ACUAGgA5ABsABAA8AAUAAgAGAD0ABAA+ADwAPwBAAEEAPwBBAEIAFQBDAA0ACQAIAEQARQBGAEcASABJAEoASABLAEkASABMAEsAFQBNAEMABgBOAD0ACQBEAE8APwBCAFAASABRAEwARQBSAEYAUABCAFMATABRAFQAUABTAFUAUABVAFYAUQBXAFQAUQBYAFcAWQBaAFsATwBEAFwATQBdAEMAUABWAF4AUgBfAEYAYABhAGIAUQBjAFgAUABeAGQAUQBlAGMATQBmAF0AUgBnAF8AYwBlAGgAXgBpAGQAagBrAGwAWQBtAFoATwBcAG4AYQBvAGIAKgBwAB8AKwBxACEAIwByAC4AMgBzADMAdAB1AHYAJAAsAHcAdAB2AHgAMgB5AHMAegB7AHwAKwB9AHEAcwB5AH4ALAB/AHcAfAB7AIAAKgCBAHAAcgCCAC4AdgCDAHgAgwCEAHgAfgB5AIUAhACGAHgAhwCIAIkAigCLAIwAiQCIAI0AjQCIAI4AjwCQAJEAkgCTAJQAlQCWAJcAmACZAJoAjACLAJsAiwCcAJsAnACdAJsAjQCOAJ4AkQCQAJ8AkgCgAJMAngCOAKEAlgCiAJcAowCkAKUAowCmAKQAmQCnAJoAqACpAKoAqwCpAKwArQCuAK8AqgCpALAAsQCyAK8AqwCwAKkAsgCzAK8ArQCvALMAtAC1ALYAtQCoALYAbAC3ALEAawC3AGwAtQCpAKgAbACxAK8AXQBmALgAuQC6ALsAbgBcALwAWgBtAL0AYgBvAL4AZgC/ALgAuQDAALoAbgC8AMEAbwDCAL4AbQDDAL0AxACsAMUAxgDHAK4AqQDFAKwArgDHAK8AyADJAMAAygC/AMsAuAC/AMoAwADJALoAzADNAM4AwQC8AM8AzADOANAA0QDBAM8A0gDTANQA0gDVANMA1gDXANgA2QDaANsA3ADdAN4A2gDfANsA3ADeAOAA4QDiAOMA1gDYAOQA5QDmAOcA6ADpAOoA6ADrAOkA4gDsAOMA6ADtAOsA5ADYAO4A5wDmAO8A8ADxAPIA4QDjAPMA9AD1APYA9wD4APkA5QD6APsA6ADqAPwA1gD9ANcA8QD+APIA4QDzAP8A9AAAAfUAAQH7APoA1gACAf0A/ADqAAMBAQH6AAQBBAH6AAUBBgH5APgABgEHAfkABwEIAfkA/QACAQkB/AADAQoBCwEMAeYADQEOAQ8BDQH3AA4B5QALAeYA5QAQAQsB5QD7ABAB9wD5AA4B3QARAd4A4gASAewA2wDfABMB3QAUAREBFQEWARcB5ADuABgBGQEaARsBEgEcAewA3wAdARMBFwEWAR4BGQEfARoB7gAgARgBIQEiASMBGAEgASQBJQEmAScBKAEpASoBKwEmASUBKwElASwBKAEqAS0BLQEqAS4BLwEwATEBEgEyARwBKwEsATMBIQE0ASIBGAEkATUBNgE3ATgBLgEqATkBKwEzAToBOQEqATsBMgE8ARwBIQE9ATQBJAE+ATUBOQE7AT8BMwFAAToBQAFBAToBPQFCATQBPgFDATUBLwFEATABNwFFATgB/gBGAfIAAAFHAfUA+gBIAQUB/wDzAEkBCAFKAfkACAFLAUoB+gBMAUgBAgFNAQkB/AAKAU4BAAFPAUcBSAFMAVABAgFRAU0BCgFSAU4B/wBJAVMB/gBUAUYBSwFVAUoBVQFWAUoBVgFXAUoBUAFMAVgBWQFaAVsBWwFaAVwBXQFeAV8BYAFhAWIBTQFRAWMBXAFaAWQBYQFlAWIBZgFnAWgBaQFqAWsBbAFtAW4BXQFvAV4BbwFwAV4BcAFxAV4BXAFkAXIBYQFzAWUBcgFkAXQBZwF1AWgBcwF2AWUBaAF1AXcBeAF5AXoBaQFrAXsBeAF8AXkBbQF9AW4BfgE7AX8BgAGBAYIBgwGEAYUBfgF/AYYBhwGIAYkBgAGKAYEBgwGFAYsBjAGLAYUBjQGOAY8BPwE7AZABkQGQATsBOgGSAYcBQQGSAToBPQGTAUIBQwGUATUBkQE7AX4BOgGHAYkBPQGVAZMBNQGUAZYBMgGXATwBMAFEAZgBRQGZATgBPQGaAZUBmwGWAZQBlwGcATwBRQGdAZkBRAGeAZgBnwGgAYQBoQGBAaIBoQGCAYEBhAGgAYUBowGOAaQBpQGmAZwBpwGoAakBjwGOAaMBpQGcAZcBqgGrAawBpwGpAZYBqgGsAa0BrgGvAbABrwGxAbABmwGnAZYB"),
-"material": SubResource("StandardMaterial3D_l606l"),
+"material": ExtResource("8_epiwm"),
 "name": "harding",
 "primitive": 3,
 "uv_scale": Vector4(0, 0, 0, 0),

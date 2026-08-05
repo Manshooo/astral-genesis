@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://addons/entity_template_tool/templates/room_template.gd" id="1_f0wrg"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_2ub76"]
 [ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_gbsua"]
-[ext_resource type="ArrayMesh" uid="uid://18rxwsbixpe4" path="res://assets/rooms/models/buildings_room_C_1.tres" id="4_2ub76"]
+[ext_resource type="ArrayMesh" uid="uid://7glfxlowb4r6" path="res://assets/rooms/models/buildings_room_C_1.tres" id="4_2ub76"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_gbsua"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_ua5we"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_8ut7d"]
@@ -32,6 +32,7 @@ component_resources = Array[ExtResource("2_2ub76")]([SubResource("Resource_2oaqr
 mesh = ExtResource("4_2ub76")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=769746175]
+visible = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=2032499311]
 shape = SubResource("ConcavePolygonShape3D_ua5we")
