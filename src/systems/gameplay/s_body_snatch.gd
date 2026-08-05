@@ -71,17 +71,22 @@ func _resolve_snatchable(collider: Object) -> Entity:
 	return null
 
 
+## Структурные правки идут через командный буфер (cmd), а не напрямую: с GECS v9
+## System.safe_iteration = false по умолчанию — системы обходят массивы архетипов
+## zero-copy, и add/remove прямо в process() может пропустить сущности (swap-remove)
+## и роняет push_error в debug_mode. Буфер применяется сразу после process() этой
+## системы (FlushMode.PER_SYSTEM), коалесцируя remove+add в один переезд архетипа.
 func _embody(soul: Entity, body: Entity) -> void:
 	var snatchable := body.get_component(C_BodySnatchable) as C_BodySnatchable
 
 	# 1. Перенять здоровье тела — душа получает свежий C_Health.
 	if soul.has_component(C_Health):
-		soul.remove_component(C_Health)
-	soul.add_component(C_Health.new(snatchable.max_health))
+		cmd.remove_component(soul, C_Health)
+	cmd.add_component(soul, C_Health.new(snatchable.max_health))
 
 	# 2. Отметить состояние «во плоти».
 	if not soul.has_component(C_Embodied):
-		soul.add_component(C_Embodied.new())
+		cmd.add_component(soul, C_Embodied.new())
 
 	# 3. Дозаправить запас жизни БФЖ — захват продлевает существование.
 	var life := soul.get_component(C_Lifespan) as C_Lifespan
@@ -95,6 +100,9 @@ func _embody(soul: Entity, body: Entity) -> void:
 		soul_node.global_transform = body_node.global_transform
 
 	# 5. Поглотить исходное тело.
-	ECS.world.remove_entity(body)
+	cmd.remove_entity(body)
 
-	ECS.world.emit_event(&"body_snatched", soul)
+	# Событие — тоже в буфер: иначе оно ушло бы ДО применения C_Embodied/C_Health,
+	# и наблюдатель "body_snatched" увидел бы душу ещё не воплощённой.
+	# add_custom исполняется в порядке постановки, т.е. после правок выше.
+	cmd.add_custom(func(): ECS.world.emit_event(&"body_snatched", soul))

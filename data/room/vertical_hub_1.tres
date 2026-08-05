@@ -8,4 +8,5 @@ script = ExtResource("1_w1qcw")
 display_name = "Одиночный портал"
 scene = ExtResource("1_tfbt4")
 tags = Array[StringName]([&"vertical_hub", &"floor_hub", &"level_exit"])
+weight = 0.1
 metadata/_custom_type_script = "uid://wiaffa7aebsm"

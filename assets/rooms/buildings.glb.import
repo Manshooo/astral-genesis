@@ -41,14 +41,14 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "meshes": {
-"buildings_bath_box": {
+"buildings_book_shelf_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_bath_box.tres",
-"save_to_file/path": "uid://cmgki6jefsh1t"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_book_shelf_A.tres",
+"save_to_file/path": "uid://bhmot45by3ksp"
 },
 "buildings_chair_A": {
 "generate/lightmap_uv": 0,
@@ -77,14 +77,50 @@ _subresources={
 "save_to_file/fallback_path": "res://assets/rooms/models/buildings_pot_A.tres",
 "save_to_file/path": "uid://bak0o6bru8mni"
 },
-"buildings_room_A": {
+"buildings_room_A_1": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A.tres",
-"save_to_file/path": "uid://i3ejv67lu47x"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_1.tres",
+"save_to_file/path": "uid://bdavtdqm084kq"
+},
+"buildings_room_A_2": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2.tres",
+"save_to_file/path": "uid://de74ifjsy53ml"
+},
+"buildings_room_A_2C": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2C.tres",
+"save_to_file/path": "uid://bwywggcscny76"
+},
+"buildings_room_A_2_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2_001.tres",
+"save_to_file/path": "uid://dsbmv03rpm5yb"
+},
+"buildings_room_A_2_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2_002.tres",
+"save_to_file/path": "uid://18qbbebvo5lo"
 },
 "buildings_room_B_1": {
 "generate/lightmap_uv": 0,
@@ -131,23 +167,50 @@ _subresources={
 "save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_B_4.tres",
 "save_to_file/path": "uid://dhikyqmlb2qy3"
 },
-"buildings_room_C": {
+"buildings_room_C_1": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_C.tres",
-"save_to_file/path": "uid://c1aenh1gvix7r"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_C_1.tres",
+"save_to_file/path": "uid://7glfxlowb4r6"
 },
-"buildings_room_library": {
+"buildings_room_C_2": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_library.tres",
-"save_to_file/path": "uid://ph07ld4n5kh7"
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_C_2.tres",
+"save_to_file/path": "uid://c068rxffu1u88"
+},
+"buildings_room_C_2C": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_C_2C.tres",
+"save_to_file/path": "uid://b28wrpuifd0ax"
+},
+"buildings_room_C_3": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_C_3.tres",
+"save_to_file/path": "uid://cw816xi5cmkrp"
+},
+"buildings_room_C_4": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_C_4.tres",
+"save_to_file/path": "uid://jvkk8q5s850d"
 },
 "buildings_shelf_A": {
 "generate/lightmap_uv": 0,
@@ -166,15 +229,6 @@ _subresources={
 "save_to_file/enabled": true,
 "save_to_file/fallback_path": "res://assets/rooms/models/buildings_shelf_B.tres",
 "save_to_file/path": "uid://cyvbqj465pcft"
-},
-"buildings_wc": {
-"generate/lightmap_uv": 0,
-"generate/lods": 0,
-"generate/shadow_meshes": 0,
-"lods/normal_merge_angle": 20.0,
-"save_to_file/enabled": true,
-"save_to_file/fallback_path": "res://assets/rooms/models/buildings_wc.tres",
-"save_to_file/path": "uid://bcj1md655ad8x"
 }
 }
 }

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3 uid="uid://kagvm6feuqyp"]
+
+[ext_resource type="PackedScene" uid="uid://dmh4r1axj6m5" path="res://src/levels/procedural/rooms/lab/lab_room.tscn" id="1_r2lm1"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_mabsy"]
+
+[resource]
+script = ExtResource("2_mabsy")
+display_name = "Лаборатория"
+scene = ExtResource("1_r2lm1")
+tags = Array[StringName]([&"floor_hub"])
+metadata/_custom_type_script = "uid://wiaffa7aebsm"

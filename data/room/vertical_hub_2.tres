@@ -9,4 +9,5 @@ display_name = "Двойной портал"
 scene = ExtResource("1_tk6tx")
 tags = Array[StringName]([&"vertical_hub", &"floor_hub", &"level_exit"])
 slot_count = 2
+weight = 0.1
 metadata/_custom_type_script = "uid://wiaffa7aebsm"

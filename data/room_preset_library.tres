@@ -8,9 +8,11 @@
 [ext_resource type="Resource" uid="uid://cqrt3rp5fmnck" path="res://data/room/vertical_hub_3.tres" id="4_6j4np"]
 [ext_resource type="Resource" uid="uid://bqexuu8imwkej" path="res://data/room/vertical_hub_4.tres" id="5_ro8lj"]
 [ext_resource type="Resource" uid="uid://cxwq3u6nqe5hh" path="res://data/room/default_room.tres" id="6_ro8lj"]
+[ext_resource type="Resource" uid="uid://kagvm6feuqyp" path="res://data/room/lab_room.tres" id="8_0vxyi"]
+[ext_resource type="Resource" uid="uid://72rnlgfxse2g" path="res://data/room/exit_room.tres" id="9_wc6lj"]
 
 [resource]
 script = ExtResource("2_v4gys")
-presets = Array[ExtResource("1_2x2ou")]([ExtResource("2_453vo"), ExtResource("3_v612c"), ExtResource("4_6j4np"), ExtResource("5_ro8lj"), ExtResource("6_ro8lj")])
+presets = Array[ExtResource("1_2x2ou")]([ExtResource("2_453vo"), ExtResource("3_v612c"), ExtResource("4_6j4np"), ExtResource("5_ro8lj"), ExtResource("6_ro8lj"), ExtResource("8_0vxyi"), ExtResource("9_wc6lj")])
 fallback = ExtResource("1_b4ndt")
 metadata/_custom_type_script = "uid://psftg6prkpvd"

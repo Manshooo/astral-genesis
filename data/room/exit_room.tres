@@ -5,6 +5,8 @@
 
 [resource]
 script = ExtResource("2_l3cpw")
-display_name = "Комната заглушка"
+display_name = "Комната выхода"
 scene = ExtResource("1_hir7v")
+tags = Array[StringName]([&"level_exit", &"floor_hub"])
+slot_count = 2
 metadata/_custom_type_script = "uid://wiaffa7aebsm"
