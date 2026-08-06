@@ -44,21 +44,6 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 	_embody(soul, body)
 
 
-## Снимает облик с тела: меш и переопределение материала его MeshInstance3D.
-## Читаем СЦЕНУ тела, а не отдельно объявленные данные, специально: меш, который
-## игрок видел в мире, и меш, который он получает при вселении, обязаны быть
-## одним и тем же. Дублировать его ещё и в компоненте — гарантированный рассинхрон
-## при первой же правке сцены. null — у тела нет визуала (переносить нечего).
-func _visual_of(body: Entity) -> C_BodyVisual:
-	var geo := (body as Node).get_node_or_null("MeshInstance3D") as MeshInstance3D
-	if geo == null or geo.mesh == null:
-		return null
-	var visual := C_BodyVisual.new()
-	visual.mesh = geo.mesh
-	visual.material_override = geo.material_override
-	return visual
-
-
 ## Структурные правки идут через командный буфер (cmd), а не напрямую: с GECS v9
 ## System.safe_iteration = false по умолчанию — системы обходят массивы архетипов
 ## zero-copy, и add/remove прямо в process() может пропустить сущности (swap-remove)
@@ -72,13 +57,20 @@ func _embody(soul: Entity, body: Entity) -> void:
 		cmd.remove_component(soul, C_Health)
 	cmd.add_component(soul, C_Health.new(snatchable.max_health))
 
-	# 2. Отметить состояние «во плоти».
-	if not soul.has_component(C_Embodied):
-		cmd.add_component(soul, C_Embodied.new())
+	# 2. Отметить состояние «во плоти» и то, ЧЬЮ плоть заняли: путь сцены тела
+	# переживает сохранение, и по нему загрузка восстанавливает облик.
+	# Не «добавить, если нет»: при пересадке из тела в тело компонент уже висит,
+	# и путь остался бы от прошлого тела. remove+add буфер коалесцирует в один
+	# переезд архетипа, так что лишней цены нет.
+	if soul.has_component(C_Embodied):
+		cmd.remove_component(soul, C_Embodied)
+	var embodied := C_Embodied.new()
+	embodied.body_scene_path = (body as Node).scene_file_path
+	cmd.add_component(soul, embodied)
 
 	# 2.1. Перенять облик тела. Сам меш надевает O_BodyVisual — система захвата
 	# про геометрию ничего не знает, только просит.
-	var visual := _visual_of(body)
+	var visual := E_Body.visual_of(body)
 	if visual:
 		var previous := soul.get_component(C_BodyVisual) as C_BodyVisual
 		if previous:
@@ -105,7 +97,13 @@ func _embody(soul: Entity, body: Entity) -> void:
 	if soul_node and body_node:
 		soul_node.global_transform = body_node.global_transform
 
-	# 5. Поглотить исходное тело.
+	# 5. Поглотить исходное тело. Съедено оно насовсем, поэтому помечаем его в
+	# сейве сразу, а не на ближайшей контрольной точке: комплекс восстанавливается
+	# из сида покомнатно-заново, и без пометки тело возродилось бы дубликатом
+	# того, в ком игрок сидит. Между захватом и сменой комнаты можно выйти в меню.
+	var origin := body.get_component(C_BodyOrigin) as C_BodyOrigin
+	if origin:
+		WorldSave.mark_body_consumed(origin.body_id)
 	cmd.remove_entity(body)
 
 	# Событие — тоже в буфер: иначе оно ушло бы ДО применения C_Embodied/C_Health,

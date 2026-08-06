@@ -38,14 +38,38 @@ func record_death() -> void:
 
 ## Контрольная точка забега. Зовётся RunManager при каждой смене комнаты — это
 ## и есть гранула сохранения: комплекс восстановится из сида, а из состояния
-## нужны только позиция в графе и остаток распада.
+## нужны только позиция в графе, остаток распада и текущее воплощение.
+##
+## Компоненты сюда не передаём — автолоад сейва про ECS ничего не знает; всё
+## разбирает на числа RunManager._checkpoint.
 ## [param lifespan_left] отрицательное = БФЖ без C_Lifespan (не сохраняем).
-func record_progress(node_id: StringName, lifespan_left: float = -1.0) -> void:
+## [param body_scene_path] пустая строка = БФЖ развоплощён, HP тогда не значимы.
+func record_progress(
+	node_id: StringName,
+	lifespan_left: float = -1.0,
+	body_scene_path: String = "",
+	body_health: float = 0.0,
+	body_health_max: float = 0.0,
+) -> void:
 	save.run_in_progress = true
 	save.current_node_id = node_id
 	if not save.visited_node_ids.has(node_id):
 		save.visited_node_ids.append(node_id)
 	save.lifespan_remaining = lifespan_left
+	save.body_scene_path = body_scene_path
+	save.body_health = body_health
+	save.body_health_max = body_health_max
+	_save()
+
+
+## Тело поглощено захватом — в этом забеге оно больше не появится.
+## Пишем на диск сразу, а не на ближайшей контрольной точке: между захватом и
+## сменой комнаты игрок может выйти в меню, и тогда съеденное тело воскресло бы
+## дубликатом того, в ком он сидит.
+func mark_body_consumed(body_id: StringName) -> void:
+	if body_id == &"" or save.consumed_body_ids.has(body_id):
+		return
+	save.consumed_body_ids.append(body_id)
 	_save()
 
 

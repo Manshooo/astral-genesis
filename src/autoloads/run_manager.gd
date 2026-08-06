@@ -144,17 +144,62 @@ func _start_node_id() -> StringName:
 	return current_graph.entry_node_id
 
 
-## Возвращает БФЖ сохранённый остаток распада. Иначе загрузка работала бы как
-## бесплатное восстановление: свежая E_Player всегда несёт полный C_Lifespan.
+## Возвращает БФЖ то, что не выводится из сида: воплощение и остаток распада.
+## Иначе загрузка работала бы как бесплатное восстановление (свежая E_Player
+## несёт полный C_Lifespan) и как принудительное развоплощение.
+##
+## Порядок важен: сперва тело, потом обрезка запаса. Потолок распада во плоти
+## выше собственного запаса души на бонус тела (C_Lifespan.effective_max), и
+## обрезка по max_duration до восстановления C_Embodied молча съедала бы
+## сохранённый излишек — 100 с превращались бы в 60.
 func _restore_player_progress() -> void:
-	if not WorldSave.save.run_in_progress or WorldSave.save.lifespan_remaining < 0.0:
+	var saved := WorldSave.save
+	if not saved.run_in_progress:
 		return
 	var player := _get_player()
 	if player == null:
 		return
-	var life := player.get_component(C_Lifespan) as C_Lifespan
-	if life:
-		life.current = minf(WorldSave.save.lifespan_remaining, life.max_duration)
+
+	_restore_embodiment(player, saved)
+
+	if saved.lifespan_remaining >= 0.0:
+		var life := player.get_component(C_Lifespan) as C_Lifespan
+		if life:
+			life.current = minf(
+				saved.lifespan_remaining, life.effective_max(player.has_component(C_Embodied))
+			)
+
+
+## Возвращает душу в тело, в котором её сохранили. Свежая E_Player всегда
+## призрак: её идентичность — только C_BodySnatch + C_Lifespan
+## (define_components), а C_Embodied/C_Health/C_BodyVisual навешивает захват.
+##
+## Облик читается из сцены тела, а не из сейва: меш — часть сцены, писать его в
+## .tres значило бы завести второй источник правды о внешности (см.
+## E_Body.visual_of). HP, наоборот, чистое состояние и берётся из сейва — вместе
+## с потолком, потому что потолок правят скиллы.
+func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
+	if saved.body_scene_path.is_empty():
+		return  # сохранились призраком — восстанавливать нечего
+
+	var embodied := C_Embodied.new()
+	embodied.body_scene_path = saved.body_scene_path
+	player.add_component(embodied)
+
+	var health := C_Health.new(saved.body_health_max)
+	health.current = saved.body_health
+	player.add_component(health)
+
+	var visual := E_Body.visual_of_scene(saved.body_scene_path)
+	if visual:
+		player.add_component(visual)
+	else:
+		# Тело восстановлено по механике, но выглядит игрок призраком. Молчать
+		# нельзя: обычно это значит, что сцену тела переименовали или удалили.
+		push_warning(
+			"RunManager: не удалось прочитать облик тела из «%s» — БФЖ во плоти, но без вида"
+			% saved.body_scene_path
+		)
 
 
 ## Инстанцирует душу-БФЖ и регистрирует её в мире, если её там ещё нет.
@@ -193,7 +238,7 @@ func finish_run() -> void:
 func save_progress() -> bool:
 	if current_graph == null or current_node_id == &"":
 		return false
-	WorldSave.record_progress(current_node_id, _player_lifespan())
+	_checkpoint(current_node_id)
 	return true
 
 
@@ -263,7 +308,7 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 
 	current_node_id = node_id
 	# Смена комнаты — гранула сохранения забега: дальше игрок продолжит отсюда.
-	WorldSave.record_progress(node_id, _player_lifespan())
+	_checkpoint(node_id)
 	room_changed.emit(node_id)
 	_place_player_in_room(room, came_from)
 
@@ -330,7 +375,7 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: LayerPlan) -> Sp
 	var room := SpawnedRoom.new()
 	room.node_id = node_data.id
 	room.entity = entity
-	room.children = _register_room_children(entity)
+	room.children = _register_room_children(entity, node_data.id)
 	room.doors = _bind_doors(room, node_data, plan)
 	return room
 
@@ -602,16 +647,45 @@ func _remove_valid_entities(list: Array[Entity]) -> void:
 ## Регистрирует в мире все вложенные сущности комнаты (Incubator, двери и т.п.).
 ## Нужно, т.к. add_entity(room) кладёт в мир ТОЛЬКО саму комнату — обхода дерева
 ## в поисках вложенных Entity в GECS нет.
-func _register_room_children(room: Entity) -> Array[Entity]:
+##
+## Здесь же отсеиваются УЖЕ ПОГЛОЩЁННЫЕ тела: комната приходит из сцены целой,
+## сколько бы раз игрок в ней ни вселялся, потому что комплекс восстанавливается
+## из сида, а не из сейва.
+func _register_room_children(room: Entity, node_id: StringName) -> Array[Entity]:
 	var children: Array[Entity] = []
 	# owned=false — иначе сущности, вставленные как инстансы под-сцены, не находятся.
 	for node in room.find_children("*", "Entity", true, false):
 		var e := node as Entity
-		if e:
-			children.append(e)
+		if e == null:
+			continue
+		var body := e as E_Body
+		if body and WorldSave.save.consumed_body_ids.has(_body_id(node_id, room, body)):
+			# Тело съедено захватом — иначе рядом с игроком встанет копия того,
+			# в ком он сидит. В мир его не регистрируем, поэтому одного кадра до
+			# освобождения узла ни одна система не увидит.
+			body.queue_free()
+			continue
+		children.append(e)
 	if not children.is_empty():
 		ECS.world.add_entities(children)
+
+	# Происхождение штампуем ПОСЛЕ регистрации — как и рёбра дверям (_bind_doors):
+	# правка состава компонентов должна дойти до архетипов уже живой сущности.
+	for e in children:
+		var body := e as E_Body
+		if body:
+			var origin := C_BodyOrigin.new()
+			origin.body_id = _body_id(node_id, room, body)
+			body.add_component(origin)
+
 	return children
+
+
+## Стабильный id авторского тела: узел графа плюс путь узла внутри комнаты.
+## Сцена тела своего id не знает и знать не может — один и тот же e_body.tscn
+## стоит в разных комнатах, а сид одинаково восстанавливает их все.
+func _body_id(node_id: StringName, room: Entity, body: Node) -> StringName:
+	return StringName("%s/%s" % [node_id, room.get_path_to(body)])
 
 
 ## Штампует C_DoorPortal на двери комнаты (подмножество room.children с
@@ -809,13 +883,32 @@ func _get_player() -> E_Player:
 	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as E_Player
 
 
-## Остаток распада БФЖ для сейва. -1 = писать нечего (нет игрока/компонента).
-func _player_lifespan() -> float:
+## Контрольная точка: снимает с БФЖ всё, что не выводится из сида, и отдаёт
+## сейву числами. Разбор компонентов живёт здесь, а не в WorldSave: автолоад
+## сохранения про ECS ничего не знает и знать не должен.
+func _checkpoint(node_id: StringName) -> void:
+	var lifespan_left := -1.0
+	var body_scene_path := ""
+	var body_health := 0.0
+	var body_health_max := 0.0
+
 	var player := _get_player()
-	if player == null:
-		return -1.0
-	var life := player.get_component(C_Lifespan) as C_Lifespan
-	return life.current if life else -1.0
+	if player:
+		var life := player.get_component(C_Lifespan) as C_Lifespan
+		if life:
+			lifespan_left = life.current
+		var embodied := player.get_component(C_Embodied) as C_Embodied
+		if embodied:
+			body_scene_path = embodied.body_scene_path
+		# C_Health есть только во плоти: развоплощённая душа живёт по C_Lifespan.
+		var health := player.get_component(C_Health) as C_Health
+		if health:
+			body_health = health.current
+			body_health_max = health.maximum
+
+	WorldSave.record_progress(
+		node_id, lifespan_left, body_scene_path, body_health, body_health_max
+	)
 
 
 ## На сколько метров вглубь комнаты отступать от двери, чтобы капсула игрока не
