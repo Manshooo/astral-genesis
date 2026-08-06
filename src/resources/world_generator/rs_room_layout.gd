@@ -100,3 +100,28 @@ static func door_directions(room: Node) -> Array[StringName]:
 		if direction != &"" and not directions.has(direction):
 			directions.append(direction)
 	return directions
+
+
+## Кэш «путь сцены → стороны дверей». Стороны зависят ТОЛЬКО от сцены, не от
+## узла графа, поэтому считаются один раз за запуск.
+static var _directions_by_scene: Dictionary[String, Array] = {}
+
+
+## Стороны дверей комнаты по пути её сцены — без инстанцирования на каждый вызов.
+##
+## Ради этого кэша всё и затевалось: раскладка слоя (RunManager._plan_layer)
+## переставала требовать заспавненные комнаты и стала считаться для ЛЮБОГО слоя —
+## это нужно карте комплекса, которая рисует и незагруженные слои. Побочно
+## ускорился и сам спавн: раньше каждый узел инстанцировал свою комнату только
+## чтобы посчитать двери, хотя один пресет повторяется по слою многократно.
+static func door_directions_of_scene(scene_path: String) -> Array[StringName]:
+	if _directions_by_scene.has(scene_path):
+		return _directions_by_scene[scene_path]
+
+	var directions: Array[StringName] = []
+	if scene_path != "" and ResourceLoader.exists(scene_path):
+		var room := (load(scene_path) as PackedScene).instantiate()
+		directions = door_directions(room)
+		room.free()
+	_directions_by_scene[scene_path] = directions
+	return directions

@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://cetrqtobtab4t" path="res://src/ui/hud/hud_vitals.gd" id="3_vitals"]
 [ext_resource type="Script" uid="uid://dtwx60xc7p7vt" path="res://src/ui/hud/hud_prompt.gd" id="4_prompt"]
 [ext_resource type="Script" uid="uid://bllnfs0mr5vyc" path="res://src/ui/hud/hud_message.gd" id="5_message"]
+[ext_resource type="Script" uid="uid://01ionly7qqo5" path="res://src/ui/hud/hud_map.gd" id="6_map"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -73,6 +74,16 @@ grow_horizontal = 2
 grow_vertical = 2
 horizontal_alignment = 1
 script = ExtResource("5_message")
+
+[node name="Map" type="Control" parent="Hud" unique_id=1774390021]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_bottom = 180.0
+grow_horizontal = 0
+script = ExtResource("6_map")
 
 [node name="Vitals" type="VBoxContainer" parent="Hud" unique_id=1286022205]
 layout_mode = 1

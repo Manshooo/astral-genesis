@@ -97,6 +97,10 @@ var current_depth: int = NO_DEPTH
 ## node_id -> SpawnedRoom для ВСЕХ комнат текущего слоя, а не только той, где
 ## стоит игрок.
 var _rooms: Dictionary[StringName, SpawnedRoom] = {}
+## depth -> LayerPlan. План не зависит от того, загружен слой или нет, и
+## детерминирован от графа — значит считается один раз за забег. Карта комплекса
+## спрашивает планы слоёв, в которых игрок ещё не был.
+var _plans: Dictionary[int, LayerPlan] = {}
 
 
 ## Точка входа в забег: генерирует комплекс и ставит игрока в стартовый узел.
@@ -114,6 +118,7 @@ func enter_complex(run_seed: int = -1) -> void:
 	# «Trying to cast a freed object» при загрузке сейва.
 	_despawn_layer()
 	current_node_id = &""
+	_plans.clear()  # планы считаны от прошлого графа
 
 	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
 	# затем входной слой — _enter_node → _place_player_in_room поставит её на место.
@@ -265,31 +270,35 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 
 ## Спавнит ВСЕ комнаты слоя [param depth] разом. Предполагает, что предыдущий
 ## слой уже снят (_despawn_layer) — иначе комнаты наложатся по сетке.
-##
-## Комнаты инстанцируются ДО раскладки: план зависит от того, какие слоты-двери
-## реально есть у выпавшего пресета (у lab_room, например, одна дверь на юг).
 func _spawn_layer(depth: int) -> void:
 	var layer_nodes := current_graph.get_nodes_by_depth(depth)
 	if layer_nodes.is_empty():
 		push_error("RunManager: в графе нет узлов глубины %d" % depth)
 		return
 
-	var instances: Dictionary[StringName, Entity] = {}
+	var plan := plan_for_depth(depth)
 	for node_data in layer_nodes:
 		var entity := _instantiate_room(node_data)
-		if entity:
-			instances[node_data.id] = entity
-
-	var plan := _plan_layer(layer_nodes, instances)
-	for node_data in layer_nodes:
-		if not instances.has(node_data.id):
+		if entity == null:
 			continue
-		var room := _spawn_room(node_data, instances[node_data.id], plan)
+		var room := _spawn_room(node_data, entity, plan)
 		if room:
 			_rooms[node_data.id] = room
 
 	current_depth = depth
 	layer_changed.emit(depth)
+
+
+## План слоя [param depth] — где стоит каждая комната и какое ребро уходит в
+## какую дверь. Считается БЕЗ спавна (стороны дверей берутся из кэша по пути
+## сцены), поэтому доступен и для незагруженных слоёв: на этом держится карта
+## комплекса. Результат кэшируется на забег — план детерминирован от графа.
+func plan_for_depth(depth: int) -> LayerPlan:
+	if _plans.has(depth):
+		return _plans[depth]
+	var plan := _plan_layer(current_graph.get_nodes_by_depth(depth))
+	_plans[depth] = plan
+	return plan
 
 
 ## Инстанцирует сцену комнаты, НЕ добавляя её в мир. null — путь сцены невалиден.
@@ -343,6 +352,9 @@ class LayerPlan:
 
 	## node_id -> мировая позиция комнаты.
 	var positions: Dictionary[StringName, Vector3] = {}
+	## node_id -> клетка сетки этажа. То же самое, что positions, но без масштаба
+	## и высоты: ровно то, что рисует карта.
+	var cells: Dictionary[StringName, Vector2i] = {}
 	## node_id -> { target_node_id: сторона }. Только рёбра, которым нашлась дверь
 	## В НУЖНУЮ СТОРОНУ: сосед физически стоит за этой дверью. Остальные рёбра
 	## (межэтажные, межслойные, не влезшие в сетку) раздаются по остаточному
@@ -370,7 +382,7 @@ class LayerPlan:
 ##
 ## Этажи одного слоя разносятся по высоте: связь между ними идёт через
 ## floor_hub-рёбра, у которых нет направления в плоскости этажа.
-func _plan_layer(layer_nodes: Array[RS_LevelNode], instances: Dictionary) -> LayerPlan:
+func _plan_layer(layer_nodes: Array[RS_LevelNode]) -> LayerPlan:
 	var plan := LayerPlan.new()
 	var by_floor: Dictionary[int, Array] = {}
 	for node_data in layer_nodes:
@@ -384,18 +396,16 @@ func _plan_layer(layer_nodes: Array[RS_LevelNode], instances: Dictionary) -> Lay
 		# от запуска к запуску при одном сиде — иначе сохранённая комната окажется
 		# в другом месте.
 		floor_nodes.sort_custom(func(a, b): return a.index_in_layer < b.index_in_layer)
-		_plan_floor(floor_nodes, instances, plan, floor_index)
+		_plan_floor(floor_nodes, plan, floor_index)
 	return plan
 
 
-func _plan_floor(
-	floor_nodes: Array, instances: Dictionary, plan: LayerPlan, floor_index: int
-) -> void:
+func _plan_floor(floor_nodes: Array, plan: LayerPlan, floor_index: int) -> void:
 	var dirs := {}  # node_id -> Array[StringName] сторон, с которых у комнаты есть дверь
 	var on_floor := {}  # node_id -> RS_LevelNode, для быстрой проверки «сосед на этаже»
 	for node_data: RS_LevelNode in floor_nodes:
 		on_floor[node_data.id] = node_data
-		dirs[node_data.id] = _door_directions(instances.get(node_data.id))
+		dirs[node_data.id] = RS_RoomLayout.door_directions_of_scene(node_data.room_scene_path)
 
 	var cells: Dictionary[StringName, Vector2i] = {}
 	var taken: Dictionary[Vector2i, StringName] = {}
@@ -441,6 +451,7 @@ func _plan_floor(
 
 	for node_id: StringName in cells:
 		var cell := cells[node_id]
+		plan.cells[node_id] = cell
 		plan.positions[node_id] = Vector3(
 			cell.x * ROOM_SPACING, floor_index * FLOOR_SPACING, cell.y * ROOM_SPACING
 		)
@@ -551,12 +562,6 @@ func _fallback_cell(
 	while taken.has(Vector2i(column, overflow_row)):
 		column += 1
 	return Vector2i(column, overflow_row)
-
-
-## Стороны комнаты, с которых у неё есть дверь. Комната на этом этапе ещё не в
-## мире — RS_RoomLayout умеет читать двери и у detached-инстанса.
-func _door_directions(room: Node) -> Array[StringName]:
-	return RS_RoomLayout.door_directions(room)
 
 
 func _direction_of_door(door: Node3D, room: Node) -> StringName:
