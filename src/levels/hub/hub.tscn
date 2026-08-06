@@ -56,7 +56,7 @@ shape = SubResource("BoxShape3D_3owqy")
 [node name="SpawnPoint" type="Node3D" parent="." index="1" unique_id=1247584642]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 1.2064084, -0.79322445)
 
-[node name="Doors" type="Node" parent="." index="2" unique_id=901771904]
+[node name="Doors" type="Node3D" parent="." index="2" unique_id=901771904]
 
 [node name="Door" parent="Doors" index="0" unique_id=1986258941 instance=ExtResource("5_is5eu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0640976, 2.0443382, -7.799738)

@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://ddtds8bmcvnwr"]
 
-[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui_themes/default_theme.tres" id="1_sett"]
 [ext_resource type="Script" uid="uid://crscukie12pyp" path="res://src/ui/settings_menu/settings_menu.gd" id="2_sett"]
 [ext_resource type="Script" uid="uid://dg1gkitvqvfdf" path="res://src/ui/settings/slider_setting.gd" id="3_kktd5"]
+[ext_resource type="Script" uid="uid://d25wxvtt5nxci" path="res://src/ui/settings/keybinds_setting.gd" id="4_keybd"]
 
 [node name="SettingsMenu" type="Control" unique_id=11110001]
 layout_mode = 3
@@ -11,24 +11,22 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_sett")
 script = ExtResource("2_sett")
 
 [node name="Panel" type="Panel" parent="." unique_id=11110002]
-custom_minimum_size = Vector2(320, 420)
+custom_minimum_size = Vector2(380, 660)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = -210.0
-offset_right = 160.0
-offset_bottom = 210.0
+offset_left = -190.0
+offset_top = -330.0
+offset_right = 190.0
+offset_bottom = 330.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_sett")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=11110003]
 layout_mode = 1
@@ -129,6 +127,16 @@ custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 text = "60"
 horizontal_alignment = 2
+
+[node name="ControlsTitle" type="Label" parent="Panel/MarginContainer/VBox" unique_id=11110070]
+layout_mode = 2
+text = "Управление"
+horizontal_alignment = 1
+
+[node name="Keybinds" type="VBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110071]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("4_keybd")
 
 [node name="Spacer" type="Control" parent="Panel/MarginContainer/VBox" unique_id=11110050]
 layout_mode = 2

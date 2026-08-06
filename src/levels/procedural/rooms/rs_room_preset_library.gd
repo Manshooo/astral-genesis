@@ -9,6 +9,10 @@
 ##   3. Специфичность (мягко): среди кандидатов — с минимумом лишних тегов,
 ##      затем взвешенный рандом. Не даёт «богатым» пресетам (напр. с порталом)
 ##      протекать в узлы, которым это не нужно.
+## @tool — иначе в редакторе ресурс грузится ПЛЕЙСХОЛДЕРОМ и его методы позвать
+## нельзя («Attempt to call a method on a placeholder instance»). Док «Генератор»
+## зовёт select_preset/explain_selection/validate прямо из редактора.
+@tool
 class_name RS_RoomPresetLibrary
 extends Resource
 
@@ -20,21 +24,61 @@ extends Resource
 @export var fallback: RS_RoomPreset
 
 
+## Причины отсева/прохода пресета — ключи протокола explain_selection.
+const REASON_NO_SCENE := "нет сцены"
+const REASON_CAPACITY := "вместимость"
+const REASON_TAGS := "теги"
+const REASON_SPECIFICITY := "специфичность"
+## Пресет прошёл все жёсткие фильтры и участвовал во взвешенном броске.
+const REASON_CANDIDATE := "дошёл до весов"
+const REASON_SELECTED := "выбран"
+const REASON_FALLBACK := "fallback"
+
+
 ## Возвращает подходящий пресет для узла или fallback/null. rng должен быть тем
 ## же, что и во всей генерации, — иначе подстановка перестанет быть
 ## детерминированной по сиду.
 func select_preset(node: RS_LevelNode, rng: RandomNumberGenerator) -> RS_RoomPreset:
+	return _select(node, rng, null)
+
+
+## Тот же отбор, но с протоколом: на каком шаге отсеялся каждый пресет.
+## Для редакторского инструмента — правки весов часто ни на что не влияют, потому
+## что конкуренты отсеялись раньше, по вместимости или тегам.
+## Возвращает { "preset": RS_RoomPreset|null, "reasons": { display_name: причина } }.
+func explain_selection(node: RS_LevelNode, rng: RandomNumberGenerator) -> Dictionary:
+	var reasons := {}
+	var preset := _select(node, rng, reasons)
+	return {"preset": preset, "reasons": reasons}
+
+
+## Общий код отбора для select_preset и explain_selection: разъезд между «как
+## выбирается на самом деле» и «как объясняет инструмент» был бы хуже дублирования.
+## [param reasons] Dictionary для протокола или null. Протокол заодно глушит
+## push_warning: инструмент гоняет сотни узлов, редактор утонул бы в предупреждениях.
+func _select(node: RS_LevelNode, rng: RandomNumberGenerator, reasons: Variant) -> RS_RoomPreset:
+	var explaining := reasons != null
 	var needed := node.connections.size()
-	var candidates := presets.filter(
-		func(p: RS_RoomPreset) -> bool:
-			return p != null and p.scene != null \
-				and p.slot_count >= needed and _tags_cover(p.tags, node.tags)
-	)
+	var candidates: Array[RS_RoomPreset] = []
+	for p: RS_RoomPreset in presets:
+		if p == null:
+			continue
+		if p.scene == null:
+			_note(reasons, p, REASON_NO_SCENE)
+		elif p.slot_count < needed:
+			_note(reasons, p, REASON_CAPACITY)
+		elif not _tags_cover(p.tags, node.tags):
+			_note(reasons, p, REASON_TAGS)
+		else:
+			candidates.append(p)
+
 	if candidates.is_empty():
-		push_warning(
-			"RS_RoomPresetLibrary: нет пресета для узла '%s' (рёбер=%d, теги=%s) — fallback"
-			% [node.id, needed, str(node.tags)]
-		)
+		if not explaining:
+			push_warning(
+				"RS_RoomPresetLibrary: нет пресета для узла '%s' (рёбер=%d, теги=%s) — fallback"
+				% [node.id, needed, str(node.tags)]
+			)
+		_note(reasons, fallback, REASON_FALLBACK)
 		return fallback
 
 	# Специфичность: меньше всего лишних тегов сверх требуемых узлом.
@@ -44,11 +88,30 @@ func select_preset(node: RS_LevelNode, rng: RandomNumberGenerator) -> RS_RoomPre
 	var min_extra: int = candidates[0].tags.size() - node.tags.size()
 	for p in candidates:
 		min_extra = min(min_extra, p.tags.size() - node.tags.size())
-	var best := candidates.filter(
-		func(p: RS_RoomPreset) -> bool: return p.tags.size() - node.tags.size() == min_extra
-	)
 
-	return _weighted_pick(best, rng)
+	var best: Array[RS_RoomPreset] = []
+	for p in candidates:
+		if p.tags.size() - node.tags.size() == min_extra:
+			best.append(p)
+			_note(reasons, p, REASON_CANDIDATE)
+		else:
+			_note(reasons, p, REASON_SPECIFICITY)
+
+	var chosen := _weighted_pick(best, rng)
+	_note(reasons, chosen, REASON_SELECTED)
+	return chosen
+
+
+func _note(reasons: Variant, preset: RS_RoomPreset, reason: String) -> void:
+	if reasons == null or preset == null:
+		return  # обычный прогон генерации — протокол не ведём
+	(reasons as Dictionary)[_preset_label(preset)] = reason
+
+
+func _preset_label(preset: RS_RoomPreset) -> String:
+	if preset.display_name != "":
+		return preset.display_name
+	return preset.resource_path.get_file().get_basename()
 
 
 ## Каждый тег узла должен присутствовать в тегах пресета (node ⊆ preset).
@@ -75,42 +138,59 @@ func _weighted_pick(pool: Array, rng: RandomNumberGenerator) -> RS_RoomPreset:
 	return pool[pool.size() - 1]
 
 
-## Отладочная проверка: сверяет заявленный slot_count каждого пресета с
-## фактическим числом C_DoorSlot в сцене (инстанцирует и считает). Возвращает
-## список расхождений — пусто, если всё сходится. Зовите из теста/дебага, не в
-## горячем пути генерации.
+## Отладочная проверка сцен пресетов: сверяет заявленный slot_count с фактическим
+## числом дверей, ловит двери на одной стене (вторая никогда не получит ребро при
+## раскладке слоя) и дубли slot_id (тот всё ещё служит детерминированным ключом
+## сортировки). Возвращает список расхождений — пусто, если всё сходится.
+## Зовите из теста/инструмента, не в горячем пути генерации.
 func validate() -> Array[String]:
 	var problems: Array[String] = []
 	for p in presets:
 		if p == null:
 			problems.append("null-пресет в списке")
 			continue
-		if p.scene == null:
-			problems.append("'%s': не назначена scene" % p.display_name)
-			continue
-		var inst := p.scene.instantiate()
-		var actual := inst.find_children("*", "Entity", true, false).filter(
-			func(n): return _has_door_slot(n)
-		).size()
-		inst.free()
-		if actual != p.slot_count:
-			problems.append(
-				"'%s': slot_count=%d, но в сцене %d слотов C_DoorSlot"
-				% [p.display_name, p.slot_count, actual]
-			)
+		problems.append_array(validate_preset(p))
 	return problems
 
 
-## Есть ли на сущности слот двери. Проверяем И has_component (когда сущность в
-## дереве и её _ready уже отработал), И component_resources (когда сцена
-## инстанцирована detached — тогда _ready не звался и компоненты ещё «не разложены»).
-func _has_door_slot(n: Node) -> bool:
-	if not (n is Entity):
-		return false
-	var e := n as Entity
-	if e.has_component(C_DoorSlot):
-		return true
-	for c in e.component_resources:
-		if c is C_DoorSlot:
-			return true
-	return false
+## Проверка одного пресета — вынесена, чтобы редакторский инструмент мог
+## показывать проблемы построчно, рядом с самим пресетом.
+func validate_preset(preset: RS_RoomPreset) -> Array[String]:
+	var problems: Array[String] = []
+	var label := _preset_label(preset)
+	if preset.scene == null:
+		problems.append("'%s': не назначена scene" % label)
+		return problems
+
+	var room := preset.scene.instantiate()
+	var doors := RS_RoomLayout.door_entities(room)
+
+	if doors.size() != preset.slot_count:
+		problems.append(
+			"'%s': slot_count=%d, но в сцене %d дверей с C_DoorSlot"
+			% [label, preset.slot_count, doors.size()]
+		)
+
+	var by_direction := {}
+	var by_slot_id := {}
+	for door in doors:
+		var direction := RS_RoomLayout.door_direction(door as Node as Node3D, room)
+		by_direction[direction] = by_direction.get(direction, 0) + 1
+		var slot_id := RS_RoomLayout.slot_id_of(door)
+		if slot_id == &"":
+			problems.append("'%s': у двери «%s» пустой slot_id" % [label, door.name])
+		else:
+			by_slot_id[slot_id] = by_slot_id.get(slot_id, 0) + 1
+
+	for direction: StringName in by_direction:
+		if by_direction[direction] > 1:
+			problems.append(
+				"'%s': %d двери на стене «%s» — лишние не получат ребра при раскладке"
+				% [label, by_direction[direction], direction]
+			)
+	for slot_id: StringName in by_slot_id:
+		if by_slot_id[slot_id] > 1:
+			problems.append("'%s': slot_id «%s» повторяется %d раз" % [label, slot_id, by_slot_id[slot_id]])
+
+	room.free()
+	return problems

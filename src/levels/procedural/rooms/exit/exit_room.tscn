@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="6_k843v"]
 [ext_resource type="Script" uid="uid://b862rhl0ju5v0" path="res://src/resources/interaction/a_finish_run.gd" id="7_g6fwc"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="8_k843v"]
+[ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="9_slot"]
 
 [sub_resource type="Resource" id="Resource_87bj8"]
 script = ExtResource("3_dc270")
@@ -19,7 +20,18 @@ metadata/_custom_type_script = "uid://b862rhl0ju5v0"
 
 [sub_resource type="Resource" id="Resource_8ssbo"]
 script = ExtResource("8_k843v")
+prompt_text = "Наружу"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="Interactable_door2"]
+script = ExtResource("8_k843v")
+prompt_text = "Пройти"
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="Slot_south"]
+script = ExtResource("9_slot")
+slot_id = &"south"
+metadata/_custom_type_script = "uid://dv1d7jb1mo3fv"
 
 [node name="ExitRoom" type="Node3D" unique_id=620451068]
 script = ExtResource("1_wbtds")
@@ -28,7 +40,7 @@ component_resources = Array[ExtResource("2_uf4in")]([SubResource("Resource_87bj8
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1492272158]
 mesh = ExtResource("4_87bj8")
 
-[node name="Doors" type="Node" parent="." unique_id=1730526942]
+[node name="Doors" type="Node3D" parent="." unique_id=1730526942]
 
 [node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_g6fwc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 2, -10)
@@ -37,6 +49,7 @@ component_resources = Array[ExtResource("2_uf4in")]([SubResource("Resource_8ssbo
 
 [node name="Door2" parent="Doors" unique_id=674122192 instance=ExtResource("5_g6fwc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 2, 9.3)
+component_resources = Array[ExtResource("2_uf4in")]([SubResource("Interactable_door2"), SubResource("Slot_south")])
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)

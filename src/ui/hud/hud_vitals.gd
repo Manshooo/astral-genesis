@@ -1,6 +1,7 @@
 # res://src/ui/hud/hud_vitals.gd
 ## Панель витальных показателей БФЖ в HUD:
-##   - запас распада (C_Lifespan) — ВСЕГДА (у призрака тикает вниз, во плоти на паузе);
+##   - запас распада (C_Lifespan) — ВСЕГДА. Тикает 1 с/с в любом состоянии, но во
+##     плоти потолок выше на C_Lifespan.embodied_bonus, поэтому и шкала длиннее;
 ##   - HP текущего тела (C_Health) — ТОЛЬКО во плоти (есть C_Embodied): у призрака
 ##     тела, а значит и C_Health, нет.
 ## Значения меняются непрерывно (таймер распада, урон по телу), поэтому опрашиваем
@@ -9,10 +10,10 @@ class_name UI_HudVitals
 extends VBoxContainer
 
 @onready var _lifespan_bar: ProgressBar = $LifespanRow/LifespanBar
-@onready var _lifespan_value: Label = $LifespanRow/LifespanValue
+@onready var _lifespan_value: Label = $LifespanRow/PanelContainer2/LifespanValue
 @onready var _health_row: HBoxContainer = $HealthRow
 @onready var _health_bar: ProgressBar = $HealthRow/HealthBar
-@onready var _health_value: Label = $HealthRow/HealthValue
+@onready var _health_value: Label = $HealthRow/PanelContainer2/HealthValue
 
 
 func _process(_delta: float) -> void:
@@ -30,7 +31,10 @@ func _update_lifespan(player: Entity) -> void:
 	var life := player.get_component(C_Lifespan) as C_Lifespan
 	if life == null:
 		return
-	_lifespan_bar.max_value = life.max_duration
+	# Потолок шкалы зависит от состояния: во плоти запас больше на то, что даёт
+	# тело. Само время и там и там идёт 1 с/с, поэтому подписи можно верить —
+	# «45 с» это ровно 45 секунд (см. C_Lifespan).
+	_lifespan_bar.max_value = life.effective_max(player.has_component(C_Embodied))
 	_lifespan_bar.value = life.current
 	_lifespan_value.text = "%.0f с" % ceilf(life.current)
 

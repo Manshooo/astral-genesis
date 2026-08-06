@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://8jj8ae88b4yc"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_7kecr"]
+noise_type = 3
+frequency = 0.1925
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_1w8pa"]
+noise = SubResource("FastNoiseLite_7kecr")
+seamless = true
+
+[resource]
+transparency = 1
+cull_mode = 2
+albedo_color = Color(0.32156864, 0.9490196, 0.9411765, 0.67058825)
+roughness_texture = SubResource("NoiseTexture2D_1w8pa")
+refraction_enabled = true
+refraction_scale = 0.1

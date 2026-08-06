@@ -22,13 +22,13 @@ config/icon="uid://074x3puupfnm"
 
 [autoload]
 
-ECS="*uid://dfqwl5njvdnmq"
 GameConfig="*uid://c2loo5mfx0ufk"
 SettingsManager="*uid://b3rnljshci5d7"
 SkillManager="*uid://bwpci4sr0qv4f"
 UIManager="*uid://d13q83ngp0nm4"
 WorldSave="*res://src/autoloads/world_save.gd"
 RunManager="*uid://c6536kxev8382"
+ECS="*uid://dfqwl5njvdnmq"
 
 [display]
 
@@ -39,11 +39,10 @@ window/stretch/scale_mode="integer"
 [editor]
 
 version_control/plugin_name="GitPlugin"
-version_control/autoload_on_startup=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/entity_template_tool/plugin.cfg", "res://addons/gecs/plugin.cfg")
+enabled=PackedStringArray("res://addons/entity_template_tool/plugin.cfg", "res://addons/gecs/plugin.cfg", "res://addons/level_gen_tool/plugin.cfg")
 
 [file_customization]
 
@@ -64,7 +63,7 @@ settings/debug_mode=true
 
 [gui]
 
-theme/custom="uid://dddq7rbmi4xdo"
+theme/custom="uid://e0o8cuoinatk"
 
 [input]
 
@@ -111,10 +110,12 @@ interact={
 
 [layer_names]
 
-3d_physics/layer_1="colliders"
+3d_physics/layer_1="static_colliders"
 3d_physics/layer_2="player"
 3d_physics/layer_3="enemies"
 3d_physics/layer_4="interactives"
+3d_physics/layer_5="moving_colliders"
+3d_physics/layer_6="permeable"
 
 [physics]
 

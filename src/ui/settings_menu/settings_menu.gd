@@ -26,7 +26,9 @@ func _collect_controls(node: Node) -> void:
 			_collect_controls(child)
 
 func _load_values() -> void:
-	_draft = SettingsManager.settings.duplicate()
+	# copy(), а не duplicate(): duplicate копирует ССЫЛКУ на keybinds, и правки
+	# раскладки применялись бы мимо кнопки «Применить» (см. RS_Settings.copy).
+	_draft = SettingsManager.settings.copy()
 	_apply_draft_to_controls()
 	_capture_baseline()
 
@@ -53,7 +55,19 @@ func _has_unsaved_changes() -> bool:
 func _values_equal(a: Variant, b: Variant) -> bool:
 	if a is float and b is float:
 		return is_equal_approx(a, b)
+	if a is Dictionary and b is Dictionary:
+		# Раскладка клавиш (keybinds) — словарь, а черновик и baseline это всегда
+		# РАЗНЫЕ объекты; сверяем содержимое явно, не полагаясь на семантику ==.
+		return _dicts_equal(a, b)
 	return a == b
+
+func _dicts_equal(a: Dictionary, b: Dictionary) -> bool:
+	if a.size() != b.size():
+		return false
+	for key in a:
+		if not b.has(key) or a[key] != b[key]:
+			return false
+	return true
 
 ## disabled+flat по умолчанию ("невидимая" кнопка), становится обычной активной
 ## кнопкой, как только черновик отличается от последнего применённого состояния.

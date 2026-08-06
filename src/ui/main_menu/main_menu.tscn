@@ -1,9 +1,8 @@
-[gd_scene format=3 uid="uid://ci8w1crckg7u4"]
+[gd_scene format=3 uid="uid://cnof4mx1fdwwd"]
 
-[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui_themes/default_theme.tres" id="1_4ux21"]
-[ext_resource type="Script" uid="uid://cpw5p3egtmbik" path="res://src/ui/main_menu/main_menu.gd" id="2_osdni"]
+[ext_resource type="Script" uid="uid://cpw5p3egtmbik" path="res://src/ui/main_menu/main_menu.gd" id="1_01okb"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_5f3v2"]
+[sub_resource type="LabelSettings" id="LabelSettings_w4scp"]
 font_size = 24
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
@@ -11,17 +10,16 @@ shadow_size = 6
 shadow_color = Color(0.65882355, 0.62352943, 0.5686275, 0.1254902)
 shadow_offset = Vector2(0, 3)
 
-[node name="MainMenuUi" type="Control" unique_id=68340211]
+[node name="MainMenuUi" type="Control" unique_id=1993511987]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_4ux21")
-script = ExtResource("2_osdni")
+script = ExtResource("1_01okb")
 
-[node name="Panel" type="Panel" parent="." unique_id=2057447361]
+[node name="Panel" type="Panel" parent="." unique_id=1102133628]
 custom_minimum_size = Vector2(250, 200)
 layout_mode = 1
 anchors_preset = 8
@@ -36,9 +34,8 @@ offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
 pivot_offset_ratio = Vector2(0.5, 0.5)
-theme = ExtResource("1_4ux21")
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=740551870]
+[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=940365007]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -50,40 +47,41 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 10
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=267331158]
+[node name="VBoxContainer2" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=1205831937]
 layout_mode = 2
 alignment = 2
 
-[node name="Astral Genesis" type="Label" parent="Panel/MarginContainer/VBoxContainer2" unique_id=1384255415]
+[node name="Astral Genesis" type="Label" parent="Panel/MarginContainer/VBoxContainer2" unique_id=828718045]
 layout_mode = 2
 size_flags_vertical = 2
 text = "Astral Genesis"
-label_settings = SubResource("LabelSettings_5f3v2")
+label_settings = SubResource("LabelSettings_w4scp")
 horizontal_alignment = 1
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer2" unique_id=717497255]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer2" unique_id=1612598280]
 layout_mode = 2
 size_flags_vertical = 8
 alignment = 1
 
-[node name="New Game" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=295546092]
+[node name="New Game" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=351258722]
 layout_mode = 2
 text = "Новая игра"
 
-[node name="Load" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1650057567]
+[node name="Load" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1814265144]
 layout_mode = 2
 text = "Загрузить"
 
-[node name="Settings" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1688969471]
+[node name="Settings" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1574883533]
 layout_mode = 2
 text = "Настройки"
 
-[node name="Exit" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1850980152]
+[node name="Exit" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=772514705]
 layout_mode = 2
 text = "Выйти"
 
 [connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/New Game" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/Load" to="." method="_on_load_pressed"]
 [connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/Settings" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/Exit" to="." method="_on_exit_pressed"]

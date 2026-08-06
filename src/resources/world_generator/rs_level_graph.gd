@@ -1,4 +1,7 @@
 ## res://src/resources/world_generator/rs_level_graph.gd
+## @tool — генератор гоняется из редакторского дока «Генератор» (предпросмотр
+## выборки по сидам), а не-tool ресурс там доступен только плейсхолдером.
+@tool
 class_name RS_LevelGraph
 extends Resource
 
@@ -28,6 +31,12 @@ const DEPTHS := [4, 3, 2, 1, 0]
 ## Должно быть значением из DEPTHS. Структурно: дом в СЕРЕДИНЕ комплекса — под ним
 ## есть слой (4), над ним три к выходу (2,1,0). Число = L3 по лору (История.md).
 const HOME_DEPTH := 3
+## Поверхность — слой, откуда игрок убегает. Как и HOME_DEPTH, это якорь
+## инварианта, а не тюнинг: на этом слое гарантируется тупик под комнату-выход
+## (см. _generate_layer_with_floors и _place_exits). Комната-выход обслуживает
+## мало рёбер, а на узле с четырьмя дверями она отсеивается по вместимости — без
+## гарантированного тупика забег порой физически нельзя выиграть.
+const SURFACE_DEPTH := 0
 const ROOMS_PER_FLOOR := 4
 const FLOOR_COUNT_MIN := 1
 const FLOOR_COUNT_MAX := 3
@@ -50,9 +59,11 @@ func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_L
 	for depth in DEPTHS:
 		layers_by_depth[depth] = graph._generate_layer_with_floors(rng, depth)
 
-	# Домашняя лаборатория (L3, этаж 0, комната 0) сгенерирована как тупик —
-	# см. _generate_floor. Она НИКОГДА не должна попасть в пул хабов ниже.
+	# Тупики (этаж 0, комната 0 своего слоя) сгенерированы как degree=1 —
+	# см. _generate_floor. Они НИКОГДА не должны попасть в пул хабов ниже, иначе
+	# вертикальный коннектор добавит им второе ребро и тупик сломается.
 	var home_entry: RS_LevelNode = (layers_by_depth[HOME_DEPTH] as RS_LevelLayer).nodes[0]
+	var surface_exit: RS_LevelNode = (layers_by_depth[SURFACE_DEPTH] as RS_LevelLayer).nodes[0]
 
 	for i in range(DEPTHS.size() - 1):
 		var upper_depth: int = DEPTHS[i]  # глубже
@@ -60,6 +71,8 @@ func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_L
 		var excluded: Array[StringName] = []
 		if upper_depth == HOME_DEPTH or lower_depth == HOME_DEPTH:
 			excluded.append(home_entry.id)
+		if upper_depth == SURFACE_DEPTH or lower_depth == SURFACE_DEPTH:
+			excluded.append(surface_exit.id)
 		var guarantee_open := lower_depth == 0  # последний рывок к поверхности всегда проходим
 		graph._connect_layers(
 			rng,
@@ -92,27 +105,30 @@ func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_L
 
 ## Генерирует один СЛОЙ (depth), состоящий из 1-3 этажей. Каждый этаж —
 ## отдельный кластер комнат, этажи внутри слоя соединяются floor_hub'ами.
-## Для HOME_DEPTH комната 0 этажа 0 всегда генерируется как гарантированный
-## тупик (см. _generate_floor(dead_end_index)).
+## Для HOME_DEPTH и SURFACE_DEPTH комната 0 этажа 0 всегда генерируется как
+## гарантированный тупик (см. _generate_floor(dead_end_index)): дом — чтобы у
+## входного узла было ровно одно ребро, поверхность — чтобы комнате-выходу
+## досталось место, которое она по вместимости обслужит.
 func _generate_layer_with_floors(rng: RandomNumberGenerator, depth: int) -> RS_LevelLayer:
 	var floor_count := rng.randi_range(FLOOR_COUNT_MIN, FLOOR_COUNT_MAX)
 	var floor_layers: Array[RS_LevelLayer] = []
-	var home_entry_id: StringName = &""
+	var dead_end_id: StringName = &""
 
 	var running_index := 0
 	for f in floor_count:
-		var dead_end_index := 0 if (depth == HOME_DEPTH and f == 0) else -1
+		var needs_dead_end := f == 0 and (depth == HOME_DEPTH or depth == SURFACE_DEPTH)
+		var dead_end_index := 0 if needs_dead_end else -1
 		var floor_layer := _generate_floor(rng, depth, f, ROOMS_PER_FLOOR, running_index, dead_end_index)
 		if dead_end_index != -1:
-			home_entry_id = floor_layer.nodes[dead_end_index].id
+			dead_end_id = floor_layer.nodes[dead_end_index].id
 		running_index += floor_layer.nodes.size()
 		floor_layers.append(floor_layer)
 
 	# floor_hub-коннекторы между этажами ОДНОГО слоя — без замков (уже загружены
-	# все этажи разом, гейтить прогресс тут незачем), домашний тупик исключён.
+	# все этажи разом, гейтить прогресс тут незачем), тупик слоя исключён.
 	var excluded: Array[StringName] = []
-	if home_entry_id != &"":
-		excluded.append(home_entry_id)
+	if dead_end_id != &"":
+		excluded.append(dead_end_id)
 	for i in range(floor_layers.size() - 1):
 		_connect_layers(rng, floor_layers[i], floor_layers[i + 1], 1, true, 0.0, &"floor_hub", excluded)
 
@@ -231,8 +247,27 @@ func _connect_layers(
 		lower_node.connections.append(up)
 
 
+## Помечает узлы поверхностного слоя тегом level_exit. Кандидатов не берём подряд
+## из перемешанного пула, а упорядочиваем — иначе выход почти всегда достаётся
+## узлу-коннектору, и забег становится непроходимым:
+##   1. Узлы БЕЗ тега vertical_hub идут первыми. У коннектора теги
+##      [vertical_hub, floor_hub, level_exit] — по специфичности подбор отдаёт ему
+##      vertical_hub-пресет, а в той сцене нет двери с A_FinishRun. Победить в
+##      такой «комнате выхода» физически нечем.
+##   2. Внутри группы — по возрастанию степени: комната-выход обслуживает мало
+##      рёбер (slot_count в data/room/exit_room.tres), на узле с четырьмя дверями
+##      она отсеется по вместимости.
+## Детерминированность сохраняется: пул сперва перемешивается тем же rng.
 func _place_exits(rng: RandomNumberGenerator, layer: RS_LevelLayer, exit_count: int = 2) -> void:
-	var pool := _shuffled_array(rng, layer.nodes)
+	var shuffled := _shuffled_array(rng, layer.nodes)
+	var by_degree := func(a: RS_LevelNode, b: RS_LevelNode) -> bool: return _degree(a) < _degree(b)
+
+	var plain := shuffled.filter(func(n: RS_LevelNode) -> bool: return not n.has_tag(&"vertical_hub"))
+	var hubs := shuffled.filter(func(n: RS_LevelNode) -> bool: return n.has_tag(&"vertical_hub"))
+	plain.sort_custom(by_degree)
+	hubs.sort_custom(by_degree)
+
+	var pool: Array = plain + hubs  # коннекторы — только если обычных узлов не хватило
 	exit_count = min(exit_count, pool.size())
 	for i in exit_count:
 		pool[i].add_tag_unique(&"level_exit")
@@ -243,9 +278,9 @@ func get_node_data(node_id: StringName) -> RS_LevelNode:
 	return nodes.get(node_id)
 
 
-## Все узлы конкретного слоя (across всех его этажей). ПОКА НЕ ИСПОЛЬЗУЕТСЯ:
-## зарезервировано под будущую загрузку слоя ЦЕЛИКОМ (весь слой одновременно в
-## дереве сцены), а не по одной комнате, как сейчас делает RunManager.
+## Все узлы конкретного слоя (across всех его этажей). Это гранула стриминга:
+## RunManager грузит слой ЦЕЛИКОМ (все комнаты одновременно в дереве сцены) и
+## сносит его только при смене глубины — см. RunManager._spawn_layer.
 func get_nodes_by_depth(depth: int) -> Array[RS_LevelNode]:
 	var result: Array[RS_LevelNode] = []
 	for node in nodes.values():

@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://droghbcanxxxu" path="res://src/levels/procedural/rooms/test_room.gd" id="1_6ov03"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_cjxtr"]
 [ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_8jqiu"]
-[ext_resource type="ArrayMesh" uid="uid://bopai8h7nvvcd" path="res://assets/rooms/models/buildings_room_B_1.tres" id="4_bfruy"]
+[ext_resource type="ArrayMesh" uid="uid://jqbho7y4c7dn" path="res://assets/rooms/models/buildings_room_B_1.tres" id="4_bfruy"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_cjxtr"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_0gk8d"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_avea3"]
@@ -36,7 +36,7 @@ mesh = ExtResource("4_bfruy")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="room/StaticBody3D" unique_id=1807940839]
 shape = SubResource("ConcavePolygonShape3D_bfruy")
 
-[node name="Doors" type="Node" parent="room" unique_id=755826966]
+[node name="Doors" type="Node3D" parent="room" unique_id=755826966]
 
 [node name="Door" parent="room/Doors" unique_id=1986258941 instance=ExtResource("5_cjxtr")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.2499998, 9.5)

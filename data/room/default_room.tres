@@ -7,5 +7,6 @@
 script = ExtResource("2_w5rn1")
 display_name = "Стандартная комната 4"
 scene = ExtResource("1_0c4g1")
+tags = Array[StringName]([&"floor_hub"])
 slot_count = 4
 metadata/_custom_type_script = "uid://wiaffa7aebsm"

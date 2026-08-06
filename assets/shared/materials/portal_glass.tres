@@ -1,0 +1,20 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c3ptugjrya5vi"]
+
+[ext_resource type="Texture2D" uid="uid://b5jpn52wfckdy" path="res://addons/kenney_patterns/Vector/pattern_02.svg" id="1_p147w"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_i1ivm"]
+frequency = 0.0087
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_16cgx"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_i1ivm")
+
+[resource]
+transparency = 1
+albedo_color = Color(0.6431373, 0.65882355, 0.6039216, 0.3019608)
+roughness = 0.03
+roughness_texture = ExtResource("1_p147w")
+refraction_enabled = true
+refraction_scale = 0.08
+refraction_texture = SubResource("NoiseTexture2D_16cgx")
