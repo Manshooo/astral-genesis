@@ -125,3 +125,33 @@ static func door_directions_of_scene(scene_path: String) -> Array[StringName]:
 		room.free()
 	_directions_by_scene[scene_path] = directions
 	return directions
+
+
+## Кэш «путь сцены → половина габарита». Как и стороны дверей, зависит только от
+## сцены, поэтому считается один раз за запуск.
+static var _half_extent_by_scene: Dictionary[String, float] = {}
+
+
+## Половина габарита комнаты в метрах — по тому, как далеко от центра стоят её
+## двери. Двери прижаты к стенам, так что это и есть расстояние до стены.
+##
+## Габарит комнаты и шаг сетки — величины РАЗНЫЕ, и путать их дорого: между
+## центрами комнат RunManager.ROOM_SPACING = 60 м, а сама комната около 20 м.
+## Маркеру игрока на карте нужен именно габарит: иначе игрок, упёршийся в
+## северную дверь, рисуется в середине клетки, и маркер не отвечает на
+## единственный вопрос, ради которого он есть, — в какую дверь я упёрся.
+##
+## 0.0 — дверей нет, мерить нечем; зовущий решает, что с этим делать.
+static func half_extent_of_scene(scene_path: String) -> float:
+	if _half_extent_by_scene.has(scene_path):
+		return _half_extent_by_scene[scene_path]
+
+	var extent := 0.0
+	if scene_path != "" and ResourceLoader.exists(scene_path):
+		var room := (load(scene_path) as PackedScene).instantiate()
+		for door in door_entities(room):
+			var offset := origin_relative_to(door as Node as Node3D, room)
+			extent = maxf(extent, maxf(absf(offset.x), absf(offset.z)))
+		room.free()
+	_half_extent_by_scene[scene_path] = extent
+	return extent
