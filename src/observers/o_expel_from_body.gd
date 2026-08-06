@@ -24,6 +24,8 @@ func each(_event: Variant, entity: Entity, _payload: Variant = null) -> void:
 ## Развоплощение: снять «во плоти» и здоровье тела, а также тег смерти (тело
 ## умерло, но душа — нет). C_Lifespan остаётся и снова начинает тикать на ПОЛНОЙ
 ## скорости: во плоти S_Lifespan замедлял его на C_Lifespan.embodied_rate.
+## Облик тела тоже снимаем — O_BodyVisual по снятию C_BodyVisual вернёт ригу его
+## собственный вид.
 func _expel(soul: Entity) -> void:
 	if not is_instance_valid(soul):
 		return
@@ -31,6 +33,8 @@ func _expel(soul: Entity) -> void:
 		soul.remove_component(C_Dead)
 	if soul.has_component(C_Health):
 		soul.remove_component(C_Health)
+	if soul.has_component(C_BodyVisual):
+		soul.remove_component(C_BodyVisual)
 	if soul.has_component(C_Embodied):
 		soul.remove_component(C_Embodied)
 	ECS.world.emit_event(&"expelled_from_body", soul)

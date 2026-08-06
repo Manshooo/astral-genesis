@@ -44,6 +44,21 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 	_embody(soul, body)
 
 
+## Снимает облик с тела: меш и переопределение материала его MeshInstance3D.
+## Читаем СЦЕНУ тела, а не отдельно объявленные данные, специально: меш, который
+## игрок видел в мире, и меш, который он получает при вселении, обязаны быть
+## одним и тем же. Дублировать его ещё и в компоненте — гарантированный рассинхрон
+## при первой же правке сцены. null — у тела нет визуала (переносить нечего).
+func _visual_of(body: Entity) -> C_BodyVisual:
+	var geo := (body as Node).get_node_or_null("MeshInstance3D") as MeshInstance3D
+	if geo == null or geo.mesh == null:
+		return null
+	var visual := C_BodyVisual.new()
+	visual.mesh = geo.mesh
+	visual.material_override = geo.material_override
+	return visual
+
+
 ## Структурные правки идут через командный буфер (cmd), а не напрямую: с GECS v9
 ## System.safe_iteration = false по умолчанию — системы обходят массивы архетипов
 ## zero-copy, и add/remove прямо в process() может пропустить сущности (swap-remove)
@@ -60,6 +75,22 @@ func _embody(soul: Entity, body: Entity) -> void:
 	# 2. Отметить состояние «во плоти».
 	if not soul.has_component(C_Embodied):
 		cmd.add_component(soul, C_Embodied.new())
+
+	# 2.1. Перенять облик тела. Сам меш надевает O_BodyVisual — система захвата
+	# про геометрию ничего не знает, только просит.
+	var visual := _visual_of(body)
+	if visual:
+		var previous := soul.get_component(C_BodyVisual) as C_BodyVisual
+		if previous:
+			# Пересадка из тела в тело: возвращаться при развоплощении нужно всё
+			# равно к облику БФЖ, а не к прошлому телу. Переносим цель отката
+			# руками и не полагаемся на то, что наблюдатель успеет увидеть снятие
+			# старого компонента: remove+add одного типа буфер коалесцирует в
+			# один переезд архетипа.
+			visual.restore_mesh = previous.restore_mesh
+			visual.restore_material = previous.restore_material
+			cmd.remove_component(soul, C_BodyVisual)
+		cmd.add_component(soul, visual)
 
 	# 3. Дозаправить запас жизни БФЖ — захват продлевает существование.
 	var life := soul.get_component(C_Lifespan) as C_Lifespan
