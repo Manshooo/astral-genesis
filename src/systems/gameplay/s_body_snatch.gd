@@ -6,11 +6,16 @@
 # C_SnatchTargeted (его непрерывно держит S_SnatchTargetDetector — он же рисует
 # крестик в прицеле), бросает кубик на capture_success_chance и при успехе
 # «вселяется»:
-#   - перенимает свежее здоровье из тела (C_Health);
+#   - перенимает характеристики тела: прочность (C_Health), запас распада
+#     (C_Lifespan.body_current) и множители подвижности (C_BodyStats);
 #   - помечает себя C_Embodied;
-#   - дозаправляет запас жизни (C_Lifespan) — захват снимает давление распада;
 #   - переносит точку присутствия в тело;
 #   - поглощает исходную сущность-тело.
+#
+# Здесь же обрабатывается обратное действие — ДОБРОВОЛЬНЫЙ выход из тела
+# (leave_body). Он живёт рядом с захватом не для симметрии: выход забирает
+# остаток запаса тела себе, и правило этого перетекания одно на все выходы
+# (O_ExpelFromBody.expel).
 class_name S_BodySnatch
 extends System
 
@@ -22,6 +27,16 @@ func query() -> QueryBuilder:
 func process(entities: Array[Entity], _components: Array, _delta: float) -> void:
 	for soul in entities:
 		var bs := soul.get_component(C_BodySnatch) as C_BodySnatch
+
+		if bs.leave_requested:
+			bs.leave_requested = false
+			# Отложенно: развоплощение снимает компоненты, а мы внутри прохода
+			# системы (см. правило v9 в CLAUDE.md). Проверку «а есть ли тело»
+			# делает сам expel — там же, где живёт остальная защита от двойного
+			# выхода в одном кадре.
+			O_ExpelFromBody.expel.call_deferred(soul, true)
+			continue
+
 		if not bs.capture_requested:
 			continue
 		bs.capture_requested = false
@@ -84,12 +99,26 @@ func _embody(soul: Entity, body: Entity) -> void:
 			cmd.remove_component(soul, C_BodyVisual)
 		cmd.add_component(soul, visual)
 
-	# 3. Дозаправить запас жизни БФЖ — захват продлевает существование. Потолок
-	# во плоти выше собственного запаса души на то, что даёт тело: время идёт
-	# 1 с/с в любом состоянии, растёт именно запас (см. C_Lifespan).
+	# 2.2. Перенять подвижность тела. Это множители к пользовательским настройкам,
+	# а не абсолютные скорости, — читает их S_PlayerMovement.
+	if soul.has_component(C_BodyStats):
+		cmd.remove_component(soul, C_BodyStats)
+	var stats := C_BodyStats.new()
+	stats.move_speed_scale = snatchable.move_speed_scale
+	stats.jump_scale = snatchable.jump_scale
+	cmd.add_component(soul, stats)
+
+	# 3. Открыть карман тела: пока душа в нём, распад платится ОТСЮДА, а её
+	# собственный запас ждёт нетронутым (см. C_Lifespan). Собственный запас здесь
+	# не трогаем вовсе — захват больше не «дозаправка», он даёт другой карман.
+	#
+	# Пересадка из тела в тело: остаток прошлого тела сгорает. Иначе выгодной
+	# стратегией стало бы прыгать по телам, копя чужое время, и добровольный
+	# выход — единственный способ забрать остаток — обесценился бы.
 	var life := soul.get_component(C_Lifespan) as C_Lifespan
 	if life:
-		life.current = life.effective_max(true)
+		life.body_max = snatchable.lifespan
+		life.body_current = snatchable.lifespan
 
 	# 4. Перенести точку присутствия в тело (Entity extends Node → двойной каст).
 	var soul_node := soul as Node as Node3D

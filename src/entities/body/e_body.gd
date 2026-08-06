@@ -48,3 +48,33 @@ static func visual_of_scene(path: String) -> C_BodyVisual:
 	var visual := visual_of(probe)
 	probe.free()
 	return visual
+
+
+## Характеристики тела из его сцены — для восстановления после загрузки, где
+## инстанса тела уже нет. Читаем component_resources, а не get_component:
+## detached-инстанс компоненты ещё «не разложил», но @export-массив доступен
+## сразу после instantiate (тот же приём, что в RS_RoomLayout.has_door_slot).
+##
+## null — в сцене нет C_BodySnatchable, то есть это не тело.
+static func snatchable_of_scene(path: String) -> C_BodySnatchable:
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return null
+	var scene := load(path) as PackedScene
+	if scene == null:
+		return null
+
+	var probe := scene.instantiate()
+	var found: C_BodySnatchable = null
+	var entity := probe as Entity
+	if entity:
+		found = entity.get_component(C_BodySnatchable) as C_BodySnatchable
+		if found == null:
+			for component in entity.component_resources:
+				if component is C_BodySnatchable:
+					found = component as C_BodySnatchable
+					break
+	# Компонент — Resource и переживёт освобождение узла, но это ЧУЖОЙ ресурс из
+	# сцены: дублируем, чтобы правки статов не утекли в общий для всех тел пресет.
+	var copy := found.duplicate() as C_BodySnatchable if found else null
+	probe.free()
+	return copy

@@ -50,6 +50,8 @@ func record_progress(
 	body_scene_path: String = "",
 	body_health: float = 0.0,
 	body_health_max: float = 0.0,
+	body_lifespan_left: float = 0.0,
+	body_lifespan_max: float = 0.0,
 ) -> void:
 	save.run_in_progress = true
 	save.current_node_id = node_id
@@ -59,6 +61,8 @@ func record_progress(
 	save.body_scene_path = body_scene_path
 	save.body_health = body_health
 	save.body_health_max = body_health_max
+	save.body_lifespan_remaining = body_lifespan_left
+	save.body_lifespan_max = body_lifespan_max
 	_save()
 
 

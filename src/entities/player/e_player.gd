@@ -37,3 +37,11 @@ func _input(event: InputEvent) -> void:
 		var bs := get_component(C_BodySnatch) as C_BodySnatch
 		if bs:
 			bs.capture_requested = true
+
+	# Покинуть тело по своей воле. Тоже только флаг: сам выход разбирает
+	# S_BodySnatch, потому что это половина модели распада — остаток запаса тела
+	# переходит душе только при добровольном выходе (см. O_ExpelFromBody.expel).
+	if event.is_action_pressed("leave_body") and not event.is_echo():
+		var bs := get_component(C_BodySnatch) as C_BodySnatch
+		if bs:
+			bs.leave_requested = true

@@ -1,16 +1,21 @@
 # res://src/ui/hud/hud_vitals.gd
-## Панель витальных показателей БФЖ в HUD:
-##   - запас распада (C_Lifespan) — ВСЕГДА. Тикает 1 с/с в любом состоянии, но во
-##     плоти потолок выше на C_Lifespan.embodied_bonus, поэтому и шкала длиннее;
-##   - HP текущего тела (C_Health) — ТОЛЬКО во плоти (есть C_Embodied): у призрака
-##     тела, а значит и C_Health, нет.
-## Значения меняются непрерывно (таймер распада, урон по телу), поэтому опрашиваем
-## игрока каждый кадр — событийная модель тут проигрывает простому поллингу.
+## Панель витальных показателей БФЖ в HUD. Три строки, и они про разное:
+##   - «Распад» — СОБСТВЕННЫЙ запас души (C_Lifespan.current). Во плоти он не
+##     тикает: пока душа в теле, время платится из кармана тела. Может уходить за
+##     максимум — излишек принесён из тела при добровольном выходе;
+##   - «Запас тела» — карман текущего тела (body_current), ТОЛЬКО во плоти. Это
+##     та шкала, которая во плоти и убывает;
+##   - «Тело» — HP текущего тела (C_Health), тоже только во плоти.
+## Значения меняются непрерывно, поэтому опрашиваем игрока каждый кадр —
+## событийная модель тут проигрывает простому поллингу.
 class_name UI_HudVitals
 extends VBoxContainer
 
 @onready var _lifespan_bar: ProgressBar = $LifespanRow/LifespanBar
 @onready var _lifespan_value: Label = $LifespanRow/PanelContainer2/LifespanValue
+@onready var _body_life_row: HBoxContainer = $BodyLifeRow
+@onready var _body_life_bar: ProgressBar = $BodyLifeRow/BodyLifeBar
+@onready var _body_life_value: Label = $BodyLifeRow/PanelContainer2/BodyLifeValue
 @onready var _health_row: HBoxContainer = $HealthRow
 @onready var _health_bar: ProgressBar = $HealthRow/HealthBar
 @onready var _health_value: Label = $HealthRow/PanelContainer2/HealthValue
@@ -23,25 +28,49 @@ func _process(_delta: float) -> void:
 		visible = false
 		return
 	visible = true
+
+	var embodied := player.has_component(C_Embodied)
 	_update_lifespan(player)
-	_update_health(player)
+	_update_body_lifespan(player, embodied)
+	_update_health(player, embodied)
 
 
+## Собственный запас души. Шкала упирается в максимум, а подпись говорит правду:
+## запас МОЖЕТ его превышать (излишек, вынесенный из тела), и растягивать ради
+## этого саму шкалу — врать про то, где «нормальный полный».
 func _update_lifespan(player: Entity) -> void:
 	var life := player.get_component(C_Lifespan) as C_Lifespan
 	if life == null:
 		return
-	# Потолок шкалы зависит от состояния: во плоти запас больше на то, что даёт
-	# тело. Само время и там и там идёт 1 с/с, поэтому подписи можно верить —
-	# «45 с» это ровно 45 секунд (см. C_Lifespan).
-	_lifespan_bar.max_value = life.effective_max(player.has_component(C_Embodied))
-	_lifespan_bar.value = life.current
-	_lifespan_value.text = "%.0f с" % ceilf(life.current)
+	_lifespan_bar.max_value = life.max_duration
+	_lifespan_bar.value = minf(life.current, life.max_duration)
+
+	var overflow := life.overflow()
+	if overflow > 0.0:
+		# «60 +18 с» — видно и то, что запас полон, и сколько сверху. Излишек
+		# утекает быстрее обычного, так что число будет заметно бежать.
+		_lifespan_value.text = "%.0f +%.0f с" % [life.max_duration, ceilf(overflow)]
+	else:
+		_lifespan_value.text = "%.0f с" % ceilf(life.current)
 
 
-func _update_health(player: Entity) -> void:
-	# HP тела показываем только во плоти — у развоплощённой души C_Health нет.
-	var embodied := player.has_component(C_Embodied)
+## Карман текущего тела: во плоти убывает именно он.
+func _update_body_lifespan(player: Entity, embodied: bool) -> void:
+	_body_life_row.visible = embodied
+	if not embodied:
+		return
+	var life := player.get_component(C_Lifespan) as C_Lifespan
+	if life == null:
+		return
+	# max_value не должен быть нулём: тело без запаса дало бы деление на ноль
+	# внутри ProgressBar и пустую шкалу вместо честного нуля.
+	_body_life_bar.max_value = maxf(life.body_max, 0.001)
+	_body_life_bar.value = life.body_current
+	_body_life_value.text = "%.0f с" % ceilf(life.body_current)
+
+
+## HP тела показываем только во плоти — у развоплощённой души C_Health нет.
+func _update_health(player: Entity, embodied: bool) -> void:
 	_health_row.visible = embodied
 	if not embodied:
 		return

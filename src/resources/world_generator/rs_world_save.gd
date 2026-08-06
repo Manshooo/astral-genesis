@@ -38,6 +38,11 @@ extends Resource
 ## поэтому пересчитывать его из сцены при загрузке было бы неверно.
 @export var body_health: float = 0.0
 @export var body_health_max: float = 0.0
+## Остаток кармана тела и его исходный объём (C_Lifespan.body_current/body_max).
+## Тоже состояние: во плоти распад платится именно отсюда, и без этих чисел
+## загрузка возвращала бы тело с полным запасом времени.
+@export var body_lifespan_remaining: float = 0.0
+@export var body_lifespan_max: float = 0.0
 ## Тела, уже поглощённые в этом забеге (C_BodyOrigin.body_id). Комнаты
 ## восстанавливаются из сида, а не из сейва, поэтому без этой пометки съеденное
 ## тело возродилось бы нетронутым — рядом с игроком, который в нём и сидит.
@@ -61,4 +66,6 @@ func clear_run() -> void:
 	body_scene_path = ""
 	body_health = 0.0
 	body_health_max = 0.0
+	body_lifespan_remaining = 0.0
+	body_lifespan_max = 0.0
 	consumed_body_ids.clear()

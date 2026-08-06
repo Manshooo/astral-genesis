@@ -134,6 +134,42 @@ text = "60 с"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="BodyLifeRow" type="HBoxContainer" parent="Hud/Vitals" unique_id=700000001]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PanelContainer" type="PanelContainer" parent="Hud/Vitals/BodyLifeRow" unique_id=700000002]
+custom_minimum_size = Vector2(75, 0)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Hud/Vitals/BodyLifeRow/PanelContainer" unique_id=700000003]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Запас тела"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BodyLifeBar" type="ProgressBar" parent="Hud/Vitals/BodyLifeRow" unique_id=700000004]
+self_modulate = Color(1, 0.85, 0.4, 1)
+custom_minimum_size = Vector2(180, 18)
+layout_mode = 2
+size_flags_vertical = 1
+size_flags_stretch_ratio = 3.0
+max_value = 60.0
+value = 60.0
+show_percentage = false
+
+[node name="PanelContainer2" type="PanelContainer" parent="Hud/Vitals/BodyLifeRow" unique_id=700000005]
+custom_minimum_size = Vector2(75, 0)
+layout_mode = 2
+
+[node name="BodyLifeValue" type="Label" parent="Hud/Vitals/BodyLifeRow/PanelContainer2" unique_id=700000006]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "0 с"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="HealthRow" type="HBoxContainer" parent="Hud/Vitals" unique_id=856023743]
 layout_mode = 2
 theme_override_constants/separation = 8

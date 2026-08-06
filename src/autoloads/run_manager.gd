@@ -148,10 +148,10 @@ func _start_node_id() -> StringName:
 ## Иначе загрузка работала бы как бесплатное восстановление (свежая E_Player
 ## несёт полный C_Lifespan) и как принудительное развоплощение.
 ##
-## Порядок важен: сперва тело, потом обрезка запаса. Потолок распада во плоти
-## выше собственного запаса души на бонус тела (C_Lifespan.effective_max), и
-## обрезка по max_duration до восстановления C_Embodied молча съедала бы
-## сохранённый излишек — 100 с превращались бы в 60.
+## Запас распада НЕ обрезается по максимуму: с моделью «распад как ресурс» он
+## законно бывает больше — излишек, вынесенный из тела при добровольном выходе,
+## и утекает он быстрее обычного (S_Lifespan). Обрезка здесь молча съедала бы
+## именно то, что игрок заработал, выйдя из тела вовремя.
 func _restore_player_progress() -> void:
 	var saved := WorldSave.save
 	if not saved.run_in_progress:
@@ -162,12 +162,13 @@ func _restore_player_progress() -> void:
 
 	_restore_embodiment(player, saved)
 
-	if saved.lifespan_remaining >= 0.0:
-		var life := player.get_component(C_Lifespan) as C_Lifespan
-		if life:
-			life.current = minf(
-				saved.lifespan_remaining, life.effective_max(player.has_component(C_Embodied))
-			)
+	var life := player.get_component(C_Lifespan) as C_Lifespan
+	if life and saved.lifespan_remaining >= 0.0:
+		life.current = saved.lifespan_remaining
+	if life and not saved.body_scene_path.is_empty():
+		# Карман тела — тоже состояние: он убывает всё время, пока игрок в теле.
+		life.body_current = saved.body_lifespan_remaining
+		life.body_max = saved.body_lifespan_max
 
 
 ## Возвращает душу в тело, в котором её сохранили. Свежая E_Player всегда
@@ -189,6 +190,16 @@ func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 	var health := C_Health.new(saved.body_health_max)
 	health.current = saved.body_health
 	player.add_component(health)
+
+	# Подвижность тела — тоже характеристика пресета, а не состояние: читаем её
+	# из сцены, как и облик. Если скиллы когда-нибудь начнут править статы уже
+	# надетого тела, вот здесь и появится развилка «сохранять или выводить».
+	var snatchable := E_Body.snatchable_of_scene(saved.body_scene_path)
+	if snatchable:
+		var stats := C_BodyStats.new()
+		stats.move_speed_scale = snatchable.move_speed_scale
+		stats.jump_scale = snatchable.jump_scale
+		player.add_component(stats)
 
 	var visual := E_Body.visual_of_scene(saved.body_scene_path)
 	if visual:
@@ -891,12 +902,16 @@ func _checkpoint(node_id: StringName) -> void:
 	var body_scene_path := ""
 	var body_health := 0.0
 	var body_health_max := 0.0
+	var body_lifespan_left := 0.0
+	var body_lifespan_max := 0.0
 
 	var player := _get_player()
 	if player:
 		var life := player.get_component(C_Lifespan) as C_Lifespan
 		if life:
 			lifespan_left = life.current
+			body_lifespan_left = life.body_current
+			body_lifespan_max = life.body_max
 		var embodied := player.get_component(C_Embodied) as C_Embodied
 		if embodied:
 			body_scene_path = embodied.body_scene_path
@@ -907,7 +922,13 @@ func _checkpoint(node_id: StringName) -> void:
 			body_health_max = health.maximum
 
 	WorldSave.record_progress(
-		node_id, lifespan_left, body_scene_path, body_health, body_health_max
+		node_id,
+		lifespan_left,
+		body_scene_path,
+		body_health,
+		body_health_max,
+		body_lifespan_left,
+		body_lifespan_max
 	)
 
 

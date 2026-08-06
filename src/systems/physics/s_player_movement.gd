@@ -56,8 +56,17 @@ func _set_phasing(player: E_Player, phasing: bool) -> void:
 
 
 ## Тело: гравитация, прыжок с пола, мгновенная смена направления.
+##
+## Скорость и прыжок — настройки игрока, ОТМАСШТАБИРОВАННЫЕ телом (C_BodyStats).
+## Множители, а не абсолютные величины: move_speed и jump_velocity живут в
+## RS_Settings, то есть игрок настроил их себе сам, и подменять их телом значило
+## бы затирать его выбор. Тела без статов (или до того, как их проставили)
+## работают как раньше — множитель 1.0.
 func _move_embodied(player: E_Player, inp: C_PlayerInput, vel: C_Velocity, delta: float) -> void:
 	var s := SettingsManager.settings
+	var stats := player.get_component(C_BodyStats) as C_BodyStats
+	var speed_scale := stats.move_speed_scale if stats else 1.0
+	var jump_scale := stats.jump_scale if stats else 1.0
 
 	if not player.is_on_floor():
 		vel.velocity.y -= GameConfig.config.gravity * delta
@@ -66,13 +75,13 @@ func _move_embodied(player: E_Player, inp: C_PlayerInput, vel: C_Velocity, delta
 
 	if inp.jump_pressed:
 		if player.is_on_floor():
-			vel.velocity.y = s.jump_velocity
+			vel.velocity.y = s.jump_velocity * jump_scale
 		inp.jump_pressed = false
 
 	if inp.move_direction != Vector3.ZERO:
 		var wish = (player.transform.basis * inp.move_direction).normalized()
-		vel.velocity.x = wish.x * s.move_speed
-		vel.velocity.z = wish.z * s.move_speed
+		vel.velocity.x = wish.x * s.move_speed * speed_scale
+		vel.velocity.z = wish.z * s.move_speed * speed_scale
 	else:
 		vel.velocity.x = 0.0
 		vel.velocity.z = 0.0

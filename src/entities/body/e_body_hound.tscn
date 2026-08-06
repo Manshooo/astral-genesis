@@ -1,0 +1,39 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" uid="uid://pwn4fb4ktgml" path="res://src/entities/body/e_body.gd" id="1_body"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
+[ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="3_health"]
+[ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="4_snatch"]
+[ext_resource type="ArrayMesh" path="res://assets/monsters/models/monsters_headog.res" id="5_mesh"]
+
+[sub_resource type="Resource" id="Resource_health"]
+script = ExtResource("3_health")
+maximum = 45.0
+current = 45.0
+metadata/_custom_type_script = "uid://5r77tfxtjy6p"
+
+[sub_resource type="Resource" id="Resource_snatch"]
+script = ExtResource("4_snatch")
+max_health = 45.0
+lifespan = 35.0
+move_speed_scale = 1.5
+jump_scale = 1.25
+metadata/_custom_type_script = "uid://bgw8q60os3ln1"
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.45
+height = 1.86
+
+[node name="BodyHound" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_body")
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch")])
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.93, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.24, 0, 0, 0, 0.24, 0, 0, 0, 0.24, 0, 0, 0)
+mesh = ExtResource("5_mesh")

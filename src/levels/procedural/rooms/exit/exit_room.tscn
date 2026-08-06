@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://b862rhl0ju5v0" path="res://src/resources/interaction/a_finish_run.gd" id="7_g6fwc"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="8_k843v"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="9_slot"]
+[ext_resource type="PackedScene" path="res://src/entities/body/e_body_crawler.tscn" id="90_body"]
 
 [sub_resource type="Resource" id="Resource_87bj8"]
 script = ExtResource("3_dc270")
@@ -53,3 +54,6 @@ component_resources = Array[ExtResource("2_uf4in")]([SubResource("Interactable_d
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)
+
+[node name="BodyCrawler" parent="." unique_id=710000001 instance=ExtResource("90_body")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 0, 3.0)
