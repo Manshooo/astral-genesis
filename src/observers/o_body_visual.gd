@@ -4,10 +4,9 @@
 # C_Highlighted → O_OutlineVisual: система захвата про меши ничего не знает, она
 # только вешает C_BodyVisual.
 #
-# Меняем ТОЛЬКО меш и material_override на том же самом узле MeshInstance3D —
-# не подменяя и не пересоздавая его. Иначе сломалась бы обводка: O_OutlineVisual
-# ищет дочерний узел строго с именем "MeshInstance3D" и пишет ему
-# material_overlay (см. how-to/Взаимодействие).
+# Меняем ТОЛЬКО меш и material_override на том же самом узле — не подменяя и не
+# пересоздавая его. Обводка пишет тому же узлу material_overlay, и подмена узла
+# оставила бы её висеть на выброшенном меше.
 class_name O_BodyVisual
 extends Observer
 
@@ -17,7 +16,9 @@ func query() -> QueryBuilder:
 
 
 func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
-	var geo := _find_geometry(entity)
+	# Основной меш, а не «все»: облик тела подменяет ОДИН меш рига, красить
+	# поддерево целиком тут бессмысленно.
+	var geo := RS_EntityVisuals.primary(entity) as MeshInstance3D
 	if geo == null:
 		return
 	var visual := payload as C_BodyVisual
@@ -38,13 +39,3 @@ func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
 		Observer.Event.REMOVED:
 			geo.mesh = visual.restore_mesh
 			geo.material_override = visual.restore_material
-
-
-## Тот же поиск, что у O_OutlineVisual: сама сущность, если она геометрия, иначе
-## дочерний "MeshInstance3D".
-func _find_geometry(entity: Entity) -> MeshInstance3D:
-	var node: Node = entity
-	var self_geo := node as MeshInstance3D
-	if self_geo:
-		return self_geo
-	return node.get_node_or_null("MeshInstance3D") as MeshInstance3D
