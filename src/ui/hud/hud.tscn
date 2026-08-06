@@ -55,6 +55,7 @@ offset_bottom = 60.0
 grow_horizontal = 2
 grow_vertical = 2
 horizontal_alignment = 1
+vertical_alignment = 1
 script = ExtResource("4_prompt")
 
 [node name="Message" type="Label" parent="Hud" unique_id=1544852345]

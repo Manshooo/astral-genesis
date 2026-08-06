@@ -84,7 +84,11 @@ func _move_embodied(player: E_Player, inp: C_PlayerInput, vel: C_Velocity, delta
 ##    вниз, и отдельные клавиши «вверх/вниз» не нужны;
 ##  - скорость не выставляется мгновенно, а подтягивается к желаемой (разгон) и
 ##    гаснет при отпущенных клавишах (инерция) — отсюда «плывущее» ощущение;
-##  - «прыжок» становится импульсом вверх: подняться, не задирая камеру.
+##  - ПРЫЖКА НЕТ: прыгать нечем, да и незачем при свободном полёте.
+##
+## То, что набор доступных действий зависит от состояния, — пока просто ветка
+## if/else. Тел с разными возможностями (безногое тело не прыгает и т.п.) это
+## уже не покроет — см. «Возможности тела и раскладка управления» в v0.5.0.
 func _move_ghost(player: E_Player, inp: C_PlayerInput, vel: C_Velocity, delta: float) -> void:
 	var s := SettingsManager.settings
 	var gc := GameConfig.config
@@ -99,6 +103,7 @@ func _move_ghost(player: E_Player, inp: C_PlayerInput, vel: C_Velocity, delta: f
 	var rate := gc.ghost_acceleration if target != Vector3.ZERO else gc.ghost_damping
 	vel.velocity = vel.velocity.move_toward(target, rate * delta)
 
-	if inp.jump_pressed:
-		vel.velocity.y = maxf(vel.velocity.y, gc.ghost_lift)
-		inp.jump_pressed = false
+	# Прыжка у бестелесного нет: подниматься и опускаться он и так умеет, просто
+	# посмотрев вверх или вниз. Флаг всё равно гасим — иначе нажатие, сделанное
+	# призраком, сработает в тот самый миг, когда он вселится в тело.
+	inp.jump_pressed = false

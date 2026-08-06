@@ -92,10 +92,12 @@ func _embody(soul: Entity, body: Entity) -> void:
 			cmd.remove_component(soul, C_BodyVisual)
 		cmd.add_component(soul, visual)
 
-	# 3. Дозаправить запас жизни БФЖ — захват продлевает существование.
+	# 3. Дозаправить запас жизни БФЖ — захват продлевает существование. Потолок
+	# во плоти выше собственного запаса души на то, что даёт тело: время идёт
+	# 1 с/с в любом состоянии, растёт именно запас (см. C_Lifespan).
 	var life := soul.get_component(C_Lifespan) as C_Lifespan
 	if life:
-		life.current = life.max_duration
+		life.current = life.effective_max(true)
 
 	# 4. Перенести точку присутствия в тело (Entity extends Node → двойной каст).
 	var soul_node := soul as Node as Node3D
