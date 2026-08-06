@@ -37,7 +37,7 @@ jobs:
       sha: ${{ steps.bump.outputs.sha }}
     steps:
       - name: Клонировать master
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: master
           fetch-depth: 0
@@ -89,57 +89,31 @@ jobs:
 
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  build:
-    name: ${{ matrix.title }}
+  release:
+    name: Сборка и публикация
     needs: prepare
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - { os: windows-latest, platform: windows, title: Windows }
-          - { os: ubuntu-latest, platform: linux, title: Linux }
-
-    steps:
-      - name: Клонировать коммит с бампом
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-          lfs: true
-          submodules: recursive
-
-      - name: Собрать
-        id: export
-        uses: ./.github/actions/godot-export
-        with:
-          platform: ${{ matrix.platform }}
-          label: v${{ needs.prepare.outputs.version }}
-
-      - name: Выложить артефакт
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ matrix.platform }}
-          path: ${{ steps.export.outputs.archive }}
-          retention-days: 7
-          if-no-files-found: error
-
-  publish:
-    name: Тег и релиз
-    needs: [prepare, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Клонировать коммит с бампом
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
-      - name: Забрать сборки
-        uses: actions/download-artifact@v4
+      - name: Собрать Windows
+        uses: ./.github/actions/godot-export
         with:
-          pattern: release-*
-          merge-multiple: true
-          path: dist
+          platform: windows
+          label: v${{ needs.prepare.outputs.version }}
+
+      - name: Собрать Linux
+        uses: ./.github/actions/godot-export
+        with:
+          platform: linux
+          label: v${{ needs.prepare.outputs.version }}
 
       - name: Повесить тег
         env:

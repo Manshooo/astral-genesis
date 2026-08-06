@@ -27,7 +27,7 @@ runs:
     # незачем: они меняются только вместе с godot-version, она и есть ключ кэша.
     - name: Кэш движка и шаблонов экспорта
       id: cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           ~/godot-bin
@@ -100,15 +100,28 @@ runs:
         "$bin" --version
         echo "bin=${bin}" >> "$GITHUB_OUTPUT"
 
+    # Холодный импорт — самая дорогая часть прогона: движку нужно перемолоть
+    # ~680 ресурсов. Ключ завязан на содержимое ассетов, а restore-keys даёт
+    # частичное попадание, после которого переимпортируется только изменённое.
+    - name: Кэш импортированных ресурсов
+      uses: actions/cache@v6
+      with:
+        path: .godot
+        key: >-
+          godot-import-${{ inputs.godot-version }}-${{ runner.os }}-${{
+          hashFiles('project.godot', 'assets/**', 'addons/**', 'data/**', 'src/**', 'icon.svg') }}
+        restore-keys: |
+          godot-import-${{ inputs.godot-version }}-${{ runner.os }}-
+
     - name: Импорт ресурсов
       shell: bash
       env:
         GODOT: ${{ steps.godot.outputs.bin }}
       run: |
         set -euo pipefail
-        # .godot/ в репозитории нет, импорт всегда холодный. Первый проход
-        # генерирует .uid-файлы, на которые ссылаются сцены, поэтому часть
-        # зависимостей резолвится только со второго — прогоняем дважды.
+        # Первый проход генерирует .uid-файлы, на которые ссылаются сцены,
+        # поэтому часть зависимостей резолвится только со второго. При попадании
+        # в кэш оба прохода отрабатывают за секунды.
         "$GODOT" --headless --import || true
         "$GODOT" --headless --import
 

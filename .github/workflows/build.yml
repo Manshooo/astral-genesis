@@ -14,20 +14,15 @@ concurrency:
 
 jobs:
   build:
-    name: ${{ matrix.title }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Каждая платформа собирается на своём раннере: экспорт Windows-сборки
-          # с Linux упирается в бейк шейдеров под d3d12 и запись PE-метаданных.
-          - { os: windows-latest, platform: windows, title: Windows }
-          - { os: ubuntu-latest, platform: linux, title: Linux }
+    name: Windows и Linux
+    runs-on: ubuntu-latest
+    # Холодный импорт ассетов занимает минуты; если прогон упёрся сильно дольше,
+    # это поломка, а не медленный раннер — не жечь часы впустую.
+    timeout-minutes: 45
 
     steps:
       - name: Клонировать репозиторий
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           lfs: true
           submodules: recursive
@@ -49,17 +44,24 @@ jobs:
           fi
           echo "label=${label}" >> "$GITHUB_OUTPUT"
 
-      - name: Собрать
-        id: export
+      # Обе платформы на одном раннере: движок, шаблоны и импорт ресурсов
+      # переиспользуются, второй вызов доходит до экспорта за секунды.
+      - name: Собрать Windows
         uses: ./.github/actions/godot-export
         with:
-          platform: ${{ matrix.platform }}
+          platform: windows
           label: ${{ steps.label.outputs.label }}
 
-      - name: Выложить артефакт
-        uses: actions/upload-artifact@v4
+      - name: Собрать Linux
+        uses: ./.github/actions/godot-export
         with:
-          name: astral-genesis-${{ matrix.platform }}
-          path: ${{ steps.export.outputs.archive }}
+          platform: linux
+          label: ${{ steps.label.outputs.label }}
+
+      - name: Выложить артефакты
+        uses: actions/upload-artifact@v7
+        with:
+          name: astral-genesis-${{ steps.label.outputs.label }}
+          path: dist/*.zip
           retention-days: 14
           if-no-files-found: error
