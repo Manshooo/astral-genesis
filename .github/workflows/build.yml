@@ -1,0 +1,65 @@
+name: Сборка
+
+# Проверочная сборка на каждый PR в master: если экспорт сломан, это видно
+# до вливания, а ревьюер может скачать готовую сборку из артефактов прогона.
+# Релиз собирается отдельным workflow (release.yml) уже после мёржа.
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.title }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Каждая платформа собирается на своём раннере: экспорт Windows-сборки
+          # с Linux упирается в бейк шейдеров под d3d12 и запись PE-метаданных.
+          - { os: windows-latest, platform: windows, title: Windows }
+          - { os: ubuntu-latest, platform: linux, title: Linux }
+
+    steps:
+      - name: Клонировать репозиторий
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          submodules: recursive
+
+      - name: Определить метку сборки
+        id: label
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            label="pr${PR_NUMBER}"
+          else
+            # Метка уходит в имя файла, а имя ветки может содержать слеш
+            # (release/v0.5.0) — иначе архив уехал бы в подкаталог.
+            label="$(printf '%s' "$REF_NAME" | tr -c 'A-Za-z0-9._-' '-')"
+          fi
+          echo "label=${label}" >> "$GITHUB_OUTPUT"
+
+      - name: Собрать
+        id: export
+        uses: ./.github/actions/godot-export
+        with:
+          platform: ${{ matrix.platform }}
+          label: ${{ steps.label.outputs.label }}
+
+      - name: Выложить артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: astral-genesis-${{ matrix.platform }}
+          path: ${{ steps.export.outputs.archive }}
+          retention-days: 14
+          if-no-files-found: error
