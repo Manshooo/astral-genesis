@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://ddth5cr33n01a"]
 
-[ext_resource type="Theme" uid="uid://dddq7rbmi4xdo" path="res://assets/ui/default_theme.tres" id="1_theme"]
+[ext_resource type="Theme" uid="uid://e0o8cuoinatk" path="res://assets/ui/defualt.theme" id="1_theme"]
 [ext_resource type="Script" uid="uid://dgjcwsj5cku87" path="res://src/ui/death_screen/death_screen.gd" id="2_script"]
 
 [node name="DeathScreen" type="Control"]
