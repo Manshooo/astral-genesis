@@ -113,17 +113,60 @@ runs:
         restore-keys: |
           godot-import-${{ inputs.godot-version }}-${{ runner.os }}-
 
+    # Многопоточный импорт намертво виснет на раннере: главный поток крутит
+    # опрос группы задач WorkerThreadPool, которая не завершается, и раз в
+    # секунду печатает один и тот же элемент. Ловилось и на windows-latest, и на
+    # ubuntu-latest, всегда ровно на 22% — на `scratch_002.ogg`, но сам файл
+    # исправен (на Linux и Windows он импортируется за миллисекунды, локально
+    # холодный импорт всех 679 ассетов проходит за 9 секунд). Это просто тот
+    # индекс, на котором застыл счётчик завершённых задач. Параллелить тут
+    # нечего: однопоточный импорт всего проекта стоит секунды.
+    - name: Отключить многопоточный импорт
+      shell: bash
+      run: |
+        set -euo pipefail
+        # ConfigFile сливает одноимённые секции, поэтому дописанная в конец
+        # вторая [editor] безопасна и не зависит от того, есть ли ключ в
+        # исходном project.godot. Правка живёт только на раннере.
+        # Проверка на уже дописанное: action вызывается дважды за джоб (по разу
+        # на платформу), а второй такой блок был бы просто мусором в файле.
+        if ! grep -q '^import/use_multiple_threads=' project.godot; then
+          printf '\n[editor]\n\nimport/use_multiple_threads=false\n' >> project.godot
+        fi
+
     - name: Импорт ресурсов
       shell: bash
       env:
         GODOT: ${{ steps.godot.outputs.bin }}
+        # Холодный импорт ~680 ресурсов укладывается в минуты; всё, что дольше,
+        # — это зависание, и лучше упасть с внятным сообщением, чем выбирать
+        # таймаут джоба или ждать, пока прогон отменят руками.
+        IMPORT_TIMEOUT: "600"
       run: |
         set -euo pipefail
+
+        run_import() {
+          # --foreground, иначе timeout не пробрасывает сигнал в неинтерактивной
+          # сессии и Godot остаётся висеть как orphan-процесс.
+          timeout --foreground "$IMPORT_TIMEOUT" "$GODOT" --headless --import
+        }
+
         # Первый проход генерирует .uid-файлы, на которые ссылаются сцены,
         # поэтому часть зависимостей резолвится только со второго. При попадании
         # в кэш оба прохода отрабатывают за секунды.
-        "$GODOT" --headless --import || true
-        "$GODOT" --headless --import
+        set +e
+        run_import
+        set -e
+
+        set +e
+        run_import
+        code=$?
+        set -e
+        if [ "$code" -eq 124 ]; then
+          echo "::error::Импорт не уложился в ${IMPORT_TIMEOUT}s — движок завис. Смотри «Грабли» в docs/astral-genesis/how-to/Релизы и сборка.md"
+          exit 1
+        fi
+        exit "$code"
 
     - name: Экспорт
       id: export
