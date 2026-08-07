@@ -1,19 +1,17 @@
 [gd_scene format=3 uid="uid://ddth5cr33n01a"]
 
-[ext_resource type="Theme" uid="uid://e0o8cuoinatk" path="res://assets/ui/defualt.theme" id="1_theme"]
 [ext_resource type="Script" uid="uid://dgjcwsj5cku87" path="res://src/ui/death_screen/death_screen.gd" id="2_script"]
 
-[node name="DeathScreen" type="Control"]
+[node name="DeathScreen" type="Control" unique_id=1995404847]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("1_theme")
 script = ExtResource("2_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=2146840821]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.02, 0.03, 1)
 
-[node name="Panel" type="Panel" parent="."]
+[node name="Panel" type="Panel" parent="." unique_id=1656977351]
 custom_minimum_size = Vector2(320, 240)
 layout_mode = 1
 anchors_preset = 8
@@ -37,7 +35,7 @@ offset_bottom = 120.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=713945344]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -49,33 +47,33 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=1375062689]
 layout_mode = 2
 theme_override_constants/separation = 15
 alignment = 1
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer" unique_id=2044343805]
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "СОЗНАНИЕ УГАСЛО"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Subtitle" type="Label" parent="Panel/MarginContainer/VBoxContainer" unique_id=88046428]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "БФЖ распался, не найдя нового тела."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer" unique_id=1145303483]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="Retry" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Retry" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=1658935289]
 layout_mode = 2
 text = "Новый забег"
 
-[node name="Menu" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Menu" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=2060769723]
 layout_mode = 2
 text = "В меню"
 
