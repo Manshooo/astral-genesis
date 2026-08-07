@@ -45,34 +45,53 @@ runs:
         mkdir -p ~/godot-bin
 
         if [ "$RUNNER_OS" = "Windows" ]; then
-          # unzip в образе windows-latest не гарантирован, 7-Zip — есть всегда.
-          curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${GODOT_VERSION}-stable_win64.exe.zip"
-          7z x -o/tmp/godot -bso0 /tmp/godot.zip
-          # Оба .exe кладутся под своими исходными именами: _console — тонкая
-          # обёртка на 200 КБ, которая запускает соседний основной файл по имени,
-          # и переименование рвёт эту связь.
-          cp /tmp/godot/*.exe ~/godot-bin/
           # Тот же каталог, что и %APPDATA%\Godot, но в POSIX-форме: путь с
           # обратными слешами внутри bash-скрипта разъезжается на экранировании.
           templates_dir="${HOME}/AppData/Roaming/Godot/export_templates/${GODOT_VERSION}.stable"
         else
+          templates_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+        fi
+
+        # Action вызывается дважды за джоб (по разу на платформу), а кэш пишется
+        # только в post-job — на втором вызове снова промах, и шаг отрабатывает
+        # повторно. Раньше это не всплывало: прогон не доживал до второго вызова,
+        # вис на импорте. Проверка по факту на диске, а не по cache-hit.
+        if [ -n "$(ls -A ~/godot-bin 2>/dev/null)" ] && [ -d "$templates_dir" ]; then
+          echo "Движок и шаблоны уже установлены этим джобом — пропускаю"
+          exit 0
+        fi
+
+        # Распаковка идёт в фиксированные пути, поэтому мусор от прерванной
+        # прошлой попытки сносим: unzip иначе спросит про замену файла, получит
+        # EOF в неинтерактивной сессии и упадёт.
+        rm -rf /tmp/godot /tmp/templates
+
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          # unzip в образе windows-latest не гарантирован, 7-Zip — есть всегда.
+          curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${GODOT_VERSION}-stable_win64.exe.zip"
+          7z x -y -o/tmp/godot -bso0 /tmp/godot.zip
+          # Оба .exe кладутся под своими исходными именами: _console — тонкая
+          # обёртка на 200 КБ, которая запускает соседний основной файл по имени,
+          # и переименование рвёт эту связь.
+          cp /tmp/godot/*.exe ~/godot-bin/
+        else
           curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
-          unzip -q /tmp/godot.zip -d /tmp/godot
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
           linux_bin="$(find /tmp/godot -name '*linux.x86_64' | head -1)"
           cp "$linux_bin" ~/godot-bin/godot
           chmod +x ~/godot-bin/godot
-          templates_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
         fi
 
         curl -fsSL -o /tmp/templates.tpz "${base}/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
         if [ "$RUNNER_OS" = "Windows" ]; then
-          7z x -tzip -o/tmp/templates -bso0 /tmp/templates.tpz
+          7z x -y -tzip -o/tmp/templates -bso0 /tmp/templates.tpz
         else
-          unzip -q /tmp/templates.tpz -d /tmp/templates
+          unzip -q -o /tmp/templates.tpz -d /tmp/templates
         fi
 
         # Имя каталога шаблонов должно быть ровно "<версия>.stable" — движок ищет
         # его по точному совпадению и иначе сообщает, что шаблоны не установлены.
+        rm -rf "$templates_dir"
         mkdir -p "$(dirname "$templates_dir")"
         mv /tmp/templates/templates "$templates_dir"
 
