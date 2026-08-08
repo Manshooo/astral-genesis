@@ -18,7 +18,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.05, 0.02, 0.03, 1)
+color = Color(0.050708726, 0.025840001, 0.025840001, 0.5)
 
 [node name="Panel" type="Panel" parent="." unique_id=1656977351]
 custom_minimum_size = Vector2(320, 240)
@@ -59,6 +59,7 @@ text = "СОЗНАНИЕ УГАСЛО"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Panel/MarginContainer/VBoxContainer" unique_id=88046428]
+custom_maximum_size = Vector2(295, -1)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "БФЖ распался, не найдя нового тела."
