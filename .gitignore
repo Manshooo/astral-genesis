@@ -7,3 +7,7 @@ builds/
 
 *.tscn[0-9]*.tmp
 *.tscn.tmp
+
+# На Windows нет устройства /dev/null: перенаправление в него из скриптов
+# (напр. `git lfs install`) создаёт настоящий каталог dev/null с копиями хуков.
+/dev/null/
