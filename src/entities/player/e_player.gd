@@ -5,7 +5,6 @@ extends Entity
 
 @onready var camera: Camera3D = $Camera3D
 @onready var interact_ray: RayCast3D = $Camera3D/InteractRay
-@onready var collider: CollisionShape3D = $CollisionShape3D
 
 
 ## Компоненты-идентичность БФЖ, живущие независимо от текущего тела.
@@ -15,36 +14,26 @@ func define_components() -> Array:
 	return [C_BodySnatch.new(), C_Lifespan.new()]
 
 
-## Насколько origin игрока ВЫШЕ его подошвы.
+## Насколько начало координат рига ВЫШЕ его подошвы.
 ##
-## У игрока и у тел разные точки отсчёта: капсула игрока центрирована в origin
-## (см. e_player.tscn), а тела стоят в комнатах на y = 0 с поднятым коллайдером,
-## то есть их origin — это подошва (см. E_Body). Единственное место, где две
-## системы координат встречаются, — вселение (S_BodySnatch), и перевод между
-## ними живёт здесь, а не константой на месте вызова: правка капсулы в сцене
-## иначе снова утопила бы игрока в полу.
+## Нужно всем, кто совмещает рига с чужой геометрией: у сцен тел origin в ступнях
+## (капсула стоит дном на y = 0), у игрока — в центре его капсулы, и общая у них
+## только точка опоры. Таких мест два, и оба переводят одно соглашение в другое
+## именно здесь, а не константой на месте вызова: вселение двигает самого игрока
+## (S_BodySnatch — иначе он садится на полроста в пол), а O_BodyVisual сажает по
+## подошве надетый облик (см. C_BodyVisual.mesh_transform).
 ##
-## Считается от формы вместе с её смещением: коллайдер не обязан быть в origin,
-## и это смещение — часть ответа.
-func foot_offset() -> float:
-	if collider == null or collider.shape == null:
-		push_warning("E_Player: нет коллайдера — считаем, что origin и есть подошва")
-		return 0.0
-
-	var shape := collider.shape
-	var half := 0.0
-	if shape is CapsuleShape3D:
-		half = (shape as CapsuleShape3D).height * 0.5
-	elif shape is CylinderShape3D:
-		half = (shape as CylinderShape3D).height * 0.5
-	elif shape is BoxShape3D:
-		half = (shape as BoxShape3D).size.y * 0.5
-	elif shape is SphereShape3D:
-		half = (shape as SphereShape3D).radius
-	else:
-		push_warning("E_Player: форма коллайдера %s неизвестна — подошву не найти" % shape.get_class())
-
-	return half - collider.position.y
+## Считаем по коллайдеру, а не константой: капсулу игрока тюнят в сцене, и зашитое
+## число разъехалось бы с ней МОЛЧА — игрок снова утонул бы в полу, а надетый облик
+## повис бы в воздухе. Не @onready: облик надевается в т.ч. из RunManager при
+## загрузке, и полагаться на то, что _ready рига уже прошёл, здесь не на чем.
+func foot_offset() -> Vector3:
+	var shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	var capsule := shape.shape as CapsuleShape3D if shape else null
+	if capsule == null:
+		push_warning("E_Player: капсула не найдена — считаем, что origin и есть подошва")
+		return Vector3.ZERO
+	return Vector3(0.0, capsule.height * 0.5 - shape.position.y, 0.0)
 
 
 func _input(event: InputEvent) -> void:

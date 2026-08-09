@@ -96,6 +96,7 @@ func _embody(soul: Entity, body: Entity) -> void:
 			# один переезд архетипа.
 			visual.restore_mesh = previous.restore_mesh
 			visual.restore_material = previous.restore_material
+			visual.restore_transform = previous.restore_transform
 			cmd.remove_component(soul, C_BodyVisual)
 		cmd.add_component(soul, visual)
 
@@ -136,8 +137,8 @@ func _embody(soul: Entity, body: Entity) -> void:
 	var body_node := body as Node as Node3D
 	if soul_node and body_node:
 		var player := soul as E_Player
-		var lift := player.foot_offset() if player else 0.0
-		soul_node.global_position = body_node.global_position + Vector3.UP * lift
+		var lift := player.foot_offset() if player else Vector3.ZERO
+		soul_node.global_position = body_node.global_position + lift
 
 	# 5. Поглотить исходное тело. Съедено оно насовсем, поэтому помечаем его в
 	# сейве сразу, а не на ближайшей контрольной точке: комплекс восстанавливается
