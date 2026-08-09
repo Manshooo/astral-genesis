@@ -44,6 +44,26 @@ static func primary(entity: Entity) -> GeometryInstance3D:
 	return all[0] if not all.is_empty() else null
 
 
+## Трансформ узла ОТНОСИТЕЛЬНО корня сущности: произведение локальных transform
+## по цепочке родителей. global_transform тут не годится — облик тела читают в том
+## числе с detached-инстанса сцены (E_Body.visual_of_scene), а Node3D узнаёт свою
+## глобальную позицию только внутри SceneTree. Тот же приём и по той же причине,
+## что RS_RoomLayout.origin_relative_to, только нужен весь трансформ, а не origin:
+## меши тел авторены крупными и живут с масштабом в сцене.
+##
+## Узел == корень → IDENTITY: сущность, которая сама GeometryInstance3D, стоит
+## относительно себя в нуле, и подниматься по дереву выше неё нельзя.
+static func transform_relative_to(node: Node, root: Node) -> Transform3D:
+	var result := Transform3D.IDENTITY
+	var current := node
+	while current != null and current != root:
+		var spatial := current as Node3D
+		if spatial:
+			result = spatial.transform * result
+		current = current.get_parent()
+	return result
+
+
 ## Откуда начинать поиск: переопределение из C_VisualRoot либо сама сущность.
 static func _search_root(entity: Entity) -> Node:
 	if entity == null:

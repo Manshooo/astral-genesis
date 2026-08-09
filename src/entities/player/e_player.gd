@@ -14,6 +14,22 @@ func define_components() -> Array:
 	return [C_BodySnatch.new(), C_Lifespan.new()]
 
 
+## Насколько начало координат рига ВЫШЕ его подошвы. Нужно тем, кто совмещает риг
+## с чужой геометрией: у сцен тел origin в ступнях, у игрока — в центре капсулы,
+## и общая у них только точка опоры (см. C_BodyVisual.mesh_transform).
+##
+## Считаем по коллайдеру, а не константой: капсулу игрока тюнят в сцене, и зашитое
+## число разъехалось бы с ней МОЛЧА — надетый облик просто начал бы висеть в
+## воздухе. Не @onready: облик надевается в т.ч. из RunManager при загрузке, и
+## полагаться на то, что _ready рига уже прошёл, здесь не на чем.
+func foot_offset() -> Vector3:
+	var shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	var capsule := shape.shape as CapsuleShape3D if shape else null
+	if capsule == null:
+		return Vector3.ZERO
+	return Vector3(0.0, capsule.height * 0.5 - shape.position.y, 0.0)
+
+
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return

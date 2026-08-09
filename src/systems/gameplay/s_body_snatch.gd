@@ -96,6 +96,7 @@ func _embody(soul: Entity, body: Entity) -> void:
 			# один переезд архетипа.
 			visual.restore_mesh = previous.restore_mesh
 			visual.restore_material = previous.restore_material
+			visual.restore_transform = previous.restore_transform
 			cmd.remove_component(soul, C_BodyVisual)
 		cmd.add_component(soul, visual)
 
