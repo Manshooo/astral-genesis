@@ -1,4 +1,4 @@
-# res://src/systems/physics/s_playerMovement.gd
+# res://src/systems/physics/s_player_movement.gd
 # Группа: "physics". Считает желаемую скорость игрока в C_Velocity; применяет её
 # S_Movement.
 #

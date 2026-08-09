@@ -45,10 +45,8 @@ func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
 				geo.transform = visual.restore_transform
 
 
-## Ставит мешу трансформ [param wanted], заданный относительно ПОДОШВЫ рига.
-## Меши тел авторены крупными (масштаб 0.24 в сценах тел) и стоят origin'ом в
-## ступнях, поэтому «надеть облик» — это перенести весь трансформ, а не только
-## меш: иначе тело выходит вчетверо больше и уезжает вверх (см. C_BodyVisual).
+## Ставит мешу трансформ [param wanted], заданный относительно ПОДОШВЫ рига
+## (см. C_BodyVisual.mesh_transform).
 func _place(entity: Entity, geo: GeometryInstance3D, wanted: Transform3D) -> void:
 	if not _movable(entity, geo):
 		return
@@ -65,13 +63,9 @@ func _place(entity: Entity, geo: GeometryInstance3D, wanted: Transform3D) -> voi
 
 ## Можно ли вообще писать трансформ найденному мешу.
 ##
-## RS_EntityVisuals.primary() возвращает саму сущность, если она сама
-## GeometryInstance3D: тогда transform меша — это transform ВСЕГО объекта, и
-## запись в него сдвинула бы риг целиком вместо его облика. Риг игрока не таков
-## (E_Player — CharacterBody3D с дочерним мешем), но правило поиска геометрии
-## общее на всех, и молча ломаться на первой же сущности-меше оно не должно.
-##
-## Подошву спрашиваем у E_Player, поэтому и она здесь в условии: на ком-то другом
-## смещать облик не от чего, а без смещения он всё равно сядет неверно.
+## Если сущность сама GeometryInstance3D, primary() вернёт её же — тогда transform
+## меша это transform ВСЕГО объекта, и запись сдвинула бы рига целиком. Риг игрока
+## не таков (CharacterBody3D с дочерним мешем), но правило поиска геометрии общее
+## на всех. E_Player в условии, потому что подошву спрашиваем именно у него.
 func _movable(entity: Entity, geo: GeometryInstance3D) -> bool:
 	return geo != (entity as Node) and entity is E_Player

@@ -1,4 +1,4 @@
-# res://src/ui/pause_menu.gd
+# res://src/ui/pause_menu/pause_menu.gd
 extends Control
 
 const MENU_SCENE := "res://src/levels/menu_map/L_menu_map.tscn"

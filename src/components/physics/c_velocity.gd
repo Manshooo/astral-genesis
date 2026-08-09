@@ -1,7 +1,6 @@
 # res://src/components/physics/c_velocity.gd
-# Чистые данные. Кто угодно пишет сюда — S_Movement применяет.
-# Игрок:  S_PlayerMovement → C_Velocity → S_Movement
-# NPC:    S_AIMovement     → C_Velocity → S_Movement
+# Чистые данные: кто угодно пишет сюда, S_Movement применяет к телу.
+# Сегодня пишет один S_PlayerMovement — ИИ у тел нет.
 class_name C_Velocity
 extends Component
 

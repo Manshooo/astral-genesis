@@ -48,8 +48,7 @@ static func primary(entity: Entity) -> GeometryInstance3D:
 ## по цепочке родителей. global_transform тут не годится — облик тела читают в том
 ## числе с detached-инстанса сцены (E_Body.visual_of_scene), а Node3D узнаёт свою
 ## глобальную позицию только внутри SceneTree. Тот же приём и по той же причине,
-## что RS_RoomLayout.origin_relative_to, только нужен весь трансформ, а не origin:
-## меши тел авторены крупными и живут с масштабом в сцене.
+## что RS_RoomLayout.origin_relative_to, только нужен весь трансформ, а не origin.
 ##
 ## Узел == корень → IDENTITY: сущность, которая сама GeometryInstance3D, стоит
 ## относительно себя в нуле, и подниматься по дереву выше неё нельзя.

@@ -74,7 +74,7 @@ func add_skill_points(amount: int) -> void:
 
 
 ## Применяет ВСЕ уже разблокированные навыки — вызывай при спавне игрока,
-## чтобы S_ApplySkillEffects получил актуальные ранги для только что созданной entity.
+## чтобы O_ApplySkillEffects получил актуальные ранги для только что созданной entity.
 func reapply_all() -> void:
 	for id in save.ranks.keys():
 		skill_unlocked.emit(id, save.ranks[id])
