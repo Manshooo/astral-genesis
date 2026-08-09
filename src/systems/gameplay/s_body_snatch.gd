@@ -121,10 +121,23 @@ func _embody(soul: Entity, body: Entity) -> void:
 		life.body_current = snatchable.lifespan
 
 	# 4. Перенести точку присутствия в тело (Entity extends Node → двойной каст).
+	#
+	# Переносим ТОЛЬКО позицию и ТОЛЬКО с поправкой на точку отсчёта. У тела
+	# origin — подошва (тела стоят в комнатах на y = 0), у игрока — центр его
+	# капсулы, так что копирование global_transform целиком сажало игрока на
+	# полроста в пол: камера оказывалась на уровне колен, а утопленную в
+	# односторонний тримеш-пол капсулу физика выталкивала вниз — «провалился
+	# сквозь пол». Величину поправки знает сам игрок (E_Player.foot_offset).
+	#
+	# Поворот не трогаем: yaw живёт на E_Player, pitch — на его камере, и
+	# развернуть игрока в позу трупа так же дезориентирует, как разворот при
+	# входе в дверь (см. RunManager._arrival_point — там ровно то же правило).
 	var soul_node := soul as Node as Node3D
 	var body_node := body as Node as Node3D
 	if soul_node and body_node:
-		soul_node.global_transform = body_node.global_transform
+		var player := soul as E_Player
+		var lift := player.foot_offset() if player else 0.0
+		soul_node.global_position = body_node.global_position + Vector3.UP * lift
 
 	# 5. Поглотить исходное тело. Съедено оно насовсем, поэтому помечаем его в
 	# сейве сразу, а не на ближайшей контрольной точке: комплекс восстанавливается
