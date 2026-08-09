@@ -63,7 +63,7 @@ settings/debug_mode=true
 
 [gui]
 
-theme/custom="uid://e0o8cuoinatk"
+theme/custom="res://assets/ui/defualt.theme"
 
 [input]
 

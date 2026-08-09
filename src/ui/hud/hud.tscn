@@ -76,7 +76,7 @@ grow_vertical = 2
 horizontal_alignment = 1
 script = ExtResource("5_message")
 
-[node name="Map" type="Control" parent="Hud" unique_id=1774390021]
+[node name="PanelContainer" type="PanelContainer" parent="Hud" unique_id=1336408021]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -84,6 +84,9 @@ anchor_right = 1.0
 offset_left = -180.0
 offset_bottom = 180.0
 grow_horizontal = 0
+
+[node name="Map" type="Control" parent="Hud/PanelContainer" unique_id=1774390021]
+layout_mode = 2
 script = ExtResource("6_map")
 
 [node name="Vitals" type="VBoxContainer" parent="Hud" unique_id=1286022205]
@@ -134,6 +137,7 @@ vertical_alignment = 1
 [node name="PanelContainer2" type="PanelContainer" parent="Hud/Vitals/LifespanRow" unique_id=1018919721]
 custom_minimum_size = Vector2(75, 0)
 layout_mode = 2
+theme_type_variation = &"VitalBarPlate"
 
 [node name="LifespanValue" type="Label" parent="Hud/Vitals/LifespanRow/PanelContainer2" unique_id=310285439]
 custom_minimum_size = Vector2(50, 0)
@@ -179,6 +183,7 @@ vertical_alignment = 1
 [node name="PanelContainer2" type="PanelContainer" parent="Hud/Vitals/BodyLifeRow" unique_id=700000005]
 custom_minimum_size = Vector2(75, 0)
 layout_mode = 2
+theme_type_variation = &"VitalBarPlate"
 
 [node name="BodyLifeValue" type="Label" parent="Hud/Vitals/BodyLifeRow/PanelContainer2" unique_id=700000006]
 custom_minimum_size = Vector2(50, 0)
@@ -222,6 +227,7 @@ vertical_alignment = 1
 [node name="PanelContainer2" type="PanelContainer" parent="Hud/Vitals/HealthRow" unique_id=1251203161]
 custom_minimum_size = Vector2(75, 0)
 layout_mode = 2
+theme_type_variation = &"VitalBarPlate"
 
 [node name="HealthValue" type="Label" parent="Hud/Vitals/HealthRow/PanelContainer2" unique_id=162285448]
 custom_minimum_size = Vector2(50, 0)
