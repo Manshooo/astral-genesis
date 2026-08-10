@@ -52,7 +52,7 @@
 ---
 ## <a id="jhon_goatman">Джон Гоатман / Jhon Goatman</a>
 ### 1884 - 1951
-Американский учёный-геолог, миллиардер, основатель [TerraSearch](#terrasearch) и RC X-16 ARC.
+Американский учёный-геолог, миллиардер, основатель [TerraSearch](#terrasearch) и [RC X-16 ARC](#x16).
 
 ## <a id="erica_goatman">Эрика Гоатман / Erica Goatman</a>
 ### 1905 - 1977
