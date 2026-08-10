@@ -64,7 +64,7 @@
 ### 1905 - 1977
 Дочь Джона Гоатмана, вторая владелица [TerraSearch](#terrasearch) и [RC X-16 ARC](#x16).
 
-## <a id="joa_goatman" Джоа Гоатман / Joa Goatman </a>
+## <a id="joa_goatman"> Джоа Гоатман / Joa Goatman </a>
 ### 1924 - 2000
 Сын Эрики и внук Джона Гоатмана. Есть сестра Зои Доррен (1927-2004). Третий владелец [TerraSearch](#terrasearch) и [RC X-16 ARC](#x16).
 
