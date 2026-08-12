@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://tb4u6rx3k8jt"]
+
+[ext_resource type="Texture2D" uid="uid://b0unb0bru0yjw" path="res://addons/kenney_patterns/Vector/pattern_04.svg" id="1_l14ug"]
+
+[resource]
+albedo_color = Color(0.97180814, 0.8654046, 0.5775204, 1)
+albedo_texture = ExtResource("1_l14ug")
+metallic = 1.0
+metallic_texture = ExtResource("1_l14ug")
+uv1_scale = Vector3(3, 3, 3)
