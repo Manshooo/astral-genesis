@@ -137,7 +137,10 @@ func _refresh(select_path := "") -> void:
 			if tmpl == null:
 				continue  # чужой .tres — молча пропускаем
 			var label: String = tmpl.display_name if tmpl.display_name != "" else file.get_basename()
-			var idx := _list.add_item("%s  (%d комп.)" % [label, tmpl.components.size()])
+			# Считаем компоненты вместе с теми, что уже лежат в базовой сцене:
+			# у шаблона с укомплектованной сценой (напр. «Тело») собственный
+			# список пуст, и «(0 комп.)» читалось бы как «шаблон пустой».
+			var idx := _list.add_item("%s  (%d комп.)" % [label, tmpl.component_count()])
 			_list.set_item_tooltip(idx, path)
 			_paths.append(path)
 

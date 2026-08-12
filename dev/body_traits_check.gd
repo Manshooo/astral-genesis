@@ -35,9 +35,7 @@ func _run(world: World) -> void:
 	for path in _body_scenes():
 		_check("грузится %s" % path.get_file(), load(path) != null, path)
 	_check(
-		"грузится шаблон «Труп (захват)»",
-		load("res://data/entity_templates/труп_захват.tres") != null,
-		""
+		"грузится шаблон «Тело»", load("res://data/entity_templates/body.tres") != null, ""
 	)
 
 	# --- 0.1. Посадка рига измеряется, а не берётся нулём -------------------

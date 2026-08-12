@@ -6,7 +6,7 @@
 
 [resource]
 script = ExtResource("2_75as1")
-display_name = "Труп (захват)"
+display_name = "Тело"
 base_scene = ExtResource("3_body")
 components = Array[ExtResource("1_wg4ku")]([])
 tags = Array[StringName]([&"тело"])
