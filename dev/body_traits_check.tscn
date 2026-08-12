@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://ctv3xq0bodycheck"]
+
+[ext_resource type="Script" path="res://dev/body_traits_check.gd" id="1_check"]
+
+[node name="BodyTraitsCheck" type="Node"]
+script = ExtResource("1_check")

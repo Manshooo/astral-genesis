@@ -51,7 +51,7 @@ func _place(entity: Entity, geo: GeometryInstance3D, wanted: Transform3D) -> voi
 	if not _movable(entity, geo):
 		return
 	# Из «относительно подошвы» в «относительно корня рига»: у рига origin в
-	# центре капсулы, у тела — в ступнях.
+	# центре его коллайдера, у тела — в ступнях.
 	var in_rig := wanted
 	in_rig.origin -= (entity as E_Player).foot_offset()
 	# Меш не обязан висеть прямо под корнем сущности (C_VisualRoot умеет увести

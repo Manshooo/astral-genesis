@@ -3,7 +3,7 @@
 ##   - «Распад» — СОБСТВЕННЫЙ запас души (C_Lifespan.current). Во плоти он не
 ##     тикает: пока душа в теле, время платится из кармана тела. Может уходить за
 ##     максимум — излишек принесён из тела при добровольном выходе;
-##   - «Запас тела» — карман текущего тела (body_current), ТОЛЬКО во плоти. Это
+##   - «Запас тела» — карман текущего тела (C_BodyDecay), ТОЛЬКО во плоти. Это
 ##     та шкала, которая во плоти и убывает;
 ##   - «Тело» — HP текущего тела (C_Health), тоже только во плоти.
 ## Значения меняются непрерывно, поэтому опрашиваем игрока каждый кадр —
@@ -29,10 +29,9 @@ func _process(_delta: float) -> void:
 		return
 	visible = true
 
-	var embodied := player.has_component(C_Embodied)
 	_update_lifespan(player)
-	_update_body_lifespan(player, embodied)
-	_update_health(player, embodied)
+	_update_body_lifespan(player)
+	_update_health(player)
 
 
 ## Собственный запас души. Шкала упирается в максимум, а подпись говорит правду:
@@ -54,27 +53,26 @@ func _update_lifespan(player: Entity) -> void:
 		_lifespan_value.text = "%.0f с" % ceilf(life.current)
 
 
-## Карман текущего тела: во плоти убывает именно он.
-func _update_body_lifespan(player: Entity, embodied: bool) -> void:
-	_body_life_row.visible = embodied
-	if not embodied:
-		return
-	var life := player.get_component(C_Lifespan) as C_Lifespan
-	if life == null:
+## Карман текущего тела: во плоти убывает именно он. Строку показываем по
+## НАЛИЧИЮ кармана (C_BodyDecay), а не по флагу «во плоти»: карман приходит и
+## уходит вместе с телом, и тело, которое укрытия не даёт, не должно рисовать
+## пустую шкалу.
+func _update_body_lifespan(player: Entity) -> void:
+	var decay := player.get_component(C_BodyDecay) as C_BodyDecay
+	_body_life_row.visible = decay != null
+	if decay == null:
 		return
 	# max_value не должен быть нулём: тело без запаса дало бы деление на ноль
 	# внутри ProgressBar и пустую шкалу вместо честного нуля.
-	_body_life_bar.max_value = maxf(life.body_max, 0.001)
-	_body_life_bar.value = life.body_current
-	_body_life_value.text = "%.0f с" % ceilf(life.body_current)
+	_body_life_bar.max_value = maxf(decay.maximum, 0.001)
+	_body_life_bar.value = decay.remaining
+	_body_life_value.text = "%.0f с" % ceilf(decay.remaining)
 
 
 ## HP тела показываем только во плоти — у развоплощённой души C_Health нет.
-func _update_health(player: Entity, embodied: bool) -> void:
-	_health_row.visible = embodied
-	if not embodied:
-		return
+func _update_health(player: Entity) -> void:
 	var hp := player.get_component(C_Health) as C_Health
+	_health_row.visible = hp != null
 	if hp == null:
 		return
 	_health_bar.max_value = hp.maximum

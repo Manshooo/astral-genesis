@@ -165,20 +165,26 @@ func _restore_player_progress() -> void:
 	var life := player.get_component(C_Lifespan) as C_Lifespan
 	if life and saved.lifespan_remaining >= 0.0:
 		life.current = saved.lifespan_remaining
-	if life and not saved.body_scene_path.is_empty():
-		# Карман тела — тоже состояние: он убывает всё время, пока игрок в теле.
-		life.body_current = saved.body_lifespan_remaining
-		life.body_max = saved.body_lifespan_max
+
+	# Карман тела — тоже состояние: он убывает всё время, пока игрок в теле, и
+	# потолок его правят скиллы. Компонент к этому моменту уже надет
+	# (_restore_embodiment), on_worn открыл его ПОЛНЫМ — числами из сейва
+	# поправляем на то, что было на самом деле.
+	var decay := player.get_component(C_BodyDecay) as C_BodyDecay
+	if decay:
+		decay.maximum = saved.body_lifespan_max
+		decay.remaining = saved.body_lifespan_remaining
 
 
 ## Возвращает душу в тело, в котором её сохранили. Свежая E_Player всегда
 ## призрак: её идентичность — только C_BodySnatch + C_Lifespan
 ## (define_components), а C_Embodied/C_Health/C_BodyVisual навешивает захват.
 ##
-## Облик читается из сцены тела, а не из сейва: меш — часть сцены, писать его в
-## .tres значило бы завести второй источник правды о внешности (см.
-## E_Body.visual_of). HP, наоборот, чистое состояние и берётся из сейва — вместе
-## с потолком, потому что потолок правят скиллы.
+## Облик и характеристики читаются из сцены тела, а не из сейва: и меш, и числа
+## пресета — часть сцены, писать их в .tres значило бы завести второй источник
+## правды (см. E_Body.visual_of / traits_of_scene). Из сейва берётся только
+## состояние: сколько HP и сколько запаса осталось — вместе с их потолками,
+## потому что потолки правят скиллы.
 func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 	if saved.body_scene_path.is_empty():
 		return  # сохранились призраком — восстанавливать нечего
@@ -187,19 +193,20 @@ func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 	embodied.body_scene_path = saved.body_scene_path
 	player.add_component(embodied)
 
-	var health := C_Health.new(saved.body_health_max)
-	health.current = saved.body_health
-	player.add_component(health)
+	# Характеристики надетого тела — из СЦЕНЫ, тем же общим механизмом, что и при
+	# захвате: перечислять их здесь по именам значило бы завести вторую копию
+	# правила переноса, которая молча отстанет от первой при добавлении стата.
+	for worn in E_Body.traits_of_scene(saved.body_scene_path):
+		if worn is C_BodyTrait:
+			(worn as C_BodyTrait).on_worn()
+		player.add_component(worn)
 
-	# Подвижность тела — тоже характеристика пресета, а не состояние: читаем её
-	# из сцены, как и облик. Если скиллы когда-нибудь начнут править статы уже
-	# надетого тела, вот здесь и появится развилка «сохранять или выводить».
-	var snatchable := E_Body.snatchable_of_scene(saved.body_scene_path)
-	if snatchable:
-		var stats := C_BodyStats.new()
-		stats.move_speed_scale = snatchable.move_speed_scale
-		stats.jump_scale = snatchable.jump_scale
-		player.add_component(stats)
+	# HP, наоборот, чистое состояние — числами из сейва поверх свежего компонента
+	# (вместе с потолком: его правят скиллы).
+	var health := player.get_component(C_Health) as C_Health
+	if health:
+		health.maximum = saved.body_health_max
+		health.current = saved.body_health
 
 	var visual := E_Body.visual_of_scene(saved.body_scene_path)
 	if visual:
@@ -910,8 +917,11 @@ func _checkpoint(node_id: StringName) -> void:
 		var life := player.get_component(C_Lifespan) as C_Lifespan
 		if life:
 			lifespan_left = life.current
-			body_lifespan_left = life.body_current
-			body_lifespan_max = life.body_max
+		# Карман тела есть только во плоти — вместе с самим телом.
+		var decay := player.get_component(C_BodyDecay) as C_BodyDecay
+		if decay:
+			body_lifespan_left = decay.remaining
+			body_lifespan_max = decay.maximum
 		var embodied := player.get_component(C_Embodied) as C_Embodied
 		if embodied:
 			body_scene_path = embodied.body_scene_path
@@ -932,8 +942,8 @@ func _checkpoint(node_id: StringName) -> void:
 	)
 
 
-## На сколько метров вглубь комнаты отступать от двери, чтобы капсула игрока не
-## оказалась в стене/проёме (радиус капсулы ~0.63, проём ~2.8 в ширину).
+## На сколько метров вглубь комнаты отступать от двери, чтобы коллайдер игрока не
+## оказался в стене/проёме (радиус ~0.55, проём ~2.8 в ширину).
 const ARRIVAL_OFFSET := 1.5
 
 

@@ -21,9 +21,9 @@ func each(_event: Variant, entity: Entity, _payload: Variant = null) -> void:
 	expel.call_deferred(entity, false)
 
 
-## Развоплощение: снять «во плоти», здоровье и характеристики тела, а также тег
-## смерти (тело умерло, но душа — нет). Облик снимается тоже — O_BodyVisual по
-## снятию C_BodyVisual вернёт ригу его собственный вид.
+## Развоплощение: снять «во плоти» и все характеристики тела (C_BodyTrait +
+## C_Health), а также тег смерти (тело умерло, но душа — нет). Облик снимается
+## тоже — O_BodyVisual по снятию C_BodyVisual вернёт ригу его собственный вид.
 ##
 ## Статическая и с явным [param voluntary], потому что вызывают её ТРИ разных
 ## пути и правило распада у них разное:
@@ -41,12 +41,19 @@ static func expel(soul: Entity, voluntary: bool) -> void:
 
 	_settle_lifespan(soul, voluntary)
 
+	# Снимаем ВСЕ характеристики тела, не перечисляя их: что надел захват
+	# (C_BodyTrait + C_Health), то и снимается — симметрия с S_BodySnatch._embody
+	# держится сама, а не поддерживается вручную в двух списках.
+	# Собираем список заранее: remove_component правит тот самый словарь.
+	var worn: Array = []
+	for component in soul.components.values():
+		if component is C_BodyTrait or component is C_Health:
+			worn.append(component)
+	for component in worn:
+		soul.remove_component(component)
+
 	if soul.has_component(C_Dead):
 		soul.remove_component(C_Dead)
-	if soul.has_component(C_Health):
-		soul.remove_component(C_Health)
-	if soul.has_component(C_BodyStats):
-		soul.remove_component(C_BodyStats)
 	if soul.has_component(C_BodyVisual):
 		soul.remove_component(C_BodyVisual)
 	soul.remove_component(C_Embodied)
@@ -60,17 +67,18 @@ static func expel(soul: Entity, voluntary: bool) -> void:
 ##   - тело погибло — не даёт ничего, а от запаса души остаётся малая доля
 ##     (GameConfig.lifespan_death_fraction). Гибель тела обязана быть больнее
 ##     добровольного выхода, иначе выходить «правильно» незачем.
+## Сам карман (C_BodyDecay) обнулять не нужно — он уходит вместе с телом, его
+## снимает общий проход по трейтам выше.
 static func _settle_lifespan(soul: Entity, voluntary: bool) -> void:
 	var life := soul.get_component(C_Lifespan) as C_Lifespan
 	if life == null:
 		return
 
 	if voluntary:
-		life.current += life.body_current
+		var decay := soul.get_component(C_BodyDecay) as C_BodyDecay
+		if decay:
+			life.current += decay.remaining
 	else:
 		life.current = minf(
 			life.current, life.max_duration * GameConfig.config.lifespan_death_fraction
 		)
-
-	life.body_current = 0.0
-	life.body_max = 0.0

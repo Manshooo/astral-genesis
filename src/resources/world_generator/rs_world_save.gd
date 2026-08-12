@@ -38,7 +38,7 @@ extends Resource
 ## поэтому пересчитывать его из сцены при загрузке было бы неверно.
 @export var body_health: float = 0.0
 @export var body_health_max: float = 0.0
-## Остаток кармана тела и его исходный объём (C_Lifespan.body_current/body_max).
+## Остаток кармана тела и его исходный объём (C_BodyDecay.remaining/maximum).
 ## Тоже состояние: во плоти распад платится именно отсюда, и без этих чисел
 ## загрузка возвращала бы тело с полным запасом времени.
 @export var body_lifespan_remaining: float = 0.0

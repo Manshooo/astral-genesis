@@ -15,19 +15,43 @@ func define_components() -> Array:
 
 
 ## Насколько origin рига ВЫШЕ его подошвы. Мост между двумя соглашениями: у сцен
-## тел origin в ступнях, у игрока — в центре капсулы. Пользуются оба перехода —
-## S_BodySnatch сажает сюда самого рига, O_BodyVisual — надетый облик.
+## тел origin в ступнях, у игрока — в ЦЕНТРЕ его коллайдера. Пользуются оба
+## перехода — S_BodySnatch сажает сюда самого рига, O_BodyVisual — надетый облик.
 ##
-## Считаем по коллайдеру: капсулу тюнят в сцене, и зашитое число разъехалось бы с
-## ней МОЛЧА. Не @onready — облик надевается в т.ч. из RunManager при загрузке,
-## когда _ready рига ещё не прошёл.
+## Считаем по коллайдеру, а не зашитым числом: форму игрока тюнят в сцене, и
+## константа разъехалась бы с ней МОЛЧА — риг сел бы на полроста в пол. Форму уже
+## меняли (капсула → сфера), поэтому и тип не зашит: см. _shape_half_height.
+## Не @onready — облик надевается в т.ч. из RunManager при загрузке, когда _ready
+## рига ещё не прошёл.
 func foot_offset() -> Vector3:
 	var shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
-	var capsule := shape.shape as CapsuleShape3D if shape else null
-	if capsule == null:
-		push_warning("E_Player: капсула не найдена — считаем, что origin и есть подошва")
+	var half := _shape_half_height(shape.shape) if shape else -1.0
+	if half < 0.0:
+		push_warning(
+			"E_Player: не удалось измерить коллайдер (%s) — считаем, что origin и есть подошва"
+			% [shape.shape if shape else "нет CollisionShape3D"]
+		)
 		return Vector3.ZERO
-	return Vector3(0.0, capsule.height * 0.5 - shape.position.y, 0.0)
+	return Vector3(0.0, half - shape.position.y, 0.0)
+
+
+## Половина вертикального габарита формы коллизии, или -1 для формы, которую мы
+## измерять не умеем.
+##
+## Разбор по типу, а не общий AABB через get_debug_mesh(): тот строит меш ради
+## одного числа, а список форм, которыми игрок реально бывает, короткий. Молчать
+## о неизвестной форме нельзя — ноль здесь читается как «origin в подошве» и
+## утапливает надетое тело в пол ровно на полроста.
+static func _shape_half_height(shape: Shape3D) -> float:
+	if shape is SphereShape3D:
+		return (shape as SphereShape3D).radius
+	if shape is CapsuleShape3D:
+		return (shape as CapsuleShape3D).height * 0.5
+	if shape is CylinderShape3D:
+		return (shape as CylinderShape3D).height * 0.5
+	if shape is BoxShape3D:
+		return (shape as BoxShape3D).size.y * 0.5
+	return -1.0
 
 
 func _input(event: InputEvent) -> void:

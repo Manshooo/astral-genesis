@@ -5,7 +5,6 @@
 [ext_resource type="Script" uid="uid://dg5mcn5wabvf2" path="res://src/components/gameplay/c_fps_camera.gd" id="3_6qelm"]
 [ext_resource type="Script" uid="uid://bxvdso6ek0oyg" path="res://src/components/gameplay/c_playerInput.gd" id="4_fyfga"]
 [ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="5_0tiaq"]
-[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_6qelm"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("3_6qelm")
@@ -19,24 +18,18 @@ metadata/_custom_type_script = "uid://bxvdso6ek0oyg"
 script = ExtResource("5_0tiaq")
 metadata/_custom_type_script = "uid://d3y7smdoj10p1"
 
-[sub_resource type="Resource" id="Resource_eo0a0"]
-script = ExtResource("6_6qelm")
-metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+[sub_resource type="SphereShape3D" id="SphereShape3D_ml67e"]
+margin = 0.06
+radius = 0.55
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_37kl0"]
-radius = 0.63183594
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_37kl0"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_8uh7m"]
-material = SubResource("StandardMaterial3D_37kl0")
+[sub_resource type="SphereMesh" id="SphereMesh_b1rd4"]
 
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=254995031]
 script = ExtResource("1_yrckd")
-component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_eo0a0")])
+component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i")])
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1009209839]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033333153, 0.0049188733)
 
 [node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=900551378]
 target_position = Vector3(0, 0, -3)
@@ -44,8 +37,8 @@ collision_mask = 8
 hit_from_inside = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
-shape = SubResource("CapsuleShape3D_37kl0")
+shape = SubResource("SphereShape3D_ml67e")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
 gi_mode = 2
-mesh = SubResource("CapsuleMesh_8uh7m")
+mesh = SubResource("SphereMesh_b1rd4")

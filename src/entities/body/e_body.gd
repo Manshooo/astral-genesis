@@ -1,15 +1,17 @@
 # res://src/entities/body/e_body.gd
 ## Инертное тело/труп — первая цель захвата БФЖ. ИИ нет: тело статично, его задача —
-## дать S_BodySnatch что вселить. Характеристики (C_Health, C_BodySnatchable)
-## настраиваются через component_resources в сцене/инспекторе, а не в коде, чтобы
-## пресеты тел тюнились дизайнером.
+## дать S_BodySnatch что вселить. Характеристики (C_Health, C_BodyDecay, C_Walk,
+## C_Jump) настраиваются через component_resources в сцене/инспекторе, а не в
+## коде, чтобы пресеты тел тюнились дизайнером. Эталонный набор лежит в
+## e_body.tscn — новое тело делается копией этой сцены (или шаблоном «Труп
+## (захват)» в доке «Шаблоны»), а не набором компонентов из выпадашки.
 ##
 ## Коллайдер лежит на слое enemies (layer_3, collision_layer = 1 << 2), куда смотрит
 ## луч S_SnatchTargetDetector; в игрока и интерактивы луч не попадает.
 ##
 ## СОГЛАШЕНИЕ О ТОЧКЕ ОТСЧЁТА: origin тела — его ПОДОШВА. Так авторены модели
 ## (и меш, и арматура), так тела стоят в комнатах — на y = 0. Игрок живёт по
-## другому соглашению (origin в центре капсулы), и оба перехода между ними —
+## другому соглашению (origin в ЦЕНТРЕ его коллайдера), и оба перехода между ними —
 ## посадка рига при вселении и посадка облика — идут через E_Player.foot_offset.
 @tool
 class_name E_Body
@@ -61,31 +63,48 @@ static func visual_of_scene(path: String) -> C_BodyVisual:
 	return visual
 
 
-## Характеристики тела из его сцены — для восстановления после загрузки, где
-## инстанса тела уже нет. Читаем component_resources, а не get_component:
-## detached-инстанс компоненты ещё «не разложил», но @export-массив доступен
-## сразу после instantiate (тот же приём, что в RS_RoomLayout.has_door_slot).
+## Что тело отдаёт душе при вселении: все его компоненты-характеристики
+## (C_BodyTrait) плюс C_Health.
 ##
-## null — в сцене нет C_BodySnatchable, то есть это не тело.
-static func snatchable_of_scene(path: String) -> C_BodySnatchable:
+## Прочность перечислена отдельно, потому что C_Health — общий компонент всего
+## живого, а не характеристика именно тела: стена с прочностью не трейт. Это
+## единственное исключение, и оно одно на весь проект — остальное расширяется
+## наследованием от C_BodyTrait, без правки этого файла.
+##
+## Возвращаются КОПИИ: компонент в сцене — ресурс, общий для всех инстансов
+## пресета, и надеть оригинал значило бы, что урон по одному телу правит числа
+## всех остальных.
+static func traits_of(body: Node) -> Array[Component]:
+	var entity := body as Entity
+	if entity == null:
+		return []
+	return _wearable(entity.components.values())
+
+
+## То же, но по пути сцены — для восстановления после загрузки, где инстанса тела
+## уже нет: захват его поглотил, а комплекс не сериализуется покомнатно.
+##
+## Читаем component_resources, а не components: detached-инстанс компоненты ещё
+## «не разложил» (это делает мир при add_entity), но @export-массив доступен
+## сразу после instantiate — тот же приём, что в RS_RoomLayout.has_door_slot.
+static func traits_of_scene(path: String) -> Array[Component]:
 	if path.is_empty() or not ResourceLoader.exists(path):
-		return null
+		return []
 	var scene := load(path) as PackedScene
 	if scene == null:
-		return null
+		return []
 
 	var probe := scene.instantiate()
-	var found: C_BodySnatchable = null
 	var entity := probe as Entity
-	if entity:
-		found = entity.get_component(C_BodySnatchable) as C_BodySnatchable
-		if found == null:
-			for component in entity.component_resources:
-				if component is C_BodySnatchable:
-					found = component as C_BodySnatchable
-					break
-	# Компонент — Resource и переживёт освобождение узла, но это ЧУЖОЙ ресурс из
-	# сцены: дублируем, чтобы правки статов не утекли в общий для всех тел пресет.
-	var copy := found.duplicate() as C_BodySnatchable if found else null
+	var found: Array[Component] = _wearable(entity.component_resources) if entity else []
+	# Компоненты — Resource и переживают освобождение узла (считаются по ссылкам).
 	probe.free()
-	return copy
+	return found
+
+
+static func _wearable(source: Array) -> Array[Component]:
+	var out: Array[Component] = []
+	for component in source:
+		if component is C_BodyTrait or component is C_Health:
+			out.append(component.duplicate() as Component)
+	return out

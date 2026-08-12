@@ -1,14 +1,16 @@
 # res://src/resources/rs_settings.gd
 # Чистые данные — никакой логики (кроме copy(): это копирование самих данных).
+#
+# Здесь только то, что настраивает САМ ИГРОК: мышь, экран, клавиши. Характеристик
+# персонажа тут нет и быть не должно — скорость и прыжок задаёт надетое тело
+# (C_Walk/C_Jump), а призраку RS_GameConfig. Раньше move_speed/jump_velocity
+# лежали здесь, тела множились на них, и обосновывалось это «игрок настроил их
+# сам» — хотя в меню настроек их не было ни дня.
 class_name RS_Settings
 extends Resource
 
 @export_group("Mouse")
 @export var mouse_sensitivity: float = 0.0015  ## Умножается на 1000
-
-@export_group("Movement")
-@export var move_speed: float = 5.0
-@export var jump_velocity: float = 6.0
 
 @export_group("Camera")
 @export var fov: float = 103.0

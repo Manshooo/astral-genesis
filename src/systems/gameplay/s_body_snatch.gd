@@ -6,8 +6,9 @@
 # C_SnatchTargeted (его непрерывно держит S_SnatchTargetDetector — он же рисует
 # крестик в прицеле), бросает кубик на capture_success_chance и при успехе
 # «вселяется»:
-#   - перенимает характеристики тела: прочность (C_Health), запас распада
-#     (C_Lifespan.body_current) и множители подвижности (C_BodyStats);
+#   - перенимает характеристики тела — ВСЕ его C_BodyTrait (запас распада
+#     C_BodyDecay, подвижность C_Walk/C_Jump, …) плюс прочность C_Health,
+#     не перечисляя их поимённо;
 #   - помечает себя C_Embodied;
 #   - переносит точку присутствия в тело;
 #   - поглощает исходную сущность-тело.
@@ -65,12 +66,22 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 ## и роняет push_error в debug_mode. Буфер применяется сразу после process() этой
 ## системы (FlushMode.PER_SYSTEM), коалесцируя remove+add в один переезд архетипа.
 func _embody(soul: Entity, body: Entity) -> void:
-	var snatchable := body.get_component(C_BodySnatchable) as C_BodySnatchable
-
-	# 1. Перенять здоровье тела — душа получает свежий C_Health.
-	if soul.has_component(C_Health):
-		cmd.remove_component(soul, C_Health)
-	cmd.add_component(soul, C_Health.new(snatchable.max_health))
+	# 1. Перенять ХАРАКТЕРИСТИКИ тела — прочность, запас распада, подвижность.
+	# Ни одна из них здесь не названа: тело отдаёт всё, что объявило компонентами
+	# (C_BodyTrait + C_Health), и новая характеристика не потребует правки этого
+	# файла. Раньше перенос был расписан покомпонентно И ЗДЕСЬ, И в
+	# RunManager._restore_embodiment — две копии одного правила.
+	#
+	# remove+add, а не «добавить, если нет»: при пересадке из тела в тело трейт
+	# уже висит, и остались бы числа прошлого тела. Буфер коалесцирует пару в
+	# один переезд архетипа, так что лишней цены нет.
+	for worn in E_Body.traits_of(body):
+		cmd.remove_component(soul, worn.get_script())
+		if worn is C_BodyTrait:
+			# Характеристика становится состоянием: C_BodyDecay так открывает
+			# полный карман времени. См. C_BodyTrait.on_worn.
+			(worn as C_BodyTrait).on_worn()
+		cmd.add_component(soul, worn)
 
 	# 2. Отметить состояние «во плоти» и то, ЧЬЮ плоть заняли: путь сцены тела
 	# переживает сохранение, и по нему загрузка восстанавливает облик.
@@ -100,33 +111,13 @@ func _embody(soul: Entity, body: Entity) -> void:
 			cmd.remove_component(soul, C_BodyVisual)
 		cmd.add_component(soul, visual)
 
-	# 2.2. Перенять подвижность тела. Это множители к пользовательским настройкам,
-	# а не абсолютные скорости, — читает их S_PlayerMovement.
-	if soul.has_component(C_BodyStats):
-		cmd.remove_component(soul, C_BodyStats)
-	var stats := C_BodyStats.new()
-	stats.move_speed_scale = snatchable.move_speed_scale
-	stats.jump_scale = snatchable.jump_scale
-	cmd.add_component(soul, stats)
-
-	# 3. Открыть карман тела: пока душа в нём, распад платится ОТСЮДА, а её
-	# собственный запас ждёт нетронутым (см. C_Lifespan). Собственный запас здесь
-	# не трогаем вовсе — захват больше не «дозаправка», он даёт другой карман.
-	#
-	# Пересадка из тела в тело: остаток прошлого тела сгорает. Иначе выгодной
-	# стратегией стало бы прыгать по телам, копя чужое время, и добровольный
-	# выход — единственный способ забрать остаток — обесценился бы.
-	var life := soul.get_component(C_Lifespan) as C_Lifespan
-	if life:
-		life.body_max = snatchable.lifespan
-		life.body_current = snatchable.lifespan
-
-	# 4. Перенести точку присутствия в тело (Entity extends Node → двойной каст).
+	# 3. Перенести точку присутствия в тело (Entity extends Node → двойной каст).
 	#
 	# Только позицию и только с поправкой E_Player.foot_offset: у тела origin —
-	# подошва, у игрока — центр капсулы, так что копирование global_transform
-	# целиком сажало игрока на полроста в пол («провалился сквозь пол» — капсулу,
-	# утопленную в односторонний тримеш-пол, физика выталкивала вниз).
+	# подошва, у игрока — центр его коллайдера, так что копирование
+	# global_transform целиком сажало игрока на полроста в пол («провалился сквозь
+	# пол» — коллайдер, утопленный в односторонний тримеш-пол, физика выталкивала
+	# вниз).
 	#
 	# Поворот не трогаем: yaw живёт на E_Player, pitch — на его камере, и
 	# развернуть игрока в позу трупа так же дезориентирует, как разворот при
@@ -138,7 +129,7 @@ func _embody(soul: Entity, body: Entity) -> void:
 		var lift := player.foot_offset() if player else Vector3.ZERO
 		soul_node.global_position = body_node.global_position + lift
 
-	# 5. Поглотить исходное тело. Съедено оно насовсем, поэтому помечаем его в
+	# 4. Поглотить исходное тело. Съедено оно насовсем, поэтому помечаем его в
 	# сейве сразу, а не на ближайшей контрольной точке: комплекс восстанавливается
 	# из сида покомнатно-заново, и без пометки тело возродилось бы дубликатом
 	# того, в ком игрок сидит. Между захватом и сменой комнаты можно выйти в меню.

@@ -1,6 +1,13 @@
 [gd_scene format=3 uid="uid://cpvk48wt6akpa"]
 
+[ext_resource type="Script" uid="uid://cbetc28hrcj0p" path="res://src/entities/body/e_body_hound.gd" id="1_y0plc"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_qad0j"]
+[ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="3_d4fg4"]
 [ext_resource type="ArrayMesh" uid="uid://cj64cfj8vbtjo" path="res://assets/monsters/models/monsters_headog.res" id="5_mesh"]
+
+[sub_resource type="Resource" id="Resource_qxb0x"]
+script = ExtResource("3_d4fg4")
+metadata/_custom_type_script = "uid://bgw8q60os3ln1"
 
 [sub_resource type="Skin" id="Skin_b8p2m"]
 resource_name = "Skin3"
@@ -127,6 +134,8 @@ bind/39/bone = -1
 bind/39/pose = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
 
 [node name="headog_skeleton" type="Node3D" unique_id=1195292086]
+script = ExtResource("1_y0plc")
+component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_qxb0x")])
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=944537717]
 bones/0/name = "spine"

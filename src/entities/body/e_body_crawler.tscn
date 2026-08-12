@@ -1,6 +1,35 @@
 [gd_scene format=3 uid="uid://biosb4cjxfviu"]
 
 [ext_resource type="ArrayMesh" uid="uid://bha2sehg5qcnx" path="res://assets/monsters/models/monsters_half_body.res" id="1_k238t"]
+[ext_resource type="Script" uid="uid://b0e74pht5rnc2" path="res://src/entities/body/e_body_crawler.gd" id="1_vqju6"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_a0fn2"]
+[ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="3_s4qtg"]
+[ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="4_health"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_body_decay.gd" id="5_decay"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_walk.gd" id="6_walk"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_jump.gd" id="7_jump"]
+
+[sub_resource type="Resource" id="Resource_vqju6"]
+script = ExtResource("3_s4qtg")
+metadata/_custom_type_script = "uid://bgw8q60os3ln1"
+
+[sub_resource type="Resource" id="Resource_health"]
+script = ExtResource("4_health")
+maximum = 80.0
+current = 80.0
+metadata/_custom_type_script = "uid://5r77tfxtjy6p"
+
+[sub_resource type="Resource" id="Resource_decay"]
+script = ExtResource("5_decay")
+maximum = 110.0
+
+[sub_resource type="Resource" id="Resource_walk"]
+script = ExtResource("6_walk")
+speed = 2.75
+
+[sub_resource type="Resource" id="Resource_jump"]
+script = ExtResource("7_jump")
+velocity = 2.1
 
 [sub_resource type="Skin" id="Skin_nn3ty"]
 resource_name = "Skin2"
@@ -76,6 +105,8 @@ bind/22/bone = -1
 bind/22/pose = Transform3D(-0.2898521, 0.8120678, 0.50649005, -0.37741682, -0.5833064, 0.7192433, 0.87951314, 0.017316537, 0.47556055, -0.4975067, -0.31709236, 0.8252992)
 
 [node name="half_body_skeleton" type="Node3D" unique_id=1772587322]
+script = ExtResource("1_vqju6")
+component_resources = Array[ExtResource("2_a0fn2")]([SubResource("Resource_vqju6"), SubResource("Resource_health"), SubResource("Resource_decay"), SubResource("Resource_walk"), SubResource("Resource_jump")])
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=1174297398]
 bones/0/name = "spine.001"
@@ -244,3 +275,5 @@ bones/22/scale = Vector3(0.9999999, 0.9999999, 1)
 mesh = ExtResource("1_k238t")
 skin = SubResource("Skin_nn3ty")
 skeleton = NodePath("..")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=103052280]

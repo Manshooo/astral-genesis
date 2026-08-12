@@ -14,17 +14,22 @@ class_name S_Lifespan
 extends System
 
 
-## Любая душа с запасом жизни, ещё не объявленная мёртвой. C_Embodied сущность из
-## выборки НЕ исключает: во плоти распад тоже идёт, просто из другого кармана.
+## Любая душа с запасом жизни, ещё не объявленная мёртвой. Воплощённые из выборки
+## НЕ исключаются: во плоти распад тоже идёт, просто из другого кармана.
 func query() -> QueryBuilder:
 	return q.with_all([C_Lifespan]).with_none([C_Dead])
 
 
+## Что тикает, решает НАЛИЧИЕ кармана тела (C_BodyDecay), а не флаг «во плоти»:
+## карман приходит вместе с телом и уходит вместе с ним, так что это одно и то
+## же — но выражено там, где живут данные. Тело без C_BodyDecay укрытия не даёт
+## вовсе: время идёт из собственного запаса души, как у призрака.
 func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 	for entity in entities:
 		var life := entity.get_component(C_Lifespan) as C_Lifespan
-		if entity.has_component(C_Embodied):
-			_tick_body(entity, life, delta)
+		var decay := entity.get_component(C_BodyDecay) as C_BodyDecay
+		if decay:
+			_tick_body(entity, decay, delta)
 		else:
 			_tick_soul(entity, life, delta)
 
@@ -33,11 +38,11 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 ## Когда тело догорело — выбрасываем душу тем же путём, что и при гибели тела от
 ## урона: правило «сгорело — значит сгорело» одно на оба случая, и живёт оно в
 ## O_ExpelFromBody.
-func _tick_body(entity: Entity, life: C_Lifespan, delta: float) -> void:
-	life.body_current -= delta
-	if life.body_current > 0.0:
+func _tick_body(entity: Entity, decay: C_BodyDecay, delta: float) -> void:
+	decay.remaining -= delta
+	if decay.remaining > 0.0:
 		return
-	life.body_current = 0.0
+	decay.remaining = 0.0
 	# Отложенно: развоплощение снимает компоненты, а мы внутри прохода системы по
 	# массивам архетипов (см. правило v9 в CLAUDE.md).
 	O_ExpelFromBody.expel.call_deferred(entity, false)

@@ -2,7 +2,12 @@
 
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="1_wg4ku"]
 [ext_resource type="Script" uid="uid://dflc1331xhtjy" path="res://src/resources/entity_template/rs_entity_template.gd" id="2_75as1"]
+[ext_resource type="PackedScene" uid="uid://c8b0dyq7sn4t0" path="res://src/entities/body/e_body.tscn" id="3_body"]
 
 [resource]
 script = ExtResource("2_75as1")
 display_name = "Труп (захват)"
+base_scene = ExtResource("3_body")
+components = Array[ExtResource("1_wg4ku")]([])
+tags = Array[StringName]([&"тело"])
+metadata/_custom_type_script = "uid://dflc1331xhtjy"
