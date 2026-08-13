@@ -20,7 +20,7 @@ metadata/_custom_type_script = "uid://d3y7smdoj10p1"
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_ml67e"]
 margin = 0.06
-radius = 0.55
+radius = 0.5151515
 
 [sub_resource type="SphereMesh" id="SphereMesh_b1rd4"]
 
@@ -30,6 +30,7 @@ component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1009209839]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033333153, 0.0049188733)
+fov = 118.35706
 
 [node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=900551378]
 target_position = Vector3(0, 0, -3)

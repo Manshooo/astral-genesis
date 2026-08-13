@@ -10,7 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_is5eu"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="10_alaum"]
-[ext_resource type="PackedScene" uid="uid://c8b0dyq7sn4t0" path="res://src/entities/body/e_body.tscn" id="11_body"]
+[ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="11_uuilv"]
 
 [sub_resource type="Resource" id="Resource_oeda6"]
 script = ExtResource("4_18pe2")
@@ -34,12 +34,13 @@ size = Vector3(3.5, 5.5, 3.5)
 script = ExtResource("10_alaum")
 metadata/_custom_type_script = "uid://dibrg03qygmfk"
 
-[node name="Room" unique_id=1623291969 instance=ExtResource("1_h75h4")]
+[node name="Hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
 script = ExtResource("2_oeda6")
+alias = &"Hub"
 component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_oeda6")])
 
-[node name="Incubator" parent="." index="0" unique_id=1162994375]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 3.6396914)
+[node name="Incubator" parent="." index="0" unique_id=173115503]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 5.36512)
 material_override = SubResource("StandardMaterial3D_7dvkg")
 script = ExtResource("2_k166h")
 actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_hhfa8")])
@@ -56,11 +57,11 @@ shape = SubResource("BoxShape3D_3owqy")
 [node name="SpawnPoint" type="Node3D" parent="." index="1" unique_id=1247584642]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 1.2064084, -0.79322445)
 
-[node name="Doors" type="Node3D" parent="." index="2" unique_id=901771904]
+[node name="headog_skeleton" parent="." index="2" unique_id=1195292086 instance=ExtResource("11_uuilv")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09143996, 1.2422585, -3.2378654)
+
+[node name="Doors" type="Node3D" parent="." index="3" unique_id=901771904]
 
 [node name="Door" parent="Doors" index="0" unique_id=1986258941 instance=ExtResource("5_is5eu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0640976, 2.0443382, -7.799738)
 actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_chsjf")])
-
-[node name="Body" parent="." index="3" unique_id=668525837 instance=ExtResource("11_body")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 0.75227934, -2.8)
