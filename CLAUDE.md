@@ -85,4 +85,4 @@ Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillMana
 | Lore | [История](docs/astral-genesis/История.md) |
 | Roadmap, task cards | `docs/astral-genesis/Задачи/` |
 
-Three skills maintain and exercise all of the above: **`docs-sync`** (keep docs, code comments and this map true to the code), **`gameplay-testing`** (write and run the headless checks, plus the playtest checklist), and **`commit-message`** (draft commit messages in the project's actual voice).
+Four skills maintain and exercise all of the above: **`docs-sync`** (keep docs, code comments and this map true to the code), **`gameplay-testing`** (write and run the headless checks, plus the playtest checklist), **`commit-message`** (draft commit messages in the project's actual voice), and **`project-status`** (what's in progress, what's planned, what loose ends remain — calls `docs-sync` for the documentation side).
