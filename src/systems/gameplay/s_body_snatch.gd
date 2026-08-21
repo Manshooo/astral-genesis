@@ -32,7 +32,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		if bs.leave_requested:
 			bs.leave_requested = false
 			# Отложенно: развоплощение снимает компоненты, а мы внутри прохода
-			# системы (см. правило v9 в CLAUDE.md). Проверку «а есть ли тело»
+			# системы (см. правило v9 в docs/.../GECS и правила движка.md). Проверку «а есть ли тело»
 			# делает сам expel — там же, где живёт остальная защита от двойного
 			# выхода в одном кадре.
 			O_ExpelFromBody.expel.call_deferred(soul, true)

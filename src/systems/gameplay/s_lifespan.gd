@@ -44,7 +44,7 @@ func _tick_body(entity: Entity, decay: C_BodyDecay, delta: float) -> void:
 		return
 	decay.remaining = 0.0
 	# Отложенно: развоплощение снимает компоненты, а мы внутри прохода системы по
-	# массивам архетипов (см. правило v9 в CLAUDE.md).
+	# массивам архетипов (см. правило v9 в docs/.../GECS и правила движка.md).
 	O_ExpelFromBody.expel.call_deferred(entity, false)
 
 
