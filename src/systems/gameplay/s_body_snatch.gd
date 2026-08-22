@@ -53,7 +53,8 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 	if body == null:
 		return
 
-	if randf() > bs.capture_success_chance:
+	var chance := C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_CHANCE, bs.capture_success_chance)
+	if randf() > chance:
 		ECS.world.emit_event(&"body_snatch_failed", soul)
 		return
 
@@ -80,7 +81,7 @@ func _embody(soul: Entity, body: Entity) -> void:
 		if worn is C_BodyTrait:
 			# Характеристика становится состоянием: C_BodyDecay так открывает
 			# полный карман времени. См. C_BodyTrait.on_worn.
-			(worn as C_BodyTrait).on_worn()
+			(worn as C_BodyTrait).on_worn(soul)
 		cmd.add_component(soul, worn)
 
 	# 2. Отметить состояние «во плоти» и то, ЧЬЮ плоть заняли: путь сцены тела

@@ -77,8 +77,13 @@ static func _settle_lifespan(soul: Entity, voluntary: bool) -> void:
 	if voluntary:
 		var decay := soul.get_component(C_BodyDecay) as C_BodyDecay
 		if decay:
-			life.current += decay.remaining
+			# База 1.0 — забираем весь остаток. Стат существует, чтобы «+10% к
+			# получаемому времени после выхода» был модификатором, а не правкой
+			# этой формулы.
+			var gain := C_StatModifiers.of(soul, C_StatModifiers.LEAVE_BODY_GAIN, 1.0)
+			life.current += decay.remaining * gain
 	else:
-		life.current = minf(
-			life.current, life.max_duration * GameConfig.config.lifespan_death_fraction
+		var keep := C_StatModifiers.of(
+			soul, C_StatModifiers.DEATH_KEEP, GameConfig.config.lifespan_death_fraction
 		)
+		life.current = minf(life.current, life.effective_max(soul) * keep)

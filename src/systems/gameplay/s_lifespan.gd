@@ -53,9 +53,13 @@ func _tick_body(entity: Entity, decay: C_BodyDecay, delta: float) -> void:
 func _tick_soul(entity: Entity, life: C_Lifespan, delta: float) -> void:
 	var remaining := delta
 
-	var overflow := life.overflow()
+	var overflow := life.overflow(entity)
 	if overflow > 0.0:
-		var leak: float = GameConfig.config.lifespan_overflow_leak
+		# Темп утечки — тоже стат: «излишек тратится медленнее» просится в перки
+		# ровно так же, как сам объём запаса.
+		var leak := C_StatModifiers.of(
+			entity, C_StatModifiers.OVERFLOW_LEAK, GameConfig.config.lifespan_overflow_leak
+		)
 		var burned := remaining * leak
 		if burned < overflow:
 			# Весь кадр ушёл на излишек, обычный запас не тронут.
@@ -64,7 +68,7 @@ func _tick_soul(entity: Entity, life: C_Lifespan, delta: float) -> void:
 		# Излишек кончился ВНУТРИ кадра: считаем, сколько времени на него ушло, и
 		# остаток кадра тикаем обычным темпом. Иначе на высоком fps излишек
 		# сгорал бы медленнее, чем на низком.
-		life.current = life.max_duration
+		life.current = life.effective_max(entity)
 		remaining -= overflow / leak
 
 	life.current -= remaining

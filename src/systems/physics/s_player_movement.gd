@@ -65,7 +65,9 @@ func _set_phasing(player: E_Player, phasing: bool) -> void:
 ##
 ## Скорость и прыжок берутся ЦЕЛИКОМ из характеристик надетого тела — C_Walk и
 ## C_Jump, абсолютные м/с. Никакой базы игрока, на которую они множились бы, нет:
-## быстрое тело быстрое само по себе, а не «в 1.5 раза быстрее игрока».
+## быстрое тело быстрое само по себе, а не «в 1.5 раза быстрее игрока». Числа
+## тела — база, поверх которой ложатся модификаторы души (C_StatModifiers), так
+## что «бегать быстрее в любом теле» выражается перком, а не правкой тел.
 ## Пользовательские настройки (RS_Settings) — про мышь и экран, характеристики
 ## персонажа игрок не настраивает.
 ##
@@ -85,13 +87,16 @@ func _move_embodied(player: E_Player, inp: C_PlayerInput, vel: C_Velocity, delta
 
 	if inp.jump_pressed:
 		if jump and player.is_on_floor():
-			vel.velocity.y = jump.velocity
+			vel.velocity.y = C_StatModifiers.of(
+				player, C_StatModifiers.JUMP_VELOCITY, jump.velocity
+			)
 		inp.jump_pressed = false
 
 	if walk and inp.move_direction != Vector3.ZERO:
 		var wish = (player.transform.basis * inp.move_direction).normalized()
-		vel.velocity.x = wish.x * walk.speed
-		vel.velocity.z = wish.z * walk.speed
+		var speed := C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, walk.speed)
+		vel.velocity.x = wish.x * speed
+		vel.velocity.z = wish.z * speed
 	else:
 		vel.velocity.x = 0.0
 		vel.velocity.z = 0.0

@@ -9,9 +9,13 @@ extends Entity
 
 ## Компоненты-идентичность БФЖ, живущие независимо от текущего тела.
 ## Здесь, а не в сцене — чтобы «душа» всегда имела их, и чтобы O_ApplySkillEffects
-## (запрос C_Lifespan+C_BodySnatch) матчил игрока.
+## (запрос C_StatModifiers) матчил игрока.
+##
+## C_StatModifiers в этом списке — то, что делает душу носителем прокачки:
+## характеристики приходят и уходят вместе с телами, а слой модификаторов
+## принадлежит именно душе и переживает любую пересадку.
 func define_components() -> Array:
-	return [C_BodySnatch.new(), C_Lifespan.new()]
+	return [C_BodySnatch.new(), C_Lifespan.new(), C_StatModifiers.new()]
 
 
 ## Насколько origin рига ВЫШЕ его подошвы. Мост между двумя соглашениями: у сцен

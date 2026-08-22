@@ -2,6 +2,13 @@
 extends Node
 
 signal skill_unlocked(id: StringName, new_rank: int)
+## «Таблица рангов изменилась — пересчитайте всё». Отдельный сигнал от
+## skill_unlocked, потому что у них разные адресаты: skill_unlocked — про
+## событие для UI («что именно открыли»), а этот — про состояние, и на него
+## подписан O_ApplySkillEffects, который читает таблицу целиком. Слать вместо
+## него skill_unlocked по разу на каждый уже открытый навык (так делал
+## reapply_all) значило бы врать UI о событиях, которых не было.
+signal skills_changed
 
 const SAVE_PATH := "user://skills.tres"
 ## Не preload: preload резолвится на компиляции и в debug/export-сборке падает на
@@ -65,6 +72,7 @@ func unlock(id: StringName) -> bool:
 	_save()
 
 	skill_unlocked.emit(id, current_rank + 1)
+	skills_changed.emit()
 	return true
 
 
@@ -73,11 +81,12 @@ func add_skill_points(amount: int) -> void:
 	_save()
 
 
-## Применяет ВСЕ уже разблокированные навыки — вызывай при спавне игрока,
-## чтобы O_ApplySkillEffects получил актуальные ранги для только что созданной entity.
+## Применяет ВСЕ уже разблокированные навыки — зовётся при спавне игрока, чтобы
+## свежая душа получила модификаторы от уже прокачанного дерева. До появления
+## C_StatModifiers это был бессмысленный вызов (его и не звали ниоткуда): эффекты
+## присваивались полям в момент разблокировки, и новый забег стартовал без них.
 func reapply_all() -> void:
-	for id in save.ranks.keys():
-		skill_unlocked.emit(id, save.ranks[id])
+	skills_changed.emit()
 
 
 func _requirement_met(req: RS_SkillRequirement) -> bool:

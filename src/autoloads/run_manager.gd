@@ -166,10 +166,11 @@ func _restore_player_progress() -> void:
 	if life and saved.lifespan_remaining >= 0.0:
 		life.current = saved.lifespan_remaining
 
-	# Карман тела — тоже состояние: он убывает всё время, пока игрок в теле, и
-	# потолок его правят скиллы. Компонент к этому моменту уже надет
-	# (_restore_embodiment), on_worn открыл его ПОЛНЫМ — числами из сейва
-	# поправляем на то, что было на самом деле.
+	# Карман тела — тоже состояние: он убывает всё время, пока игрок в теле.
+	# Компонент к этому моменту уже надет (_restore_embodiment), on_worn открыл
+	# его ПОЛНЫМ — числами из сейва поправляем на то, что было на самом деле.
+	# Потолок пишем из сейва, а не берём из сцены, чтобы правка пресета между
+	# сессиями не растянула молча уже начатый карман.
 	var decay := player.get_component(C_BodyDecay) as C_BodyDecay
 	if decay:
 		decay.maximum = saved.body_lifespan_max
@@ -184,7 +185,9 @@ func _restore_player_progress() -> void:
 ## пресета — часть сцены, писать их в .tres значило бы завести второй источник
 ## правды (см. E_Body.visual_of / traits_of_scene). Из сейва берётся только
 ## состояние: сколько HP и сколько запаса осталось — вместе с их потолками,
-## потому что потолки правят скиллы.
+## чтобы правка пресета между сессиями не поехала по уже начатому телу.
+## Прибавки скиллов в сейв не идут вовсе: они пересобираются из SkillManager
+## (O_ApplySkillEffects) и лежат слоем поверх этих чисел.
 func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 	if saved.body_scene_path.is_empty():
 		return  # сохранились призраком — восстанавливать нечего
@@ -198,11 +201,11 @@ func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 	# правила переноса, которая молча отстанет от первой при добавлении стата.
 	for worn in E_Body.traits_of_scene(saved.body_scene_path):
 		if worn is C_BodyTrait:
-			(worn as C_BodyTrait).on_worn()
+			(worn as C_BodyTrait).on_worn(player)
 		player.add_component(worn)
 
 	# HP, наоборот, чистое состояние — числами из сейва поверх свежего компонента
-	# (вместе с потолком: его правят скиллы).
+	# (вместе с потолком: см. выше про правку пресета между сессиями).
 	var health := player.get_component(C_Health) as C_Health
 	if health:
 		health.maximum = saved.body_health_max
@@ -232,6 +235,19 @@ func _spawn_player() -> void:
 		return  # уже в мире (напр. повторный enter_complex в той же сцене)
 	var player := (load(PLAYER_SCENE) as PackedScene).instantiate() as E_Player
 	ECS.world.add_entity(player)
+
+	# Дерево перков прокачано между забегами, а душа только что создана: без
+	# этого вызова модификаторы появились бы лишь в момент следующей покупки
+	# навыка, и новый забег стартовал бы без всей прокачки.
+	SkillManager.reapply_all()
+
+	# Полный запас считаем ПОСЛЕ модификаторов: перк на длительность жизни
+	# поднимает потолок, и стартовать с авторских 60 при потолке 100 значило бы
+	# выдать прокачку, которой не видно. Сохранённый забег это число перезапишет
+	# своим (_restore_player_progress).
+	var life := player.get_component(C_Lifespan) as C_Lifespan
+	if life:
+		life.current = life.effective_max(player)
 
 
 ## Побег на поверхность = ОКОНЧАНИЕ ИГРЫ (победа). Это НЕ возврат в хаб — тот

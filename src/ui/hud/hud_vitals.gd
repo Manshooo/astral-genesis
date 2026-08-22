@@ -41,14 +41,17 @@ func _update_lifespan(player: Entity) -> void:
 	var life := player.get_component(C_Lifespan) as C_Lifespan
 	if life == null:
 		return
-	_lifespan_bar.max_value = life.max_duration
-	_lifespan_bar.value = minf(life.current, life.max_duration)
+	# Потолок — эффективный, а не авторский: перк на запас должен быть виден
+	# именно шкалой, иначе прокачка читается как «ничего не изменилось».
+	var maximum := life.effective_max(player)
+	_lifespan_bar.max_value = maximum
+	_lifespan_bar.value = minf(life.current, maximum)
 
-	var overflow := life.overflow()
+	var overflow := life.overflow(player)
 	if overflow > 0.0:
 		# «60 +18 с» — видно и то, что запас полон, и сколько сверху. Излишек
 		# утекает быстрее обычного, так что число будет заметно бежать.
-		_lifespan_value.text = "%.0f +%.0f с" % [life.max_duration, ceilf(overflow)]
+		_lifespan_value.text = "%.0f +%.0f с" % [maximum, ceilf(overflow)]
 	else:
 		_lifespan_value.text = "%.0f с" % ceilf(life.current)
 
@@ -64,7 +67,7 @@ func _update_body_lifespan(player: Entity) -> void:
 		return
 	# max_value не должен быть нулём: тело без запаса дало бы деление на ноль
 	# внутри ProgressBar и пустую шкалу вместо честного нуля.
-	_body_life_bar.max_value = maxf(decay.maximum, 0.001)
+	_body_life_bar.max_value = maxf(decay.effective_maximum(player), 0.001)
 	_body_life_bar.value = decay.remaining
 	_body_life_value.text = "%.0f с" % ceilf(decay.remaining)
 
@@ -75,7 +78,7 @@ func _update_health(player: Entity) -> void:
 	_health_row.visible = hp != null
 	if hp == null:
 		return
-	_health_bar.max_value = hp.maximum
+	_health_bar.max_value = hp.effective_maximum(player)
 	_health_bar.value = hp.current
 	_health_value.text = "%.0f" % ceilf(hp.current)
 
