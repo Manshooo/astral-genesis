@@ -24,12 +24,12 @@ func define_components() -> Array:
 ##
 ## Считаем по коллайдеру, а не зашитым числом: форму игрока тюнят в сцене, и
 ## константа разъехалась бы с ней МОЛЧА — риг сел бы на полроста в пол. Форму уже
-## меняли (капсула → сфера), поэтому и тип не зашит: см. _shape_half_height.
+## меняли (капсула → сфера), поэтому и тип не зашит: см. shape_half_height.
 ## Не @onready — облик надевается в т.ч. из RunManager при загрузке, когда _ready
 ## рига ещё не прошёл.
 func foot_offset() -> Vector3:
 	var shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
-	var half := _shape_half_height(shape.shape) if shape else -1.0
+	var half := shape_half_height(shape.shape) if shape else -1.0
 	if half < 0.0:
 		push_warning(
 			"E_Player: не удалось измерить коллайдер (%s) — считаем, что origin и есть подошва"
@@ -46,7 +46,11 @@ func foot_offset() -> Vector3:
 ## одного числа, а список форм, которыми игрок реально бывает, короткий. Молчать
 ## о неизвестной форме нельзя — ноль здесь читается как «origin в подошве» и
 ## утапливает надетое тело в пол ровно на полроста.
-static func _shape_half_height(shape: Shape3D) -> float:
+##
+## Публичная, потому что тот же вопрос задаёт C_BodyForm про форму, которую риг
+## ЕЩЁ не надел: перевод между соглашениями об origin должен считаться одной
+## формулой, а не двумя похожими.
+static func shape_half_height(shape: Shape3D) -> float:
 	if shape is SphereShape3D:
 		return (shape as SphereShape3D).radius
 	if shape is CapsuleShape3D:

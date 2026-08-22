@@ -63,6 +63,73 @@ static func visual_of_scene(path: String) -> C_BodyVisual:
 	return visual
 
 
+## Имя узла-маркера, задающего уровень глаз тела. Ищется на любой глубине —
+## чтобы маркер можно было повесить дочерним к BoneAttachment3D на кость head,
+## когда тела станут анимированными, не меняя ни контракта, ни этого кода.
+const EYES_MARKER := "Eyes"
+
+
+## Физическая форма тела: габарит коллизии и уровень глаз. Всё, чем тело
+## упирается в мир и откуда смотрит.
+##
+## Габарит берём с коллайдера, лежащего ПРЯМО НА корне тела, а не с любого
+## CollisionShape3D в поддереве: у ригов их десятки на костях
+## (PhysicalBoneSimulator3D), и «первый попавшийся» дал бы душе форму
+## предплечья. Корневой коллайдер — тот самый, по которому в тело бьёт луч
+## захвата, так что подсвеченный игроку габарит и надетый им — одно и то же.
+##
+## null — тело формы не несёт (переносить нечего, риг остаётся призрачным).
+static func form_of(body: Node) -> C_BodyForm:
+	var entity := body as Entity
+	if entity == null:
+		return null
+
+	var form := C_BodyForm.new()
+	form.shape = _root_shape(entity)
+	form.eye_height = _eye_height(entity)
+	if form.shape == null and form.eye_height < 0.0:
+		return null
+	return form
+
+
+## То же, но по пути сцены — для восстановления после загрузки, где инстанса тела
+## уже нет (захват его поглотил). Тот же приём, что visual_of_scene.
+static func form_of_scene(path: String) -> C_BodyForm:
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return null
+	var scene := load(path) as PackedScene
+	if scene == null:
+		return null
+
+	var probe := scene.instantiate()
+	var form := form_of(probe)
+	probe.free()
+	return form
+
+
+## Форма коллизии с коллайдера самого тела. Только прямые дети корня — см.
+## form_of про то, почему поддерево не годится.
+static func _root_shape(entity: Entity) -> Shape3D:
+	for child in entity.get_children():
+		var collision := child as CollisionShape3D
+		if collision and collision.shape:
+			return collision.shape
+	return null
+
+
+## Высота глаз над подошвой, или -1, если маркера нет.
+##
+## Берём Y относительно КОРНЯ тела, а не global_position: форму читают в том
+## числе с detached-инстанса сцены (form_of_scene), а Node3D узнаёт свою
+## глобальную позицию только внутри SceneTree. Та же причина, что у
+## RS_EntityVisuals.transform_relative_to — им и считаем.
+static func _eye_height(entity: Entity) -> float:
+	var found := entity.find_children(EYES_MARKER, "Node3D", true, false)
+	if found.is_empty():
+		return -1.0
+	return RS_EntityVisuals.transform_relative_to(found[0], entity).origin.y
+
+
 ## Что тело отдаёт душе при вселении: все его компоненты-характеристики
 ## (C_BodyTrait) плюс C_Health.
 ##

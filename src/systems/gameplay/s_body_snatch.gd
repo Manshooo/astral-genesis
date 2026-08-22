@@ -53,12 +53,19 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 	if body == null:
 		return
 
+	# Габарит проверяем ДО броска кубика: отказ по месту — это не «не повезло», а
+	# «сюда это тело не влезет», и тратить на него попытку нечестно.
+	var form := E_Body.form_of(body)
+	if not _fits(soul, body, form):
+		_notify(soul, "Тело здесь не поместится")
+		return
+
 	var chance := C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_CHANCE, bs.capture_success_chance)
 	if randf() > chance:
 		ECS.world.emit_event(&"body_snatch_failed", soul)
 		return
 
-	_embody(soul, body)
+	_embody(soul, body, form)
 
 
 ## Структурные правки идут через командный буфер (cmd), а не напрямую: с GECS v9
@@ -66,7 +73,7 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 ## zero-copy, и add/remove прямо в process() может пропустить сущности (swap-remove)
 ## и роняет push_error в debug_mode. Буфер применяется сразу после process() этой
 ## системы (FlushMode.PER_SYSTEM), коалесцируя remove+add в один переезд архетипа.
-func _embody(soul: Entity, body: Entity) -> void:
+func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	# 1. Перенять ХАРАКТЕРИСТИКИ тела — прочность, запас распада, подвижность.
 	# Ни одна из них здесь не названа: тело отдаёт всё, что объявило компонентами
 	# (C_BodyTrait + C_Health), и новая характеристика не потребует правки этого
@@ -112,6 +119,18 @@ func _embody(soul: Entity, body: Entity) -> void:
 			cmd.remove_component(soul, C_BodyVisual)
 		cmd.add_component(soul, visual)
 
+	# 2.2. Перенять ФОРМУ тела: габарит коллизии и уровень глаз. Надевает её
+	# O_BodyForm — захват, как и с обликом, только просит. Перенос restore_* при
+	# пересадке из тела в тело — та же ловушка, что у C_BodyVisual: вернуться надо
+	# к призрачной форме, а не к форме прошлого тела.
+	if form:
+		var worn_form := soul.get_component(C_BodyForm) as C_BodyForm
+		if worn_form:
+			form.restore_shape = worn_form.restore_shape
+			form.restore_camera = worn_form.restore_camera
+			cmd.remove_component(soul, C_BodyForm)
+		cmd.add_component(soul, form)
+
 	# 3. Перенести точку присутствия в тело (Entity extends Node → двойной каст).
 	#
 	# Только позицию и только с поправкой E_Player.foot_offset: у тела origin —
@@ -126,8 +145,14 @@ func _embody(soul: Entity, body: Entity) -> void:
 	var soul_node := soul as Node as Node3D
 	var body_node := body as Node as Node3D
 	if soul_node and body_node:
+		# Офсет — по форме, которую риг НАДЕВАЕТ, а не по той, что на нём сейчас:
+		# компонент ещё лежит в буфере, и player.foot_offset() ответил бы
+		# призрачным габаритом — рослое тело село бы по пояс в пол. Тела без
+		# формы оставляют ригу его собственный габарит, и офсет считает он сам.
 		var player := soul as E_Player
-		var lift := player.foot_offset() if player else Vector3.ZERO
+		var lift := form.foot_offset() if form else Vector3.ZERO
+		if lift == Vector3.ZERO and player:
+			lift = player.foot_offset()
 		soul_node.global_position = body_node.global_position + lift
 
 	# 4. Поглотить исходное тело. Съедено оно насовсем, поэтому помечаем его в
@@ -143,3 +168,49 @@ func _embody(soul: Entity, body: Entity) -> void:
 	# и наблюдатель "body_snatched" увидел бы душу ещё не воплощённой.
 	# add_custom исполняется в порядке постановки, т.е. после правок выше.
 	cmd.add_custom(func(): ECS.world.emit_event(&"body_snatched", soul))
+
+
+## Влезает ли риг в новую форму на месте тела.
+##
+## Пробуем форму ТАМ, где риг окажется, и с маской ВОПЛОЩЁННОГО игрока: призрак
+## проходит сквозь permeable-геометрию (S_PlayerMovement снимает этот бит из
+## маски), а тело — нет, так что проверять призрачной маской значит разрешить
+## вселение в решётку.
+##
+## Исключаем себя и само тело: риг стоит вплотную к трупу, в который целится, а
+## тело через кадр будет поглощено — упереться в них значило бы отказывать всегда.
+static func _fits(soul: Entity, body: Entity, form: C_BodyForm) -> bool:
+	if form == null or form.shape == null:
+		return true  # габарит не меняется — проверять нечего
+
+	var soul_node := soul as Node as CollisionObject3D
+	var body_node := body as Node as Node3D
+	if soul_node == null or body_node == null:
+		return true
+
+	var params := PhysicsShapeQueryParameters3D.new()
+	params.shape = form.shape
+	params.transform = Transform3D(
+		Basis.IDENTITY, body_node.global_position + form.foot_offset()
+	)
+	params.collision_mask = soul_node.collision_mask | S_PlayerMovement.PERMEABLE_BIT
+
+	var skip: Array[RID] = [soul_node.get_rid()]
+	var body_collider := body_node as CollisionObject3D
+	if body_collider:
+		skip.append(body_collider.get_rid())
+	params.exclude = skip
+
+	var space := soul_node.get_world_3d().direct_space_state
+	return space.intersect_shape(params, 1).is_empty()
+
+
+## Короткая строка поверх HUD. Через буфер, потому что мы внутри прохода системы
+## (правило v9); пересоздаём компонент, а не правим поля — прямая запись миру не
+## сигналится, и HUD не увидел бы новый текст (см. A_TravelThroughDoor._notify).
+func _notify(soul: Entity, text: String) -> void:
+	if soul.has_component(C_ScreenMessage):
+		cmd.remove_component(soul, C_ScreenMessage)
+	var message := C_ScreenMessage.new()
+	message.text = text
+	cmd.add_component(soul, message)

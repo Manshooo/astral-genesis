@@ -211,6 +211,13 @@ func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 		health.maximum = saved.body_health_max
 		health.current = saved.body_health
 
+	# Габарит и уровень глаз — тоже из сцены, а не из сейва: это часть модели, и
+	# писать их в .tres значило бы завести второй источник правды, ровно как с
+	# обликом.
+	var form := E_Body.form_of_scene(saved.body_scene_path)
+	if form:
+		player.add_component(form)
+
 	var visual := E_Body.visual_of_scene(saved.body_scene_path)
 	if visual:
 		player.add_component(visual)

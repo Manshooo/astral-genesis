@@ -22,8 +22,9 @@ func each(_event: Variant, entity: Entity, _payload: Variant = null) -> void:
 
 
 ## Развоплощение: снять «во плоти» и все характеристики тела (C_BodyTrait +
-## C_Health), а также тег смерти (тело умерло, но душа — нет). Облик снимается
-## тоже — O_BodyVisual по снятию C_BodyVisual вернёт ригу его собственный вид.
+## C_Health), а также тег смерти (тело умерло, но душа — нет). Облик и форма
+## снимаются тоже — O_BodyVisual и O_BodyForm по снятию своих компонентов вернут
+## ригу его собственный вид и призрачный габарит.
 ##
 ## Статическая и с явным [param voluntary], потому что вызывают её ТРИ разных
 ## пути и правило распада у них разное:
@@ -56,6 +57,9 @@ static func expel(soul: Entity, voluntary: bool) -> void:
 		soul.remove_component(C_Dead)
 	if soul.has_component(C_BodyVisual):
 		soul.remove_component(C_BodyVisual)
+	# Габарит и уровень глаз возвращает O_BodyForm по снятию — как и облик.
+	if soul.has_component(C_BodyForm):
+		soul.remove_component(C_BodyForm)
 	soul.remove_component(C_Embodied)
 	ECS.world.emit_event(&"expelled_from_body", soul)
 

@@ -171,7 +171,13 @@ height = 0.054702364
 radius = 0.0018502275
 height = 0.018502275
 
-[node name="half_body_skeleton" type="Node3D" unique_id=1772587322]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_crawler_body"]
+radius = 0.3
+height = 0.86
+
+[node name="half_body_skeleton" type="StaticBody3D" unique_id=1772587322]
+collision_layer = 4
+collision_mask = 0
 script = ExtResource("1_vqju6")
 alias = &"Crawler"
 component_resources = Array[ExtResource("2_a0fn2")]([SubResource("Resource_vqju6"), SubResource("Resource_health"), SubResource("Resource_decay"), SubResource("Resource_walk")])
@@ -597,3 +603,10 @@ shape = SubResource("CapsuleShape3D_xkoju")
 
 [node name="Eyes" type="Node3D" parent="." unique_id=149593465]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76542795, 0.12923644)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.43, 0)
+shape = SubResource("CapsuleShape3D_crawler_body")
+
+[node name="Eyes" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.609, 0)

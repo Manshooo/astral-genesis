@@ -3,9 +3,9 @@
 [ext_resource type="Script" uid="uid://cbetc28hrcj0p" path="res://src/entities/body/e_body_hound.gd" id="1_y0plc"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_qad0j"]
 [ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="3_3akvt"]
+[ext_resource type="Script" uid="uid://brejetk5bt2cr" path="res://src/components/gameplay/skills/c_body_decay.gd" id="8_decay"]
 [ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="3_d4fg4"]
 [ext_resource type="ArrayMesh" uid="uid://cj64cfj8vbtjo" path="res://assets/monsters/models/monsters_headog.res" id="5_mesh"]
-[ext_resource type="Script" uid="uid://b4nwfcv1havgv" path="res://src/components/gameplay/skills/c_body_snatch.gd" id="5_uhanh"]
 [ext_resource type="Script" uid="uid://dknqwce2loh3r" path="res://src/components/gameplay/skills/c_walk.gd" id="6_wvqws"]
 [ext_resource type="Script" uid="uid://buxoowbmksowk" path="res://src/components/gameplay/skills/c_jump.gd" id="7_yfil4"]
 
@@ -18,10 +18,6 @@ metadata/_custom_type_script = "uid://5r77tfxtjy6p"
 [sub_resource type="Resource" id="Resource_qxb0x"]
 script = ExtResource("3_d4fg4")
 metadata/_custom_type_script = "uid://bgw8q60os3ln1"
-
-[sub_resource type="Resource" id="Resource_65ykm"]
-script = ExtResource("5_uhanh")
-metadata/_custom_type_script = "uid://b4nwfcv1havgv"
 
 [sub_resource type="Resource" id="Resource_w3ko0"]
 script = ExtResource("6_wvqws")
@@ -270,10 +266,21 @@ height = 0.06984649
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jimbe"]
 radius = 0.3544922
 
-[node name="headog_skeleton" type="CharacterBody3D" unique_id=1516563894]
+[sub_resource type="Resource" id="Resource_hound_decay"]
+script = ExtResource("8_decay")
+maximum = 45.0
+metadata/_custom_type_script = "uid://brejetk5bt2cr"
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_hound_body"]
+radius = 0.4
+height = 1.93
+
+[node name="headog_skeleton" type="StaticBody3D" unique_id=1516563894]
+collision_layer = 4
+collision_mask = 0
 script = ExtResource("1_y0plc")
 alias = &"Hound"
-component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_swvon"), SubResource("Resource_qxb0x"), SubResource("Resource_65ykm"), SubResource("Resource_w3ko0"), SubResource("Resource_a0cgm")])
+component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_swvon"), SubResource("Resource_qxb0x"), SubResource("Resource_hound_decay"), SubResource("Resource_w3ko0"), SubResource("Resource_a0cgm")])
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=944537717]
 animate_physical_bones = false
@@ -963,3 +970,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7885134, 0.12923644)
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1096822258]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.91502464, 0)
 shape = SubResource("CapsuleShape3D_jimbe")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.965, 0)
+shape = SubResource("CapsuleShape3D_hound_body")
+
+[node name="Eyes" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.66, 0)
