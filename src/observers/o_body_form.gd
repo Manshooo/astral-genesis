@@ -6,7 +6,7 @@
 #
 # Правим форму и камеру НА МЕСТЕ, не подменяя узлов: на CollisionShape3D рига
 # ссылается E_Player.foot_offset (он измеряет именно его), а камеру держат по
-# @onready S_FPSLook и S_PlayerMovement.
+# @onready S_FPSLook и S_Flight.
 class_name O_BodyForm
 extends Observer
 

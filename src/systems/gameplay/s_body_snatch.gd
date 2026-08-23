@@ -80,11 +80,16 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	# файла. Раньше перенос был расписан покомпонентно И ЗДЕСЬ, И в
 	# RunManager._restore_embodiment — две копии одного правила.
 	#
-	# remove+add, а не «добавить, если нет»: при пересадке из тела в тело трейт
-	# уже висит, и остались бы числа прошлого тела. Буфер коалесцирует пару в
-	# один переезд архетипа, так что лишней цены нет.
+	# СНАЧАЛА СНИМАЕМ ВСЁ НАДЕТОЕ, а не только то, что даёт новое тело: снятие
+	# «по списку нового» оставляло на душе характеристики, которых у новой плоти
+	# нет вовсе. Пересадка из прыгучего тела в безногое давала прыгающего
+	# безногого — ровно тот случай, ради которого возможность и сделана
+	# компонентом. Симметрия с O_ExpelFromBody держится сама: снимаем тем же
+	# правилом «C_BodyTrait + C_Health», каким надеваем.
+	for shed in _worn_traits(soul):
+		cmd.remove_component(soul, shed.get_script())
+
 	for worn in E_Body.traits_of(body):
-		cmd.remove_component(soul, worn.get_script())
 		if worn is C_BodyTrait:
 			# Характеристика становится состоянием: C_BodyDecay так открывает
 			# полный карман времени. См. C_BodyTrait.on_worn.
@@ -170,12 +175,25 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	cmd.add_custom(func(): ECS.world.emit_event(&"body_snatched", soul))
 
 
+## Характеристики тела, надетые на душу прямо сейчас.
+##
+## Собираем список заранее, отдельным проходом: снятие правит тот самый словарь
+## components, по которому мы бы шли (та же осторожность, что в
+## O_ExpelFromBody.expel).
+static func _worn_traits(soul: Entity) -> Array[Component]:
+	var found: Array[Component] = []
+	for component in soul.components.values():
+		if component is C_BodyTrait or component is C_Health:
+			found.append(component as Component)
+	return found
+
+
 ## Влезает ли риг в новую форму на месте тела.
 ##
 ## Пробуем форму ТАМ, где риг окажется, и с маской ВОПЛОЩЁННОГО игрока: призрак
-## проходит сквозь permeable-геометрию (S_PlayerMovement снимает этот бит из
-## маски), а тело — нет, так что проверять призрачной маской значит разрешить
-## вселение в решётку.
+## проходит сквозь permeable-геометрию (S_Phasing снимает этот бит из маски,
+## пока на душе висит C_Phasing), а тело — нет, так что проверять призрачной
+## маской значит разрешить вселение в решётку.
 ##
 ## Исключаем себя и само тело: риг стоит вплотную к трупу, в который целится, а
 ## тело через кадр будет поглощено — упереться в них значило бы отказывать всегда.
@@ -193,12 +211,18 @@ static func _fits(soul: Entity, body: Entity, form: C_BodyForm) -> bool:
 	params.transform = Transform3D(
 		Basis.IDENTITY, body_node.global_position + form.foot_offset()
 	)
-	params.collision_mask = soul_node.collision_mask | S_PlayerMovement.PERMEABLE_BIT
+	params.collision_mask = soul_node.collision_mask | C_Phasing.PERMEABLE_BIT
 
+	# Исключаем не только корень тела, а весь его поддерево коллайдеров: у рига
+	# рэгдолла кости стоят на static_colliders (нужно, чтобы падать на пол), труп
+	# оседает недалеко от своего корня, и без этого проверка регулярно натыкалась
+	# бы на собственные кости — тело не влезало бы само в себя никогда.
 	var skip: Array[RID] = [soul_node.get_rid()]
 	var body_collider := body_node as CollisionObject3D
 	if body_collider:
 		skip.append(body_collider.get_rid())
+	for descendant in body_node.find_children("*", "CollisionObject3D", true, false):
+		skip.append((descendant as CollisionObject3D).get_rid())
 	params.exclude = skip
 
 	var space := soul_node.get_world_3d().direct_space_state

@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://bllnfs0mr5vyc" path="res://src/ui/hud/hud_message.gd" id="5_message"]
 [ext_resource type="Script" uid="uid://01ionly7qqo5" path="res://src/ui/hud/hud_map.gd" id="6_map"]
 [ext_resource type="Script" uid="uid://ek66xvjkfy67" path="res://src/ui/hud/vital_bar.gd" id="7_bar"]
+[ext_resource type="Script" uid="uid://dh6qrlpmpgil0" path="res://src/ui/hud/hud_abilities.gd" id="8_abilities"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -43,40 +44,69 @@ pivot_offset_ratio = Vector2(0.5, 0.5)
 layout_mode = 2
 script = ExtResource("2_cvkdw")
 
-[node name="Prompt" type="Label" parent="Hud" unique_id=283857693]
+[node name="PromptPanel" type="PanelContainer" parent="Hud" unique_id=1360192941]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = 34.0
-offset_right = 160.0
-offset_bottom = 60.0
+offset_left = -20.000366
+offset_top = 25.0
+offset_right = 19.999634
+offset_bottom = 65.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_alignment = 1
-vertical_alignment = 1
 script = ExtResource("4_prompt")
 
-[node name="Message" type="Label" parent="Hud" unique_id=1544852345]
+[node name="Prompt" type="Label" parent="Hud/PromptPanel" unique_id=283857693]
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MessagePanel" type="PanelContainer" parent="Hud" unique_id=263604356]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = 68.0
-offset_right = 200.0
-offset_bottom = 94.0
+offset_left = -20.000366
+offset_top = 70.0
+offset_right = 19.999634
+offset_bottom = 110.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_alignment = 1
 script = ExtResource("5_message")
 
-[node name="PanelContainer" type="PanelContainer" parent="Hud" unique_id=1336408021]
+[node name="Message" type="Label" parent="Hud/MessagePanel" unique_id=1544852345]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="AbilitiesPanel" type="PanelContainer" parent="Hud" unique_id=1572142544]
+layout_mode = 1
+offset_right = 145.20837
+offset_bottom = 60.0
+script = ExtResource("8_abilities")
+
+[node name="Abilities" type="VBoxContainer" parent="Hud/AbilitiesPanel" unique_id=700000101]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 2
+
+[node name="MoveLabel" type="Label" parent="Hud/AbilitiesPanel/Abilities" unique_id=700000102]
+layout_mode = 2
+text = "Ход"
+
+[node name="HSeparator" type="HSeparator" parent="Hud/AbilitiesPanel/Abilities" unique_id=2002045983]
+layout_mode = 2
+
+[node name="JumpLabel" type="Label" parent="Hud/AbilitiesPanel/Abilities" unique_id=700000103]
+layout_mode = 2
+text = "[Space] Прыжок"
+
+[node name="MapPanel" type="PanelContainer" parent="Hud" unique_id=1336408021]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -85,7 +115,7 @@ offset_left = -180.0
 offset_bottom = 180.0
 grow_horizontal = 0
 
-[node name="Map" type="Control" parent="Hud/PanelContainer" unique_id=1774390021]
+[node name="Map" type="Control" parent="Hud/MapPanel" unique_id=1774390021]
 layout_mode = 2
 script = ExtResource("6_map")
 

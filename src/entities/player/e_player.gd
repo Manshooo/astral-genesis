@@ -18,6 +18,30 @@ func define_components() -> Array:
 	return [C_BodySnatch.new(), C_Lifespan.new(), C_StatModifiers.new()]
 
 
+## Возможности САМОЙ души — свежие копии того, что авторено в сцене БФЖ.
+##
+## Читаем component_resources, а не components: во плоти возможности с души
+## СНЯТЫ (их усыпляет O_SoulTraits), и спрашивать живой набор в момент
+## пробуждения было бы бессмысленно. Авторский же массив remove_component не
+## трогает — там лежат оригиналы из сцены, по которым GECS раскладывал сущность
+## при добавлении в мир. Тот же приём, что в E_Body.traits_of_scene.
+##
+## Копии, а не оригиналы: ресурс в сцене общий на все инстансы, и вернуть его
+## самого значило бы, что разогнавшийся полёт одной души правит числа всех
+## остальных.
+##
+## В СЦЕНЕ, а не в define_components(), потому что у возможности есть числа
+## (C_Flight.speed) и тюнить их полагается в инспекторе — ровно как C_Walk.speed
+## у тел. В define_components() живёт только идентичность, которая обязана
+## пережить любую пересадку и чисел не имеет.
+func soul_traits() -> Array[Component]:
+	var found: Array[Component] = []
+	for resource in component_resources:
+		if resource is C_SoulTrait:
+			found.append(resource.duplicate() as Component)
+	return found
+
+
 ## Насколько origin рига ВЫШЕ его подошвы. Мост между двумя соглашениями: у сцен
 ## тел origin в ступнях, у игрока — в ЦЕНТРЕ его коллайдера. Пользуются оба
 ## перехода — S_BodySnatch сажает сюда самого рига, O_BodyVisual — надетый облик.
