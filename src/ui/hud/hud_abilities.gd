@@ -79,7 +79,7 @@ func _render() -> void:
 	show()
 
 	_move_label.visible = true
-	_move_label.text = "Полёт" if player.has_component(C_Flight) else "Ход"
+	_move_label.text = "Полёт" if player.has_component(C_Flight) else "Ходьба"
 
 	var jump := player.get_component(C_Jump) as C_Jump
 	_jump_label.visible = jump != null
