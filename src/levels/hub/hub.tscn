@@ -11,6 +11,8 @@
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="10_alaum"]
 [ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="11_uuilv"]
+[ext_resource type="PackedScene" uid="uid://f5i4a5l3ph2j" path="res://src/entities/body/e_body_walker.tscn" id="12_5ih0i"]
+[ext_resource type="PackedScene" uid="uid://biosb4cjxfviu" path="res://src/entities/body/e_body_crawler.tscn" id="13_8ue0e"]
 
 [sub_resource type="Resource" id="Resource_oeda6"]
 script = ExtResource("4_18pe2")
@@ -39,8 +41,8 @@ script = ExtResource("2_oeda6")
 alias = &"Hub"
 component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_oeda6")])
 
-[node name="Incubator" parent="." index="0" unique_id=173115503]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 2.2362182, 5.36512)
+[node name="Incubator" parent="." index="0" unique_id=1162994375]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.236, 3.6953397)
 material_override = SubResource("StandardMaterial3D_7dvkg")
 script = ExtResource("2_k166h")
 actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_hhfa8")])
@@ -57,11 +59,19 @@ shape = SubResource("BoxShape3D_3owqy")
 [node name="SpawnPoint" type="Node3D" parent="." index="1" unique_id=1247584642]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 1.2064084, -0.79322445)
 
-[node name="headog_skeleton" parent="." index="2" unique_id=1195292086 instance=ExtResource("11_uuilv")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09143996, 1.2422585, -3.2378654)
-
-[node name="Doors" type="Node3D" parent="." index="3" unique_id=901771904]
+[node name="Doors" type="Node3D" parent="." index="2" unique_id=901771904]
 
 [node name="Door" parent="Doors" index="0" unique_id=1986258941 instance=ExtResource("5_is5eu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0640976, 2.0443382, -7.799738)
 actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_chsjf")])
+
+[node name="headog_skeleton" parent="." index="18" unique_id=1516563894 instance=ExtResource("11_uuilv")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1953435, 0.39336514, -4.275962)
+collision_layer = 20
+collision_mask = 17
+
+[node name="e_body_walker" parent="." index="19" unique_id=250816338 instance=ExtResource("12_5ih0i")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7768965, 1.7258387, -4.7508903)
+
+[node name="half_body_skeleton" parent="." index="20" unique_id=1772587322 instance=ExtResource("13_8ue0e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.439003, 0.5850637, -6.4384336)

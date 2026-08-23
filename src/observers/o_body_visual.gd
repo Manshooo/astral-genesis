@@ -37,7 +37,7 @@ func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
 				visual.restore_transform = geo.transform
 			geo.mesh = visual.mesh
 			geo.material_override = visual.material_override
-			_place(entity, geo, visual.mesh_transform)
+			_place(entity, geo, visual)
 		Observer.Event.REMOVED:
 			geo.mesh = visual.restore_mesh
 			geo.material_override = visual.restore_material
@@ -45,15 +45,26 @@ func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
 				geo.transform = visual.restore_transform
 
 
-## Ставит мешу трансформ [param wanted], заданный относительно ПОДОШВЫ рига
+## Ставит мешу трансформ из [param visual], заданный относительно ПОДОШВЫ рига
 ## (см. C_BodyVisual.mesh_transform).
-func _place(entity: Entity, geo: GeometryInstance3D, wanted: Transform3D) -> void:
+##
+## Офсет берём из самого облика, а не у рига: наблюдатели облика и габарита
+## сидят на РАЗНЫХ компонентах, и кто из них сработает первым, решает очередь
+## команд. Спросив E_Player.foot_offset(), мы получали габарит, который риг ещё
+## носит — призрачную сферу при первом захвате и прошлое тело при пересадке, —
+## и меш всплывал ровно на разницу. Камера при этом садилась верно (O_BodyForm
+## считает офсет по НАДЕВАЕМОЙ форме), так что глаза игрока оказывались на
+## уровне таза собственной модели.
+func _place(entity: Entity, geo: GeometryInstance3D, visual: C_BodyVisual) -> void:
 	if not _movable(entity, geo):
 		return
 	# Из «относительно подошвы» в «относительно корня рига»: у рига origin в
 	# центре его коллайдера, у тела — в ступнях.
-	var in_rig := wanted
-	in_rig.origin -= (entity as E_Player).foot_offset()
+	var lift := visual.foot_offset
+	if lift == Vector3.ZERO:
+		lift = (entity as E_Player).foot_offset()  # тело габарита не дало — риг остался собой
+	var in_rig := visual.mesh_transform
+	in_rig.origin -= lift
 	# Меш не обязан висеть прямо под корнем сущности (C_VisualRoot умеет увести
 	# поиск вглубь), а transform задаётся относительно РОДИТЕЛЯ — снимаем вклад
 	# цепочки родителей, иначе их масштаб/сдвиг применился бы вторым слоем.

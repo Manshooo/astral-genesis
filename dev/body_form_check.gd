@@ -10,6 +10,8 @@ extends Node
 
 const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 const BODY_SCENE := "res://src/entities/body/e_body.tscn"
+## Тело другой высоты — им проверяется пересадка из тела в тело.
+const CRAWLER_SCENE := "res://src/entities/body/e_body_crawler.tscn"
 
 var _ok := 0
 var _fail := 0
@@ -24,6 +26,9 @@ func _ready() -> void:
 	snatch.group = "physics"
 	world.add_system(snatch)
 	world.add_observer(O_ExpelFromBody.new())
+	# Порядок регистрации — как в world.tscn: облик раньше габарита. Он не должен
+	# ни на что влиять, и проверка ниже как раз про это.
+	world.add_observer(O_BodyVisual.new())
 	world.add_observer(O_BodyForm.new())
 
 	await _run(world)
@@ -53,6 +58,23 @@ func _run(world: World) -> void:
 			"%s: несёт уровень глаз" % name,
 			form != null and form.eye_height > 0.0,
 			str(form.eye_height) if form else "нет формы"
+		)
+		# Подошва облика и подошва габарита обязаны совпасть: иначе надетый меш
+		# всплывает над полом, и глаза игрока оказываются на уровне таза
+		# собственной модели (см. C_BodyVisual.foot_offset).
+		var visual := E_Body.visual_of(probe)
+		_check(
+			"%s: облик знает свою подошву" % name,
+			visual != null and form != null and visual.foot_offset.is_equal_approx(form.foot_offset()),
+			"%s против %s" % [visual.foot_offset if visual else "нет облика", form.foot_offset() if form else "нет формы"]
+		)
+		# Экспорт из Blender разворачивает модель лицом в +Z, а Godot смотрит в
+		# −Z: тело, авторенное лицом назад, при вселении смотрит игроку в спину.
+		# Признак разворота — минус на диагонали Z у трансформа меша.
+		_check(
+			"%s: модель смотрит в −Z" % name,
+			visual != null and visual.mesh_transform.basis.z.z < 0.0 or _faceless(path),
+			str(visual.mesh_transform.basis.z) if visual else "нет облика"
 		)
 		probe.free()
 
@@ -105,6 +127,20 @@ func _run(world: World) -> void:
 		is_equal_approx(player.foot_offset().y, 0.9),
 		str(player.foot_offset().y)
 	)
+	# Меш обязан сесть подошвами на пол вместе с ригом. Наблюдатели облика и
+	# габарита сидят на разных компонентах, и O_BodyVisual когда-то спрашивал
+	# офсет у рига — тот отвечал габаритом, который ещё носит (призрачная сфера
+	# 0.26 при первом захвате), и меш всплывал на разницу.
+	# Ждём авторский трансформ меша МИНУС подошву надетого тела: у капсулы-заглушки
+	# меш авторен по центру (0.9), у моделей — от ступней, и правило одно на всех.
+	var geo := RS_EntityVisuals.primary(player) as MeshInstance3D
+	var body_visual := E_Body.visual_of_scene(BODY_SCENE)
+	_check(
+		"меш надетого тела сел подошвами к полу",
+		is_equal_approx(geo.transform.origin.y, body_visual.mesh_transform.origin.y - 0.9),
+		"%.3f вместо %.3f (призрачный офсет был %.3f)"
+		% [geo.transform.origin.y, body_visual.mesh_transform.origin.y - 0.9, ghost_lift]
+	)
 
 	# --- 3. Развоплощение возвращает призрачную форму -----------------------
 	O_ExpelFromBody.expel(player, true)
@@ -148,6 +184,45 @@ func _run(world: World) -> void:
 	await get_tree().process_frame
 	_check("без препятствия тот же захват проходит", player.has_component(C_Embodied), "")
 
+	# --- 5. Пересадка тело→тело --------------------------------------------
+	# Второй способ уронить меш: спросить офсет у рига, который носит ПРОШЛОЕ
+	# тело. Ростовое тело поверх ростового разницы не даст, поэтому пересаживаем
+	# в тело другой высоты — ползуна (капсула 0.86, подошва 0.43).
+	var crawler := (load(CRAWLER_SCENE) as PackedScene).instantiate() as Entity
+	(crawler as Node as Node3D).position = Vector3(-3.0, 0.0, 6.0)
+	world.add_entity(crawler)
+	crawler.add_component(C_SnatchTargeted.new())
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	var crawler_form := E_Body.form_of(crawler)
+	var crawler_visual := E_Body.visual_of(crawler)
+	bs.capture_requested = true
+	ECS.process(0.016, "physics")
+	await get_tree().process_frame
+
+	_check("пересадка состоялась", player.has_component(C_Embodied), "")
+	_check(
+		"после пересадки риг сел по НОВОМУ габариту",
+		is_equal_approx(player.foot_offset().y, crawler_form.foot_offset().y),
+		"%.3f против %.3f" % [player.foot_offset().y, crawler_form.foot_offset().y]
+	)
+	_check(
+		"после пересадки меш сел подошвами к полу, а не по офсету прошлого тела",
+		is_equal_approx(
+			geo.transform.origin.y,
+			crawler_visual.mesh_transform.origin.y - crawler_form.foot_offset().y
+		),
+		"%.3f (офсет прошлого тела был %.3f)" % [geo.transform.origin.y, 0.9]
+	)
+	_check(
+		"после пересадки камера села на уровень глаз нового тела",
+		is_equal_approx(
+			camera.transform.origin.y, crawler_form.eye_height - crawler_form.foot_offset().y
+		),
+		str(camera.transform.origin.y)
+	)
+
 
 ## Статическое препятствие вокруг точки: коробка на слое 1, куда смотрит маска
 ## игрока по умолчанию.
@@ -180,3 +255,9 @@ func _check(what: String, passed: bool, detail: String) -> void:
 	else:
 		_fail += 1
 		print("  FAIL %s  (%s)" % [what, detail])
+
+
+## Тела-заглушки (капсула без модели) лицом никуда не смотрят — разворачивать
+## нечего, и требовать от них минуса на диагонали бессмысленно.
+func _faceless(path: String) -> bool:
+	return path.ends_with("/e_body.tscn")
