@@ -26,6 +26,7 @@ size = Vector3(3.1486816, 4.35223, 0.6937256)
 size = Vector3(2.7167664, 4.0274963, 0.2319336)
 
 [node name="Door" type="MeshInstance3D" unique_id=1986258941]
+transform = Transform3D(1, 0, 0, 0, 1.15, 0, 0, 0, 1, 0, 0, 0)
 mesh = ExtResource("8_qd5pf")
 script = ExtResource("2_tkmj8")
 actions = Array[ExtResource("3_cehsg")]([SubResource("Resource_r83wa")])

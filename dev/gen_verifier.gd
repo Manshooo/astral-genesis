@@ -11,6 +11,12 @@ extends Node
 ##     комнате один (RunManager._bind_portals), второе такое ребро утекало бы
 ##     обычной двери и на карте выглядело соседней комнатой этажа, хотя вело на
 ##     другой слой (v0.5.0 «Вертикальные переходы — только порталом»).
+##   - «заваренные двери»: сумма (дверей в сцене - рёбер узла) по всему графу —
+##     сколько дверей физически есть, но не ведут никуда (RunManager._seal_door).
+##     Это НЕ провал сам по себе (часть неизбежна — тупики, нехватка пресетов
+##     нужного размера), а метрика для настройки RS_RoomPresetLibrary
+##     (EXCESS_SLOT_DECAY): смотреть на среднее по прогону при добавлении новых
+##     пресетов/правке весов, а не на абсолютный ноль.
 ## Большая разница «граф vs двери» = комнат не хватает дверей (нужны пресеты).
 
 const SEED_COUNT := 20
@@ -26,15 +32,33 @@ func _ready() -> void:
 	var worst_graph := 0
 	var worst_doors := 0
 	var worst_multi_vertical := 0
+	var total_sealed_sum := 0
+	var nodes_with_sealed_sum := 0
+	var total_nodes_sum := 0
 	for s in SEED_COUNT:
 		var res := _verify_seed(s, library)
 		worst_graph = max(worst_graph, res["unreachable_graph"])
 		worst_doors = max(worst_doors, res["unreachable_doors"])
 		worst_multi_vertical = max(worst_multi_vertical, res["multi_vertical"])
+		total_sealed_sum += res["total_sealed"]
+		nodes_with_sealed_sum += res["nodes_with_sealed"]
+		total_nodes_sum += res["total_nodes"]
 
 	print(
 		"--- Итог: макс. недостижимо по графу=%d, по дверям=%d, макс. узлов с 2+ вертикальными рёбрами=%d ---"
 		% [worst_graph, worst_doors, worst_multi_vertical]
+	)
+	print(
+		(
+			"--- Заваренные двери: %d всего на %d узлов (%.2f на узел), узлов хоть с одной заваренной=%d (%.0f%%) ---"
+			% [
+				total_sealed_sum,
+				total_nodes_sum,
+				float(total_sealed_sum) / total_nodes_sum,
+				nodes_with_sealed_sum,
+				100.0 * nodes_with_sealed_sum / total_nodes_sum,
+			]
+		)
 	)
 	if library == null:
 		print("ПОДСКАЗКА: room_preset_library не назначена в data/game_config.tres — всё на placeholder.")
@@ -61,15 +85,33 @@ func _verify_seed(seed_value: int, library: RS_RoomPresetLibrary) -> Dictionary:
 	var unreachable_graph := _bfs_unreachable(graph, false).size()
 	var unreachable_doors := _bfs_unreachable(graph, true).size()
 	var multi_vertical := _multi_vertical_edge_nodes(graph)
+	var sealed := _sealed_door_stats(graph)
 
 	print(
-		"seed %2d: узлов=%d, недобор дверей=%d, недостижимо граф=%d / двери=%d, узлов с 2+ вертикальными рёбрами=%d"
-		% [seed_value, total, undercap.size(), unreachable_graph, unreachable_doors, multi_vertical.size()]
+		(
+			(
+				"seed %2d: узлов=%d, недобор дверей=%d, недостижимо граф=%d / двери=%d, "
+				+ "узлов с 2+ вертикальными рёбрами=%d, заварено дверей=%d (узлов=%d)"
+			)
+			% [
+				seed_value,
+				total,
+				undercap.size(),
+				unreachable_graph,
+				unreachable_doors,
+				multi_vertical.size(),
+				sealed["total_sealed"],
+				sealed["nodes_with_sealed"],
+			]
+		)
 	)
 	return {
 		"unreachable_graph": unreachable_graph,
 		"unreachable_doors": unreachable_doors,
 		"multi_vertical": multi_vertical.size(),
+		"total_sealed": sealed["total_sealed"],
+		"nodes_with_sealed": sealed["nodes_with_sealed"],
+		"total_nodes": total,
 	}
 
 
@@ -90,6 +132,25 @@ func _multi_vertical_edge_nodes(graph: RS_LevelGraph) -> Array:
 		if vertical_edges > 1:
 			result.append(node.id)
 	return result
+
+
+## Сколько дверей в графе физически есть, но не ведут никуда (RunManager
+## запечатает их _seal_door'ом), и на скольких узлах есть хотя бы одна такая.
+## Не «баг» — часть неизбежна (тупики), но метрика для настройки весов
+## RS_RoomPresetLibrary (EXCESS_SLOT_DECAY): комната с большим запасом дверей,
+## из которых открыты одна-две, — ровно то, на что жаловались в задаче.
+func _sealed_door_stats(graph: RS_LevelGraph) -> Dictionary:
+	var total_sealed := 0
+	var nodes_with_sealed := 0
+	for node: RS_LevelNode in graph.nodes.values():
+		var doors := _doors_in_scene(node.room_scene_path)
+		if doors < 0:
+			continue
+		var sealed := doors - node.connections.size()
+		if sealed > 0:
+			total_sealed += sealed
+			nodes_with_sealed += 1
+	return {"total_sealed": total_sealed, "nodes_with_sealed": nodes_with_sealed}
 
 
 ## Узлы, где дверей в сцене меньше, чем рёбер (RunManager обрубит лишние рёбра).
