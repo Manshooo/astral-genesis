@@ -7,6 +7,10 @@ extends Node
 ##       * по графу  — связен ли граф вообще (гарантия генератора);
 ##       * по дверям  — сколько реально проходимо, если из узла ведут только
 ##                      первые slot_count рёбер (так RunManager раздаёт C_DoorPortal).
+##   - узлы с БОЛЬШЕ ЧЕМ ОДНИМ вертикальным (меняющим глубину) ребром — портал в
+##     комнате один (RunManager._bind_portals), второе такое ребро утекало бы
+##     обычной двери и на карте выглядело соседней комнатой этажа, хотя вело на
+##     другой слой (v0.5.0 «Вертикальные переходы — только порталом»).
 ## Большая разница «граф vs двери» = комнат не хватает дверей (нужны пресеты).
 
 const SEED_COUNT := 20
@@ -21,12 +25,17 @@ func _ready() -> void:
 
 	var worst_graph := 0
 	var worst_doors := 0
+	var worst_multi_vertical := 0
 	for s in SEED_COUNT:
 		var res := _verify_seed(s, library)
 		worst_graph = max(worst_graph, res["unreachable_graph"])
 		worst_doors = max(worst_doors, res["unreachable_doors"])
+		worst_multi_vertical = max(worst_multi_vertical, res["multi_vertical"])
 
-	print("--- Итог: макс. недостижимо по графу=%d, по дверям=%d ---" % [worst_graph, worst_doors])
+	print(
+		"--- Итог: макс. недостижимо по графу=%d, по дверям=%d, макс. узлов с 2+ вертикальными рёбрами=%d ---"
+		% [worst_graph, worst_doors, worst_multi_vertical]
+	)
 	if library == null:
 		print("ПОДСКАЗКА: room_preset_library не назначена в data/game_config.tres — всё на placeholder.")
 
@@ -51,12 +60,36 @@ func _verify_seed(seed_value: int, library: RS_RoomPresetLibrary) -> Dictionary:
 	var undercap := _undercapacity_nodes(graph)
 	var unreachable_graph := _bfs_unreachable(graph, false).size()
 	var unreachable_doors := _bfs_unreachable(graph, true).size()
+	var multi_vertical := _multi_vertical_edge_nodes(graph)
 
 	print(
-		"seed %2d: узлов=%d, недобор дверей=%d, недостижимо граф=%d / двери=%d"
-		% [seed_value, total, undercap.size(), unreachable_graph, unreachable_doors]
+		"seed %2d: узлов=%d, недобор дверей=%d, недостижимо граф=%d / двери=%d, узлов с 2+ вертикальными рёбрами=%d"
+		% [seed_value, total, undercap.size(), unreachable_graph, unreachable_doors, multi_vertical.size()]
 	)
-	return {"unreachable_graph": unreachable_graph, "unreachable_doors": unreachable_doors}
+	return {
+		"unreachable_graph": unreachable_graph,
+		"unreachable_doors": unreachable_doors,
+		"multi_vertical": multi_vertical.size(),
+	}
+
+
+## Узлы с БОЛЬШЕ ЧЕМ ОДНИМ вертикальным (меняющим depth) ребром. В комнате
+## ровно один портал, поэтому второе такое ребро раньше утекало обычной двери
+## (RunManager._bind_portals → rest → _bind_doors) и на карте выглядело
+## соседней комнатой этажа, хотя вело на другой слой. RS_LevelGraph держит
+## этот список пустым через _split_vertical_hub_pool — узел получает хаб-роль
+## не больше одного раза за весь граф.
+func _multi_vertical_edge_nodes(graph: RS_LevelGraph) -> Array:
+	var result: Array = []
+	for node in graph.nodes.values():
+		var vertical_edges := 0
+		for conn in node.connections:
+			var target := graph.get_node_data(conn.target_node_id)
+			if target != null and target.depth != node.depth:
+				vertical_edges += 1
+		if vertical_edges > 1:
+			result.append(node.id)
+	return result
 
 
 ## Узлы, где дверей в сцене меньше, чем рёбер (RunManager обрубит лишние рёбра).

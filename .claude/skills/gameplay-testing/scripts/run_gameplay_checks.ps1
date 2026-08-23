@@ -135,7 +135,7 @@ function Run-GenVerifier {
 
     $fail = $false
 
-    $summaryLine = $output | Select-String -Pattern "Итог: макс\. недостижимо по графу=(\d+), по дверям=(\d+)"
+    $summaryLine = $output | Select-String -Pattern "Итог: макс\. недостижимо по графу=(\d+), по дверям=(\d+), макс\. узлов с 2\+ вертикальными рёбрами=(\d+)"
     if (-not $summaryLine) {
         Write-Host "FAIL: не нашёл итоговую строку 'Итог: ...' в выводе — сцена не отработала до конца?" -ForegroundColor Red
         return $false
@@ -143,12 +143,17 @@ function Run-GenVerifier {
     $m = $summaryLine.Matches[0]
     $unreachableGraph = [int]$m.Groups[1].Value
     $unreachableDoors = [int]$m.Groups[2].Value
+    $multiVertical = [int]$m.Groups[3].Value
     if ($unreachableGraph -gt 0) {
         Write-Host "FAIL: недостижимо по графу > 0 ($unreachableGraph) — граф генератора несвязен, это баг генератора, не дверей." -ForegroundColor Red
         $fail = $true
     }
     if ($unreachableDoors -gt 0) {
         Write-Host "ВНИМАНИЕ: недостижимо по дверям = $unreachableDoors — не обязательно фейл (см. SKILL.md), но проверьте, не выросло ли число." -ForegroundColor Yellow
+    }
+    if ($multiVertical -gt 0) {
+        Write-Host "FAIL: узлов с 2+ вертикальными рёбрами > 0 ($multiVertical) — портал в комнате один, лишнее ребро утечёт обычной двери (см. v0.5.0 «Вертикальные переходы»)." -ForegroundColor Red
+        $fail = $true
     }
 
     if ($output | Select-String -Pattern "проблем:") {
