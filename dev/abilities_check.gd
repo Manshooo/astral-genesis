@@ -282,9 +282,9 @@ func _run(world: World) -> void:
 	var hud := (load("res://src/ui/hud/hud.tscn") as PackedScene).instantiate()
 	add_child(hud)
 	var abilities_panel := hud.get_node("Hud/AbilitiesPanel") as Control
-	var move_label := hud.get_node("Hud/AbilitiesPanel/Abilities/MoveLabel") as Label
-	var separator := hud.get_node("Hud/AbilitiesPanel/Abilities/HSeparator") as Control
-	var jump_label := hud.get_node("Hud/AbilitiesPanel/Abilities/JumpLabel") as Label
+	var move_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/MoveLabel") as Label
+	var separator := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/HSeparator") as Control
+	var jump_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/JumpLabel") as Label
 	await get_tree().process_frame
 
 	_check("HUD: призрак — «Полёт»", move_label.text == "Полёт", move_label.text)
@@ -294,6 +294,10 @@ func _run(world: World) -> void:
 		not separator.visible,
 		"строк без прыжка не должно ничего разделять"
 	)
+
+	# Подложка размером под контент, а не фиксированной коробкой: одна видимая
+	# строка обязана дать меньшую высоту, чем две.
+	var size_one_row := abilities_panel.size.y
 
 	var walker4 := _spawn_body(world, WALKER_SCENE, Vector3(-6.0, 0.0, 6.0))
 	await get_tree().physics_frame
@@ -314,6 +318,13 @@ func _run(world: World) -> void:
 		"две видимые строки — разделителю пора появиться"
 	)
 
+	var size_two_rows := abilities_panel.size.y
+	_check(
+		"HUD: подложка выросла под вторую строку, а не осталась под одну",
+		size_two_rows > size_one_row,
+		"%.1f против %.1f" % [size_two_rows, size_one_row]
+	)
+
 	var crawler3 := _spawn_body(world, CRAWLER_SCENE, Vector3(0.0, 0.0, 12.0))
 	await get_tree().physics_frame
 	await get_tree().physics_frame
@@ -331,6 +342,68 @@ func _run(world: World) -> void:
 		not separator.visible,
 		""
 	)
+
+	_check(
+		"HUD: подложка сжалась обратно, потеряв строку прыжка",
+		is_equal_approx(abilities_panel.size.y, size_one_row) and abilities_panel.size.y < size_two_rows,
+		"%.1f (одна строка была %.1f, две строки — %.1f)"
+		% [abilities_panel.size.y, size_one_row, size_two_rows]
+	)
+
+	# --- 9б. Разделители между N строк, не только между двумя -------------
+	# Сегодня в сцене ровно две строки-способности, и этого мало, чтобы поймать
+	# ошибку в общем правиле: если строк три и СРЕДНЯЯ скрыта, разделитель между
+	# первой и третьей обязан остаться ОДИН, а не задвоиться и не пропасть.
+	# Собираем синтетическую панель той же формы (Margin/Abilities/…), чтобы
+	# дёрнуть _sync_separators() в изоляции от реального состояния игрока.
+	var synthetic := UI_HudAbilities.new()
+	var syn_margin := MarginContainer.new()
+	syn_margin.name = "Margin"
+	synthetic.add_child(syn_margin)
+	var syn_abilities := VBoxContainer.new()
+	syn_abilities.name = "Abilities"
+	syn_margin.add_child(syn_abilities)
+	var row_a := Label.new()
+	row_a.name = "MoveLabel"  # имя обязано совпасть с @onready-путём _move_label
+	var sep_ab := HSeparator.new()
+	var row_b := Label.new()
+	row_b.name = "JumpLabel"  # аналогично для _jump_label
+	var sep_bc := HSeparator.new()
+	var row_c := Label.new()
+	row_c.name = "ThirdAbilityLabel"  # третья строка без @onready — их и не будет у каждой новой способности
+	for node in [row_a, sep_ab, row_b, sep_bc, row_c]:
+		syn_abilities.add_child(node)
+	add_child(synthetic)
+	await get_tree().process_frame  # даёт _ready() собрать _rows/_separators
+
+	row_a.visible = true
+	row_b.visible = false  # средняя строка скрыта — ровно тот случай с «дырой»
+	row_c.visible = true
+	synthetic.call("_sync_separators")
+
+	_check(
+		"HUD: разделитель вокруг скрытой средней строки — ровно один",
+		sep_ab.visible != sep_bc.visible,
+		"sep_ab=%s sep_bc=%s (должен быть виден ровно один)" % [sep_ab.visible, sep_bc.visible]
+	)
+
+	row_b.visible = true
+	synthetic.call("_sync_separators")
+	_check(
+		"HUD: три видимые строки подряд — оба разделителя на месте",
+		sep_ab.visible and sep_bc.visible,
+		"sep_ab=%s sep_bc=%s" % [sep_ab.visible, sep_bc.visible]
+	)
+
+	row_a.visible = false
+	row_b.visible = false
+	synthetic.call("_sync_separators")
+	_check(
+		"HUD: одна видимая строка из трёх — разделителей нет вовсе",
+		not sep_ab.visible and not sep_bc.visible,
+		"sep_ab=%s sep_bc=%s" % [sep_ab.visible, sep_bc.visible]
+	)
+	synthetic.queue_free()
 
 	# --- 10. Подложки у подсказок появляются только при сообщении ----------
 	# Раньше PanelContainer-обёртка не имела скрипта и висела на экране пустой

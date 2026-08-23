@@ -13,18 +13,30 @@
 ## на вселении/выходе/пересадке, а не непрерывное число.
 ##
 ## Скрипт — на ПОДЛОЖКЕ (PanelContainer), а не на списке строк: та же причина,
-## что у hud_prompt.gd и hud_message.gd. Разделитель между строками — туда же:
-## он разделяет ДВЕ ВИДИМЫЕ строки, и виден ровно тогда, когда видна строка
-## прыжка, иначе торчал бы сиротой под одиноким «Ход».
+## что у hud_prompt.gd и hud_message.gd.
 class_name UI_HudAbilities
 extends PanelContainer
 
-@onready var _move_label: Label = $Abilities/MoveLabel
-@onready var _separator: HSeparator = $Abilities/HSeparator
-@onready var _jump_label: Label = $Abilities/JumpLabel
+@onready var _abilities: VBoxContainer = $Margin/Abilities
+@onready var _move_label: Label = $Margin/Abilities/MoveLabel
+@onready var _jump_label: Label = $Margin/Abilities/JumpLabel
+
+## Строки-способности и разделители между ними — СОБРАНЫ ИЗ ДЕТЕЙ, а не
+## перечислены по именам: авторишь третью строку (сцена) — разделители сами
+## подхватят её, без правки этого файла. Порядок в обоих массивах — порядок
+## детей: _separators[i] лежит МЕЖДУ _rows[i] и _rows[i+1] (сцена авторится
+## строго чередованием Label/HSeparator, см. hud.tscn).
+var _rows: Array[Control] = []
+var _separators: Array[Control] = []
 
 
 func _ready() -> void:
+	for child in _abilities.get_children():
+		if child is HSeparator:
+			_separators.append(child)
+		else:
+			_rows.append(child)
+
 	if ECS.world:
 		_connect_world_signals(ECS.world)
 	ECS.world_changed.connect(_on_world_changed)
@@ -66,17 +78,41 @@ func _render() -> void:
 		return
 	show()
 
+	_move_label.visible = true
 	_move_label.text = "Полёт" if player.has_component(C_Flight) else "Ход"
 
 	var jump := player.get_component(C_Jump) as C_Jump
-	# Разделитель — не украшение сам по себе, а знак «строк больше одной»:
-	# прячем его вместе со строкой прыжка, а не оставляем висеть над пустотой.
-	_separator.visible = jump != null
 	_jump_label.visible = jump != null
-	if jump == null:
-		return
-	var key := SettingsManager.action_display_name(jump.action_name)
-	_jump_label.text = "[%s] Прыжок" % key if key != "" else "Прыжок"
+	if jump != null:
+		var key := SettingsManager.action_display_name(jump.action_name)
+		_jump_label.text = "[%s] Прыжок" % key if key != "" else "Прыжок"
+
+	_sync_separators()
+
+	# Подложка — под столько строк, сколько видно СЕЙЧАС, а не под их
+	# наибольшее возможное число: сброс размера заставляет Godot заново
+	# посчитать его от текущего минимума VBoxContainer (Control никогда не
+	# опускает size ниже get_combined_minimum_size, но и сам никогда не
+	# УМЕНЬШАЕТ его обратно — сброс в ZERO и есть тот самый пересчёт).
+	size = Vector2.ZERO
+
+
+## Разделитель — не украшение само по себе, а знак «до этой точки была видимая
+## строка, и после неё тоже будет». Прячем ВСЕ разделители и зажигаем ровно по
+## одному на каждый переход между двумя видимыми строками — даже если между
+## ними есть скрытые: две видимые строки через одну скрытую всё равно должны
+## разделяться ровно одной чертой, а не двумя (или ни одной).
+func _sync_separators() -> void:
+	for separator in _separators:
+		separator.visible = false
+
+	var last_visible := -1
+	for i in _rows.size():
+		if not _rows[i].visible:
+			continue
+		if last_visible >= 0:
+			_separators[last_visible].visible = true
+		last_visible = i
 
 
 func _get_player() -> Entity:

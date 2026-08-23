@@ -85,24 +85,29 @@ horizontal_alignment = 1
 
 [node name="AbilitiesPanel" type="PanelContainer" parent="Hud" unique_id=1572142544]
 layout_mode = 1
-offset_right = 145.20837
-offset_bottom = 60.0
 script = ExtResource("8_abilities")
 
-[node name="Abilities" type="VBoxContainer" parent="Hud/AbilitiesPanel" unique_id=700000101]
+[node name="Margin" type="MarginContainer" parent="Hud/AbilitiesPanel" unique_id=700000104]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Abilities" type="VBoxContainer" parent="Hud/AbilitiesPanel/Margin" unique_id=700000101]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 theme_override_constants/separation = 2
 
-[node name="MoveLabel" type="Label" parent="Hud/AbilitiesPanel/Abilities" unique_id=700000102]
+[node name="MoveLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000102]
 layout_mode = 2
 text = "Ход"
 
-[node name="HSeparator" type="HSeparator" parent="Hud/AbilitiesPanel/Abilities" unique_id=2002045983]
+[node name="HSeparator" type="HSeparator" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=2002045983]
 layout_mode = 2
 
-[node name="JumpLabel" type="Label" parent="Hud/AbilitiesPanel/Abilities" unique_id=700000103]
+[node name="JumpLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000103]
 layout_mode = 2
 text = "[Space] Прыжок"
 
