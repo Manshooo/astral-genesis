@@ -306,7 +306,7 @@ func _run(world: World) -> void:
 	await _physics(1)
 	await get_tree().process_frame
 
-	_check("HUD: во плоти на ходячем теле — «Ход»", move_label.text == "Ход", move_label.text)
+	_check("HUD: во плоти на ходячем теле — «Ходьба»", move_label.text == "Ходьба", move_label.text)
 	_check(
 		"HUD: у прыгучего тела строка прыжка есть и содержит клавишу",
 		jump_label.visible and jump_label.text.contains("Прыжок"),
