@@ -13,7 +13,7 @@
 class_name UI_HudMessage
 extends PanelContainer
 
-@onready var _label: Label = $Message
+@onready var _label: Label = $Margin/Message
 
 
 func _ready() -> void:

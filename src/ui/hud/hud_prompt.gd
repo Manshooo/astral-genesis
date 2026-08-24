@@ -19,7 +19,7 @@
 class_name UI_HudPrompt
 extends PanelContainer
 
-@onready var _label: Label = $Prompt
+@onready var _label: Label = $Margin/Prompt
 
 ## Интерактив, на который сейчас смотрим (null — подсказка скрыта). Держим ссылку,
 ## чтобы пересобрать текст при смене раскладки, не дожидаясь нового наведения.
