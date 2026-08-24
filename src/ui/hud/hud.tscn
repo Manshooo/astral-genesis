@@ -6,6 +6,8 @@
 [ext_resource type="Script" uid="uid://dtwx60xc7p7vt" path="res://src/ui/hud/hud_prompt.gd" id="4_prompt"]
 [ext_resource type="Script" uid="uid://bllnfs0mr5vyc" path="res://src/ui/hud/hud_message.gd" id="5_message"]
 [ext_resource type="Script" uid="uid://01ionly7qqo5" path="res://src/ui/hud/hud_map.gd" id="6_map"]
+[ext_resource type="Script" uid="uid://ek66xvjkfy67" path="res://src/ui/hud/vital_bar.gd" id="7_bar"]
+[ext_resource type="Script" uid="uid://dh6qrlpmpgil0" path="res://src/ui/hud/hud_abilities.gd" id="8_abilities"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -42,40 +44,88 @@ pivot_offset_ratio = Vector2(0.5, 0.5)
 layout_mode = 2
 script = ExtResource("2_cvkdw")
 
-[node name="Prompt" type="Label" parent="Hud" unique_id=283857693]
+[node name="PromptPanel" type="PanelContainer" parent="Hud" unique_id=1360192941]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = 34.0
-offset_right = 160.0
-offset_bottom = 60.0
+offset_left = -20.000366
+offset_top = 25.0
+offset_right = 19.999634
+offset_bottom = 65.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_alignment = 1
-vertical_alignment = 1
 script = ExtResource("4_prompt")
 
-[node name="Message" type="Label" parent="Hud" unique_id=1544852345]
+[node name="Margin" type="MarginContainer" parent="Hud/PromptPanel" unique_id=871180922]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Prompt" type="Label" parent="Hud/PromptPanel/Margin" unique_id=283857693]
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MessagePanel" type="PanelContainer" parent="Hud" unique_id=263604356]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = 68.0
-offset_right = 200.0
-offset_bottom = 94.0
+offset_left = -20.000366
+offset_top = 70.0
+offset_right = 19.999634
+offset_bottom = 110.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_alignment = 1
 script = ExtResource("5_message")
 
-[node name="Map" type="Control" parent="Hud" unique_id=1774390021]
+[node name="Margin" type="MarginContainer" parent="Hud/MessagePanel" unique_id=1579903994]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Message" type="Label" parent="Hud/MessagePanel/Margin" unique_id=1544852345]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="AbilitiesPanel" type="PanelContainer" parent="Hud" unique_id=1572142544]
+layout_mode = 1
+script = ExtResource("8_abilities")
+
+[node name="Margin" type="MarginContainer" parent="Hud/AbilitiesPanel" unique_id=700000104]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Abilities" type="VBoxContainer" parent="Hud/AbilitiesPanel/Margin" unique_id=700000101]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 2
+
+[node name="MoveLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000102]
+layout_mode = 2
+text = "Ход"
+
+[node name="HSeparator" type="HSeparator" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=2002045983]
+layout_mode = 2
+
+[node name="JumpLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000103]
+layout_mode = 2
+text = "[Space] Прыжок"
+
+[node name="MapPanel" type="PanelContainer" parent="Hud" unique_id=1336408021]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -83,6 +133,9 @@ anchor_right = 1.0
 offset_left = -180.0
 offset_bottom = 180.0
 grow_horizontal = 0
+
+[node name="Map" type="Control" parent="Hud/MapPanel" unique_id=1774390021]
+layout_mode = 2
 script = ExtResource("6_map")
 
 [node name="Vitals" type="VBoxContainer" parent="Hud" unique_id=1286022205]
@@ -90,41 +143,50 @@ layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_top = -70.0
-offset_right = 320.0
+offset_top = -93.0
+offset_right = 263.0
 grow_vertical = 0
 theme_override_constants/separation = 6
+alignment = 2
 script = ExtResource("3_vitals")
 
 [node name="LifespanRow" type="HBoxContainer" parent="Hud/Vitals" unique_id=1779944029]
 layout_mode = 2
 theme_override_constants/separation = 8
-alignment = 1
 
-[node name="PanelContainer" type="PanelContainer" parent="Hud/Vitals/LifespanRow" unique_id=2027910514]
-custom_minimum_size = Vector2(75, 0)
+[node name="LifespanBar" type="ProgressBar" parent="Hud/Vitals/LifespanRow" unique_id=240844457]
+custom_minimum_size = Vector2(180, 27)
 layout_mode = 2
+size_flags_vertical = 1
+size_flags_stretch_ratio = 3.0
+max_value = 60.0
+value = 49.63
+show_percentage = false
+script = ExtResource("7_bar")
+fill_color = Color(0.78, 0.64, 0.92, 1)
 
-[node name="Label" type="Label" parent="Hud/Vitals/LifespanRow/PanelContainer" unique_id=1736447510]
-custom_minimum_size = Vector2(70, 0)
+[node name="LabelPlate" type="PanelContainer" parent="Hud/Vitals/LifespanRow/LifespanBar" unique_id=2027910514]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"VitalBarPlate"
+
+[node name="Label" type="Label" parent="Hud/Vitals/LifespanRow/LifespanBar/LabelPlate" unique_id=1736447510]
 layout_mode = 2
 text = "Распад"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LifespanBar" type="ProgressBar" parent="Hud/Vitals/LifespanRow" unique_id=240844457]
-self_modulate = Color(0.5, 0.8, 1, 1)
-custom_minimum_size = Vector2(180, 18)
-layout_mode = 2
-size_flags_vertical = 1
-size_flags_stretch_ratio = 3.0
-max_value = 60.0
-value = 60.0
-show_percentage = false
-
 [node name="PanelContainer2" type="PanelContainer" parent="Hud/Vitals/LifespanRow" unique_id=1018919721]
 custom_minimum_size = Vector2(75, 0)
 layout_mode = 2
+theme_type_variation = &"VitalBarPlate"
 
 [node name="LifespanValue" type="Label" parent="Hud/Vitals/LifespanRow/PanelContainer2" unique_id=310285439]
 custom_minimum_size = Vector2(50, 0)
@@ -134,33 +196,87 @@ text = "60 с"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="BodyLifeRow" type="HBoxContainer" parent="Hud/Vitals" unique_id=700000001]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BodyLifeBar" type="ProgressBar" parent="Hud/Vitals/BodyLifeRow" unique_id=700000004]
+custom_minimum_size = Vector2(180, 27)
+layout_mode = 2
+size_flags_vertical = 1
+size_flags_stretch_ratio = 3.0
+max_value = 60.0
+value = 60.0
+show_percentage = false
+script = ExtResource("7_bar")
+fill_color = Color(1, 0.85, 0.4, 1)
+
+[node name="LabelPlate" type="PanelContainer" parent="Hud/Vitals/BodyLifeRow/BodyLifeBar" unique_id=700000002]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"VitalBarPlate"
+
+[node name="Label" type="Label" parent="Hud/Vitals/BodyLifeRow/BodyLifeBar/LabelPlate" unique_id=700000003]
+layout_mode = 2
+text = "Запас тела"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PanelContainer2" type="PanelContainer" parent="Hud/Vitals/BodyLifeRow" unique_id=700000005]
+custom_minimum_size = Vector2(75, 0)
+layout_mode = 2
+theme_type_variation = &"VitalBarPlate"
+
+[node name="BodyLifeValue" type="Label" parent="Hud/Vitals/BodyLifeRow/PanelContainer2" unique_id=700000006]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "0 с"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="HealthRow" type="HBoxContainer" parent="Hud/Vitals" unique_id=856023743]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="PanelContainer" type="PanelContainer" parent="Hud/Vitals/HealthRow" unique_id=295620472]
-custom_minimum_size = Vector2(75, 0)
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Hud/Vitals/HealthRow/PanelContainer" unique_id=434799375]
-custom_minimum_size = Vector2(70, 0)
-layout_mode = 2
-text = "Тело"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="HealthBar" type="ProgressBar" parent="Hud/Vitals/HealthRow" unique_id=1648586076]
-self_modulate = Color(1, 0.4, 0.4, 1)
-custom_minimum_size = Vector2(180, 18)
+custom_minimum_size = Vector2(180, 27)
 layout_mode = 2
 size_flags_vertical = 1
 size_flags_stretch_ratio = 3.0
 value = 100.0
 show_percentage = false
+script = ExtResource("7_bar")
+fill_color = Color(1, 0.4, 0.4, 1)
+
+[node name="LabelPlate" type="PanelContainer" parent="Hud/Vitals/HealthRow/HealthBar" unique_id=295620472]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"VitalBarPlate"
+
+[node name="Label" type="Label" parent="Hud/Vitals/HealthRow/HealthBar/LabelPlate" unique_id=434799375]
+layout_mode = 2
+text = "Тело"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="PanelContainer2" type="PanelContainer" parent="Hud/Vitals/HealthRow" unique_id=1251203161]
 custom_minimum_size = Vector2(75, 0)
 layout_mode = 2
+theme_type_variation = &"VitalBarPlate"
 
 [node name="HealthValue" type="Label" parent="Hud/Vitals/HealthRow/PanelContainer2" unique_id=162285448]
 custom_minimum_size = Vector2(50, 0)

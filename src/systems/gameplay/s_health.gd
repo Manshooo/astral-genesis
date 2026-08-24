@@ -26,7 +26,7 @@ func query() -> QueryBuilder:
 func process(entities: Array[Entity], _components: Array, _delta: float) -> void:
 	for entity in entities:
 		var health := entity.get_component(C_Health) as C_Health
-		health.current = clampf(health.current, 0.0, health.maximum)
+		health.current = clampf(health.current, 0.0, health.effective_maximum(entity))
 
 		if health.current <= 0.0:
 			cmd.add_component(entity, C_Dead.new())

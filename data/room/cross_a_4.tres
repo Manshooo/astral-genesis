@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3 uid="uid://xle0niud60rg"]
+
+[ext_resource type="PackedScene" uid="uid://d4b2gmgtsmvkx" path="res://src/levels/procedural/rooms/cross_A/cross_a_4.tscn" id="1_fxkik"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_lytfy"]
+
+[resource]
+script = ExtResource("2_lytfy")
+display_name = "Cross_A_4"
+scene = ExtResource("1_fxkik")
+tags = Array[StringName]([&"floor_hub"])
+slot_count = 4
+metadata/_custom_type_script = "uid://wiaffa7aebsm"

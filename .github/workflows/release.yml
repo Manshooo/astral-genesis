@@ -1,0 +1,142 @@
+name: Релиз
+
+# Версия нигде не хранится руками: её имя — это имя ветки release/vX.Y.Z.
+# Когда PR из такой ветки вливается в master, workflow сам проставляет версию
+# в project.godot и export_presets.cfg, коммитит бамп, вешает тег vX.Y.Z,
+# собирает обе платформы и публикует релиз с архивами.
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Версия без префикса v, например 0.5.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Версия и бамп
+    # Обычный PR в master (правка доков, хотфикс) релиз не выпускает — только
+    # влитый PR из ветки, названной по версии.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       startsWith(github.event.pull_request.head.ref, 'release/v'))
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.bump.outputs.sha }}
+    steps:
+      - name: Клонировать master
+        uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 0
+          # LFS и сабмодули этому джобу не нужны: он правит только текстовые файлы.
+
+      - name: Определить версию
+        id: version
+        env:
+          # Имя ветки приходит извне, поэтому идёт через переменную окружения,
+          # а не подставляется в текст скрипта.
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="$INPUT_VERSION"
+          else
+            version="${HEAD_REF#release/v}"
+          fi
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Не удалось получить версию из '${HEAD_REF:-$INPUT_VERSION}'. Ветка должна называться release/vX.Y.Z"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v${version}" >/dev/null; then
+            echo "::error::Тег v${version} уже существует — релиз этой версии уже выпускался"
+            exit 1
+          fi
+
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Версия релиза: ${version}"
+
+      - name: Проставить версию и закоммитить
+        id: bump
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash .github/scripts/set_version.sh "$VERSION"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "Версия в файлах уже ${VERSION} — коммит не нужен"
+          else
+            git commit -am "chore: версия ${VERSION} [skip ci]"
+            git push origin master
+          fi
+
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Сборка и публикация
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Клонировать коммит с бампом
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
+
+      - name: Собрать Windows
+        uses: ./.github/actions/godot-export
+        with:
+          platform: windows
+          label: v${{ needs.prepare.outputs.version }}
+
+      - name: Собрать Linux
+        uses: ./.github/actions/godot-export
+        with:
+          platform: linux
+          label: v${{ needs.prepare.outputs.version }}
+
+      - name: Повесить тег
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${VERSION}" -m "Astral Genesis v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Опубликовать релиз
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Пока мажорная версия нулевая, игра остаётся альфой — помечаем релиз
+          # как предварительный, чтобы «Latest release» не обещал готовую игру.
+          prerelease=""
+          case "$VERSION" in 0.*) prerelease="--prerelease" ;; esac
+
+          gh release create "v${VERSION}" dist/*.zip \
+            --title "Astral Genesis v${VERSION}" \
+            --generate-notes \
+            $prerelease

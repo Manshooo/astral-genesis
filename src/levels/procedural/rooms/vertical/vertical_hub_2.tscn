@@ -41,14 +41,14 @@ mesh = ExtResource("2_y4dxr")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Room/StaticBody3D" unique_id=1624559923]
 shape = SubResource("ConcavePolygonShape3D_jspcr")
 
-[node name="Doors" type="Node3D" parent="Room" unique_id=1053781916]
+[node name="Doors" type="Node3D" parent="Room" unique_id=999273371]
 
 [node name="Door" parent="Room/Doors" unique_id=1986258941 instance=ExtResource("5_3uqyc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7313477, 2.2098024, -9.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7313477, 1.9888626, -9.6)
 component_resources = Array[ExtResource("2_pw0oc")]([SubResource("Resource_8ssbo"), SubResource("Resource_kvf8c")])
 
 [node name="Door2" parent="Room/Doors" unique_id=1042643329 instance=ExtResource("5_3uqyc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0626955, 2.2196047, 9.599999)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0626955, 2.0196047, 9.599999)
 component_resources = Array[ExtResource("2_pw0oc")]([SubResource("Resource_8ssbo"), SubResource("Resource_jspcr")])
 
 [node name="VerticalPortal" parent="Room" unique_id=1972028151 instance=ExtResource("3_jo0ii")]

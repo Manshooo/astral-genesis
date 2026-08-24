@@ -3,6 +3,14 @@
 [ext_resource type="Script" uid="uid://1b4pm2xpbsvc" path="res://src/resources/skills/rs_skill_tree.gd" id="1_r03fv"]
 [ext_resource type="Script" uid="uid://csxedle0e5j8g" path="res://src/resources/skills/rs_skill_definition.gd" id="2_ign7e"]
 [ext_resource type="Script" uid="uid://cf7n86al5ghfw" path="res://src/resources/skills/rs_skill_requirement.gd" id="3_ign7e"]
+[ext_resource type="Script" uid="uid://bftpqmqlvmglj" path="res://src/resources/skills/rs_stat_modifier.gd" id="4_stmod"]
+
+[sub_resource type="Resource" id="Resource_mod_range"]
+script = ExtResource("4_stmod")
+stat = &"capture_range"
+op = 0
+per_rank = 0.5
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 
 [sub_resource type="Resource" id="Resource_11kxi"]
 script = ExtResource("2_ign7e")
@@ -10,12 +18,37 @@ id = &"body_snatch"
 display_name = "Захват тела"
 description = "Позволяет управлять трупами"
 branch = &"possession"
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_range")])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_tcr6r"]
 script = ExtResource("3_ign7e")
 target_skill = &"body_snatch"
 metadata/_custom_type_script = "uid://cf7n86al5ghfw"
+
+[sub_resource type="Resource" id="Resource_mod_chance"]
+script = ExtResource("4_stmod")
+stat = &"capture_chance"
+op = 0
+per_rank = 0.1
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_capture_precision"]
+script = ExtResource("2_ign7e")
+id = &"capture_precision"
+display_name = "Точная хватка"
+description = "Увеличивает шанс успешного захвата тела"
+branch = &"possession"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_chance")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_life"]
+script = ExtResource("4_stmod")
+stat = &"soul_lifespan"
+op = 0
+per_rank = 20.0
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 
 [sub_resource type="Resource" id="Resource_o3xjp"]
 script = ExtResource("2_ign7e")
@@ -24,9 +57,145 @@ display_name = "Длительность жизни"
 description = "Увеличивает длительность времени, сколько можно находится в захваченном теле/вне лаборатории (?)"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_life")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_req_lifespan1"]
+script = ExtResource("3_ign7e")
+target_skill = &"lifespan"
+metadata/_custom_type_script = "uid://cf7n86al5ghfw"
+
+[sub_resource type="Resource" id="Resource_req_lifespan2"]
+script = ExtResource("3_ign7e")
+target_skill = &"lifespan"
+min_value = 2
+metadata/_custom_type_script = "uid://cf7n86al5ghfw"
+
+[sub_resource type="Resource" id="Resource_mod_decay"]
+script = ExtResource("4_stmod")
+stat = &"body_decay"
+op = 1
+per_rank = 0.1
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_decay_capacity"]
+script = ExtResource("2_ign7e")
+id = &"decay_capacity"
+display_name = "Крепкая плоть"
+description = "Увеличивает запас распада захваченного тела"
+branch = &"survival"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan1")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_decay")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_leave_gain"]
+script = ExtResource("4_stmod")
+stat = &"leave_body_gain"
+op = 1
+per_rank = 0.1
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_graceful_exit"]
+script = ExtResource("2_ign7e")
+id = &"graceful_exit"
+display_name = "Чистый выход"
+description = "Больше остатка запаса тела достаётся душе при добровольном выходе"
+branch = &"survival"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan1")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_leave_gain")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_overflow"]
+script = ExtResource("4_stmod")
+stat = &"overflow_leak"
+op = 1
+per_rank = -0.1
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_overflow_control"]
+script = ExtResource("2_ign7e")
+id = &"overflow_control"
+display_name = "Контроль избытка"
+description = "Снижает потери излишка запаса души сверх собственного максимума"
+branch = &"survival"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan2")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_overflow")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_death_keep"]
+script = ExtResource("4_stmod")
+stat = &"death_keep"
+op = 0
+per_rank = 0.05
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_last_breath"]
+script = ExtResource("2_ign7e")
+id = &"last_breath"
+display_name = "Последний вдох"
+description = "Больше запаса души сохраняется при гибели захваченного тела"
+branch = &"survival"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan2")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_death_keep")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_walk"]
+script = ExtResource("4_stmod")
+stat = &"walk_speed"
+op = 0
+per_rank = 0.3
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_steady_legs"]
+script = ExtResource("2_ign7e")
+id = &"steady_legs"
+display_name = "Твёрдая поступь"
+description = "Увеличивает скорость ходьбы в захваченном теле"
+branch = &"embodiment"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_walk")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_req_steady_legs1"]
+script = ExtResource("3_ign7e")
+target_skill = &"steady_legs"
+metadata/_custom_type_script = "uid://cf7n86al5ghfw"
+
+[sub_resource type="Resource" id="Resource_mod_jump"]
+script = ExtResource("4_stmod")
+stat = &"jump_velocity"
+op = 0
+per_rank = 0.5
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_spring_step"]
+script = ExtResource("2_ign7e")
+id = &"spring_step"
+display_name = "Пружинный шаг"
+description = "Увеличивает силу прыжка в захваченном теле"
+branch = &"embodiment"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_jump")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_body_health"]
+script = ExtResource("4_stmod")
+stat = &"body_health"
+op = 1
+per_rank = 0.1
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_resilient_flesh"]
+script = ExtResource("2_ign7e")
+id = &"resilient_flesh"
+display_name = "Живучесть"
+description = "Увеличивает запас прочности захваченного тела"
+branch = &"embodiment"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_body_health")])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [resource]
 script = ExtResource("1_r03fv")
-skills = Array[ExtResource("2_ign7e")]([SubResource("Resource_11kxi"), SubResource("Resource_o3xjp")])
+skills = Array[ExtResource("2_ign7e")]([SubResource("Resource_11kxi"), SubResource("Resource_capture_precision"), SubResource("Resource_o3xjp"), SubResource("Resource_decay_capacity"), SubResource("Resource_graceful_exit"), SubResource("Resource_overflow_control"), SubResource("Resource_last_breath"), SubResource("Resource_steady_legs"), SubResource("Resource_spring_step"), SubResource("Resource_resilient_flesh")])
 metadata/_custom_type_script = "uid://1b4pm2xpbsvc"

@@ -1,4 +1,4 @@
-# res://src/ui/main_menu.gd
+# res://src/ui/main_menu/main_menu.gd
 extends Control
 
 const WORLD_SCENE := "res://src/world/world.tscn"

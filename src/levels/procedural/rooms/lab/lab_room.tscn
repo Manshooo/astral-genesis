@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_gbsua"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_ua5we"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_8ut7d"]
+[ext_resource type="PackedScene" uid="uid://f5i4a5l3ph2j" path="res://src/entities/body/e_body_walker.tscn" id="90_body"]
 
 [sub_resource type="Resource" id="Resource_2oaqr"]
 script = ExtResource("3_gbsua")
@@ -32,16 +33,17 @@ component_resources = Array[ExtResource("2_2ub76")]([SubResource("Resource_2oaqr
 mesh = ExtResource("4_2ub76")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=769746175]
-visible = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=2032499311]
 shape = SubResource("ConcavePolygonShape3D_ua5we")
 
-[node name="Doors" type="Node3D" parent="." unique_id=1730526942]
+[node name="Doors" type="Node3D" parent="MeshInstance3D" unique_id=1730526942]
 
-[node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_gbsua")]
+[node name="Door" parent="MeshInstance3D/Doors" unique_id=1986258941 instance=ExtResource("5_gbsua")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4000001, 2.2, 7.5)
 component_resources = Array[ExtResource("2_2ub76")]([SubResource("Resource_8ssbo"), SubResource("Resource_6iy6b")])
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.8, -4.8966465)
+
+[node name="BodyWalker" parent="." unique_id=710000001 instance=ExtResource("90_body")]

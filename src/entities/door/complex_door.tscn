@@ -1,24 +1,12 @@
 [gd_scene format=3 uid="uid://4kk8ci8ah8h1"]
 
-[ext_resource type="Texture2D" uid="uid://b0unb0bru0yjw" path="res://addons/kenney_patterns/Vector/pattern_04.svg" id="1_gx737"]
 [ext_resource type="Script" uid="uid://id4kvc8cui16" path="res://src/entities/door/e_complex_door.gd" id="2_tkmj8"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="3_3hoce"]
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_cehsg"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_cehsg"]
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="4_qd5pf"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_cehsg"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8upip"]
-albedo_color = Color(0.97180814, 0.8654046, 0.5775204, 1)
-albedo_texture = ExtResource("1_gx737")
-metallic = 1.0
-metallic_texture = ExtResource("1_gx737")
-uv1_scale = Vector3(12, 12, 12)
-uv1_triplanar_sharpness = 0.070747465
-uv1_world_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_3owqy"]
-size = Vector3(2.8, 4.3, 0.09820557)
+[ext_resource type="ArrayMesh" uid="uid://bdces7a4ghwba" path="res://assets/shared/models/door.res" id="8_qd5pf"]
 
 [sub_resource type="Resource" id="Resource_r83wa"]
 script = ExtResource("4_qd5pf")
@@ -32,18 +20,28 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 script = ExtResource("7_cehsg")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dpga7"]
-size = Vector3(3.4768066, 4.468132, 0.6937256)
+size = Vector3(3.1486816, 4.35223, 0.6937256)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_r83wa"]
+size = Vector3(2.7167664, 4.0274963, 0.2319336)
 
 [node name="Door" type="MeshInstance3D" unique_id=1986258941]
-material_override = SubResource("StandardMaterial3D_8upip")
-mesh = SubResource("BoxMesh_3owqy")
+transform = Transform3D(1, 0, 0, 0, 1.15, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("8_qd5pf")
 script = ExtResource("2_tkmj8")
 actions = Array[ExtResource("3_cehsg")]([SubResource("Resource_r83wa")])
 component_resources = Array[ExtResource("3_3hoce")]([SubResource("Resource_8ssbo"), SubResource("Resource_qd5pf")])
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1818445843]
-collision_layer = 9
+collision_layer = 8
+collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=838414485]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07627487, -0.028518677)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.018323898, -0.028518677)
 shape = SubResource("BoxShape3D_dpga7")
+
+[node name="InteractBody2" type="StaticBody3D" parent="." unique_id=1254095668]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody2" unique_id=2053403783]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00065612793, 0.0017051697, 0.0010223389)
+shape = SubResource("BoxShape3D_r83wa")

@@ -4,14 +4,31 @@
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
 [ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="3_health"]
 [ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="4_snatch"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_body_decay.gd" id="5_decay"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_walk.gd" id="6_walk"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_jump.gd" id="7_jump"]
 
 [sub_resource type="Resource" id="Resource_health"]
 script = ExtResource("3_health")
+maximum = 100.0
+current = 100.0
 metadata/_custom_type_script = "uid://5r77tfxtjy6p"
 
 [sub_resource type="Resource" id="Resource_snatch"]
 script = ExtResource("4_snatch")
 metadata/_custom_type_script = "uid://bgw8q60os3ln1"
+
+[sub_resource type="Resource" id="Resource_decay"]
+script = ExtResource("5_decay")
+maximum = 60.0
+
+[sub_resource type="Resource" id="Resource_walk"]
+script = ExtResource("6_walk")
+speed = 4.5
+
+[sub_resource type="Resource" id="Resource_jump"]
+script = ExtResource("7_jump")
+velocity = 6.0
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.4
@@ -29,7 +46,7 @@ material = SubResource("StandardMaterial3D_body")
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("1_body")
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_decay"), SubResource("Resource_walk"), SubResource("Resource_jump")])
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -38,3 +55,6 @@ shape = SubResource("CapsuleShape3D_body")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("CapsuleMesh_body")
+
+[node name="Eyes" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)

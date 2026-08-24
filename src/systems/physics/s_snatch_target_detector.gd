@@ -40,7 +40,10 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		return
 
 	var snatch := player.get_component(C_BodySnatch) as C_BodySnatch
-	var target := _raycast_body(player.camera, snatch.capture_range)
+	# Дальность — стат, а не поле: перк «дотянуться дальше» прибавляет к базе, а
+	# не переписывает её (C_StatModifiers).
+	var reach := C_StatModifiers.of(player, C_StatModifiers.CAPTURE_RANGE, snatch.capture_range)
+	var target := _raycast_body(player.camera, reach)
 
 	if target == _current_target:
 		return

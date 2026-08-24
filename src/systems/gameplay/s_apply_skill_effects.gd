@@ -1,25 +1,54 @@
+# res://src/systems/gameplay/s_apply_skill_effects.gd
+# Наблюдатель: переносит дерево перков в модификаторы души.
+#
+# Он ПЕРЕСОБИРАЕТ вклад источника &"skills" целиком по текущей таблице рангов, а
+# не применяет только что открытый скилл. Так у наблюдателя нет своей памяти:
+# один и тот же вызов годится и на разблокировку, и на спавн игрока, и на
+# загрузку сейва, и повторное применение ничего не удваивает. Раньше он лез в
+# конкретные поля конкретных компонентов (capture_range = 2.0 + rank * 0.5) —
+# каждый новый скилл требовал новой ветки здесь, два скилла на один стат затирали
+# друг друга, а снять эффект было нечем: база уже была потеряна.
 class_name O_ApplySkillEffects
 extends Observer
 
+## Имя источника в C_StatModifiers. Улучшения за забег лягут отдельным именем и
+## снимутся в конце забега, не трогая перки.
+const SOURCE := &"skills"
+
+
 func setup() -> void:
-	SkillManager.skill_unlocked.connect(
-		func(id, rank): ECS.world.emit_event(&"skill_unlocked", null, {"id": id, "rank": rank})
-	)
+	SkillManager.skills_changed.connect(_notify_souls)
 
+
+## Событие шлём ПО СУЩНОСТЯМ, а не один раз с null. emit_event(name, null, ...) в
+## GECS — широковещалка: фильтр сущности не применяется вовсе (его не по чему
+## вычислять), и each получает entity == null. Прошлая версия наблюдателя делала
+## именно так и молча падала на entity.get_component() — из-за чего перки не
+## применялись НИКОГДА, ни один.
+func _notify_souls() -> void:
+	if ECS.world == null:
+		return
+	for soul in ECS.world.query.with_all([C_StatModifiers]).execute():
+		ECS.world.emit_event(&"skills_changed", soul, null)
+
+
+## Полезной нагрузки у события нет намеренно: что именно открыли, наблюдателю
+## неинтересно — он всё равно читает всю таблицу рангов.
 func query() -> QueryBuilder:
-	return q.with_all([C_Lifespan, C_BodySnatch]).on_event(&"skill_unlocked")
+	return q.with_all([C_StatModifiers]).on_event(&"skills_changed")
 
-# payload — Dictionary {"id", "rank"} из setup(). Читаем по ключу: Dictionary в
-# GDScript 4 не поддерживает dot-доступ (data.id упал бы в рантайме).
-func each(_event, entity: Entity, data = null) -> void:
-	var id: StringName = data.get("id", &"")
-	var rank: int = data.get("rank", 0)
-	match id:
-		&"body_snatch":
-			var c := entity.get_component(C_BodySnatch) as C_BodySnatch
-			if c:
-				c.capture_range = 2.0 + rank * 0.5
-		&"lifespan":
-			var c := entity.get_component(C_Lifespan) as C_Lifespan
-			if c:
-				c.max_duration = 60.0 + rank * 20.0
+
+func each(_event, entity: Entity, _payload = null) -> void:
+	var mods := entity.get_component(C_StatModifiers) as C_StatModifiers
+	if mods == null:
+		return
+
+	var flat := {}
+	var mult := {}
+	for definition in SkillManager.SKILL_TREE.skills:
+		var rank := SkillManager.get_rank(definition.id)
+		if rank <= 0:
+			continue
+		RS_StatModifier.fold(definition.modifiers, rank, flat, mult)
+
+	mods.set_source(SOURCE, flat, mult)

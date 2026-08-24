@@ -1,0 +1,67 @@
+name: Сборка
+
+# Проверочная сборка на каждый PR в master: если экспорт сломан, это видно
+# до вливания, а ревьюер может скачать готовую сборку из артефактов прогона.
+# Релиз собирается отдельным workflow (release.yml) уже после мёржа.
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Windows и Linux
+    runs-on: ubuntu-latest
+    # Холодный импорт ассетов занимает минуты; если прогон упёрся сильно дольше,
+    # это поломка, а не медленный раннер — не жечь часы впустую.
+    timeout-minutes: 45
+
+    steps:
+      - name: Клонировать репозиторий
+        uses: actions/checkout@v7
+        with:
+          lfs: true
+          submodules: recursive
+
+      - name: Определить метку сборки
+        id: label
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            label="pr${PR_NUMBER}"
+          else
+            # Метка уходит в имя файла, а имя ветки может содержать слеш
+            # (release/v0.5.0) — иначе архив уехал бы в подкаталог.
+            label="$(printf '%s' "$REF_NAME" | tr -c 'A-Za-z0-9._-' '-')"
+          fi
+          echo "label=${label}" >> "$GITHUB_OUTPUT"
+
+      # Обе платформы на одном раннере: движок, шаблоны и импорт ресурсов
+      # переиспользуются, второй вызов доходит до экспорта за секунды.
+      - name: Собрать Windows
+        uses: ./.github/actions/godot-export
+        with:
+          platform: windows
+          label: ${{ steps.label.outputs.label }}
+
+      - name: Собрать Linux
+        uses: ./.github/actions/godot-export
+        with:
+          platform: linux
+          label: ${{ steps.label.outputs.label }}
+
+      - name: Выложить артефакты
+        uses: actions/upload-artifact@v7
+        with:
+          name: astral-genesis-${{ steps.label.outputs.label }}
+          path: dist/*.zip
+          retention-days: 14
+          if-no-files-found: error

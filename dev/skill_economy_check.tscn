@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c8n3ye2skilleco"]
+
+[ext_resource type="Script" path="res://dev/skill_economy_check.gd" id="1_check"]
+
+[node name="SkillEconomyCheck" type="Node"]
+script = ExtResource("1_check")

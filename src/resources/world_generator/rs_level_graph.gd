@@ -65,24 +65,40 @@ func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_L
 	var home_entry: RS_LevelNode = (layers_by_depth[HOME_DEPTH] as RS_LevelLayer).nodes[0]
 	var surface_exit: RS_LevelNode = (layers_by_depth[SURFACE_DEPTH] as RS_LevelLayer).nodes[0]
 
+	# Каждый средний слой участвует в ДВУХ соединениях — со слоем глубже и со
+	# слоем ближе к поверхности, — а портал в комнате ровно один (_bind_portals).
+	# Раньше кандидаты на хаба выбирались отдельно для каждой пары слоёв, и один
+	# и тот же узел мог достаться хабом дважды: лишнее вертикальное ребро
+	# утекало обычной двери, а на карте такая дверь выглядела соседней комнатой
+	# этажа, хотя вела совсем на другой слой. Поэтому пул кандидатов каждого
+	# слоя делится ЗАРАНЕЕ на две непересекающиеся половины — под связь вниз и
+	# под связь вверх, — см. _split_vertical_hub_pool.
+	var hub_pools: Dictionary = {}  # depth -> {"as_upper": [...], "as_lower": [...]}
+	for depth in DEPTHS:
+		var excluded: Array[StringName] = []
+		if depth == HOME_DEPTH:
+			excluded.append(home_entry.id)
+		if depth == SURFACE_DEPTH:
+			excluded.append(surface_exit.id)
+		hub_pools[depth] = graph._split_vertical_hub_pool(
+			rng,
+			layers_by_depth[depth],
+			excluded,
+			depth != SURFACE_DEPTH,  # нужен пул «вниз», кроме самой поверхности
+			depth != DEPTHS[0],  # нужен пул «вверх», кроме самого глубокого слоя
+			INTER_LAYER_CONNECTOR_COUNT,
+		)
+
 	for i in range(DEPTHS.size() - 1):
 		var upper_depth: int = DEPTHS[i]  # глубже
 		var lower_depth: int = DEPTHS[i + 1]  # ближе к поверхности
-		var excluded: Array[StringName] = []
-		if upper_depth == HOME_DEPTH or lower_depth == HOME_DEPTH:
-			excluded.append(home_entry.id)
-		if upper_depth == SURFACE_DEPTH or lower_depth == SURFACE_DEPTH:
-			excluded.append(surface_exit.id)
 		var guarantee_open := lower_depth == 0  # последний рывок к поверхности всегда проходим
-		graph._connect_layers(
+		graph._connect_vertical_layers(
 			rng,
-			layers_by_depth[upper_depth],
-			layers_by_depth[lower_depth],
-			INTER_LAYER_CONNECTOR_COUNT,
+			hub_pools[upper_depth]["as_upper"],
+			hub_pools[lower_depth]["as_lower"],
 			guarantee_open,
 			0.35,
-			&"vertical_hub",
-			excluded,
 		)
 
 	graph._place_exits(rng, layers_by_depth[0], 2)
@@ -213,8 +229,79 @@ func _connect_layers(
 	)
 	var upper_pool := _shuffled_array(rng, from_candidates)
 	var lower_pool := _shuffled_array(rng, to_candidates)
-	connector_count = min(connector_count, upper_pool.size(), lower_pool.size())
+	_stamp_connectors(rng, upper_pool, lower_pool, connector_count, guarantee_one_open, lock_chance, hub_tag)
 
+
+## Делит узлы ОДНОГО слоя на два непересекающихся пула под будущих вертикальных
+## хабов — «вниз» (as_upper: слой играет роль upper_depth, связь со слоем
+## глубже) и «вверх» (as_lower: слой играет роль lower_depth, связь со слоем
+## ближе к поверхности). Тот же узел не должен попасть в оба пула — иначе ему
+## достанутся два вертикальных ребра при одном портале в комнате (см.
+## _connect_vertical_layers). Если кандидатов не хватает на оба пула по
+## connector_count — делим ЧЕРЕДОВАНИЕМ после тасовки, а не отдаём всё одной
+## стороне: иначе соседний слой с другой стороны рискует остаться вовсе без
+## связи.
+func _split_vertical_hub_pool(
+	rng: RandomNumberGenerator,
+	layer: RS_LevelLayer,
+	excluded_ids: Array[StringName],
+	needs_as_upper: bool,
+	needs_as_lower: bool,
+	connector_count: int,
+) -> Dictionary:
+	var eligible := layer.nodes.filter(
+		func(n): return not excluded_ids.has(n.id) and _degree(n) < MAX_ROOM_DEGREE
+	)
+	var shuffled := _shuffled_array(rng, eligible)
+
+	var as_upper: Array[RS_LevelNode] = []
+	var as_lower: Array[RS_LevelNode] = []
+	var prefer_upper := true
+	for node: RS_LevelNode in shuffled:
+		if as_upper.size() >= connector_count and as_lower.size() >= connector_count:
+			break
+		var take_upper := needs_as_upper and as_upper.size() < connector_count
+		var take_lower := needs_as_lower and as_lower.size() < connector_count
+		if take_upper and (prefer_upper or not take_lower):
+			as_upper.append(node)
+		elif take_lower:
+			as_lower.append(node)
+		elif take_upper:
+			as_upper.append(node)
+		prefer_upper = not prefer_upper
+
+	return {"as_upper": as_upper, "as_lower": as_lower}
+
+
+## Соединяет два соседних СЛОЯ вертикальными коннекторами по уже готовым
+## непересекающимся пулам (см. _split_vertical_hub_pool) — сам не выбирает
+## кандидатов, чтобы один узел не мог получить хаб-роль дважды.
+func _connect_vertical_layers(
+	rng: RandomNumberGenerator,
+	upper_pool: Array,
+	lower_pool: Array,
+	guarantee_one_open: bool,
+	lock_chance: float,
+) -> void:
+	_stamp_connectors(
+		rng, upper_pool, lower_pool, INTER_LAYER_CONNECTOR_COUNT, guarantee_one_open, lock_chance, &"vertical_hub"
+	)
+
+
+## Общий код раздачи коннекторов для _connect_layers (сам подбирает кандидатов
+## из слоя) и _connect_vertical_layers (получает уже готовые непересекающиеся
+## пулы) — тип связи, замки и сами RS_LevelConnection одинаковы в обоих
+## случаях, разница только в источнике пулов.
+func _stamp_connectors(
+	rng: RandomNumberGenerator,
+	upper_pool: Array,
+	lower_pool: Array,
+	connector_count: int,
+	guarantee_one_open: bool,
+	lock_chance: float,
+	hub_tag: StringName,
+) -> void:
+	connector_count = min(connector_count, upper_pool.size(), lower_pool.size())
 	for i in connector_count:
 		var upper_node: RS_LevelNode = upper_pool[i]
 		var lower_node: RS_LevelNode = lower_pool[i]

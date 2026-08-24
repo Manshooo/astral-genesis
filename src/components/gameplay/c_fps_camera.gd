@@ -1,4 +1,4 @@
-# res://src/components/input/c_fpsCamera.gd
+# res://src/components/gameplay/c_fps_camera.gd
 # Только для entity с FP-камерой (игрок).
 # NPC этот компонент не имеют → S_FPSLook их игнорирует.
 class_name C_FPSCamera

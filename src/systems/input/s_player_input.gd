@@ -1,4 +1,4 @@
-# res://src/systems/input/s_playerInput.gd
+# res://src/systems/input/s_player_input.gd
 class_name S_PlayerInput
 extends System 
 
