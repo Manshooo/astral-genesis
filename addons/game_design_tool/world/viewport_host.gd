@@ -23,6 +23,11 @@ const CLICK_DRAG_THRESHOLD := 6.0
 ## Высота, на которую приподнят пивот орбиты над полом выбранной комнаты —
 ## орбитировать вокруг пола неудобно, крутит камеру «подмышкой».
 const ORBIT_PIVOT_HEIGHT := 3.0
+## Пивот по умолчанию без выделения и без комнаты по центру экрана — фиксированная
+## точка перед камерой, НЕ camera.orbit_distance(): та могла остаться от
+## автокадрирования всего слоя (десятки-сотни метров) и после облёта ближе к
+## делу уводила пивот далеко за пределы видимого — см. _pivot_ahead_of_camera.
+const DEFAULT_ORBIT_DISTANCE := 20.0
 
 var _viewport: SubViewport
 var _camera: EditorCamera
@@ -99,7 +104,7 @@ func show_layer(graph: RS_LevelGraph, layer_nodes: Array[RS_LevelNode], plan: RS
 	_rooms_overlay.rebuild(layer_nodes, plan)
 	_graph_overlay.rebuild(graph, layer_nodes, plan)
 	_select(&"")
-	_frame_layer()
+	frame_layer()
 
 
 func set_overlay_visible(overlay_id: StringName, is_visible: bool) -> void:
@@ -120,7 +125,12 @@ func focus_selected() -> void:
 	_camera.focus_on(Picker.room_aabb(_selected_id, _layer_nodes, _plan))
 
 
-func _frame_layer() -> void:
+## Кадрирует камеру на весь текущий слой. Зовётся автоматически при
+## show_layer() и вручную — кнопкой «Сбросить вид» на панели (world_gen.gd):
+## после облёта камерой куда-нибудь далеко это самый предсказуемый способ
+## вернуться к осмысленному виду, без побочных эффектов на СКМ (см.
+## _orbit_pivot_hint — раньше сброс происходил неявно как эффект орбиты).
+func frame_layer() -> void:
 	if _layer_nodes.is_empty() or _plan == null:
 		return
 	var bounds := Picker.room_aabb(_layer_nodes[0].id, _layer_nodes, _plan)
@@ -175,12 +185,27 @@ func _handle_key(key: InputEventKey) -> void:
 
 
 ## Куда встаёт точка вращения при СКМ: центр выделенной комнаты, если она
-## есть, иначе — точка перед камерой на её текущей орбитальной дистанции (так
-## первый же орбит-драг без выделения не улетает в никуда).
+## есть, иначе — комната по центру экрана (тот же пикинг, что и по клику, но
+## без самого клика), иначе — фиксированная точка перед камерой.
 func _orbit_pivot_hint() -> Vector3:
 	if _selected_id != &"" and _plan and _plan.positions.has(_selected_id):
 		return _plan.positions[_selected_id] + Vector3(0, ORBIT_PIVOT_HEIGHT, 0)
-	return _camera.position + (-_camera.transform.basis.z) * _camera.orbit_distance()
+	return _pivot_ahead_of_camera()
+
+
+## НЕ camera.orbit_distance(): та могла остаться от автокадрирования всего
+## слоя (десятки-сотни метров, см. frame_layer). Если пивот без выделения
+## считать через неё, облёт камерой ближе к делу и последующая орбита СКМ
+## уводили пивот далеко за пределы видимого — выглядело так, будто камера
+## «сбрасывается» и вращается из начала координат слоя.
+func _pivot_ahead_of_camera() -> Vector3:
+	if _plan != null and not _layer_nodes.is_empty():
+		var origin := _camera.project_ray_origin(size / 2.0)
+		var dir := _camera.project_ray_normal(size / 2.0)
+		var hit_id := Picker.pick(origin, dir, _layer_nodes, _plan)
+		if hit_id != &"":
+			return Picker.room_aabb(hit_id, _layer_nodes, _plan).get_center()
+	return _camera.position + (-_camera.transform.basis.z) * DEFAULT_ORBIT_DISTANCE
 
 
 func _pick_at(local_pos: Vector2) -> void:

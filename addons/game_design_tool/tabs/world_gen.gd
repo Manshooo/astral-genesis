@@ -118,6 +118,15 @@ func _build_toolbar() -> Control:
 		check.toggled.connect(func(pressed: bool) -> void: _host.set_overlay_visible(overlay_id, pressed))
 		row.add_child(check)
 
+	row.add_child(VSeparator.new())
+
+	# Отдельная кнопка, а не побочный эффект СКМ: раньше камера «доезжала» до
+	# осмысленного вида неявно при первой же орбите без выделения — из-за
+	# устаревшей дистанции автокадрирования получался разброс, который
+	# выглядел как «сброс в начало координат» (см. GDT_ViewportHost.
+	# _orbit_pivot_hint). Явная кнопка предсказуема и не привязана к жесту.
+	row.add_child(_button("Сбросить вид", _on_reset_view_pressed))
+
 	return row
 
 
@@ -158,6 +167,10 @@ func _button(text: String, handler: Callable) -> Button:
 func _set_status(text: String) -> void:
 	_status.text = text
 	_status.tooltip_text = text
+
+
+func _on_reset_view_pressed() -> void:
+	_host.frame_layer()
 #endregion
 
 
