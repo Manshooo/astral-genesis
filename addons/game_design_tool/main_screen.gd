@@ -20,6 +20,7 @@ extends VBoxContainer
 const TAB_SCRIPTS: Array[GDScript] = [
 	preload("res://addons/game_design_tool/tabs/templates.gd"),
 	preload("res://addons/game_design_tool/tabs/presets.gd"),
+	preload("res://addons/game_design_tool/tabs/world_gen.gd"),
 ]
 
 

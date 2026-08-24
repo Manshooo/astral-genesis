@@ -155,3 +155,13 @@ static func half_extent_of_scene(scene_path: String) -> float:
 		room.free()
 	_half_extent_by_scene[scene_path] = extent
 	return extent
+
+
+## Сбрасывает оба кэша «сцена → …». Живут всю сессию редактора, поэтому без
+## явного сброса дизайнер поправит дверь в сцене комнаты, нажмёт «Пересобрать»
+## во вкладке «Генератор мира» — и увидит СТАРУЮ раскладку до перезапуска
+## редактора. Зовётся из вкладки на пересборку, рантайму не нужен вовсе:
+## RunManager инстанцирует граф ровно один раз за забег.
+static func clear_scene_cache() -> void:
+	_directions_by_scene.clear()
+	_half_extent_by_scene.clear()

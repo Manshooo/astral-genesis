@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/world_gen_tool_check.gd" id="1"]
+
+[node name="WorldGenToolCheck" type="Node"]
+script = ExtResource("1")
