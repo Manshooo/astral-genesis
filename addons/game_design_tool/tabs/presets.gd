@@ -1,14 +1,20 @@
 ## res://addons/game_design_tool/tabs/presets.gd
-## Вкладка «Генератор» единого редактора геймдизайна. Закрывает три боли правки
-## генерации:
-##   1. веса/теги/slot_count пресетов разбросаны по data/room/*.tres — здесь они
-##      в одной таблице и правятся на месте;
-##   2. нет обратной связи «что реально выберется» — «Прогнать сиды» показывает,
-##      сколько раз каждый пресет выбран и по какому шагу отсеялись остальные
-##      (правка веса часто вообще ни на что не влияет: вес применяется ПОСЛЕДНИМ);
-##   3. рассинхрон «заявленные слоты ↔ сцена» — «Проверить сцены» сверяет
-##      slot_count с фактическими дверьми, ловит две двери на одной стене, пустые
-##      и повторяющиеся slot_id.
+## Вкладка «Генератор» единого редактора геймдизайна. Закрывает четыре боли
+## правки генерации:
+##   1. веса/slot_count пресетов разбросаны по data/room/*.tres — здесь они
+##      в одной таблице и правятся на месте; теги — отдельным облаком под
+##      таблицей (см. ниже, почему не прямо в ячейке);
+##   2. теги правились строкой через запятую в ячейке таблицы — опечатка тихо
+##      создавала новый тег вместо использования существующего, и не было
+##      способа увидеть, какие теги вообще есть в проекте. Облако тегов под
+##      таблицей — чекбоксы по всем тегам библиотеки: выделил пресет, кликнул
+##      нужные, опечатка невозможна в принципе, потому что не печатаешь;
+##   3. новый пресет — это был поход в FileSystem создавать `.tres` руками и
+##      прописывать путь к сцене. «Новый пресет» делает пустой ресурс, кладёт
+##      в библиотеку и открывает в инспекторе (сцену/остальные поля — там,
+##      Room Wizard, который снимет и этот шаг, ещё не сделан);
+##   4. нет обратной связи «что реально выберется» и рассинхрон «заявленные
+##      слоты ↔ сцена» — «Прогнать сиды» и «Проверить сцены», без изменений.
 ##
 ## Проверка стороны двери идёт через RS_RoomLayout — тем же правилом, которым
 ## RS_LayerPlan раскладывает слой, иначе инструмент проверял бы не то, что делает
@@ -20,6 +26,7 @@ extends VBoxContainer
 const TAB_TITLE := "Генератор"
 
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
+const PRESET_DIR := "res://data/room"
 
 const COL_NAME := 0
 const COL_SLOTS := 1
@@ -34,6 +41,17 @@ var _seeds_spin: SpinBox
 var _status: Label
 ## Путь .tres пресета -> сколько дверей реально в его сцене (считаем при обновлении).
 var _actual_doors: Dictionary = {}
+
+## Облако тегов: все теги, встречающиеся хоть у одного пресета библиотеки
+## (включая fallback), не только у выделенного — иначе увидеть «что вообще
+## есть» было бы негде, а именно это и было половиной проблемы.
+var _known_tags: Array[StringName] = []
+var _tag_flow: HFlowContainer
+var _tag_section_label: Label
+var _new_tag_edit: LineEdit
+
+var _new_preset_dialog: ConfirmationDialog
+var _new_preset_edit: LineEdit
 
 
 func _init() -> void:
@@ -79,11 +97,32 @@ func _build_ui() -> void:
 	_tree.set_column_custom_minimum_width(COL_ACTUAL, 64)
 	_tree.set_column_custom_minimum_width(COL_WEIGHT, 56)
 	_tree.item_edited.connect(_on_item_edited)
+	_tree.item_selected.connect(_on_tree_selection_changed)
 	add_child(_tree)
+
+	_tag_section_label = Label.new()
+	_tag_section_label.text = "Теги: выдели пресет в таблице"
+	add_child(_tag_section_label)
+
+	_tag_flow = HFlowContainer.new()
+	add_child(_tag_flow)
+
+	var new_tag_row := HBoxContainer.new()
+	_new_tag_edit = LineEdit.new()
+	_new_tag_edit.placeholder_text = "новый тег — Enter добавляет и включает выделенному"
+	_new_tag_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_new_tag_edit.text_submitted.connect(func(_t: String) -> void: _on_add_tag_pressed())
+	new_tag_row.add_child(_new_tag_edit)
+	new_tag_row.add_child(_button("+ тег", _on_add_tag_pressed))
+	add_child(new_tag_row)
+
+	add_child(HSeparator.new())
 
 	var row1 := HBoxContainer.new()
 	row1.add_child(_button("Обновить", _refresh_pressed))
 	row1.add_child(_button("Открыть сцену", _on_open_scene_pressed))
+	row1.add_child(_button("Открыть в инспекторе", _on_edit_in_inspector_pressed))
+	row1.add_child(_button("Новый пресет", _on_new_preset_pressed))
 	add_child(row1)
 
 	var row2 := HBoxContainer.new()
@@ -128,6 +167,15 @@ func _build_ui() -> void:
 	_status.modulate = Color(1, 1, 1, 0.7)
 	add_child(_status)
 
+	_new_preset_dialog = ConfirmationDialog.new()
+	_new_preset_dialog.title = "Новый пресет — имя"
+	_new_preset_edit = LineEdit.new()
+	_new_preset_edit.custom_minimum_size = Vector2(280, 0)
+	_new_preset_dialog.add_child(_new_preset_edit)
+	_new_preset_dialog.register_text_enter(_new_preset_edit)
+	_new_preset_dialog.confirmed.connect(_on_new_preset_confirmed)
+	add_child(_new_preset_dialog)
+
 
 func _button(text: String, handler: Callable) -> Button:
 	var b := Button.new()
@@ -156,6 +204,8 @@ func _refresh() -> void:
 	_actual_doors.clear()
 	if _library == null:
 		_set_status("⚠ Не удалось загрузить " + LIBRARY_PATH)
+		_known_tags.clear()
+		_on_tree_selection_changed()
 		return
 
 	var root := _tree.create_item()
@@ -166,7 +216,13 @@ func _refresh() -> void:
 	if _library.fallback:
 		_add_row(root, _library.fallback, true)
 
-	_set_status("%d пресетов + fallback. Правь слоты/вес/теги прямо в таблице." % _library.presets.size())
+	_collect_known_tags()
+	_on_tree_selection_changed()  # таблица только что очищена — выделения нет
+
+	_set_status(
+		"%d пресетов + fallback. Слоты/вес — в таблице, теги — облаком ниже."
+		% _library.presets.size()
+	)
 
 
 func _add_row(root: TreeItem, preset: RS_RoomPreset, is_fallback: bool) -> void:
@@ -193,9 +249,11 @@ func _add_row(root: TreeItem, preset: RS_RoomPreset, is_fallback: bool) -> void:
 	item.set_range(COL_WEIGHT, preset.weight)
 	item.set_editable(COL_WEIGHT, true)
 
+	# Read-only здесь: правка — облаком тегов под таблицей (см. _rebuild_tag_chips).
+	# Свободный текст через запятую опечаткой тихо плодил новый тег вместо
+	# использования существующего — ровно то, ради ухода от чего облако и есть.
 	item.set_text(COL_TAGS, ", ".join(preset.tags))
-	item.set_editable(COL_TAGS, true)
-	item.set_tooltip_text(COL_TAGS, "Через запятую. Узел подойдёт, только если ВСЕ его теги есть здесь.")
+	item.set_tooltip_text(COL_TAGS, "Правится облаком тегов под таблицей — выдели строку.")
 
 
 ## Сколько дверей с C_DoorSlot реально в сцене пресета. -1 — сцена не назначена.
@@ -228,9 +286,6 @@ func _on_item_edited() -> void:
 				item.clear_custom_color(COL_ACTUAL)
 		COL_WEIGHT:
 			preset.weight = item.get_range(COL_WEIGHT)
-		COL_TAGS:
-			preset.tags = _parse_tags(item.get_text(COL_TAGS))
-			item.set_text(COL_TAGS, ", ".join(preset.tags))
 		_:
 			return
 
@@ -239,15 +294,6 @@ func _on_item_edited() -> void:
 		_set_status("⚠ Не удалось сохранить (код %d)" % err)
 		return
 	_set_status("Сохранено: " + path.get_file())
-
-
-func _parse_tags(text: String) -> Array[StringName]:
-	var tags: Array[StringName] = []
-	for chunk in text.split(",", false):
-		var tag := chunk.strip_edges()
-		if tag != "" and not tags.has(StringName(tag)):
-			tags.append(StringName(tag))
-	return tags
 
 
 func _selected_preset() -> RS_RoomPreset:
@@ -267,6 +313,210 @@ func _on_open_scene_pressed() -> void:
 		return
 	EditorInterface.open_scene_from_path(preset.scene.resource_path)
 	_set_status("Открыта " + preset.scene.resource_path.get_file())
+
+
+func _on_edit_in_inspector_pressed() -> void:
+	var preset := _selected_preset()
+	if preset == null:
+		_set_status("⚠ Сначала выбери пресет.")
+		return
+	EditorInterface.edit_resource(preset)
+#endregion
+
+
+#region Облако тегов
+## Все теги хоть одного пресета библиотеки (включая fallback) — не только
+## выделенного: облако должно показывать «что вообще есть в проекте», иначе
+## не видно, что тег `vertical_hub` уже существует, и опечатка `verticalhub`
+## тихо создаёт второй.
+func _collect_known_tags() -> void:
+	var seen := {}
+	for preset: RS_RoomPreset in _library.presets:
+		if preset == null:
+			continue
+		for tag: StringName in preset.tags:
+			seen[tag] = true
+	if _library.fallback:
+		for tag: StringName in _library.fallback.tags:
+			seen[tag] = true
+
+	var result: Array[StringName] = []
+	for tag: StringName in seen.keys():
+		result.append(tag)
+	result.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+	_known_tags = result
+
+
+func _on_tree_selection_changed() -> void:
+	var preset := _selected_preset()
+	_tag_section_label.text = (
+		"Теги «%s»:" % _label_of(preset) if preset else "Теги: выдели пресет в таблице"
+	)
+	_rebuild_tag_chips(preset)
+
+
+## free(), не queue_free(): та же причина, что у оверлеев «Генератора мира» —
+## перестройка идёт на каждую смену выделения, отложенное удаление копило бы
+## старые чекбоксы поверх новых при быстром переключении строк.
+func _rebuild_tag_chips(preset: RS_RoomPreset) -> void:
+	for child: Node in _tag_flow.get_children():
+		child.free()
+	for tag: StringName in _known_tags:
+		var chip := CheckBox.new()
+		chip.text = String(tag)
+		chip.button_pressed = preset != null and preset.tags.has(tag)
+		chip.disabled = preset == null
+		chip.toggled.connect(_on_tag_chip_toggled.bind(tag))
+		_tag_flow.add_child(chip)
+
+
+func _on_tag_chip_toggled(pressed: bool, tag: StringName) -> void:
+	var preset := _selected_preset()
+	if preset == null:
+		return
+	if pressed:
+		if not preset.tags.has(tag):
+			preset.tags.append(tag)
+	elif preset.tags.has(tag):
+		preset.tags.erase(tag)
+	_save_tags(preset)
+
+
+func _on_add_tag_pressed() -> void:
+	var tag := _tagify(_new_tag_edit.text)
+	_new_tag_edit.text = ""
+	if tag == &"":
+		return
+	if not _known_tags.has(tag):
+		_known_tags.append(tag)
+		_known_tags.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+
+	var preset := _selected_preset()
+	if preset == null:
+		_rebuild_tag_chips(null)
+		_set_status("Тег «%s» добавлен в облако — станет доступен всем пресетам." % tag)
+		return
+	if not preset.tags.has(tag):
+		preset.tags.append(tag)
+	_save_tags(preset)
+
+
+func _save_tags(preset: RS_RoomPreset) -> void:
+	var err := ResourceSaver.save(preset, preset.resource_path)
+	if err != OK:
+		_set_status("⚠ Не удалось сохранить (код %d)" % err)
+		return
+	var item := _tree.get_selected()
+	if item:
+		item.set_text(COL_TAGS, ", ".join(preset.tags))
+	_rebuild_tag_chips(preset)
+	_set_status("Сохранено: " + preset.resource_path.get_file())
+
+
+## Тег в стиле уже существующих (vertical_hub, floor_hub, level_exit): нижний
+## регистр, слова через «_», без пунктуации. Тегам ASCII-идентификаторов
+## хватает — это ключи RS_LevelNode.tags/RS_RoomPreset.tags, не текст для
+## игрока, поэтому кириллица здесь не нужна (в отличие от _filename_slug).
+func _tagify(text: String) -> StringName:
+	var out := ""
+	var prev_us := false
+	for c in text.strip_edges().to_lower():
+		if c == "_" or (c >= "a" and c <= "z") or (c >= "0" and c <= "9"):
+			out += c
+			prev_us = false
+		elif not prev_us and out != "":
+			out += "_"
+			prev_us = true
+	out = out.rstrip("_")
+	return StringName(out) if out != "" else &""
+#endregion
+
+
+#region Новый пресет
+func _on_new_preset_pressed() -> void:
+	if _library == null:
+		_set_status("⚠ Библиотека не загружена.")
+		return
+	_new_preset_edit.text = "Новый пресет"
+	_new_preset_dialog.popup_centered(Vector2i(340, 90))
+	_new_preset_edit.grab_focus()
+	_new_preset_edit.select_all()
+
+
+## Пустой RS_RoomPreset в библиотеке — не полноценный Room Wizard (тот снимал
+## бы этот шаг целиком, назначая сцену сразу), а минимум, снимающий ручной
+## поход в FileSystem. Сцену и остальные поля — «Открыть в инспекторе».
+func _on_new_preset_confirmed() -> void:
+	var entered := _new_preset_edit.text.strip_edges()
+	if entered == "":
+		_set_status("⚠ Пустое имя.")
+		return
+
+	var preset := RS_RoomPreset.new()
+	preset.display_name = entered
+	var path := _unique_preset_path(_filename_slug(entered))
+	preset.take_over_path(path)
+	var err := ResourceSaver.save(preset, path)
+	if err != OK:
+		_set_status("⚠ Не удалось сохранить (код %d)" % err)
+		return
+
+	_library.presets.append(preset)
+	var lib_err := ResourceSaver.save(_library, LIBRARY_PATH)
+	if lib_err != OK:
+		_set_status("⚠ Пресет создан, но библиотека не сохранилась (код %d)" % lib_err)
+		return
+
+	_rescan_filesystem()
+	_refresh()
+	_select_row(path)
+	_set_status("Создан: " + path.get_file() + " — назначь сцену через «Открыть в инспекторе».")
+
+
+func _select_row(path: String) -> void:
+	var item := _tree.get_root()
+	if item == null:
+		return
+	item = item.get_first_child()
+	while item != null:
+		if String(item.get_metadata(COL_NAME)) == path:
+			item.select(COL_NAME)
+			_on_tree_selection_changed()
+			return
+		item = item.get_next()
+
+
+func _unique_preset_path(base: String) -> String:
+	var path := PRESET_DIR + "/" + base + ".tres"
+	var n := 2
+	while FileAccess.file_exists(path):
+		path = "%s/%s_%d.tres" % [PRESET_DIR, base, n]
+		n += 1
+	return path
+
+
+## Имя файла из русского/любого display_name — тот же приём, что у вкладки
+## «Шаблоны» (templates.gd._snake) для той же задачи, продублирован здесь
+## умышленно: вкладки этого редактора самодостаточны, общих утилит не заводим
+## ради пяти строк (см. [[Единый редактор геймдизайна]]).
+func _filename_slug(text: String) -> String:
+	var out := ""
+	var prev_us := false
+	for c in text.strip_edges().to_lower():
+		if c == "_" or (c >= "0" and c <= "9") or c.to_lower() != c.to_upper():
+			out += c
+			prev_us = false
+		elif not prev_us and out != "":
+			out += "_"
+			prev_us = true
+	out = out.rstrip("_")
+	return out if out != "" else "room_preset"
+
+
+func _rescan_filesystem() -> void:
+	var fs := EditorInterface.get_resource_filesystem()
+	if fs != null:
+		fs.scan()
 #endregion
 
 
