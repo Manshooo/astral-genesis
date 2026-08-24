@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c62ss6s5311xw"]
 
-[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://addons/entity_template_tool/templates/room_template.gd" id="1_osxyt"]
+[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_osxyt"]
 
 [node name="RoomName" type="Node3D" unique_id=620451068]
 script = ExtResource("1_osxyt")

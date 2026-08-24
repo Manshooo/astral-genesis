@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="RS_EntityTemplate" format=3 uid="uid://bjoayqpdygyjd"]
 
-[ext_resource type="PackedScene" uid="uid://c62ss6s5311xw" path="res://addons/entity_template_tool/templates/room_template.tscn" id="1_kptbr"]
+[ext_resource type="PackedScene" uid="uid://c62ss6s5311xw" path="res://src/levels/procedural/rooms/room_template.tscn" id="1_kptbr"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="1_oc7rj"]
 [ext_resource type="Script" uid="uid://dflc1331xhtjy" path="res://src/resources/entity_template/rs_entity_template.gd" id="2_kptbr"]
 [ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_8ttcx"]

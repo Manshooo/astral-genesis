@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cr68o3xwhlxkx"]
 
-[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://addons/entity_template_tool/templates/room_template.gd" id="1_ppl6d"]
+[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_ppl6d"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_xlbe8"]
 [ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_p3bh0"]
 [ext_resource type="ArrayMesh" uid="uid://dhikyqmlb2qy3" path="res://assets/rooms/models/buildings_room_B_4.tres" id="4_e328x"]

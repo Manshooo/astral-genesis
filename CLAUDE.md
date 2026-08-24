@@ -50,7 +50,7 @@ Each area below is one paragraph of orientation. **Read the linked doc before re
 
 **Body-snatching & decay** — the core mechanic. A body's characteristics are **separate components in its scene, not fields on a stat sheet**, so capture and expulsion move them generically — and its **collision shape, eye level and facing come from that same scene**, never from numbers in code; the player's lifespan is one resource held in two pockets (their own and the worn body's). **An ability is a component and each ability is its own system**: a legless body carries no `C_Jump` and never enters the jump system's query, so movement contains no branch on «what am I wearing» anywhere; the soul's own abilities (`C_Flight`, `C_Phasing`) mirror that with `C_SoulTrait` and sleep while embodied. Skills reach mechanics through one rule: **a mechanic reads a computed stat — the author's base plus the soul's modifiers (`C_StatModifiers`) — never the raw field**, so the base is never overwritten and a new skill is a line of data in `data/skill_tree.tres` rather than a patch to the mechanic. [Захват тела](docs/astral-genesis/how-to/Захват%20тела.md).
 
-**Editor docks** — `addons/entity_template_tool` («Шаблоны») and `addons/level_gen_tool` («Генератор») are the designer-facing tools, with several non-obvious traps around `@tool` resources and dock layout. [Редакторские доки](docs/astral-genesis/how-to/Редакторские%20доки.md).
+**Editor tooling** — `addons/game_design_tool` is the single designer-facing plugin: a main-screen tab «Геймдизайн» holding «Шаблоны» (entity templates) and «Генератор» (room presets), with several non-obvious traps around `@tool` resources, lazy tab building and inspector labels. [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md).
 
 ## Source layout & naming
 
@@ -78,7 +78,7 @@ Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillMana
 | World gen, layer streaming, doors, travel, save/load | [Цикл забега](docs/astral-genesis/how-to/Цикл%20забега.md) |
 | Interactables, raycast, prompts, screen messages | [Взаимодействие](docs/astral-genesis/how-to/Взаимодействие.md) |
 | Capture/expel, body traits, decay model, `E_Body` contract | [Захват тела](docs/astral-genesis/how-to/Захват%20тела.md) |
-| Editor dock traps, template authoring | [Редакторские доки](docs/astral-genesis/how-to/Редакторские%20доки.md) |
+| Editor tooling traps, template authoring | [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md) |
 | Physics layers, UI theme, prefixes, rebinding codec | [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md) |
 | CI, versioning, local and manual releases | [Релизы и сборка](docs/astral-genesis/how-to/Релизы%20и%20сборка.md) |
 | Controls, player-facing | [Управление](docs/astral-genesis/Справка/Управление.md) |
