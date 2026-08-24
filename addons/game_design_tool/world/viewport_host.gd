@@ -161,10 +161,10 @@ func _handle_mouse_button(mb: InputEventMouseButton) -> void:
 			_camera.set_orbiting(mb.pressed)
 		MOUSE_BUTTON_WHEEL_UP:
 			if mb.pressed:
-				_camera.dolly(-1.0)
+				_camera.dolly(1.0)  # вверх — навстречу взгляду, приближение
 		MOUSE_BUTTON_WHEEL_DOWN:
 			if mb.pressed:
-				_camera.dolly(1.0)
+				_camera.dolly(-1.0)  # вниз — от взгляда, отдаление
 	accept_event()
 
 

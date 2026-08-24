@@ -17,7 +17,7 @@ extends Camera3D
 
 const MOVE_SPEED := 24.0
 const BOOST_MULTIPLIER := 3.0
-const LOOK_SENSITIVITY := 0.008
+const LOOK_SENSITIVITY := 0.004
 const ORBIT_SENSITIVITY := 0.01
 const ZOOM_STEP := 4.0
 const MIN_ORBIT_DISTANCE := 4.0
