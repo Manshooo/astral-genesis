@@ -8,6 +8,13 @@ var _skill_manager: SkillManager
 var _tree_data: RS_SkillTree
 var _rows: Dictionary = {}  ## StringName -> {rank_label, unlock_button}
 
+## Цвет вспышки строки/искр при разблокировке — тёплый golden, не из темы:
+## тема несёт форму контролов, а разовый эффект-реакция к ней не относится.
+const _FLASH_COLOR := Color(1.6, 1.35, 0.7)
+const _FLASH_DURATION := 0.5
+const _SPARK_COUNT := 16
+const _SPARK_LIFETIME := 0.5
+
 
 func setup(skill_manager, tree_data: RS_SkillTree) -> void:
 	_skill_manager = skill_manager
@@ -69,8 +76,55 @@ func _on_unlock_pressed(id: StringName) -> void:
 	_skill_manager.unlock(id)
 
 
-func _on_skill_unlocked(_id: StringName, _new_rank: int) -> void:
+func _on_skill_unlocked(id: StringName, _new_rank: int) -> void:
 	_refresh_all()
+	_play_unlock_effect(id)
+
+
+## Единственный источник эффекта — сигнал skill_unlocked (id, ранг), поэтому
+## реакция не знает ни числа скиллов в дереве, ни того, откуда взялись очки:
+## дерево и способы их заработка растут отдельной задачей, этот код их не
+## трогает и не ломается от их изменений.
+func _play_unlock_effect(id: StringName) -> void:
+	var row_refs = _rows.get(id)
+	if row_refs == null:
+		return
+	var unlock_button: Button = row_refs["unlock_button"]
+	var row := unlock_button.get_parent() as Control
+	if row == null:
+		return
+
+	_flash_row(row)
+	_spawn_sparks(unlock_button)
+
+
+func _flash_row(row: Control) -> void:
+	row.modulate = _FLASH_COLOR
+	var tween := create_tween()
+	tween.tween_property(row, "modulate", Color.WHITE, _FLASH_DURATION) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+func _spawn_sparks(anchor: Control) -> void:
+	var particles := CPUParticles2D.new()
+	anchor.add_child(particles)
+	particles.position = anchor.size / 2.0
+	particles.z_index = 10
+	particles.one_shot = true
+	particles.amount = _SPARK_COUNT
+	particles.lifetime = _SPARK_LIFETIME
+	particles.explosiveness = 1.0
+	particles.direction = Vector2.UP
+	particles.spread = 180.0
+	particles.initial_velocity_min = 60.0
+	particles.initial_velocity_max = 140.0
+	particles.gravity = Vector2(0.0, 220.0)
+	particles.scale_amount_min = 2.0
+	particles.scale_amount_max = 4.0
+	particles.color = Color(1.0, 0.85, 0.4)
+	particles.emitting = true
+
+	get_tree().create_timer(_SPARK_LIFETIME).timeout.connect(particles.queue_free)
 
 
 func _refresh_all() -> void:
