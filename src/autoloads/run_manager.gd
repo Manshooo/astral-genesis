@@ -94,6 +94,11 @@ var current_graph: RS_LevelGraph
 var current_node_id: StringName = &""
 ## Глубина загруженного слоя (NO_DEPTH — ничего не загружено).
 var current_depth: int = NO_DEPTH
+## Наибольшая глубина, достигнутая ЗА ЭТОТ забег — награда очков навыка при
+## finish_run/die считается от неё, а не от layer_changed: тот шлётся и при
+## возврате на уже пройденный слой (портал проходим в обе стороны), и дробить
+## награду по нему значило бы фармить очки шатанием туда-обратно.
+var _max_depth_reached: int = 0
 ## node_id -> SpawnedRoom для ВСЕХ комнат текущего слоя, а не только той, где
 ## стоит игрок.
 var _rooms: Dictionary[StringName, SpawnedRoom] = {}
@@ -119,6 +124,7 @@ func enter_complex(run_seed: int = -1) -> void:
 	_despawn_layer()
 	current_node_id = &""
 	_plans.clear()  # планы считаны от прошлого графа
+	_max_depth_reached = 0  # _enter_node ниже сам поднимет её до глубины входа
 
 	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
 	# затем входной слой — _enter_node → _place_player_in_room поставит её на место.
@@ -265,6 +271,10 @@ func finish_run() -> void:
 		return  # не в забеге — выходить неоткуда
 
 	WorldSave.clear_run()  # забег завершён: «Загрузить» начнёт этот мир заново
+	# Награда за побег больше, чем за гибель на той же глубине (die() ниже) —
+	# правильная концовка забега обязана быть выгоднее, тем же принципом, что и
+	# доля запаса, которую даёт добровольный выход из тела против его гибели.
+	SkillManager.add_skill_points(_max_depth_reached + 1)
 	_end_run()
 	run_finished.emit()
 
@@ -304,6 +314,7 @@ func die() -> void:
 		return  # не в забеге — умирать некому
 
 	WorldSave.record_death()  # death_count++ → следующий run_seed() иной
+	SkillManager.add_skill_points(_max_depth_reached)  # см. finish_run — без бонуса за побег
 	_end_run()
 	died.emit()
 
@@ -372,6 +383,7 @@ func _spawn_layer(depth: int) -> void:
 			_rooms[node_data.id] = room
 
 	current_depth = depth
+	_max_depth_reached = maxi(_max_depth_reached, depth)
 	layer_changed.emit(depth)
 
 

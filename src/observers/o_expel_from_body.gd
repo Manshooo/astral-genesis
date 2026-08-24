@@ -12,6 +12,14 @@
 class_name O_ExpelFromBody
 extends Observer
 
+## Порог выжатости тела, с которого добровольный выход даёт очко навыка (см.
+## _settle_lifespan) — «дошёл до предела», а не «попробовал и вышел». Тело к
+## этому моменту уже поглощено безвозвратно (S_BodySnatch._embody), так что
+## фармить одно и то же тело повторным входом-выходом архитектурно нельзя —
+## порог нужен только затем, чтобы награда отражала риск, а не сам факт выхода.
+const _GRACEFUL_EXIT_DECAY_THRESHOLD := 0.5
+const _GRACEFUL_EXIT_REWARD := 1
+
 
 func query() -> QueryBuilder:
 	return q.with_all([C_Embodied]).on_event(&"entity_died")
@@ -86,6 +94,10 @@ static func _settle_lifespan(soul: Entity, voluntary: bool) -> void:
 			# этой формулы.
 			var gain := C_StatModifiers.of(soul, C_StatModifiers.LEAVE_BODY_GAIN, 1.0)
 			life.current += decay.remaining * gain
+
+			var used_fraction := 1.0 - decay.remaining / decay.effective_maximum(soul)
+			if used_fraction >= _GRACEFUL_EXIT_DECAY_THRESHOLD:
+				SkillManager.add_skill_points(_GRACEFUL_EXIT_REWARD)
 	else:
 		var keep := C_StatModifiers.of(
 			soul, C_StatModifiers.DEATH_KEEP, GameConfig.config.lifespan_death_fraction
