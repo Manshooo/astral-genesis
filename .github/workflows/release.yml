@@ -17,6 +17,12 @@ on:
 
 permissions:
   contents: write
+  # actions:write — иначе actions/cache внутри godot-export не может СОХРАНИТЬ
+  # кэш (падает не сборка, а только post-джоб warning «token has no writable
+  # scopes»). Объявление любого permissions: сбрасывает НЕперечисленные scope
+  # в none, а не наследует умолчания репозитория — contents: write сам по себе
+  # не подразумевает actions: write.
+  actions: write
 
 concurrency:
   group: release
