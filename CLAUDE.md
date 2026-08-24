@@ -33,7 +33,7 @@ Engine specifics (`project.godot`): **Godot 4.7.2**, Forward+, **Jolt Physics** 
 
 ## Git conventions
 
-- **Branches**: `release/vX.Y.Z` is a version branch and drives the release pipeline (see above). Feature work goes on `feat/kebab-case`. Do not commit to `master` directly.
+- **Branches — everything merges via PR, nothing is committed straight to a long-lived branch.** `master` only changes via PR (branch protection to follow). `release/vX.Y.Z` branches from `master` and drives the release pipeline (see above); merging it back into `master` is a PR too. Feature/fix/docs work (`feat/kebab-case`, `fix/kebab-case`, `docs/kebab-case`, …) branches from the *release* branch, not from `master`, and merges back into that release branch via PR as well — this keeps the release branch's PR history a clean, ready-made changelog for the version.
 - **Commit subject**: `Область: что сделано` — Russian, area capitalized, no trailing period. E.g. `Двери: запечённый меш вместо процедурного бокса`. This is not Conventional Commits — do not write `feat:`/`fix:`.
 - **Commit body**: Russian prose explaining **why**, grouped in paragraphs by area when a change spans several. Do not list changed files — the diff already does that.
 - **Drafting the actual message** — reading a diff and writing it in this project's voice (diagnosis-first for fixes, rejected-alternatives-first for design decisions) is the **`commit-message`** skill's job.
