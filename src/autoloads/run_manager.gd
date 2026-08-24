@@ -9,7 +9,7 @@ extends Node
 ##
 ## Коридоров между комнатами нет: связь чисто логическая (двери ↔ рёбра графа),
 ## поэтому комнаты слоя просто расставляются по детерминированной сетке —
-## см. _layer_layout.
+## см. RS_LayerPlan.
 ##
 ## Двери и переходы: у дверей комнаты компонент C_DoorSlot, при спавне RunManager
 ## сопоставляет рёбра узла слотам и штампует на каждую дверь C_DoorPortal
@@ -37,14 +37,6 @@ const DEATH_SCENE := "res://src/ui/death_screen/death_screen.tscn"
 ## игрок должен появляться в уже сгенерированном мире, у входного узла графа.
 const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 
-## Шаг сетки между соседними комнатами одного этажа (по X). Комната ~22 м в
-## поперечнике (полотна дверей торчат до ±11), берём с запасом — комнаты не
-## должны соприкасаться даже коллайдерами, иначе луч взаимодействия или капсула
-## игрока могут зацепить соседнюю.
-const ROOM_SPACING := 60.0
-## Разнос этажей ОДНОГО слоя по высоте. Комната ~6 м высотой — 20 м даёт
-## гарантированный зазор и делает раскладку читаемой в отладке.
-const FLOOR_SPACING := 20.0
 ## "Слой не загружен". Глубины графа — 0..4 (RS_LevelGraph.DEPTHS), так что -1
 ## никогда не совпадёт с реальной.
 const NO_DEPTH := -1
@@ -102,10 +94,10 @@ var _max_depth_reached: int = 0
 ## node_id -> SpawnedRoom для ВСЕХ комнат текущего слоя, а не только той, где
 ## стоит игрок.
 var _rooms: Dictionary[StringName, SpawnedRoom] = {}
-## depth -> LayerPlan. План не зависит от того, загружен слой или нет, и
+## depth -> RS_LayerPlan. План не зависит от того, загружен слой или нет, и
 ## детерминирован от графа — значит считается один раз за забег. Карта комплекса
 ## спрашивает планы слоёв, в которых игрок ещё не был.
-var _plans: Dictionary[int, LayerPlan] = {}
+var _plans: Dictionary[int, RS_LayerPlan] = {}
 
 
 ## Точка входа в забег: генерирует комплекс и ставит игрока в стартовый узел.
@@ -391,10 +383,10 @@ func _spawn_layer(depth: int) -> void:
 ## какую дверь. Считается БЕЗ спавна (стороны дверей берутся из кэша по пути
 ## сцены), поэтому доступен и для незагруженных слоёв: на этом держится карта
 ## комплекса. Результат кэшируется на забег — план детерминирован от графа.
-func plan_for_depth(depth: int) -> LayerPlan:
+func plan_for_depth(depth: int) -> RS_LayerPlan:
 	if _plans.has(depth):
 		return _plans[depth]
-	var plan := _plan_layer(current_graph.get_nodes_by_depth(depth))
+	var plan := RS_LayerPlan.build(current_graph.get_nodes_by_depth(depth))
 	_plans[depth] = plan
 	return plan
 
@@ -409,7 +401,7 @@ func _instantiate_room(node_data: RS_LevelNode) -> Entity:
 
 ## Ставит уже инстанцированную комнату на её место по плану и регистрирует всё
 ## её содержимое в мире.
-func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: LayerPlan) -> SpawnedRoom:
+func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) -> SpawnedRoom:
 	# Позицию ставим ДО add_entity: тот сам вносит узел в дерево, и комната должна
 	# попасть туда сразу на своё место — иначе коллайдеры успевают
 	# зарегистрироваться в начале координат и телепортируются следом.
@@ -434,232 +426,13 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: LayerPlan) -> Sp
 
 
 # ---------------------------------------------------------------------------
-# Раскладка слоя: комнаты стоят там, куда ведут их двери
+# Раздача рёбер по дверям и постановка игрока
 # ---------------------------------------------------------------------------
 
 
-## Геометрия комнат (где север, куда смещается клетка) живёт в RS_RoomLayout —
-## одно правило на рантайм и на редакторский инструмент проверки сцен.
+## Куда смещается клетка за дверью — нужно _closest_free_door, чтобы выбрать
+## дверь, смотрящую В СТОРОНУ соседа. Сама раскладка живёт в RS_LayerPlan.
 const DIRECTION_OFFSETS := RS_RoomLayout.OFFSETS
-const OPPOSITE_DIRECTION := RS_RoomLayout.OPPOSITE
-
-
-## План раскладки одного слоя.
-class LayerPlan:
-	extends RefCounted
-
-	## node_id -> мировая позиция комнаты.
-	var positions: Dictionary[StringName, Vector3] = {}
-	## node_id -> клетка сетки этажа. То же самое, что positions, но без масштаба
-	## и высоты: ровно то, что рисует карта.
-	var cells: Dictionary[StringName, Vector2i] = {}
-	## node_id -> { target_node_id: сторона }. Только рёбра, которым нашлась дверь
-	## В НУЖНУЮ СТОРОНУ: сосед физически стоит за этой дверью. Остальные рёбра
-	## (межэтажные, межслойные, не влезшие в сетку) раздаются по остаточному
-	## принципу в _bind_doors.
-	var direction_by_edge: Dictionary[StringName, Dictionary] = {}
-
-	func direction_for(node_id: StringName, target_id: StringName) -> StringName:
-		return direction_by_edge.get(node_id, {}).get(target_id, &"")
-
-	func is_direction_taken(node_id: StringName, direction: StringName) -> bool:
-		return direction_by_edge.get(node_id, {}).values().has(direction)
-
-	func link(a: StringName, a_direction: StringName, b: StringName) -> void:
-		if not direction_by_edge.has(a):
-			direction_by_edge[a] = {}
-		if not direction_by_edge.has(b):
-			direction_by_edge[b] = {}
-		direction_by_edge[a][b] = a_direction
-		direction_by_edge[b][a] = OPPOSITE_DIRECTION[a_direction]
-
-
-## Строит план слоя: раскладывает комнаты каждого этажа по 2D-сетке обходом
-## графа — сосед ставится ровно в ту клетку, куда смотрит связывающая их дверь.
-## Иначе дверь «на север» уводила бы в комнату, стоящую совсем в другой стороне.
-##
-## Этажи одного слоя разносятся по высоте: связь между ними идёт через
-## floor_hub-рёбра, у которых нет направления в плоскости этажа.
-func _plan_layer(layer_nodes: Array[RS_LevelNode]) -> LayerPlan:
-	var plan := LayerPlan.new()
-	var by_floor: Dictionary[int, Array] = {}
-	for node_data in layer_nodes:
-		if not by_floor.has(node_data.floor_index):
-			by_floor[node_data.floor_index] = []
-		by_floor[node_data.floor_index].append(node_data)
-
-	for floor_index: int in by_floor:
-		var floor_nodes: Array = by_floor[floor_index]
-		# Порядок обхода фиксируем по index_in_layer: раскладка обязана совпадать
-		# от запуска к запуску при одном сиде — иначе сохранённая комната окажется
-		# в другом месте.
-		floor_nodes.sort_custom(func(a, b): return a.index_in_layer < b.index_in_layer)
-		_plan_floor(floor_nodes, plan, floor_index)
-	return plan
-
-
-func _plan_floor(floor_nodes: Array, plan: LayerPlan, floor_index: int) -> void:
-	var dirs := {}  # node_id -> Array[StringName] сторон, с которых у комнаты есть дверь
-	var on_floor := {}  # node_id -> RS_LevelNode, для быстрой проверки «сосед на этаже»
-	for node_data: RS_LevelNode in floor_nodes:
-		on_floor[node_data.id] = node_data
-		dirs[node_data.id] = RS_RoomLayout.door_directions_of_scene(node_data.room_scene_path)
-
-	var cells: Dictionary[StringName, Vector2i] = {}
-	var taken: Dictionary[Vector2i, StringName] = {}
-	_place_at(floor_nodes[0].id, Vector2i.ZERO, cells, taken)
-
-	# 1. Обход в ширину: соседа ставим в клетку той двери, что к нему ведёт.
-	var queue: Array[StringName] = [floor_nodes[0].id]
-	while not queue.is_empty():
-		var current_id: StringName = queue.pop_front()
-		for conn: RS_LevelConnection in _by_room_freedom(on_floor[current_id].connections, dirs):
-			var target_id := conn.target_node_id
-			if not on_floor.has(target_id) or cells.has(target_id):
-				continue
-			var direction := _pick_direction(current_id, target_id, cells, taken, dirs, plan)
-			if direction == &"":
-				continue  # ни одной подходящей свободной стороны — разместим ниже
-			_place_at(target_id, cells[current_id] + DIRECTION_OFFSETS[direction], cells, taken)
-			plan.link(current_id, direction, target_id)
-			queue.append(target_id)
-
-	# 2. Не разместившиеся (нет подходящих дверей, другой компонент связности):
-	#    ставим рядом с любым уже размещённым соседом, иначе — в запасной ряд.
-	for node_data: RS_LevelNode in floor_nodes:
-		if cells.has(node_data.id):
-			continue
-		_place_at(node_data.id, _fallback_cell(node_data, cells, taken, dirs, plan), cells, taken)
-
-	# 3. Доп. рёбра (циклы) между уже размещёнными: если клетки оказались смежными
-	#    и двери с обеих сторон свободны — тоже свяжем по направлению.
-	for node_data: RS_LevelNode in floor_nodes:
-		for conn: RS_LevelConnection in node_data.connections:
-			var target_id := conn.target_node_id
-			if not on_floor.has(target_id):
-				continue
-			if plan.direction_for(node_data.id, target_id) != &"":
-				continue
-			var direction := _direction_between(cells[node_data.id], cells[target_id])
-			if direction == &"" or not _direction_available(node_data.id, direction, dirs, plan):
-				continue
-			if not _direction_available(target_id, OPPOSITE_DIRECTION[direction], dirs, plan):
-				continue
-			plan.link(node_data.id, direction, target_id)
-
-	for node_id: StringName in cells:
-		var cell := cells[node_id]
-		plan.cells[node_id] = cell
-		plan.positions[node_id] = Vector3(
-			cell.x * ROOM_SPACING, floor_index * FLOOR_SPACING, cell.y * ROOM_SPACING
-		)
-
-
-## Рёбра в порядке «сначала самые зажатые соседи»: комнату с одной дверью
-## (lab_room, vertical_hub_1) надо ставить, пока нужная сторона ещё свободна —
-## иначе ей достанется случайное место, а её единственная дверь будет вести
-## куда-то вбок. Тай-брейк по id — раскладка обязана быть детерминированной.
-func _by_room_freedom(connections: Array[RS_LevelConnection], dirs: Dictionary) -> Array:
-	var sorted := connections.duplicate()
-	sorted.sort_custom(
-		func(a: RS_LevelConnection, b: RS_LevelConnection) -> bool:
-			var a_doors: int = (dirs.get(a.target_node_id, []) as Array).size()
-			var b_doors: int = (dirs.get(b.target_node_id, []) as Array).size()
-			if a_doors != b_doors:
-				return a_doors < b_doors
-			return String(a.target_node_id) < String(b.target_node_id)
-	)
-	return sorted
-
-
-func _place_at(
-	node_id: StringName,
-	cell: Vector2i,
-	cells: Dictionary[StringName, Vector2i],
-	taken: Dictionary[Vector2i, StringName],
-) -> void:
-	cells[node_id] = cell
-	taken[cell] = node_id
-
-
-## Сторона, с которой можно поставить соседа: у нас есть такая дверь и она ещё
-## свободна, у соседа есть встречная, и клетка за ней не занята. Порядок перебора
-## — из DIRECTION_OFFSETS, то есть детерминированный.
-func _pick_direction(
-	current_id: StringName,
-	target_id: StringName,
-	cells: Dictionary[StringName, Vector2i],
-	taken: Dictionary[Vector2i, StringName],
-	dirs: Dictionary,
-	plan: LayerPlan,
-) -> StringName:
-	for direction: StringName in DIRECTION_OFFSETS:
-		if not _direction_available(current_id, direction, dirs, plan):
-			continue
-		if not _direction_available(target_id, OPPOSITE_DIRECTION[direction], dirs, plan):
-			continue
-		if taken.has(cells[current_id] + DIRECTION_OFFSETS[direction]):
-			continue
-		return direction
-	return &""
-
-
-## Есть ли у комнаты дверь с этой стороны и не отдана ли она уже другому ребру.
-func _direction_available(
-	node_id: StringName, direction: StringName, dirs: Dictionary, plan: LayerPlan
-) -> bool:
-	var available: Array = dirs.get(node_id, [])
-	return available.has(direction) and not plan.is_direction_taken(node_id, direction)
-
-
-## Направление от клетки [param from] к [param to], если они смежные. Иначе "".
-func _direction_between(from: Vector2i, to: Vector2i) -> StringName:
-	for direction: StringName in DIRECTION_OFFSETS:
-		if from + DIRECTION_OFFSETS[direction] == to:
-			return direction
-	return &""
-
-
-## Клетка для комнаты, которой не нашлось направления на первом проходе: встаём
-## вплотную к уже размещённому соседу, предпочитая сторону, куда у нас САМИХ
-## смотрит свободная дверь. Идеальной пары (двери с обеих сторон) тут уже быть не
-## может — её забрал бы _pick_direction, — но хотя бы наша дверь будет вести к
-## соседу. Совсем некуда — уходим в запасной ряд под сеткой.
-func _fallback_cell(
-	node_data: RS_LevelNode,
-	cells: Dictionary[StringName, Vector2i],
-	taken: Dictionary[Vector2i, StringName],
-	dirs: Dictionary,
-	plan: LayerPlan,
-) -> Vector2i:
-	var best := Vector2i.MAX
-	var best_score := -1
-	for conn: RS_LevelConnection in node_data.connections:
-		if not cells.has(conn.target_node_id):
-			continue
-		for direction: StringName in DIRECTION_OFFSETS:
-			var cell: Vector2i = cells[conn.target_node_id] + DIRECTION_OFFSETS[direction]
-			if taken.has(cell):
-				continue
-			# Мы встаём в direction ОТ соседа, значит сосед для нас — со встречной.
-			var score := 0
-			if _direction_available(node_data.id, OPPOSITE_DIRECTION[direction], dirs, plan):
-				score += 1
-			if _direction_available(conn.target_node_id, direction, dirs, plan):
-				score += 1
-			if score > best_score:
-				best_score = score
-				best = cell
-	if best_score >= 0:
-		return best
-
-	var overflow_row := 2
-	for cell: Vector2i in taken:
-		overflow_row = maxi(overflow_row, cell.y + 2)
-	var column := 0
-	while taken.has(Vector2i(column, overflow_row)):
-		column += 1
-	return Vector2i(column, overflow_row)
 
 
 func _direction_of_door(door: Node3D, room: Node) -> StringName:
@@ -746,10 +519,10 @@ func _body_id(node_id: StringName, room: Entity, body: Node) -> StringName:
 ## _register_room_children — здесь только биндинг рёбер к слотам.
 ##
 ## Сначала раздаём рёбра, которым план назначил СТОРОНУ: за такой дверью сосед
-## реально стоит (см. _plan_floor). Что осталось — межэтажные, межслойные и не
+## реально стоит (см. RS_LayerPlan). Что осталось — межэтажные, межслойные и не
 ## влезшие в сетку рёбра — раздаём по остаточному принципу в детерминированном
 ## порядке слотов. Лишние двери запечатываются.
-func _bind_doors(room: SpawnedRoom, node_data: RS_LevelNode, plan: LayerPlan) -> Array[Entity]:
+func _bind_doors(room: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[Entity]:
 	var doors: Array[Entity] = []
 	for e in room.children:
 		if e.has_component(C_DoorSlot):
@@ -876,7 +649,7 @@ func _closest_free_door(
 	door_by_direction: Dictionary[StringName, Entity],
 	node_data: RS_LevelNode,
 	conn: RS_LevelConnection,
-	plan: LayerPlan,
+	plan: RS_LayerPlan,
 ) -> Entity:
 	var here: Vector3 = plan.positions.get(node_data.id, Vector3.ZERO)
 	var there = plan.positions.get(conn.target_node_id)
