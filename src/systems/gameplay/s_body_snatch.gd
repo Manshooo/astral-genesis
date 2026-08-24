@@ -188,6 +188,10 @@ static func _worn_traits(soul: Entity) -> Array[Component]:
 	return found
 
 
+## На столько приподнимаем проверяемую капсулу над подошвой — см. ниже.
+const _FLOOR_CLEARANCE := 0.05
+
+
 ## Влезает ли риг в новую форму на месте тела.
 ##
 ## Пробуем форму ТАМ, где риг окажется, и с маской ВОПЛОЩЁННОГО игрока: призрак
@@ -208,8 +212,18 @@ static func _fits(soul: Entity, body: Entity, form: C_BodyForm) -> bool:
 
 	var params := PhysicsShapeQueryParameters3D.new()
 	params.shape = form.shape
+	# Подошва тела ВСЕГДА касается пола, на котором оно стоит — это не тесное
+	# место, а нормальная посадка (см. соглашение о точке отсчёта в E_Body).
+	# Без зазора капсула ровно на границе с полом регулярно засчитывалась как
+	# «пересечение» — не везде: в хабе тела оказались случайно приподняты над
+	# полом, а тела в заспавненных комнатах стоят на нём вплотную (y=0, полу-
+	# соглашение E_Body), и там нулевой зазор `intersect_shape` против пола-
+	# трисетки стабильно давал ложное «не помещается». 5 см — на порядок больше
+	# любого физического допуска и на порядок меньше высоты препятствия,
+	# которое эта проверка обязана ловить (низкий потолок, стена).
 	params.transform = Transform3D(
-		Basis.IDENTITY, body_node.global_position + form.foot_offset()
+		Basis.IDENTITY,
+		body_node.global_position + form.foot_offset() + Vector3.UP * _FLOOR_CLEARANCE
 	)
 	params.collision_mask = soul_node.collision_mask | C_Phasing.PERMEABLE_BIT
 

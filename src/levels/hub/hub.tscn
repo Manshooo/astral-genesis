@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="11_uuilv"]
 [ext_resource type="PackedScene" uid="uid://f5i4a5l3ph2j" path="res://src/entities/body/e_body_walker.tscn" id="12_5ih0i"]
 [ext_resource type="PackedScene" uid="uid://biosb4cjxfviu" path="res://src/entities/body/e_body_crawler.tscn" id="13_8ue0e"]
+[ext_resource type="PackedScene" uid="uid://dtsbk0vab2ynp" path="res://src/entities/enemy/e_enemy.tscn" id="14_enemy"]
 
 [sub_resource type="Resource" id="Resource_oeda6"]
 script = ExtResource("4_18pe2")
@@ -75,3 +76,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7768965, 1.7258387, -4.750
 
 [node name="half_body_skeleton" parent="." index="20" unique_id=1772587322 instance=ExtResource("13_8ue0e")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.439003, 0.5850637, -6.4384336)
+
+[node name="Enemy" parent="." index="21" unique_id=250816339 instance=ExtResource("14_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.3854353, 1.5064085, -0.79322445)

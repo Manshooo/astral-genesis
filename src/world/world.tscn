@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://cpdhshxgn35to" path="res://src/systems/physics/s_phasing.gd" id="7_phasing"]
 [ext_resource type="Script" uid="uid://bjm6s54cwlp7q" path="res://src/systems/physics/s_gravity.gd" id="7_gravity"]
 [ext_resource type="Script" uid="uid://bjihournvuknp" path="res://src/systems/physics/s_walk.gd" id="7_walk"]
+[ext_resource type="Script" path="res://src/systems/physics/s_enemy_ai.gd" id="7_enemyai"]
 [ext_resource type="Script" uid="uid://bvs4o2nuvk5fx" path="res://src/systems/physics/s_jump.gd" id="7_jump"]
 [ext_resource type="Script" uid="uid://ceak284cxbxit" path="res://src/systems/physics/s_flight.gd" id="7_flight"]
 [ext_resource type="Script" uid="uid://5ej3l4vg2gbp" path="res://src/systems/gameplay/s_apply_skill_effects.gd" id="8_a20vb"]
@@ -92,6 +93,10 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 script = ExtResource("7_gravity")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
+[node name="S_EnemyAI" type="Node" parent="World/Systems/physics" unique_id=201843330]
+script = ExtResource("7_enemyai")
+group = &"physics"
 
 [node name="S_Walk" type="Node" parent="World/Systems/physics" unique_id=201843323]
 script = ExtResource("7_walk")

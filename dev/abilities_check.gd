@@ -28,7 +28,7 @@ func _ready() -> void:
 	# кого какая выборка забирает, и на неполном наборе она проверяла бы пустоту.
 	for system in [
 		S_BodySnatch.new(), S_Phasing.new(), S_Gravity.new(),
-		S_Walk.new(), S_Jump.new(), S_Flight.new(), S_Movement.new(),
+		S_EnemyAI.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(), S_Movement.new(),
 	]:
 		system.group = "physics"
 		world.add_system(system)

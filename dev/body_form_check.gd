@@ -223,6 +223,46 @@ func _run(world: World) -> void:
 		str(camera.transform.origin.y)
 	)
 
+	# --- 6. Реальная геометрия комнаты: подошва впритык к полу — не теснота -
+	# _fits() кастует капсулу ровно на подошву тела (form.foot_offset()) — то
+	# же место, где тело и стоит. В комнатных шаблонах тело расставлено штатно
+	# на y=0 (соглашение E_Body — «подошва тела на y=0»), пол комнаты тоже на
+	# y=0, и без зазора капсула касалась пола РОВНО в нуле — intersect_shape
+	# против пол-трисетки (ConcavePolygonShape3D) засчитывал касание как
+	# пересечение. Живой прогон поймал это как «Тело здесь не поместится» на
+	# КАЖДОМ теле в КАЖДОЙ заспавненной комнате — и не поймал в хабе только
+	# потому, что тела там случайно оказались приподняты над локальным полом.
+	# Синтетический блокер из §4 этого не ловит — там нет пола вовсе, только
+	# коробка-препятствие в воздухе. Проверять надо на настоящей геометрии.
+	for entry in [
+		["res://src/levels/procedural/rooms/default/default_room.tscn", "BodyHound"],
+		["res://src/levels/procedural/rooms/exit/exit_room.tscn", "BodyCrawler"],
+		["res://src/levels/procedural/rooms/lab/lab_room.tscn", "BodyWalker"],
+	]:
+		var room_path: String = entry[0]
+		var body_name: String = entry[1]
+		var room := (load(room_path) as PackedScene).instantiate()
+		add_child(room)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+
+		var room_body := room.find_child(body_name, true, false) as Entity
+		var room_form := E_Body.form_of(room_body)
+		var fits: bool = S_BodySnatch._fits(player, room_body, room_form)
+		_check(
+			"%s: %s на штатном месте влезает (пол не считается теснотой)"
+			% [room_path.get_file(), body_name],
+			fits,
+			"тело на %s" % (room_body as Node as Node3D).global_position
+		)
+		room.queue_free()
+		await get_tree().process_frame
+
+	# Зазор не должен занизить чувствительность проверки везде подряд — тесное
+	# место обязано остаться тесным. §4 выше это уже проверяет (блокер 1.5×1.5×1.5
+	# м, зазор всего 0.05 м — с большим запасом всё ещё «не помещается»), здесь
+	# отдельно не дублируем.
+
 
 ## Статическое препятствие вокруг точки: коробка на слое 1, куда смотрит маска
 ## игрока по умолчанию.
