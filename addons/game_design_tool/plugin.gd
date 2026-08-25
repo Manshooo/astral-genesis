@@ -19,6 +19,14 @@ extends EditorPlugin
 
 const MainScreen := preload("res://addons/game_design_tool/main_screen.gd")
 const RoomWizard := preload("res://addons/game_design_tool/dock/room_wizard.gd")
+## Godot ждёт от _get_plugin_icon() иконку 16×16 — свежий 64×64 без правки
+## svg/scale в .import рисовался вчетверо крупнее соседних «2D»/«3D»/«Script»
+## (та же ловушка, что и с любым другим спрайтом не того размера). Цвет —
+## фиксированный светло-серый через атрибут color="#e0e0e0" на корневом <svg>
+## (currentColor наследует его), не convert_colors_with_editor_theme в .import:
+## та тонировка — для иконок, которые Godot достаёт своим внутренним конвейером
+## (@icon у Resource/Node), а не для текстуры, отданной сюда голым preload().
+const PLUGIN_ICON := preload("res://addons/game_design_tool/assets/gamedesign.svg")
 
 var _main_screen: Control
 var _room_wizard: Control
@@ -58,7 +66,7 @@ func _get_plugin_name() -> String:
 
 
 func _get_plugin_icon() -> Texture2D:
-	return EditorInterface.get_editor_theme().get_icon(&"Node", &"EditorIcons")
+	return PLUGIN_ICON
 
 
 func _make_visible(visible: bool) -> void:
