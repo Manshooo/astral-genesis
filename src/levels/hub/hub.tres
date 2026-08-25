@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3]
+
+[ext_resource type="PackedScene" uid="uid://uxxvljhmbg86" path="res://src/levels/hub/hub.tscn" id="1_hub"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_hub"]
+
+[resource]
+script = ExtResource("2_hub")
+display_name = "Хаб"
+scene = ExtResource("1_hub")
+slot_count = 1
+metadata/_custom_type_script = "uid://wiaffa7aebsm"

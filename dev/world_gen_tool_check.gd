@@ -123,13 +123,15 @@ func _check_inline_preset_editor() -> void:
 	tab._seed_spin.value = INLINE_EDITOR_SEED
 	tab._rebuild_graph()
 
-	# Узел с пресетом: любой, для чьей сцены RS_RoomPresetLibrary реально
-	# подобрала пресет из библиотеки (не хаб — тот отдельная авторская сцена,
-	# не пресет, и не placeholder — генерация с реальной библиотекой их не
-	# оставляет).
+	# Узел с пресетом ИЗ ПУЛА АВТОПОДБОРА: любой, для чьей сцены
+	# RS_RoomPresetLibrary реально подобрала пресет генерацией (не placeholder
+	# — с реальной библиотекой их не оставляет). Хаб исключён нарочно: у него
+	# тоже есть пресет теперь (см. ниже), но это отдельный путь — не через
+	# select_preset, а принудительно, — и оба пути стоит проверять раздельно,
+	# не полагаясь на то, какой узел раньше попадётся в словаре.
 	var with_preset: RS_LevelNode
 	for node_data: RS_LevelNode in tab._graph.nodes.values():
-		if tab._preset_for(node_data) != null:
+		if node_data.id != tab._graph.entry_node_id and tab._preset_for(node_data) != null:
 			with_preset = node_data
 			break
 	_check("seed %d: нашёлся узел с пресетом для проверки редактора" % INLINE_EDITOR_SEED, with_preset != null, "")
@@ -191,12 +193,13 @@ func _check_inline_preset_editor() -> void:
 
 		labels_overlay.free()
 
-	# Хаб — авторская сцена дома, не пресет из библиотеки: секция обязана
-	# спрятаться, а не показать пустую/чужую форму.
+	# Хаб — тоже пресет теперь (hub.tres, RS_RoomPresetLibrary.hub), просто вне
+	# пула автоподбора (.presets): секция обязана его узнать и показать, как
+	# любой другой узел с пресетом, а не спрятаться.
 	var hub_data := tab._graph.get_node_data(tab._graph.entry_node_id)
 	tab._on_node_picked(hub_data.id)
-	_check("узел хаба: пресет не найден", tab._editing_preset == null, "")
-	_check("узел хаба: секция редактора скрыта", not tab._preset_section.visible, "")
+	_check("узел хаба: пресет найден (library.hub)", tab._editing_preset == tab._library.hub, "")
+	_check("узел хаба: секция редактора видима", tab._preset_section.visible, "")
 
 	tab._clear_selection()
 	_check("после сброса выделения: секция редактора скрыта", not tab._preset_section.visible, "")
@@ -308,7 +311,29 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 		var far_pick := Picker.pick(Vector3(100000, 50, 100000), Vector3.DOWN, layer_nodes, plan)
 		_check("%s: луч мимо слоя не пикает ничего" % label, far_pick == &"", "нашёл %s" % far_pick)
 
-	# --- 3. Сброс статического кэша RS_RoomLayout (зовётся вкладкой на
+	# --- 3. Хаб — ровно один узел на весь граф (сам домашний, entry_node_id),
+	# и это всегда гарантированный тупик (degree=1, см.
+	# RS_LevelGraph._generate_floor dead_end_index). Прямой регресс-щит на риск
+	# добавления hub.tres как пресета (RS_RoomPresetLibrary.hub): протеки он в
+	# пул автоподбора (.presets) — молча достался бы и другим узлам-тупикам по
+	# всему графу, ни одна из проверок пикинга/оверлеев этого не поймала бы.
+	var hub_nodes: Array[StringName] = []
+	for node_data: RS_LevelNode in graph.nodes.values():
+		if node_data.room_scene_path == RS_LevelGraph.HUB_ROOM_SCENE:
+			hub_nodes.append(node_data.id)
+	_check(
+		"seed %d: хаб — ровно один узел графа" % seed_value,
+		hub_nodes.size() == 1 and hub_nodes[0] == graph.entry_node_id,
+		"%s" % hub_nodes
+	)
+	var hub_data := graph.get_node_data(graph.entry_node_id)
+	_check(
+		"seed %d: хаб — тупик (ровно одно ребро)" % seed_value,
+		hub_data != null and hub_data.connections.size() == 1,
+		"degree=%d" % (hub_data.connections.size() if hub_data else -1)
+	)
+
+	# --- 4. Сброс статического кэша RS_RoomLayout (зовётся вкладкой на
 	# «Пересобрать») не должен падать и не должен ломать последующие запросы.
 	RS_RoomLayout.clear_scene_cache()
 	_check("seed %d: clear_scene_cache отрабатывает" % seed_value, true, "")

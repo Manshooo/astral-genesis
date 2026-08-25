@@ -449,6 +449,10 @@ func _node_report(node_data: RS_LevelNode) -> String:
 
 ## Тот же поиск, что presets.gd делает при показе «что выпало»: пресет по
 ## совпадению пути сцены — обратной ссылки «узел → пресет» в данных нет.
+## library.hub — тоже кандидат: хаб (домашний узел) теперь имеет свой
+## RS_RoomPreset (hub.tres), просто вне пула автоподбора (см.
+## RS_RoomPresetLibrary.hub) — секция инлайн-редактора должна узнавать его
+## так же, как любой другой узел с пресетом, не только узлы из .presets.
 func _preset_for(node_data: RS_LevelNode) -> RS_RoomPreset:
 	if _library == null or node_data.room_scene_path == "":
 		return null
@@ -461,6 +465,12 @@ func _preset_for(node_data: RS_LevelNode) -> RS_RoomPreset:
 		and _library.fallback.scene.resource_path == node_data.room_scene_path
 	):
 		return _library.fallback
+	if (
+		_library.hub
+		and _library.hub.scene
+		and _library.hub.scene.resource_path == node_data.room_scene_path
+	):
+		return _library.hub
 	return null
 
 

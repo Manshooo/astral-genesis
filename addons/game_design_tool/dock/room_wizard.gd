@@ -173,11 +173,27 @@ func refresh_for_scene(scene_root: Node) -> void:
 	_set_active(true)
 
 
+## Хаб — исключение из общего правила: «Сохранить как Room-ресурс» ему нужен
+## как любой другой сцене (Room Wizard — единственный путь дать hub.tscn его
+## RS_RoomPreset), а вот «Добавить в библиотеку» — нет и не должен. Библиотека
+## отдаёт его RS_LevelGraph.HUB_ROOM_SCENE в обход отбора (домашний узел
+## получает хаб принудительно, не через select_preset); попади его пресет в
+## presets — пустые tags и slot_count=1 сделали бы hub кандидатом-победителем
+## для ЛЮБОГО непомеченного узла-тупика графа (см. RS_RoomPresetLibrary.hub).
 func _set_active(active: bool) -> void:
 	_form_box.visible = active
 	_tag_flow.visible = active
 	_save_btn.disabled = not active
-	_add_to_library_btn.disabled = not active or not ResourceLoader.exists(_preset_path)
+	# _scene_path не сбрасывается в false-ветках refresh_for_scene (там кнопка
+	# и так выключена через not active) — is_hub смотрим только пока active,
+	# иначе подсказка о хабе могла бы остаться от предыдущей сцены.
+	var is_hub := active and _scene_path == RS_LevelGraph.HUB_ROOM_SCENE
+	_add_to_library_btn.disabled = not active or not ResourceLoader.exists(_preset_path) or is_hub
+	_add_to_library_btn.tooltip_text = (
+		"Хаб — не для общего пула, генератор ставит его домашнему узлу напрямую"
+		if is_hub
+		else ""
+	)
 #endregion
 
 

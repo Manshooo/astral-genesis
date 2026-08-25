@@ -29,6 +29,7 @@ func _ready() -> void:
 	_check_no_scene(wizard)
 	for scene_path in ROOM_SCENES:
 		_check_scene(wizard, scene_path)
+	_check_hub_scene(wizard)
 
 	wizard.free()
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
@@ -92,6 +93,32 @@ func _check_scene(wizard: RoomWizard, scene_path: String) -> void:
 	_check(
 		"%s: кнопка библиотеки включена (пресет уже на диске)" % label,
 		not wizard._add_to_library_btn.disabled,
+		""
+	)
+
+	room.free()
+
+
+## Хаб — единственная сцена, где «Сохранить» ведёт себя как обычно (форма
+## читает hub.tres так же, как любой другой пресет), а «Добавить в библиотеку»
+## обязана быть выключена структурно: попади hub.tres в library.presets —
+## его пустые tags и slot_count=1 сделали бы его кандидатом-победителем для
+## ЛЮБОГО непомеченного узла-тупика во всём графе (см.
+## RS_RoomPresetLibrary.hub, room_wizard.gd._set_active).
+func _check_hub_scene(wizard: RoomWizard) -> void:
+	var room := (load(RS_LevelGraph.HUB_ROOM_SCENE) as PackedScene).instantiate()
+	wizard.refresh_for_scene(room)
+
+	_check(
+		"хаб: путь пресета — рядом со сценой, тот же файл",
+		wizard._preset_path == RS_LevelGraph.HUB_ROOM_SCENE.get_basename() + ".tres",
+		wizard._preset_path
+	)
+	_check("хаб: пресет уже существует (hub.tres)", ResourceLoader.exists(wizard._preset_path), wizard._preset_path)
+	_check("хаб: кнопка сохранения включена", not wizard._save_btn.disabled, "")
+	_check(
+		"хаб: кнопка библиотеки ВЫКЛЮЧЕНА (не для общего пула)",
+		wizard._add_to_library_btn.disabled,
 		""
 	)
 
