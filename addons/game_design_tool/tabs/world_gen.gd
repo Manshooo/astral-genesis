@@ -128,6 +128,7 @@ func _build_toolbar() -> Control:
 	for overlay: Dictionary in OverlayRegistry.OVERLAYS:
 		var check := CheckBox.new()
 		check.text = overlay["title"]
+		check.tooltip_text = overlay["tooltip"]
 		check.button_pressed = overlay["default_visible"]
 		var overlay_id: StringName = overlay["id"]
 		check.toggled.connect(func(pressed: bool) -> void: _host.set_overlay_visible(overlay_id, pressed))
@@ -284,8 +285,19 @@ func _rebuild_layer() -> void:
 	var depth := _current_depth()
 	var layer_nodes := _graph.get_nodes_by_depth(depth)
 	var plan := RS_LayerPlan.build(layer_nodes)
-	_host.show_layer(_graph, layer_nodes, plan)
+	_host.show_layer(_graph, layer_nodes, plan, _preset_labels_for(layer_nodes))
 	_clear_selection()
+
+
+## node_id -> имя пресета, для оверлея «Подписи». Тот же поиск, что
+## _preset_for уже делает для одного узла (инлайн-редактор) — здесь просто
+## для всех узлов слоя разом, до того как их отрисует ViewportHost.
+func _preset_labels_for(layer_nodes: Array[RS_LevelNode]) -> Dictionary:
+	var labels := {}
+	for node_data: RS_LevelNode in layer_nodes:
+		var preset := _preset_for(node_data)
+		labels[node_data.id] = _label_of(preset) if preset else ""
+	return labels
 #endregion
 
 

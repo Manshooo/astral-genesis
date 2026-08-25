@@ -17,6 +17,7 @@ const EditorCamera := preload("res://addons/game_design_tool/world/editor_camera
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
 const RoomsOverlay := preload("res://addons/game_design_tool/world/overlays/rooms_overlay.gd")
 const GraphOverlay := preload("res://addons/game_design_tool/world/overlays/graph_overlay.gd")
+const LabelsOverlay := preload("res://addons/game_design_tool/world/overlays/labels_overlay.gd")
 
 ## Меньше — клик по узлу, больше — это уже был драг камеры, а не выбор.
 const CLICK_DRAG_THRESHOLD := 6.0
@@ -33,6 +34,7 @@ var _viewport: SubViewport
 var _camera: EditorCamera
 var _rooms_overlay: RoomsOverlay
 var _graph_overlay: GraphOverlay
+var _labels_overlay: LabelsOverlay
 
 var _layer_nodes: Array[RS_LevelNode] = []
 var _plan: RS_LayerPlan
@@ -74,6 +76,9 @@ func _init() -> void:
 	_graph_overlay = GraphOverlay.new()
 	_viewport.add_child(_graph_overlay)
 
+	_labels_overlay = LabelsOverlay.new()
+	_viewport.add_child(_labels_overlay)
+
 
 func _build_environment() -> WorldEnvironment:
 	var env := Environment.new()
@@ -98,11 +103,21 @@ func _build_sun() -> DirectionalLight3D:
 ## рёбер, layer_nodes/plan — что и где рисовать. Граф и раскладку считает
 ## вызывающий (RS_LevelGraph.generate_run + RS_LayerPlan.build) — этот узел
 ## сам ничего не генерирует, только отображает.
-func show_layer(graph: RS_LevelGraph, layer_nodes: Array[RS_LevelNode], plan: RS_LayerPlan) -> void:
+##
+## [param preset_labels] node_id -> имя подобранного пресета, для оверлея
+## «Подписи». Резолвится вызывающим (world_gen.gd уже умеет искать пресет по
+## сцене узла для инлайн-редактора) — оверлей сам библиотеку не знает.
+func show_layer(
+	graph: RS_LevelGraph,
+	layer_nodes: Array[RS_LevelNode],
+	plan: RS_LayerPlan,
+	preset_labels: Dictionary = {},
+) -> void:
 	_layer_nodes = layer_nodes
 	_plan = plan
 	_rooms_overlay.rebuild(layer_nodes, plan)
 	_graph_overlay.rebuild(graph, layer_nodes, plan)
+	_labels_overlay.rebuild(layer_nodes, plan, preset_labels)
 	_select(&"")
 	frame_layer()
 
@@ -113,6 +128,8 @@ func set_overlay_visible(overlay_id: StringName, is_visible: bool) -> void:
 			_rooms_overlay.visible = is_visible
 		&"graph":
 			_graph_overlay.visible = is_visible
+		&"labels":
+			_labels_overlay.visible = is_visible
 
 
 func selected_node_id() -> StringName:

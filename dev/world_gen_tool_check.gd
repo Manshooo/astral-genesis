@@ -24,6 +24,7 @@ var _fail := 0
 const ViewportHost := preload("res://addons/game_design_tool/world/viewport_host.gd")
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
 const WorldGen := preload("res://addons/game_design_tool/tabs/world_gen.gd")
+const LabelsOverlay := preload("res://addons/game_design_tool/world/overlays/labels_overlay.gd")
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
 const SEED_COUNT := 30
 ## Сид с известным составом узлов — для проверки инлайн-редактора пресета
@@ -86,6 +87,24 @@ func _check_inline_preset_editor() -> void:
 			"чипов=%d, известных тегов=%d" % [chip_count, tab._known_tags.size()]
 		)
 
+		# Оверлей «Подписи»: строится независимо от текущей глубины вкладки
+		# (with_preset может быть на любой), поэтому проверяется отдельным
+		# оверлеем на СВОЁМ слое, а не через tab._host (тот показывает только
+		# _current_depth()).
+		var own_layer := tab._graph.get_nodes_by_depth(with_preset.depth)
+		var own_plan := RS_LayerPlan.build(own_layer)
+		var labels_overlay := LabelsOverlay.new()
+		labels_overlay.rebuild(own_layer, own_plan, tab._preset_labels_for(own_layer))
+		var label_text: String = (
+			(labels_overlay._labels[with_preset.id] as Label3D).text if labels_overlay._labels.has(with_preset.id) else ""
+		)
+		_check(
+			"узел с пресетом: подпись содержит id и имя пресета",
+			label_text.contains(String(with_preset.id)) and label_text.contains(tab._label_of(preset)),
+			label_text
+		)
+		labels_overlay.free()
+
 	# Хаб — авторская сцена дома, не пресет из библиотеки: секция обязана
 	# спрятаться, а не показать пустую/чужую форму.
 	var hub_data := tab._graph.get_node_data(tab._graph.entry_node_id)
@@ -125,6 +144,11 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 			"%s: сфер графа построено по числу узлов" % label,
 			host._graph_overlay._spheres.size() == layer_nodes.size(),
 			"%d сфер, %d узлов" % [host._graph_overlay._spheres.size(), layer_nodes.size()]
+		)
+		_check(
+			"%s: подписей построено по числу узлов" % label,
+			host._labels_overlay._labels.size() == layer_nodes.size(),
+			"%d подписей, %d узлов" % [host._labels_overlay._labels.size(), layer_nodes.size()]
 		)
 
 		# --- 2. Пикинг: ray-vs-AABB находит узел, а не соседа снизу/сверху.
