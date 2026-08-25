@@ -43,9 +43,67 @@ func _ready() -> void:
 		_check_seed(seed_value, library, host)
 
 	_check_inline_preset_editor()
+	_check_room_outline(library, host)
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
+
+
+## RoomsOverlay.set_selected: material_overlay ставится РОВНО на геометрию
+## выбранной комнаты и снимается с прежней при переключении/сбросе. Молчаливая
+## поломка (например, если Entity-каст на комнату вдруг перестанет
+## срабатывать) не бросила бы ошибку — обводка просто не появилась бы, и
+## заметно это было бы только глазами в редакторе.
+func _check_room_outline(library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
+	var graph := RS_LevelGraph.new().generate_run(0, library)
+	var layer_nodes := graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH)
+	if layer_nodes.size() < 2:
+		_check("обводка: слой L%d содержит хотя бы 2 узла для теста" % RS_LevelGraph.HOME_DEPTH, false, "%d" % layer_nodes.size())
+		return
+	var plan := RS_LayerPlan.build(layer_nodes)
+	host.show_layer(graph, layer_nodes, plan)
+
+	var first_id := layer_nodes[0].id
+	var second_id := layer_nodes[1].id
+	var overlay := host._rooms_overlay
+	var outline: Material = overlay.OUTLINE_MATERIAL
+
+	overlay.set_selected(first_id)
+	_check(
+		"обводка: у выбранной комнаты material_overlay = обводка",
+		_all_geometries_have_material(overlay, first_id, outline),
+		""
+	)
+
+	overlay.set_selected(second_id)
+	_check(
+		"обводка: со старой комнаты снимается при смене выделения",
+		_all_geometries_have_material(overlay, first_id, null),
+		""
+	)
+	_check(
+		"обводка: у новой выбранной комнаты material_overlay = обводка",
+		_all_geometries_have_material(overlay, second_id, outline),
+		""
+	)
+
+	overlay.set_selected(&"")
+	_check(
+		"обводка: снимается при сбросе выделения",
+		_all_geometries_have_material(overlay, second_id, null),
+		""
+	)
+
+
+func _all_geometries_have_material(overlay, node_id: StringName, material: Material) -> bool:
+	var entity := overlay._rooms[node_id] as Entity
+	var geometries := RS_EntityVisuals.geometries(entity)
+	if geometries.is_empty():
+		return false
+	for geometry: GeometryInstance3D in geometries:
+		if geometry.material_overlay != material:
+			return false
+	return true
 
 
 ## Читает форму инлайн-редактора после клика по узлу — не пишет ничего.
@@ -87,7 +145,8 @@ func _check_inline_preset_editor() -> void:
 			"чипов=%d, известных тегов=%d" % [chip_count, tab._known_tags.size()]
 		)
 
-		# Оверлей «Подписи»: строится независимо от текущей глубины вкладки
+		# Оверлей «Подписи»: одна подпись на слой, показывается только по
+		# set_selected — строится независимо от текущей глубины вкладки
 		# (with_preset может быть на любой), поэтому проверяется отдельным
 		# оверлеем на СВОЁМ слое, а не через tab._host (тот показывает только
 		# _current_depth()).
@@ -95,14 +154,31 @@ func _check_inline_preset_editor() -> void:
 		var own_plan := RS_LayerPlan.build(own_layer)
 		var labels_overlay := LabelsOverlay.new()
 		labels_overlay.rebuild(own_layer, own_plan, tab._preset_labels_for(own_layer))
-		var label_text: String = (
-			(labels_overlay._labels[with_preset.id] as Label3D).text if labels_overlay._labels.has(with_preset.id) else ""
-		)
+		_check("после rebuild без выделения: подпись скрыта", not labels_overlay._label.visible, "")
+
+		labels_overlay.set_selected(with_preset.id)
+		_check("после set_selected: подпись видима", labels_overlay._label.visible, "")
+		var label_text: String = labels_overlay._label.text
 		_check(
 			"узел с пресетом: подпись содержит id и имя пресета",
 			label_text.contains(String(with_preset.id)) and label_text.contains(tab._label_of(preset)),
 			label_text
 		)
+
+		# +5 м от ВЕРХА AABB комнаты, не просто «над узлом»: у комнат с разным
+		# габаритом фиксированная высота либо утыкалась бы в потолок, либо
+		# неоправданно далеко висела над низкой.
+		var expected_aabb := Picker.room_aabb(with_preset.id, own_layer, own_plan)
+		var expected_y: float = expected_aabb.position.y + expected_aabb.size.y + labels_overlay.ABOVE_AABB
+		_check(
+			"узел с пресетом: подпись стоит на +5 м от верха AABB комнаты",
+			is_equal_approx(labels_overlay._label.position.y, expected_y),
+			"подпись.y=%s, ожидалось=%s" % [labels_overlay._label.position.y, expected_y]
+		)
+
+		labels_overlay.set_selected(&"")
+		_check("после сброса выделения: подпись скрыта", not labels_overlay._label.visible, "")
+
 		labels_overlay.free()
 
 	# Хаб — авторская сцена дома, не пресет из библиотеки: секция обязана
@@ -145,10 +221,16 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 			host._graph_overlay._spheres.size() == layer_nodes.size(),
 			"%d сфер, %d узлов" % [host._graph_overlay._spheres.size(), layer_nodes.size()]
 		)
+		# «Подписи» — одна на весь оверлей, показывается только по set_selected
+		# (see_layer завершается _select(&"") — см. viewport_host.gd), поэтому
+		# после rebuild её не должно быть видно вовсе, независимо от того,
+		# сколько в слое узлов. Содержимое/позиция подписи проверяются отдельно
+		# и подробно в _check_inline_preset_editor — здесь только «не утекла
+		# видимой с прошлого слоя».
 		_check(
-			"%s: подписей построено по числу узлов" % label,
-			host._labels_overlay._labels.size() == layer_nodes.size(),
-			"%d подписей, %d узлов" % [host._labels_overlay._labels.size(), layer_nodes.size()]
+			"%s: подпись скрыта сразу после пересборки слоя" % label,
+			not host._labels_overlay._label.visible,
+			""
 		)
 
 		# --- 2. Пикинг: ray-vs-AABB находит узел, а не соседа снизу/сверху.

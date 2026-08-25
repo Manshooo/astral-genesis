@@ -235,5 +235,7 @@ func _pick_at(local_pos: Vector2) -> void:
 
 func _select(node_id: StringName) -> void:
 	_selected_id = node_id
+	_rooms_overlay.set_selected(node_id)
 	_graph_overlay.set_selected(node_id)
+	_labels_overlay.set_selected(node_id)
 	node_picked.emit(node_id)

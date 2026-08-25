@@ -25,6 +25,7 @@ const OverlayRegistry := preload("res://addons/game_design_tool/world/overlay_re
 
 var _seed_spin: SpinBox
 var _depth_option: OptionButton
+var _visibility_menu: MenuButton
 var _status: Label
 var _host: ViewportHost
 var _info_label: RichTextLabel
@@ -122,18 +123,7 @@ func _build_toolbar() -> Control:
 	row.add_child(_depth_option)
 
 	row.add_child(VSeparator.new())
-
-	# Чекбоксы — циклом по реестру, не захардкожены: новый оверлей добавляется
-	# строкой в OverlayRegistry.OVERLAYS, а не правкой этого цикла.
-	for overlay: Dictionary in OverlayRegistry.OVERLAYS:
-		var check := CheckBox.new()
-		check.text = overlay["title"]
-		check.tooltip_text = overlay["tooltip"]
-		check.button_pressed = overlay["default_visible"]
-		var overlay_id: StringName = overlay["id"]
-		check.toggled.connect(func(pressed: bool) -> void: _host.set_overlay_visible(overlay_id, pressed))
-		row.add_child(check)
-
+	row.add_child(_build_visibility_menu())
 	row.add_child(VSeparator.new())
 
 	# Отдельная кнопка, а не побочный эффект СКМ: раньше камера «доезжала» до
@@ -241,6 +231,40 @@ func _set_status(text: String) -> void:
 
 func _on_reset_view_pressed() -> void:
 	_host.frame_layer()
+
+
+## Выпадающее меню, а не чекбоксы в ряд: чекбоксов уже три и будет больше
+## («Двери» — заявленный, но пока не построенный четвёртый оверлей, см.
+## overlay_registry.gd), а в панели инструментов место не резиновое. Пункты —
+## циклом по реестру, тот же принцип, что и раньше: новый оверлей — строка в
+## OverlayRegistry.OVERLAYS, а не правка этого кода.
+func _build_visibility_menu() -> MenuButton:
+	_visibility_menu = MenuButton.new()
+	_visibility_menu.text = "Видимость"
+	_visibility_menu.tooltip_text = "Переключает видимость отображаемых слоёв"
+
+	var popup := _visibility_menu.get_popup()
+	for i in OverlayRegistry.OVERLAYS.size():
+		var overlay: Dictionary = OverlayRegistry.OVERLAYS[i]
+		popup.add_check_item(overlay["title"], i)
+		var idx := popup.get_item_index(i)
+		popup.set_item_checked(idx, overlay["default_visible"])
+		popup.set_item_tooltip(idx, overlay["tooltip"])
+	popup.id_pressed.connect(_on_visibility_item_pressed)
+
+	return _visibility_menu
+
+
+## PopupMenu не переключает check-пункт сам — состояние ведём руками и тут же
+## применяем к вьюпорту, тем же id, каким пункт заведён (порядковый номер в
+## OverlayRegistry.OVERLAYS).
+func _on_visibility_item_pressed(id: int) -> void:
+	var popup := _visibility_menu.get_popup()
+	var idx := popup.get_item_index(id)
+	var new_state := not popup.is_item_checked(idx)
+	popup.set_item_checked(idx, new_state)
+	var overlay: Dictionary = OverlayRegistry.OVERLAYS[id]
+	_host.set_overlay_visible(overlay["id"], new_state)
 #endregion
 
 
