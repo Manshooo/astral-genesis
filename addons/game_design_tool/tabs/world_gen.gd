@@ -31,6 +31,21 @@ var _info_label: RichTextLabel
 var _open_preset_btn: Button
 var _open_scene_btn: Button
 
+## Инлайн-редактор пресета выделенного узла (v3-стретч) — прямо здесь, без
+## похода на вкладку «Генератор» или в инспектор. Виден, только когда у узла
+## есть сцена, для которой в библиотеке нашёлся пресет (_preset_for).
+var _preset_section: VBoxContainer
+var _preset_label: Label
+var _slot_spin: SpinBox
+var _weight_spin: SpinBox
+var _tag_flow: HFlowContainer
+var _new_tag_edit: LineEdit
+var _known_tags: Array[StringName] = []
+## Пресет, который сейчас редактируется секцией выше — держим отдельно от
+## _selected_node_data().preset, чтобы обработчики полей не искали его заново
+## на каждое изменение спинбокса.
+var _editing_preset: RS_RoomPreset
+
 var _graph: RS_LevelGraph
 var _library: RS_RoomPresetLibrary
 var _loaded := false
@@ -142,6 +157,10 @@ func _build_side_panel() -> Control:
 	_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_child(_info_label)
 
+	panel.add_child(HSeparator.new())
+	panel.add_child(_build_preset_section())
+	panel.add_child(HSeparator.new())
+
 	_open_preset_btn = _button("Открыть пресет", _on_open_preset_pressed)
 	panel.add_child(_open_preset_btn)
 	_open_scene_btn = _button("Открыть сцену", _on_open_scene_pressed)
@@ -149,6 +168,56 @@ func _build_side_panel() -> Control:
 
 	_clear_selection()
 	return panel
+
+
+## Слоты/вес/теги ПРЕСЕТА выделенного узла — редактируются прямо здесь, тем же
+## приёмом (чекбоксы облака тегов, сохранение на каждое изменение), что и
+## вкладка «Генератор» (presets.gd) и Room Wizard (dock/room_wizard.gd). Не то
+## же самое, что «Теги узла» в _info_label выше: node_data.tags — структурные
+## требования УЗЛА графа (их проставляет генератор), preset.tags — способности
+## РЕСУРСА комнаты; путать их нельзя, поэтому секции визуально разделены.
+func _build_preset_section() -> Control:
+	_preset_section = VBoxContainer.new()
+
+	_preset_label = Label.new()
+	_preset_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_preset_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_preset_section.add_child(_preset_label)
+
+	var slot_row := HBoxContainer.new()
+	slot_row.add_child(_label("Слоты:"))
+	_slot_spin = SpinBox.new()
+	_slot_spin.min_value = 0
+	_slot_spin.max_value = 12
+	_slot_spin.step = 1
+	_slot_spin.value_changed.connect(_on_slot_changed)
+	slot_row.add_child(_slot_spin)
+	_preset_section.add_child(slot_row)
+
+	var weight_row := HBoxContainer.new()
+	weight_row.add_child(_label("Вес:"))
+	_weight_spin = SpinBox.new()
+	_weight_spin.min_value = 0.0
+	_weight_spin.max_value = 10.0
+	_weight_spin.step = 0.1
+	_weight_spin.value_changed.connect(_on_weight_changed)
+	weight_row.add_child(_weight_spin)
+	_preset_section.add_child(weight_row)
+
+	_preset_section.add_child(_label("Теги пресета:"))
+	_tag_flow = HFlowContainer.new()
+	_preset_section.add_child(_tag_flow)
+
+	var new_tag_row := HBoxContainer.new()
+	_new_tag_edit = LineEdit.new()
+	_new_tag_edit.placeholder_text = "новый тег"
+	_new_tag_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_new_tag_edit.text_submitted.connect(func(_t: String) -> void: _on_add_tag_pressed())
+	new_tag_row.add_child(_new_tag_edit)
+	new_tag_row.add_child(_button("+", _on_add_tag_pressed))
+	_preset_section.add_child(new_tag_row)
+
+	return _preset_section
 
 
 func _label(text: String) -> Label:
@@ -230,16 +299,24 @@ func _on_node_picked(node_id: StringName) -> void:
 		_clear_selection()
 		return
 	_info_label.text = _node_report(node_data)
-	_open_preset_btn.disabled = _preset_for(node_data) == null
 	_open_scene_btn.disabled = (
 		node_data.room_scene_path == "" or not ResourceLoader.exists(node_data.room_scene_path)
 	)
+
+	_editing_preset = _preset_for(node_data)
+	_open_preset_btn.disabled = _editing_preset == null
+	_preset_section.visible = _editing_preset != null
+	if _editing_preset:
+		_collect_known_tags()
+		_fill_preset_section()
 
 
 func _clear_selection() -> void:
 	_info_label.text = "[i]Кликни по комнате во вьюпорте.[/i]"
 	_open_preset_btn.disabled = true
 	_open_scene_btn.disabled = true
+	_editing_preset = null
+	_preset_section.visible = false
 
 
 func _node_report(node_data: RS_LevelNode) -> String:
@@ -304,4 +381,126 @@ func _selected_node_data() -> RS_LevelNode:
 	if _graph == null:
 		return null
 	return _graph.get_node_data(_host.selected_node_id())
+#endregion
+
+
+#region Инлайн-редактор пресета (v3-стретч)
+## Пока идёт программное заполнение полей — value_changed на SpinBox иначе
+## тут же перечитывал бы то же значение обратно и сохранял ресурс без
+## реальной правки, на каждый клик по узлу.
+var _filling_preset_section := false
+
+
+func _fill_preset_section() -> void:
+	_filling_preset_section = true
+	_preset_label.text = _label_of(_editing_preset)
+	_preset_label.tooltip_text = _editing_preset.resource_path
+	_slot_spin.value = _editing_preset.slot_count
+	_weight_spin.value = _editing_preset.weight
+	_rebuild_tag_chips()
+	_filling_preset_section = false
+
+
+func _on_slot_changed(value: float) -> void:
+	if _filling_preset_section or _editing_preset == null:
+		return
+	_editing_preset.slot_count = int(value)
+	_save_editing_preset()
+
+
+func _on_weight_changed(value: float) -> void:
+	if _filling_preset_section or _editing_preset == null:
+		return
+	_editing_preset.weight = value
+	_save_editing_preset()
+
+
+## Тот же сбор, что у presets.gd._collect_known_tags и room_wizard.gd — своя
+## копия, не общий код: инструменты этого редактора самодостаточны (см.
+## [[Единый редактор геймдизайна]]).
+func _collect_known_tags() -> void:
+	var seen := {}
+	if _library:
+		for p: RS_RoomPreset in _library.presets:
+			if p == null:
+				continue
+			for tag: StringName in p.tags:
+				seen[tag] = true
+		if _library.fallback:
+			for tag: StringName in _library.fallback.tags:
+				seen[tag] = true
+
+	var result: Array[StringName] = []
+	for tag: StringName in seen.keys():
+		result.append(tag)
+	result.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+	_known_tags = result
+
+
+func _rebuild_tag_chips() -> void:
+	for child: Node in _tag_flow.get_children():
+		child.free()
+	if _editing_preset == null:
+		return
+	for tag: StringName in _known_tags:
+		var chip := CheckBox.new()
+		chip.text = String(tag)
+		chip.button_pressed = _editing_preset.tags.has(tag)
+		chip.toggled.connect(_on_tag_chip_toggled.bind(tag))
+		_tag_flow.add_child(chip)
+
+
+func _on_tag_chip_toggled(pressed: bool, tag: StringName) -> void:
+	if _editing_preset == null:
+		return
+	if pressed:
+		if not _editing_preset.tags.has(tag):
+			_editing_preset.tags.append(tag)
+	elif _editing_preset.tags.has(tag):
+		_editing_preset.tags.erase(tag)
+	_save_editing_preset()
+
+
+func _on_add_tag_pressed() -> void:
+	var tag := _tagify(_new_tag_edit.text)
+	_new_tag_edit.text = ""
+	if tag == &"" or _editing_preset == null:
+		return
+	if not _known_tags.has(tag):
+		_known_tags.append(tag)
+		_known_tags.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+	if not _editing_preset.tags.has(tag):
+		_editing_preset.tags.append(tag)
+	_rebuild_tag_chips()
+	_save_editing_preset()
+
+
+## Тот же приём, что в presets.gd/room_wizard.gd — теги ASCII-идентификаторов,
+## кириллица не нужна (не текст для игрока, ключ RS_RoomPreset.tags).
+func _tagify(text: String) -> StringName:
+	var out := ""
+	var prev_us := false
+	for c in text.strip_edges().to_lower():
+		if c == "_" or (c >= "a" and c <= "z") or (c >= "0" and c <= "9"):
+			out += c
+			prev_us = false
+		elif not prev_us and out != "":
+			out += "_"
+			prev_us = true
+	out = out.rstrip("_")
+	return StringName(out) if out != "" else &""
+
+
+func _save_editing_preset() -> void:
+	var err := ResourceSaver.save(_editing_preset, _editing_preset.resource_path)
+	if err != OK:
+		_set_status("⚠ Не удалось сохранить (код %d)" % err)
+		return
+	_set_status("Сохранено: " + _editing_preset.resource_path.get_file())
+
+
+func _label_of(preset: RS_RoomPreset) -> String:
+	if preset.display_name != "":
+		return preset.display_name
+	return preset.resource_path.get_file().get_basename()
 #endregion

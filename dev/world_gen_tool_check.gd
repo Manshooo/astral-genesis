@@ -12,15 +12,23 @@ extends Node
 ##
 ## EditorInterface-кнопки («Открыть пресет»/«Открыть сцену») не проверяются —
 ## их некуда звать headless, и в путь данных generate_run → plan → пикинг они
-## не входят.
+## не входят. Инлайн-редактор пресета в боковой панели (world_gen.gd, v3-
+## стретч) проверяется только на ЧТЕНИЕ — какой пресет резолвится и что форма
+## им заполняется; сами обработчики правки (_on_slot_changed и т.д.) пишут в
+## реальные файлы проекта и здесь не зовутся — та же дисциплина, что у кнопок
+## Room Wizard (см. dev/room_wizard_check.gd).
 
 var _ok := 0
 var _fail := 0
 
 const ViewportHost := preload("res://addons/game_design_tool/world/viewport_host.gd")
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
+const WorldGen := preload("res://addons/game_design_tool/tabs/world_gen.gd")
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
 const SEED_COUNT := 30
+## Сид с известным составом узлов — для проверки инлайн-редактора пресета
+## достаточно одного прогона, не всех тридцати.
+const INLINE_EDITOR_SEED := 0
 
 
 func _ready() -> void:
@@ -33,8 +41,62 @@ func _ready() -> void:
 	for seed_value in range(SEED_COUNT):
 		_check_seed(seed_value, library, host)
 
+	_check_inline_preset_editor()
+
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
+
+
+## Читает форму инлайн-редактора после клика по узлу — не пишет ничего.
+func _check_inline_preset_editor() -> void:
+	var tab := WorldGen.new()
+	add_child(tab)
+	tab._seed_spin.value = INLINE_EDITOR_SEED
+	tab._rebuild_graph()
+
+	# Узел с пресетом: любой, для чьей сцены RS_RoomPresetLibrary реально
+	# подобрала пресет из библиотеки (не хаб — тот отдельная авторская сцена,
+	# не пресет, и не placeholder — генерация с реальной библиотекой их не
+	# оставляет).
+	var with_preset: RS_LevelNode
+	for node_data: RS_LevelNode in tab._graph.nodes.values():
+		if tab._preset_for(node_data) != null:
+			with_preset = node_data
+			break
+	_check("seed %d: нашёлся узел с пресетом для проверки редактора" % INLINE_EDITOR_SEED, with_preset != null, "")
+	if with_preset:
+		tab._on_node_picked(with_preset.id)
+		var preset := tab._preset_for(with_preset)
+		_check("узел с пресетом: секция редактора видима", tab._preset_section.visible, "")
+		_check("узел с пресетом: _editing_preset — тот же ресурс", tab._editing_preset == preset, "")
+		_check(
+			"узел с пресетом: слоты в форме совпадают с ресурсом",
+			int(tab._slot_spin.value) == preset.slot_count,
+			"форма=%d, ресурс=%d" % [int(tab._slot_spin.value), preset.slot_count]
+		)
+		_check(
+			"узел с пресетом: вес в форме совпадает с ресурсом",
+			is_equal_approx(tab._weight_spin.value, preset.weight),
+			"форма=%s, ресурс=%s" % [tab._weight_spin.value, preset.weight]
+		)
+		var chip_count: int = tab._tag_flow.get_child_count()
+		_check(
+			"узел с пресетом: чекбоксов тегов по числу известных тегов",
+			chip_count == tab._known_tags.size(),
+			"чипов=%d, известных тегов=%d" % [chip_count, tab._known_tags.size()]
+		)
+
+	# Хаб — авторская сцена дома, не пресет из библиотеки: секция обязана
+	# спрятаться, а не показать пустую/чужую форму.
+	var hub_data := tab._graph.get_node_data(tab._graph.entry_node_id)
+	tab._on_node_picked(hub_data.id)
+	_check("узел хаба: пресет не найден", tab._editing_preset == null, "")
+	_check("узел хаба: секция редактора скрыта", not tab._preset_section.visible, "")
+
+	tab._clear_selection()
+	_check("после сброса выделения: секция редактора скрыта", not tab._preset_section.visible, "")
+
+	tab.free()
 
 
 func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
