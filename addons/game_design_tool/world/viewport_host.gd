@@ -12,6 +12,12 @@
 extends SubViewportContainer
 
 signal node_picked(node_id: StringName)
+## Камера сдвинулась/повернулась достаточно значимо, чтобы стоило сохранить
+## позицию между сессиями (world_gen.gd слушает и пишет в EditorSettings).
+## НЕ на каждый кадр драга — только на «устаканившиеся» моменты (отпустили
+## кнопку, крутанули колесо, нажали F/«Сбросить вид»): постоянные записи в
+## EditorSettings на каждый пиксель движения мыши были бы чистым расточительством.
+signal camera_changed
 
 const EditorCamera := preload("res://addons/game_design_tool/world/editor_camera.gd")
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
@@ -136,10 +142,26 @@ func selected_node_id() -> StringName:
 	return _selected_id
 
 
+func camera_position() -> Vector3:
+	return _camera.position
+
+
+func camera_rotation_degrees() -> Vector3:
+	return _camera.rotation_degrees
+
+
+## Ставит камеру в сохранённое между сессиями положение — см.
+## EditorCamera.restore_transform про то, почему это не просто position=/
+## rotation_degrees=.
+func restore_camera(pos: Vector3, rot_degrees: Vector3) -> void:
+	_camera.restore_transform(pos, rot_degrees)
+
+
 func focus_selected() -> void:
 	if _selected_id == &"" or _plan == null:
 		return
 	_camera.focus_on(Picker.room_aabb(_selected_id, _layer_nodes, _plan))
+	camera_changed.emit()
 
 
 ## Кадрирует камеру на весь текущий слой. Зовётся автоматически при
@@ -154,6 +176,7 @@ func frame_layer() -> void:
 	for i in range(1, _layer_nodes.size()):
 		bounds = bounds.merge(Picker.room_aabb(_layer_nodes[i].id, _layer_nodes, _plan))
 	_camera.focus_on(bounds)
+	camera_changed.emit()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -182,16 +205,22 @@ func _handle_mouse_button(mb: InputEventMouseButton) -> void:
 					_pick_at(mb.position)
 		MOUSE_BUTTON_RIGHT:
 			_camera.set_flying(mb.pressed)
+			if not mb.pressed:
+				camera_changed.emit()  # конец облёта, не каждый кадр драга
 		MOUSE_BUTTON_MIDDLE:
 			if mb.pressed:
 				_camera.begin_orbit(_orbit_pivot_hint())
 			_camera.set_orbiting(mb.pressed)
+			if not mb.pressed:
+				camera_changed.emit()  # конец орбиты
 		MOUSE_BUTTON_WHEEL_UP:
 			if mb.pressed:
 				_camera.dolly(1.0)  # вверх — навстречу взгляду, приближение
+				camera_changed.emit()
 		MOUSE_BUTTON_WHEEL_DOWN:
 			if mb.pressed:
 				_camera.dolly(-1.0)  # вниз — от взгляда, отдаление
+				camera_changed.emit()
 	accept_event()
 
 

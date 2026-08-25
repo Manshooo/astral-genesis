@@ -61,6 +61,18 @@ func orbit_distance() -> float:
 	return _orbit_distance
 
 
+## Ставит камеру в сохранённое между сессиями положение (см. world_gen.gd,
+## EditorSettings.set_project_metadata) и пересчитывает _yaw/_pitch из НЕГО —
+## иначе первый же облёт/орбита дёрнул бы камеру к старому ракурсу, оставшемуся
+## с _ready(): та же ловушка, что уже была с пивотом орбиты без выделения
+## (см. GDT_ViewportHost._pivot_ahead_of_camera).
+func restore_transform(pos: Vector3, rot_degrees: Vector3) -> void:
+	position = pos
+	rotation_degrees = rot_degrees
+	_yaw = rotation.y
+	_pitch = rotation.x
+
+
 func handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	if _flying:
 		_yaw -= event.relative.x * LOOK_SENSITIVITY

@@ -20,6 +20,12 @@ extends VBoxContainer
 const TAB_TITLE := "Генератор мира"
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
 
+## EditorSettings.set_project_metadata — тот самый пробел из [[Единый редактор
+## геймдизайна]] («Решено, но не реализовано» в MVP): сид/глубина/оверлеи/
+## камера переживают перезапуск редактора. Метаданные ПРОЕКТА, не установки
+## Godot — у другого проекта своя генерация, чужой сид тут бессмысленен.
+const SETTINGS_SECTION := "world_gen_tool"
+
 const ViewportHost := preload("res://addons/game_design_tool/world/viewport_host.gd")
 const OverlayRegistry := preload("res://addons/game_design_tool/world/overlay_registry.gd")
 
@@ -69,7 +75,7 @@ func _on_visibility_changed() -> void:
 	if not _loaded and is_visible_in_tree():
 		_loaded = true
 		RS_RoomLayout.clear_scene_cache()
-		_rebuild_graph()
+		_restore_state()
 
 
 #region UI
@@ -265,6 +271,7 @@ func _on_visibility_item_pressed(id: int) -> void:
 	popup.set_item_checked(idx, new_state)
 	var overlay: Dictionary = OverlayRegistry.OVERLAYS[id]
 	_host.set_overlay_visible(overlay["id"], new_state)
+	_set_meta("overlay_" + String(overlay["id"]), new_state)
 #endregion
 
 
@@ -281,6 +288,64 @@ func _on_rebuild_pressed() -> void:
 	_rebuild_graph()
 
 
+## Восстанавливает сид/глубину/видимость оверлеев ДО генерации, камеру —
+## ПОСЛЕ (см. дальше почему), и только тогда подписывается на camera_changed.
+## Порядок важен: _rebuild_graph → _rebuild_layer → ViewportHost.show_layer
+## сама кадрирует камеру на весь слой (frame_layer, см. viewport_host.gd) и
+## эмитит camera_changed — подпишись раньше, и это автокадрирование тут же
+## перезаписало бы в EditorSettings ЕЩЁ НЕ ПРИМЕНЁННУЮ сохранённую позицию,
+## прежде чем restore_camera успеет её поставить.
+func _restore_state() -> void:
+	_seed_spin.value = _get_meta("seed", 0)
+
+	var depth: int = _get_meta("depth", RS_LevelGraph.HOME_DEPTH)
+	var depth_idx := _depth_option.get_item_index(depth)
+	if depth_idx >= 0:
+		_depth_option.select(depth_idx)
+
+	var popup := _visibility_menu.get_popup()
+	for i in OverlayRegistry.OVERLAYS.size():
+		var overlay: Dictionary = OverlayRegistry.OVERLAYS[i]
+		var visible_state: bool = _get_meta("overlay_" + String(overlay["id"]), overlay["default_visible"])
+		popup.set_item_checked(popup.get_item_index(i), visible_state)
+		_host.set_overlay_visible(overlay["id"], visible_state)
+
+	_rebuild_graph()
+
+	if _get_meta("camera_saved", false):
+		var pos: Vector3 = _get_meta("camera_position", Vector3.ZERO)
+		var rot: Vector3 = _get_meta("camera_rotation", Vector3.ZERO)
+		_host.restore_camera(pos, rot)
+
+	_host.camera_changed.connect(_on_camera_changed)
+
+
+func _on_camera_changed() -> void:
+	_set_meta("camera_position", _host.camera_position())
+	_set_meta("camera_rotation", _host.camera_rotation_degrees())
+	_set_meta("camera_saved", true)
+
+
+## EditorSettings — редакторский API: за пределами настоящего работающего
+## редактора (в т.ч. в headless-прогонах dev/world_gen_tool_check.gd, где
+## Engine.is_editor_hint() ложно — это ИГРОВОЙ прогон сцены, не редактор)
+## singleton не инициализирован и звать его незачем — состояние заведомо
+## некому будет читать между сессиями редактора, которых не было. Тот же
+## приём, каким e_body_crawler.gd отсекает физическую симуляцию в редакторе.
+func _get_meta(key: String, default: Variant) -> Variant:
+	if not Engine.is_editor_hint():
+		return default
+	# set_project_metadata/get_project_metadata — методы ЭКЗЕМПЛЯРА синглтона
+	# (не статика класса EditorSettings) — только через EditorInterface.
+	return EditorInterface.get_editor_settings().get_project_metadata(SETTINGS_SECTION, key, default)
+
+
+func _set_meta(key: String, value: Variant) -> void:
+	if not Engine.is_editor_hint():
+		return
+	EditorInterface.get_editor_settings().set_project_metadata(SETTINGS_SECTION, key, value)
+
+
 func _rebuild_graph() -> void:
 	_library = ResourceLoader.load(LIBRARY_PATH, "", ResourceLoader.CACHE_MODE_REPLACE) as RS_RoomPresetLibrary
 	if _library == null:
@@ -290,6 +355,7 @@ func _rebuild_graph() -> void:
 	_graph = RS_LevelGraph.new().generate_run(run_seed, _library)
 	_rebuild_layer()
 	_set_status("Сид %d, узлов в графе: %d" % [run_seed, _graph.nodes.size()])
+	_set_meta("seed", run_seed)
 
 
 func _current_depth() -> int:
@@ -301,6 +367,7 @@ func _current_depth() -> int:
 
 func _on_depth_selected(_index: int) -> void:
 	_rebuild_layer()
+	_set_meta("depth", _current_depth())
 
 
 func _rebuild_layer() -> void:

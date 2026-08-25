@@ -17,6 +17,14 @@ extends Node
 ## им заполняется; сами обработчики правки (_on_slot_changed и т.д.) пишут в
 ## реальные файлы проекта и здесь не зовутся — та же дисциплина, что у кнопок
 ## Room Wizard (см. dev/room_wizard_check.gd).
+##
+## Состояние между сессиями (EditorSettings.set_project_metadata — сид/глубина/
+## оверлеи/камера) тоже НЕ проверяется по чтению/записи в EditorSettings как
+## таковой: headless-прогон сцены — это не работающий редактор
+## (Engine.is_editor_hint() ложно), сам singleton не инициализирован, и звать
+## его было бы ложным тестом чужого пути. Проверяется тот путь, который здесь
+## реально исполняется — что _restore_state() безопасно откатывается на
+## дефолты и всё равно строит граф, см. _check_restore_state.
 
 var _ok := 0
 var _fail := 0
@@ -25,6 +33,7 @@ const ViewportHost := preload("res://addons/game_design_tool/world/viewport_host
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
 const WorldGen := preload("res://addons/game_design_tool/tabs/world_gen.gd")
 const LabelsOverlay := preload("res://addons/game_design_tool/world/overlays/labels_overlay.gd")
+const OverlayRegistry := preload("res://addons/game_design_tool/world/overlay_registry.gd")
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
 const SEED_COUNT := 30
 ## Сид с известным составом узлов — для проверки инлайн-редактора пресета
@@ -44,6 +53,7 @@ func _ready() -> void:
 
 	_check_inline_preset_editor()
 	_check_room_outline(library, host)
+	_check_restore_state()
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
@@ -190,6 +200,50 @@ func _check_inline_preset_editor() -> void:
 
 	tab._clear_selection()
 	_check("после сброса выделения: секция редактора скрыта", not tab._preset_section.visible, "")
+
+	tab.free()
+
+
+## _restore_state() — реальный путь, которым вкладка стартует при первом
+## показе (_on_visibility_changed), а не только _rebuild_graph() напрямую, как
+## в проверке выше. Headless-прогон — это игровой прогон сцены, не редактор
+## (Engine.is_editor_hint() ложно, см. world_gen.gd._get_meta), поэтому
+## EditorSettings здесь не читается и не пишется: проверяем, что при этом
+## _restore_state() всё равно достраивает граф на дефолтах и не падает — то
+## есть что путь безопасен ДО того, как в нём вообще появится реальный
+## EditorSettings в живом редакторе.
+##
+## _restore_state() вызывается САМ, через _ready() → _on_visibility_changed()
+## (тот же путь, что и в редакторе) — не вызывать его ещё раз вручную:
+## _on_visibility_changed()'ный _loaded защищает только от повторного
+## АВТОМАТИЧЕСКОГО вызова, повторный ручной так же честно поймает camera_changed
+## на "already connected", как поймал бы баг в реальном дублирующем вызове.
+func _check_restore_state() -> void:
+	var tab := WorldGen.new()
+	add_child(tab)
+
+	_check("_restore_state вне редактора: сид упал на дефолт 0", int(tab._seed_spin.value) == 0, "%s" % tab._seed_spin.value)
+	_check(
+		"_restore_state вне редактора: глубина упала на дефолт HOME_DEPTH",
+		tab._current_depth() == RS_LevelGraph.HOME_DEPTH,
+		"%d" % tab._current_depth()
+	)
+	_check("_restore_state: граф построен", tab._graph != null and not tab._graph.nodes.is_empty(), "")
+
+	var popup := tab._visibility_menu.get_popup()
+	for i in OverlayRegistry.OVERLAYS.size():
+		var overlay: Dictionary = OverlayRegistry.OVERLAYS[i]
+		_check(
+			"_restore_state вне редактора: чекбокс «%s» упал на дефолт" % overlay["title"],
+			popup.is_item_checked(popup.get_item_index(i)) == overlay["default_visible"],
+			""
+		)
+
+	_check(
+		"_restore_state: подписался на camera_changed ровно один раз",
+		tab._host.camera_changed.get_connections().size() == 1,
+		"%d" % tab._host.camera_changed.get_connections().size()
+	)
 
 	tab.free()
 
