@@ -42,7 +42,7 @@ version_control/plugin_name="GitPlugin"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/entity_template_tool/plugin.cfg", "res://addons/gecs/plugin.cfg", "res://addons/level_gen_tool/plugin.cfg")
+enabled=PackedStringArray("res://addons/game_design_tool/plugin.cfg", "res://addons/gecs/plugin.cfg")
 
 [file_customization]
 

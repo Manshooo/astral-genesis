@@ -342,7 +342,7 @@ func _stamp_connectors(
 ##      vertical_hub-пресет, а в той сцене нет двери с A_FinishRun. Победить в
 ##      такой «комнате выхода» физически нечем.
 ##   2. Внутри группы — по возрастанию степени: комната-выход обслуживает мало
-##      рёбер (slot_count в data/room/exit_room.tres), на узле с четырьмя дверями
+##      рёбер (slot_count в exit_room.tres, рядом со сценой), на узле с четырьмя дверями
 ##      она отсеется по вместимости.
 ## Детерминированность сохраняется: пул сперва перемешивается тем же rng.
 func _place_exits(rng: RandomNumberGenerator, layer: RS_LevelLayer, exit_count: int = 2) -> void:

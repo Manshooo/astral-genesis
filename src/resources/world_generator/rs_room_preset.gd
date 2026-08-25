@@ -2,6 +2,7 @@
 ## Один вариант комнаты для процедурной подстановки.
 ## Чистые данные: какая сцена, что она умеет (tags), сколько в ней дверных
 ## слотов и с каким весом её выбирать. Подбором занимается RS_RoomPresetLibrary.
+@icon("res://addons/game_design_tool/assets/room_preset.svg")
 @tool  # правится и проверяется из редакторского дока «Генератор»
 class_name RS_RoomPreset
 extends Resource

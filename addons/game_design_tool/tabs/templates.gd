@@ -1,5 +1,6 @@
-## res://addons/entity_template_tool/dock.gd
-## Окно управления шаблонами сущностей (RS_EntityTemplate):
+## res://addons/game_design_tool/tabs/templates.gd
+## Вкладка «Шаблоны» единого редактора геймдизайна — управление шаблонами
+## сущностей (RS_EntityTemplate):
 ##   - список шаблонов из res://data/entity_templates;
 ##   - Новый / Дублировать / Удалить / Переименовать;
 ##   - Редактировать — открывает шаблон в родном инспекторе Godot
@@ -8,12 +9,16 @@
 @tool
 extends VBoxContainer
 
+## Заголовок вкладки в TabContainer — тот берёт его из имени узла (см. _init).
+const TAB_TITLE := "Шаблоны"
+
 const TEMPLATE_DIR := "res://data/entity_templates"
 const ENTITY_DIR := "res://src/entities"
 
 var _list: ItemList
 var _status: Label
 var _paths: Array[String] = []  # индекс в списке -> путь .tres
+var _loaded := false  # список уже собран (см. _on_visibility_changed)
 
 var _name_dialog: ConfirmationDialog
 var _name_edit: LineEdit
@@ -25,13 +30,22 @@ var _pending_entity_name := ""  # имя корня будущей сущнос�
 
 
 func _init() -> void:
-	name = "Шаблоны"
-	custom_minimum_size = Vector2(240, 0)
+	name = TAB_TITLE  # TabContainer берёт заголовок вкладки из имени узла
 	_build_ui()
 
 
+## Список наполняем при первом показе вкладки, а не в _ready: все вкладки
+## строятся разом на старте редактора, и лезть в файловую систему ради вкладки,
+## которую могут ни разу не открыть, незачем.
 func _ready() -> void:
-	_refresh()
+	visibility_changed.connect(_on_visibility_changed)
+	_on_visibility_changed()
+
+
+func _on_visibility_changed() -> void:
+	if not _loaded and is_visible_in_tree():
+		_loaded = true
+		_refresh()
 
 
 #region UI
@@ -65,10 +79,11 @@ func _build_ui() -> void:
 	add_child(create_btn)
 
 	# Статус — строго ОДНА строка с многоточием, а не autowrap. Label с autowrap
-	# считает минимальную высоту, перенося текст по минимальной ШИРИНЕ (а она до
-	# первой раскладки ~17 px), и требует под себя сотни пикселей. Эту минималку
-	# редактор спрашивает у ВСЕХ вкладок дока сразу, ещё до открытия, — из-за неё
-	# панели разъезжаются, пока вкладку не откроешь. Полный текст — в подсказке.
+	# считает минимальную высоту, перенося текст по минимальной ШИРИНЕ (до первой
+	# раскладки это ~17 px), и требует под себя сотни пикселей. В доке это
+	# разъезжало всю правую панель (см. [[Редакторские инструменты]]); на главном экране
+	# так не ломается, но однострочный статус всё равно правильнее — иначе длинный
+	# путь ресурса перекладывает вёрстку под собой. Полный текст — в подсказке.
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
