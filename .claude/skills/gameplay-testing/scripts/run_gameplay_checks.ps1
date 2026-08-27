@@ -122,11 +122,22 @@ function Run-GenericCheck([string]$Name) {
     # иначе `return $false` возвращается вместе со всеми напечатанными строками,
     # вызывающий получает непустой массив, `-not $array` даёт $false — и провал
     # проверки не засчитывается. Так молча терялся КАЖДЫЙ упавший *_check.
-    $output = & $GodotPath --headless --path $RepoRoot "res://dev/$Name.tscn" --quit-after 900 2>&1
+    # --quit-after считает кадры ОТРИСОВКИ, а не физики: в headless их выходит в
+    # разы больше, чем физкадров, поэтому запас берётся щедрый. Упереться в него
+    # всё равно можно, и это молчаливый провал — см. проверку итоговой строки ниже.
+    $output = & $GodotPath --headless --path $RepoRoot "res://dev/$Name.tscn" --quit-after 6000 2>&1
     $code = $LASTEXITCODE
     $output | ForEach-Object { Write-Host $_ }
     if ($code -ne 0) {
         Write-Host "FAIL: $Name вышел с кодом $code (см. вывод выше — строки 'FAIL')" -ForegroundColor Red
+        return $false
+    }
+    # Оборванная проверка выходит с НУЛЁМ: до `get_tree().quit()` она не дошла,
+    # движок закрылся сам по --quit-after. По коду возврата это неотличимо от
+    # успеха, поэтому итоговую строку проверка обязана напечатать сама — её
+    # отсутствие и есть признак обрыва.
+    if (-not ($output | Select-String -Pattern "=== ИТОГ:" -SimpleMatch)) {
+        Write-Host "FAIL: $Name не напечатал итоговую строку — прогон оборван, а не пройден" -ForegroundColor Red
         return $false
     }
     Write-Host "OK: $Name — все ассерты прошли." -ForegroundColor Green
