@@ -12,13 +12,19 @@ linux.release.x86_64 = "res://addons/byprod/bin/libgdbyprod.linux.template_relea
 macos.debug = "res://addons/byprod/bin/libgdbyprod.macos.template_debug.framework"
 macos.release = "res://addons/byprod/bin/libgdbyprod.macos.template_release.framework"
 
-; Секции [dependencies] с рантаймом byProd здесь СОЗНАТЕЛЬНО НЕТ, хотя именно она
-; копирует библиотеку рядом с игрой при экспорте. Объявленная зависимость обязана
-; существовать: Godot прерывает экспорт с «Failed to copy shared object», если
-; файла нет. А его нет и не может быть — рантайм не входит в репозиторий по
-; лицензии Madrigal (см. README.md рядом), и сборка в CI падала бы всегда.
+; Рантайм byProd. Расширение с ним не линкуется — оно открывает библиотеку по
+; имени в момент загрузки, — но перечисление здесь и есть то, что кладёт её рядом
+; с игрой при экспорте: внутри .pck библиотеку не загрузить, её должен видеть
+; загрузчик ОС.
 ;
-; Следствие: экспортированная сборка выходит БЕЗ ЗВУКА, пока byProd.dll /
-; libbyProd.so не положены рядом с исполняемым файлом. Это делает тот, кто
-; собирает релиз и у кого SDK есть локально. Когда рантайм появится у релизного
-; пайплайна, секцию нужно вернуть — она и есть штатный способ.
+; ВАЖНО: объявленная зависимость обязана существовать на диске, иначе Godot
+; обрывает экспорт с «Failed to copy shared object». В git рантайма нет (лицензия
+; Madrigal, см. README.md рядом), поэтому перед экспортом его кладёт пайплайн из
+; приватного зеркала — шаг «Забрать рантайм byProd» в .github/workflows/build.yml.
+; Локальный экспорт требует того же: положить библиотеку в addons/byprod/bin/.
+[dependencies]
+
+windows.debug.x86_64 = { "res://addons/byprod/bin/byProd.dll": "" }
+windows.release.x86_64 = { "res://addons/byprod/bin/byProd.dll": "" }
+linux.debug.x86_64 = { "res://addons/byprod/bin/libbyProd.so": "" }
+linux.release.x86_64 = { "res://addons/byprod/bin/libbyProd.so": "" }

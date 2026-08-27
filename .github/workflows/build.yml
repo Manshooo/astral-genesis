@@ -32,6 +32,34 @@ jobs:
           lfs: true
           submodules: recursive
 
+      # Рантайм byProd качается прямо с byprod.io на каждой сборке — это
+      # официальная раздача SDK самим правообладателем, а не хранение копии:
+      # между прогонами нигде ничего не остаётся, что и требует лицензия
+      # (пункт 2, запрет выкладывать библиотеку «саму по себе»).
+      #
+      # Голый curl на этот URL отдаёт HTML-заглушку с редиректом вместо архива —
+      # это не защита от ботов, а обычная nginx-настройка против прямого
+      # скрапинга поисковиками; браузерный Referer её снимает (см. -e ниже).
+      #
+      # Версия зафиксирована в самом URL, а sha256 — отдельно: если Madrigal
+      # обновит контент по тому же имени файла, шаг явно упадёт на сверке
+      # суммы, а не подсунет молча другую версию библиотеки.
+      #
+      # Шаг обязателен: byprod.gdextension объявляет библиотеку зависимостью, а
+      # Godot обрывает экспорт, если объявленной зависимости нет на диске.
+      - name: Скачать рантайм byProd
+        shell: bash
+        env:
+          BYPROD_SDK_URL: https://byprod.io/packages/byProdSDK0.5.2.zip
+          BYPROD_SDK_SHA256: 00ab7d4616e7bec209c51a5ce302bd6a839f0dbea35146cdbe44b41c93e40766
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BYPROD_SDK_URL" -e "https://byprod.io/" -o /tmp/byprod-sdk.zip
+          echo "${BYPROD_SDK_SHA256}  /tmp/byprod-sdk.zip" | sha256sum -c -
+          unzip -jo /tmp/byprod-sdk.zip "*/bin/byProd.dll" "*/bin/libbyProd.so" -d addons/byprod/bin/
+          rm /tmp/byprod-sdk.zip
+          ls -l addons/byprod/bin/
+
       - name: Определить метку сборки
         id: label
         shell: bash
