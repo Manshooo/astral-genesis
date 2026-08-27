@@ -15,6 +15,11 @@
 
 Медиаматериалы (изображения, видео, шрифты) распространяются под лицензией CC BY 4.0, за исключением kenney's материалов из аддонов kenney_*.
 
+byProd audio engine, copyright Madrigal Ltd. Аудиодвижок подключается через
+GDExtension [godot-byprod](https://github.com/Manshooo/godot-byprod) (MIT); сам
+рантайм byProd — проприетарный, распространяется только в составе собранной
+игры и в репозиторий не входит (см. `addons/byprod/README.md`).
+
 ### Авторы
 - Янислав "Manshoo" Пичугин - Game Design, Programming, Tech Art, Visual Effects.
 - Тая "Garm(i)Gen" Пичугина - Game Design, Sound Design, Sound Effects and all other sound things. Немного Tech Art.

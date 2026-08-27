@@ -1,0 +1,24 @@
+[configuration]
+
+entry_symbol = "byprod_library_init"
+compatibility_minimum = "4.5"
+
+[libraries]
+
+windows.debug.x86_64 = "res://addons/byprod/bin/libgdbyprod.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/byprod/bin/libgdbyprod.windows.template_release.x86_64.dll"
+linux.debug.x86_64 = "res://addons/byprod/bin/libgdbyprod.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://addons/byprod/bin/libgdbyprod.linux.template_release.x86_64.so"
+macos.debug = "res://addons/byprod/bin/libgdbyprod.macos.template_debug.framework"
+macos.release = "res://addons/byprod/bin/libgdbyprod.macos.template_release.framework"
+
+; Секции [dependencies] с рантаймом byProd здесь СОЗНАТЕЛЬНО НЕТ, хотя именно она
+; копирует библиотеку рядом с игрой при экспорте. Объявленная зависимость обязана
+; существовать: Godot прерывает экспорт с «Failed to copy shared object», если
+; файла нет. А его нет и не может быть — рантайм не входит в репозиторий по
+; лицензии Madrigal (см. README.md рядом), и сборка в CI падала бы всегда.
+;
+; Следствие: экспортированная сборка выходит БЕЗ ЗВУКА, пока byProd.dll /
+; libbyProd.so не положены рядом с исполняемым файлом. Это делает тот, кто
+; собирает релиз и у кого SDK есть локально. Когда рантайм появится у релизного
+; пайплайна, секцию нужно вернуть — она и есть штатный способ.
