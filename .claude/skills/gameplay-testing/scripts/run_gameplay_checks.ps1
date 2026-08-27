@@ -118,8 +118,13 @@ $overallFail = $false
 
 function Run-GenericCheck([string]$Name) {
     Write-Host "`n=== $Name ==="
-    & $GodotPath --headless --path $RepoRoot "res://dev/$Name.tscn" --quit-after 900
+    # Вывод Godot обязательно захватывать, а не пускать в поток успеха функции:
+    # иначе `return $false` возвращается вместе со всеми напечатанными строками,
+    # вызывающий получает непустой массив, `-not $array` даёт $false — и провал
+    # проверки не засчитывается. Так молча терялся КАЖДЫЙ упавший *_check.
+    $output = & $GodotPath --headless --path $RepoRoot "res://dev/$Name.tscn" --quit-after 900 2>&1
     $code = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host $_ }
     if ($code -ne 0) {
         Write-Host "FAIL: $Name вышел с кодом $code (см. вывод выше — строки 'FAIL')" -ForegroundColor Red
         return $false
