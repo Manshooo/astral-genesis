@@ -7,5 +7,6 @@
 script = ExtResource("2_mabsy")
 display_name = "Лаборатория"
 scene = ExtResource("1_r2lm1")
+room_type = &"lab"
 tags = Array[StringName]([&"floor_hub"])
 metadata/_custom_type_script = "uid://wiaffa7aebsm"

@@ -16,10 +16,12 @@
 [ext_resource type="Resource" uid="uid://xle0niud60rg" path="res://src/levels/procedural/rooms/cross_A/cross_a_4.tres" id="13_8mgwu"]
 [ext_resource type="Resource" uid="uid://doo4ogyybiomc" path="res://src/levels/procedural/rooms/cross_A/cross_a_2c.tres" id="14_v72dq"]
 [ext_resource type="Resource" path="res://src/levels/hub/hub.tres" id="15_hub"]
+[ext_resource type="Resource" path="res://data/room_type_catalog.tres" id="16_types"]
 
 [resource]
 script = ExtResource("2_v4gys")
 presets = Array[ExtResource("1_2x2ou")]([ExtResource("2_453vo"), ExtResource("3_v612c"), ExtResource("4_6j4np"), ExtResource("5_ro8lj"), ExtResource("6_ro8lj"), ExtResource("8_0vxyi"), ExtResource("9_wc6lj"), ExtResource("10_wc6lj"), ExtResource("11_dncju"), ExtResource("12_6d1b1"), ExtResource("13_8mgwu"), ExtResource("14_v72dq")])
+type_catalog = ExtResource("16_types")
 fallback = ExtResource("1_b4ndt")
 hub = ExtResource("15_hub")
 metadata/_custom_type_script = "uid://psftg6prkpvd"

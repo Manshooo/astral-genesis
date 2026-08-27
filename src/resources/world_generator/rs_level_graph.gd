@@ -108,6 +108,12 @@ func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_L
 		all_layers.append(layers_by_depth[depth])
 	graph.merge(all_layers)
 
+	# Типы помещений — ПЕРЕД подбором сцен: подбор их учитывает. Отдельным
+	# проходом, а не «какой пресет выпал, такой и тип», потому что распределение
+	# по глубине (казармы наверху, содержание существ внизу) иначе выражалось бы
+	# только весами пресетов — то есть отдельным пресетом на каждый слой.
+	graph._assign_room_types(rng, library.type_catalog if library else null)
+
 	# Подстановка реальных сцен комнат — ТОЛЬКО здесь, когда все connections уже
 	# проставлены (иначе select_preset не знает нужного числа слотов).
 	graph._assign_room_scenes(rng, library)
@@ -115,6 +121,12 @@ func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_L
 	graph.entry_node_id = home_entry.id
 	# Хаб перекрывает подбор из библиотеки: домашний узел всегда — сцена хаба.
 	graph.nodes[home_entry.id].room_scene_path = HUB_ROOM_SCENE
+	# Тип — тоже из пресета хаба, а не тот, что нагадал каталог: сцена здесь
+	# принудительная, и тип обязан описывать её, иначе на карте домашний узел
+	# подпишется складом.
+	graph.nodes[home_entry.id].room_type = (
+		library.hub.room_type if library and library.hub else &""
+	)
 
 	return graph
 
@@ -382,6 +394,19 @@ func merge(layers: Array[RS_LevelLayer]) -> void:
 			nodes[node.id] = node
 
 
+## Загадывает каждому узлу тип помещения по его глубине. Это ПОЖЕЛАНИЕ для
+## подбора, а не приговор: чем узел окажется на самом деле, решит
+## _assign_room_scenes — оно же и перепишет поле фактическим типом.
+##
+## Без каталога проход не делает ничего И НЕ ТРАТИТ rng: генерация без типов
+## обязана давать ровно тот же граф, что давала до их появления.
+func _assign_room_types(rng: RandomNumberGenerator, catalog: RS_RoomTypeCatalog) -> void:
+	if catalog == null:
+		return
+	for node in nodes.values():
+		node.room_type = catalog.pick_for_depth(node.depth, rng)
+
+
 ## Финальный проход: подбирает каждому узлу сцену комнаты через библиотеку
 ## пресетов. Узлам, которым пресет не нашёлся (или library == null), остаётся
 ## заранее проставленный PLACEHOLDER_ROOM_SCENE — генерация не падает.
@@ -392,6 +417,10 @@ func _assign_room_scenes(rng: RandomNumberGenerator, library: RS_RoomPresetLibra
 		var preset := library.select_preset(node, rng)
 		if preset and preset.scene:
 			node.room_scene_path = preset.scene.resource_path
+		# Загаданный тип уступает место фактическому: комната могла достаться
+		# безликая (тип — предпочтение, не фильтр), и узел, оставшийся
+		# подписанным «арсенал», врал бы и карте, и игровой логике.
+		node.room_type = preset.room_type if preset else &""
 
 
 func _link_nodes(a: RS_LevelNode, b: RS_LevelNode, type: RS_LevelConnection.Type) -> void:

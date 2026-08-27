@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="RS_RoomTypeCatalog" format=3]
+
+[ext_resource type="Script" path="res://src/resources/world_generator/rs_room_type.gd" id="1_type"]
+[ext_resource type="Script" path="res://src/resources/world_generator/rs_room_type_catalog.gd" id="2_catalog"]
+
+[sub_resource type="Resource" id="Resource_arsenal"]
+script = ExtResource("1_type")
+id = &"arsenal"
+display_name = "Арсенал"
+weight = 1.0
+depth_min = 1
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_lab"]
+script = ExtResource("1_type")
+id = &"lab"
+display_name = "Лаборатория"
+weight = 3.0
+depth_min = 1
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_proving_ground"]
+script = ExtResource("1_type")
+id = &"proving_ground"
+display_name = "Полигон"
+weight = 0.8
+depth_min = 3
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_storage"]
+script = ExtResource("1_type")
+id = &"storage"
+display_name = "Склад"
+weight = 2.0
+depth_min = 0
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_archive"]
+script = ExtResource("1_type")
+id = &"archive"
+display_name = "Архив"
+weight = 1.0
+depth_min = 1
+depth_max = 3
+
+[sub_resource type="Resource" id="Resource_canteen"]
+script = ExtResource("1_type")
+id = &"canteen"
+display_name = "Столовая"
+weight = 1.2
+depth_min = 0
+depth_max = 2
+
+[sub_resource type="Resource" id="Resource_security"]
+script = ExtResource("1_type")
+id = &"security"
+display_name = "Помещения охраны"
+weight = 1.2
+depth_min = 0
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_barracks"]
+script = ExtResource("1_type")
+id = &"barracks"
+display_name = "Казармы"
+weight = 1.0
+depth_min = 0
+depth_max = 2
+
+[sub_resource type="Resource" id="Resource_creature_containment"]
+script = ExtResource("1_type")
+id = &"creature_containment"
+display_name = "Содержание существ"
+weight = 0.8
+depth_min = 3
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_artifact_containment"]
+script = ExtResource("1_type")
+id = &"artifact_containment"
+display_name = "Содержание артефактов"
+weight = 0.8
+depth_min = 3
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_recreation"]
+script = ExtResource("1_type")
+id = &"recreation"
+display_name = "Отдых и досуг"
+weight = 0.8
+depth_min = 0
+depth_max = 2
+
+[resource]
+script = ExtResource("2_catalog")
+types = Array[ExtResource("1_type")]([SubResource("Resource_arsenal"), SubResource("Resource_lab"), SubResource("Resource_proving_ground"), SubResource("Resource_storage"), SubResource("Resource_archive"), SubResource("Resource_canteen"), SubResource("Resource_security"), SubResource("Resource_barracks"), SubResource("Resource_creature_containment"), SubResource("Resource_artifact_containment"), SubResource("Resource_recreation")])
+untyped_weight = 4.0

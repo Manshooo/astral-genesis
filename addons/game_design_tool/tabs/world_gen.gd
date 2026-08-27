@@ -432,6 +432,10 @@ func _node_report(node_data: RS_LevelNode) -> String:
 	lines.append("Рёбер: %d" % node_data.connections.size())
 	if not node_data.tags.is_empty():
 		lines.append("Теги: " + ", ".join(node_data.tags))
+	# Отдельной строкой от тегов — намеренно: это ДРУГАЯ ось подбора, и слитый
+	# с тегами тип ровно тем и путал бы, чего разведение осей избегает.
+	# После генерации здесь тип фактически вставшей комнаты, а не загаданный.
+	lines.append("Тип: " + _room_type_label(node_data.room_type))
 	lines.append("Сцена: " + (node_data.room_scene_path if node_data.room_scene_path != "" else "—"))
 
 	if not node_data.connections.is_empty():
@@ -453,6 +457,13 @@ func _node_report(node_data: RS_LevelNode) -> String:
 ## RS_RoomPreset (hub.tres), просто вне пула автоподбора (см.
 ## RS_RoomPresetLibrary.hub) — секция инлайн-редактора должна узнавать его
 ## так же, как любой другой узел с пресетом, не только узлы из .presets.
+func _room_type_label(id: StringName) -> String:
+	var catalog := _library.type_catalog if _library else null
+	if catalog:
+		return catalog.label_of(id)
+	return "—" if id == &"" else String(id)
+
+
 func _preset_for(node_data: RS_LevelNode) -> RS_RoomPreset:
 	if _library == null or node_data.room_scene_path == "":
 		return null

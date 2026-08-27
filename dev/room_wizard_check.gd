@@ -89,6 +89,22 @@ func _check_scene(wizard: RoomWizard, scene_path: String) -> void:
 		fields == ["display_name", "slot_count", "weight"],
 		str(fields)
 	)
+	# Тип помещения — отдельный контрол, а не поле рефлексивной формы (в форме
+	# StringName нарисовался бы нередактируемой строкой). Проверяем ровно то,
+	# чем он опасен: пустой или сбитый список делает сохранение РАЗРУШИТЕЛЬНЫМ —
+	# _apply_form_to_preset возьмёт из него «нет типа» и сотрёт авторский.
+	var selected: int = wizard._type_option.get_selected()
+	_check(
+		"%s: список типов заполнен и показывает тип пресета" % label,
+		(
+			wizard._type_option.item_count > 0
+			and selected >= 0
+			and selected < wizard._type_ids.size()
+			and wizard._type_ids[selected] == wizard._preset.room_type
+		),
+		"пунктов %d, выбран %d, у пресета «%s»" % [
+			wizard._type_option.item_count, selected, wizard._preset.room_type],
+	)
 	_check("%s: кнопка сохранения включена" % label, not wizard._save_btn.disabled, "")
 	_check(
 		"%s: кнопка библиотеки включена (пресет уже на диске)" % label,

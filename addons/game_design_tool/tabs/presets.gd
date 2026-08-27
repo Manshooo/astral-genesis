@@ -41,7 +41,8 @@ const COL_NAME := 0
 const COL_SLOTS := 1
 const COL_ACTUAL := 2
 const COL_WEIGHT := 3
-const COL_TAGS := 4
+const COL_TYPE := 4
+const COL_TAGS := 5
 
 var _library: RS_RoomPresetLibrary
 var _tree: Tree
@@ -55,6 +56,12 @@ var _actual_doors: Dictionary = {}
 ## (включая fallback), не только у выделенного — иначе увидеть «что вообще
 ## есть» было бы негде, а именно это и было половиной проблемы.
 var _known_tags: Array[StringName] = []
+
+## Варианты выпадающего списка «Тип» по индексам ячейки: [&""] + ключи каталога
+## + типы, которые у пресетов уже стоят, но из каталога пропали. Последнее — не
+## педантизм: молча подставить такому пресету «—» значило бы стереть авторскую
+## правку при первом же редактировании соседней ячейки.
+var _type_ids: Array[StringName] = []
 var _tag_flow: HFlowContainer
 var _tag_section_label: Label
 var _new_tag_edit: LineEdit
@@ -89,7 +96,7 @@ func _build_ui() -> void:
 	add_child(title)
 
 	_tree = Tree.new()
-	_tree.columns = 5
+	_tree.columns = 6
 	_tree.column_titles_visible = true
 	_tree.hide_root = true
 	_tree.custom_minimum_size = Vector2(0, 96)
@@ -98,6 +105,7 @@ func _build_ui() -> void:
 	_tree.set_column_title(COL_SLOTS, "Слоты")
 	_tree.set_column_title(COL_ACTUAL, "В сцене")
 	_tree.set_column_title(COL_WEIGHT, "Вес")
+	_tree.set_column_title(COL_TYPE, "Тип")
 	_tree.set_column_title(COL_TAGS, "Теги")
 	_tree.set_column_expand(COL_SLOTS, false)
 	_tree.set_column_expand(COL_ACTUAL, false)
@@ -105,6 +113,7 @@ func _build_ui() -> void:
 	_tree.set_column_custom_minimum_width(COL_SLOTS, 56)
 	_tree.set_column_custom_minimum_width(COL_ACTUAL, 64)
 	_tree.set_column_custom_minimum_width(COL_WEIGHT, 56)
+	_tree.set_column_custom_minimum_width(COL_TYPE, 140)
 	_tree.item_edited.connect(_on_item_edited)
 	_tree.item_selected.connect(_on_tree_selection_changed)
 	add_child(_tree)
@@ -217,6 +226,8 @@ func _refresh() -> void:
 		_on_tree_selection_changed()
 		return
 
+	_collect_type_ids()
+
 	var root := _tree.create_item()
 	for preset: RS_RoomPreset in _library.presets:
 		if preset == null:
@@ -229,7 +240,7 @@ func _refresh() -> void:
 	_on_tree_selection_changed()  # таблица только что очищена — выделения нет
 
 	_set_status(
-		"%d пресетов + fallback. Слоты/вес — в таблице, теги — облаком ниже."
+		"%d пресетов + fallback. Слоты/вес/тип — в таблице, теги — облаком ниже."
 		% _library.presets.size()
 	)
 
@@ -257,6 +268,19 @@ func _add_row(root: TreeItem, preset: RS_RoomPreset, is_fallback: bool) -> void:
 	item.set_range_config(COL_WEIGHT, 0.0, 10.0, 0.1)
 	item.set_range(COL_WEIGHT, preset.weight)
 	item.set_editable(COL_WEIGHT, true)
+
+	# Выпадающий список, а не свободный текст и не облако: тип у комнаты РОВНО
+	# ОДИН (это ответ на вопрос «что это за помещение», а не набор способностей),
+	# и множество вариантов задано каталогом — печатать тут нечего.
+	item.set_cell_mode(COL_TYPE, TreeItem.CELL_MODE_RANGE)
+	item.set_text(COL_TYPE, ",".join(_type_option_labels()))
+	item.set_range(COL_TYPE, _type_index(preset.room_type))
+	item.set_editable(COL_TYPE, true)
+	item.set_tooltip_text(
+		COL_TYPE,
+		"Что это за помещение. ОТДЕЛЬНАЯ ось от тегов: тегами узел фильтруется"
+		+ " жёстко, типом — только предпочитается.",
+	)
 
 	# Read-only здесь: правка — облаком тегов под таблицей (см. _rebuild_tag_chips).
 	# Свободный текст через запятую опечаткой тихо плодил новый тег вместо
@@ -295,6 +319,11 @@ func _on_item_edited() -> void:
 				item.clear_custom_color(COL_ACTUAL)
 		COL_WEIGHT:
 			preset.weight = item.get_range(COL_WEIGHT)
+		COL_TYPE:
+			var index := int(item.get_range(COL_TYPE))
+			preset.room_type = (
+				_type_ids[index] if index >= 0 and index < _type_ids.size() else &""
+			)
 		_:
 			return
 
@@ -330,6 +359,45 @@ func _on_edit_in_inspector_pressed() -> void:
 		_set_status("⚠ Сначала выбери пресет.")
 		return
 	EditorInterface.edit_resource(preset)
+#endregion
+
+
+#region Тип помещения
+## Варианты списка: «нет типа», затем каталог в порядке объявления, затем типы,
+## которые у пресетов стоят, но каталогу неизвестны. Порядок каталога не
+## сортируем — он же задаёт порядок розыгрыша, и видеть его как есть полезнее,
+## чем по алфавиту.
+func _collect_type_ids() -> void:
+	_type_ids = [&""]
+	var catalog := _library.type_catalog if _library else null
+	if catalog:
+		_type_ids.append_array(catalog.ids())
+
+	for preset: RS_RoomPreset in _library.presets:
+		if preset and preset.room_type != &"" and not _type_ids.has(preset.room_type):
+			_type_ids.append(preset.room_type)
+	if _library.fallback and _library.fallback.room_type != &"":
+		if not _type_ids.has(_library.fallback.room_type):
+			_type_ids.append(_library.fallback.room_type)
+
+
+## Подписи вариантов для ячейки-списка. Запятая — разделитель значений в
+## Tree.set_text для CELL_MODE_RANGE, поэтому из подписей её выбрасываем: иначе
+## одно имя развалилось бы на два пункта.
+func _type_option_labels() -> Array[String]:
+	var catalog := _library.type_catalog if _library else null
+	var out: Array[String] = []
+	for id: StringName in _type_ids:
+		var label := catalog.label_of(id) if catalog else ("—" if id == &"" else String(id))
+		if not _type_ids.is_empty() and id != &"" and (catalog == null or catalog.by_id(id) == null):
+			label += " (нет в каталоге)"
+		out.append(label.replace(",", " "))
+	return out
+
+
+func _type_index(id: StringName) -> int:
+	var index := _type_ids.find(id)
+	return index if index >= 0 else 0
 #endregion
 
 
@@ -661,7 +729,10 @@ func _preview_report(
 
 	out += (
 		"\n[i]Порядок отбора: вместимость (slot_count ≥ рёбер) → теги "
-		+ "(node.tags ⊆ preset.tags) → специфичность (минимум лишних тегов) → вес. "
+		+ "(node.tags ⊆ preset.tags) → специфичность (минимум лишних тегов) → "
+		+ "тип помещения → вес. "
+		+ "Тип — ПРЕДПОЧТЕНИЕ, а не фильтр: если в группе нет ни одного пресета "
+		+ "загаданного узлу типа, группа идёт дальше целиком. "
 		+ "Вес применяется ПОСЛЕДНИМ: если конкуренты отсеялись раньше, правка веса "
 		+ "не изменит ничего — сначала смотри на «вместимость» и «теги». "
 		+ "«Дошёл до весов» — сколько раз пресет участвовал в броске; сколько раз он "
