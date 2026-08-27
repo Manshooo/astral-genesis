@@ -57,15 +57,19 @@ func _run() -> void:
 		"is_runtime_available()=false, но get_last_error() молчит — диагностика потеряна",
 	)
 
-	var manager = ClassDB.class_call_static("ByProdSoundManager", "create")
+	# Менеджер берётся у AudioManager, а НЕ создаётся здесь свой: второй менеджер
+	# в одном процессе роняет рантайм segfault'ом прямо в создании, когда
+	# устройство уже открыто первым. Проверка, заводившая собственный, валила
+	# прогон целиком — при том, что все её ассерты успевали пройти.
+	var manager = AudioManager.sound_manager()
 
 	# --- 3. Деградация без рантайма ------------------------------------
 	if not runtime_present:
 		var version: int = ClassDB.class_call_static("ByProdSoundManager", "get_runtime_version")
 		_check(
-			"без рантайма create() возвращает null, а не падает",
+			"без рантайма менеджера нет, и игра при этом жива",
 			manager == null,
-			"create() отдал объект, хотя библиотека не загружена",
+			"менеджер есть, хотя библиотека не загружена",
 		)
 		_check(
 			"без рантайма версия читается как 0",
@@ -75,19 +79,19 @@ func _run() -> void:
 		return
 
 	# --- 4. Работа с рантаймом -----------------------------------------
-	# Устройства может не быть (headless на машине без звука, CI) — тогда
-	# штатный путь host-mixed, который устройство не открывает вовсе.
+	# Отсутствие менеджера при живом рантайме — это отсутствие устройства
+	# (headless на машине без звука, CI). Не провал биндинга, но и проверять
+	# дальше нечего: своего менеджера здесь заводить нельзя.
 	if manager == null:
-		manager = ClassDB.class_call_static("ByProdSoundManager", "create_host_mixed", 44100)
+		print("  --   устройство недоступно (%s) — работа с рантаймом не проверяется" % (
+				ClassDB.class_call_static("ByProdSoundManager", "get_last_error")))
+		return
 
 	_check(
-		"менеджер создаётся",
-		manager != null,
-		"create() и create_host_mixed() оба вернули null: %s" % ClassDB.class_call_static(
-				"ByProdSoundManager", "get_last_error"),
+		"AudioManager поднял менеджер byProd",
+		manager.is_valid(),
+		"менеджер есть, но невалиден",
 	)
-	if manager == null:
-		return
 
 	var runtime_version: int = ClassDB.class_call_static("ByProdSoundManager", "get_runtime_version")
 	_check(

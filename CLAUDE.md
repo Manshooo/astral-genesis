@@ -50,6 +50,8 @@ Each area below is one paragraph of orientation. **Read the linked doc before re
 
 **Body-snatching & decay** — the core mechanic. A body's characteristics are **separate components in its scene, not fields on a stat sheet**, so capture and expulsion move them generically — and its **collision shape, eye level and facing come from that same scene**, never from numbers in code; the player's lifespan is one resource held in two pockets (their own and the worn body's). **An ability is a component and each ability is its own system**: a legless body carries no `C_Jump` and never enters the jump system's query, so movement contains no branch on «what am I wearing» anywhere; the soul's own abilities (`C_Flight`, `C_Phasing`) mirror that with `C_SoulTrait` and sleep while embodied. Skills reach mechanics through one rule: **a mechanic reads a computed stat — the author's base plus the soul's modifiers (`C_StatModifiers`) — never the raw field**, so the base is never overwritten and a new skill is a line of data in `data/skill_tree.tres` rather than a patch to the mechanic. [Захват тела](docs/astral-genesis/how-to/Захват%20тела.md).
 
+**Звук** — идёт через **byProd**, событийный аудиодвижок: механика просит событие (`event:/footstep`), а что прозвучит — решает проект, собранный в редакторе byProd. Подключён GDExtension-биндингом `addons/byprod` ([godot-byprod](https://github.com/Manshooo/godot-byprod), MIT). Три вещи, нарушение которых ломает всё тихо или фатально: **нативный рантайм не входит в репозиторий** (лицензия Madrigal) и его отсутствие обязано означать «нет звука», а не «не запускается» — поэтому `AudioManager` называет классы расширения только строкой через `ClassDB`, никогда идентификатором; **менеджер ровно один на процесс** — второй роняет рантайм segfault'ом, поэтому его владелец автолоад `AudioManager`, а не тот, кому он понадобился; **звукового контента пока нет**, игра идёт молча по проекту. Первый потребитель — шаги: `C_Footsteps` это характеристика тела (лежит в его сцене, переносится при захвате), `S_Footsteps` меряет шаг ПУТЁМ, а не временем. [Звук](docs/astral-genesis/how-to/Звук.md).
+
 **Editor tooling** — `addons/game_design_tool` is the single designer-facing plugin: a main-screen tab «Геймдизайн» holding «Шаблоны» (entity templates) and «Генератор» (room presets), with several non-obvious traps around `@tool` resources, lazy tab building and inspector labels. [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md).
 
 ## Source layout & naming
@@ -65,7 +67,7 @@ Each area below is one paragraph of orientation. **Read the linked doc before re
 | `a_` | `A_*` | `resources/interaction/`, entity dirs | interaction actions (`RS_InteractionAction`) |
 | `rs_` | `RS_*` | `resources/` | data resources (configs, graph, presets, skills) |
 
-Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillManager`, `UIManager`, `WorldSave`, `RunManager`. Tunable game data lives as `.tres` under `data/` and is edited in-editor, not hardcoded. Autoload responsibilities, physics layers, the project-wide UI theme and the key-rebinding codec: [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md).
+Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillManager`, `UIManager`, `WorldSave`, `RunManager`, `AudioManager`. Tunable game data lives as `.tres` under `data/` and is edited in-editor, not hardcoded. Autoload responsibilities, physics layers, the project-wide UI theme and the key-rebinding codec: [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md).
 
 ## Документация — карта
 
@@ -79,6 +81,7 @@ Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillMana
 | Interactables, raycast, prompts, screen messages | [Взаимодействие](docs/astral-genesis/how-to/Взаимодействие.md) |
 | Capture/expel, body traits, decay model, `E_Body` contract | [Захват тела](docs/astral-genesis/how-to/Захват%20тела.md) |
 | Editor tooling traps, template authoring | [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md) |
+| byProd, единственность менеджера, шаги | [Звук](docs/astral-genesis/how-to/Звук.md) |
 | Physics layers, UI theme, prefixes, rebinding codec | [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md) |
 | CI, versioning, local and manual releases | [Релизы и сборка](docs/astral-genesis/how-to/Релизы%20и%20сборка.md) |
 | Controls, player-facing | [Управление](docs/astral-genesis/Справка/Управление.md) |

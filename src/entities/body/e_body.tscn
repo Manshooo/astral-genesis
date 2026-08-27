@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_body_decay.gd" id="5_decay"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_walk.gd" id="6_walk"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_jump.gd" id="7_jump"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_footsteps.gd" id="ext_footsteps"]
 
 [sub_resource type="Resource" id="Resource_health"]
 script = ExtResource("3_health")
@@ -42,11 +43,15 @@ radius = 0.4
 height = 1.8
 material = SubResource("StandardMaterial3D_body")
 
+[sub_resource type="Resource" id="Resource_footsteps"]
+script = ExtResource("ext_footsteps")
+stride = 1.9
+
 [node name="Body" type="StaticBody3D"]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("1_body")
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_decay"), SubResource("Resource_walk"), SubResource("Resource_jump")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_decay"), SubResource("Resource_walk"), SubResource("Resource_jump"), SubResource("Resource_footsteps")])
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
