@@ -142,9 +142,48 @@ func _run(world: World) -> void:
 		"шагов: %d — шаг это касание земли, а не пройденное расстояние" % _requests.size(),
 	)
 
-	# --- 5. Без компонента — молча ----------------------------------------
+	# --- 5. Зацикленное событие: одна просьба на отрезок ходьбы ------------
+	# Зацикленное событие не кончается само. Запусти его «на каждый шаг» — и
+	# инстансы копятся, пока не кончатся голоса; поэтому просьба ровно одна на
+	# весь отрезок ходьбы, а темп потом правится у уже заведённого инстанса.
 	_drive_speed = 0.0
 	await _physics(40)  # приземлиться обратно
+
+	steps.playback = C_Footsteps.Playback.LOOP
+	steps.event_path = "event:/walk_test"
+	steps.tempo_parameter = "Param1"
+
+	_requests.clear()
+	_drive_speed = DRIVE_SPEED
+	await _physics(60)
+	_check(
+		"петля заводится один раз на весь отрезок ходьбы, а не на каждый шаг",
+		_requests.size() == 1,
+		"просьб сыграть «%s»: %d" % [steps.event_path, _requests.size()],
+	)
+	_check("петля числится заведённой, пока тело идёт", steps.loop_active, "")
+
+	# Инстанса без рантайма byProd нет — проверка идёт без звукового контента, —
+	# но состояние системы обязано жить и в тишине: иначе остановка не остановит
+	# ничего и там, где звук есть.
+	_requests.clear()
+	_drive_speed = 0.0
+	await _physics(30)
+	_check("остановка снимает петлю", not steps.loop_active, "петля осталась заведённой")
+	_check("остановка не просит звук заново", _requests.is_empty(), "просьб: %d" % _requests.size())
+
+	_requests.clear()
+	_drive_speed = DRIVE_SPEED
+	await _physics(30)
+	_check(
+		"следующий отрезок ходьбы заводит петлю заново",
+		_requests.size() == 1,
+		"просьб: %d" % _requests.size(),
+	)
+
+	# --- 6. Без компонента — молча ----------------------------------------
+	_drive_speed = 0.0
+	await _physics(40)
 	enemy.remove_component(C_Footsteps)
 	await get_tree().process_frame
 

@@ -14,8 +14,17 @@ extends Node
 
 ## Проект, собранный редактором byProd. Рядом с ним лежат его же банки (.bybank),
 ## которые рантайм запрашивает у хоста сам, по имени.
-const PROJECT_PATH := "res://assets/audio/astral_genesis.byprod"
-const BANK_DIRECTORY := "res://assets/audio"
+##
+## Пока это ПРОБНЫЙ проект (`assets/sound/demo/`) с единственным событием
+## `event:/walk` — им проверяется, что цепочка «механика → byProd → колонки»
+## жива. Когда появится настоящий проект звука, здесь поменяется путь, и
+## больше ничего: события механика называет строками из своих компонентов.
+##
+## Каталог собранного проекта лежит в git и попадает в сборку через
+## `include_filter` в `export_presets.cfg`: .byprod и .bybank — не ресурсы Godot,
+## сам он их в .pck не положит.
+const PROJECT_PATH := "res://assets/sound/demo/build/walk.byprod"
+const BANK_DIRECTORY := "res://assets/sound/demo/build"
 
 ## Просьба сыграть событие — до всякой проверки на то, есть ли чем играть.
 ## Подписчику (проверке в dev/, вибрации, отладочному оверлею) важно, что
@@ -113,6 +122,29 @@ func play_event_3d(event_path: String, position: Vector3) -> void:
 	# Владение уходит рантайму: одноразовый звук незачем держать со стороны игры,
 	# и без этого инстанс жил бы до сборки мусора, занимая голос.
 	instance.release_when_finished()
+
+
+## Длящийся звук: инстанс отдаётся вызывающему, и дальше он сам решает, когда
+## его завести, чем параметризовать и когда отпустить.
+##
+## Отдельно от `play_event_3d`, потому что владение здесь противоположное:
+## разовый звук доигрывает сам и не нужен игре после старта, а зацикленный
+## (шаги, гул, дождь) не кончается никогда — и если его никто не держит, его
+## некому и остановить. Ссылку достаточно уронить: деструктор биндинга
+## освобождает голос сам.
+func create_event_instance(event_path: String) -> Object:
+	# Как и в play_event_3d — до проверки на «а есть ли чем играть»: подписчику
+	# важен сам запрос. Позиции у петли нет, она заводится не в точке мира.
+	event_requested.emit(event_path, Vector3.ZERO)
+
+	if not _loaded:
+		return null
+
+	var description := _description_for(event_path)
+	if description == null:
+		return null
+
+	return description.create_instance()
 
 
 func _description_for(event_path: String) -> Object:
