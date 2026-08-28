@@ -76,7 +76,7 @@
 ## Общая характеристика периода
   Года: 1949 - 1959 </br>
   Кодовое название периода (если есть): </br>
-  Название лаборатории: The X-16 Department of Non-Conventional Resources & Testing </br>
+  Название лаборатории: X-16 Non-conventional Resources & Testing Project </br>
   Руководитель: Джон Гоатман. После 1951 - Эрика Гоатман </br>
 
 ## 1949
