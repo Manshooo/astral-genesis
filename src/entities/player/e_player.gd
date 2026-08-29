@@ -57,7 +57,7 @@ func foot_offset() -> Vector3:
 	if half < 0.0:
 		push_warning(
 			"E_Player: не удалось измерить коллайдер (%s) — считаем, что origin и есть подошва"
-			% [shape.shape if shape else "нет CollisionShape3D"]
+			% [str(shape.shape) if shape else "нет CollisionShape3D"]
 		)
 		return Vector3.ZERO
 	return Vector3(0.0, half - shape.position.y, 0.0)

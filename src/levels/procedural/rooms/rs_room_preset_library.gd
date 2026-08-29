@@ -9,19 +9,41 @@
 ##   3. Специфичность (мягко): среди кандидатов — с минимумом лишних тегов.
 ##      Не даёт «богатым» пресетам (напр. с порталом) протекать в узлы, которым
 ##      это не нужно.
-##   4. Впритык по дверям (мягко): взвешенный рандом внутри группы из шага 3
+##   4. Тип помещения (мягко): среди прошедших — те, чей room_type совпал с
+##      загаданным узлу. Совпавших нет — группа идёт дальше как есть. Именно
+##      ПРЕДПОЧТЕНИЕ, а не фильтр: тип не несёт структурных обязательств, и
+##      забег не должен становиться несобираемым из-за того, что арсенала
+##      нужного размера ещё не нарисовали.
+##   5. Впритык по дверям (мягко): взвешенный рандом внутри группы из шага 4
 ##      смещён в пользу пресетов с МИНИМАЛЬНЫМ избытком слотов над нужным числом
 ##      рёбер (EXCESS_SLOT_DECAY) — иначе комната на 4 двери, где реально
 ##      используются 2, а остальные заварены, выбиралась бы так же часто, как
 ##      комната впритык на 2.
+##
+## Шаги 2 и 4 — РАЗНЫЕ оси, и держать их врозь обязательно: теги отвечают «что
+## комната умеет структурно», тип — «что это за помещение». Общий массив сделал
+## бы тип жёстким требованием и сломал бы специфичность (см. RS_RoomPreset.room_type).
 ## @tool — иначе в редакторе ресурс грузится ПЛЕЙСХОЛДЕРОМ и его методы позвать
-## нельзя («Attempt to call a method on a placeholder instance»). Док «Генератор»
-## зовёт select_preset/explain_selection/validate прямо из редактора.
+## нельзя («Attempt to call a method on a placeholder instance»). «Редактор
+## пресетов» зовёт validate, «Генератор мира» — select_preset и
+## explain_selection, всё прямо из редактора.
 @tool
 class_name RS_RoomPresetLibrary
 extends Resource
 
 @export var presets: Array[RS_RoomPreset] = []
+
+## Каталог типов помещений — вторая ось подбора. null = типов нет вовсе, подбор
+## работает ровно как до их появления. Лежит здесь, а не отдельным аргументом
+## generate_run: см. шапку RS_RoomTypeCatalog.
+@export var type_catalog: RS_RoomTypeCatalog
+
+## Словарь структурных тегов — ОПИСАНИЯ, а не список разрешённых. На подбор не
+## влияет вовсе (_tags_cover сравнивает сырые StringName), нужен только
+## инструментам: показать дизайнеру, что значит `vertical_hub`, и отличить
+## настоящий тег от опечатки. null = описаний нет, облака тегов работают как
+## раньше. См. RS_RoomTagCatalog.
+@export var tag_catalog: RS_RoomTagCatalog
 
 ## Запасной пресет, когда ни один не подошёл (напр. у узла рёбер больше, чем
 ## слотов у любой комнаты). Может быть null — тогда select_preset вернёт null и
@@ -46,6 +68,7 @@ const REASON_NO_SCENE := "нет сцены"
 const REASON_CAPACITY := "вместимость"
 const REASON_TAGS := "теги"
 const REASON_SPECIFICITY := "специфичность"
+const REASON_ROOM_TYPE := "тип комнаты"
 ## Пресет прошёл все жёсткие фильтры и участвовал во взвешенном броске.
 const REASON_CANDIDATE := "дошёл до весов"
 const REASON_SELECTED := "выбран"
@@ -124,9 +147,33 @@ func _select(node: RS_LevelNode, rng: RandomNumberGenerator, reasons: Variant) -
 		else:
 			_note(reasons, p, REASON_SPECIFICITY)
 
-	var chosen := _weighted_pick(best, rng, needed)
+	var chosen := _weighted_pick(_prefer_room_type(best, node.room_type, reasons), rng, needed)
 	_note(reasons, chosen, REASON_SELECTED)
 	return chosen
+
+
+## Сужает группу до пресетов загаданного узлу типа — но ТОЛЬКО если такие в ней
+## есть; иначе возвращает группу нетронутой. Отсюда и «предпочтение, а не
+## фильтр»: пока арсеналов нужного размера не нарисовали, узел-арсенал спокойно
+## получает обычную комнату, а не остаётся на placeholder.
+##
+## Пустой загаданный тип — полноценный случай, а не «всё равно»: безликий узел
+## предпочитает безликие пресеты. Иначе тематическая комната лезла бы в каждый
+## непомеченный узел и перестала бы читаться как особенная.
+func _prefer_room_type(
+	pool: Array[RS_RoomPreset], wanted: StringName, reasons: Variant
+) -> Array[RS_RoomPreset]:
+	var matching: Array[RS_RoomPreset] = []
+	for p in pool:
+		if p.room_type == wanted:
+			matching.append(p)
+	if matching.is_empty():
+		return pool
+
+	for p in pool:
+		if p.room_type != wanted:
+			_note(reasons, p, REASON_ROOM_TYPE)
+	return matching
 
 
 func _note(reasons: Variant, preset: RS_RoomPreset, reason: String) -> void:
@@ -182,6 +229,8 @@ func _weighted_pick(pool: Array, rng: RandomNumberGenerator, needed: int = -1) -
 ## Зовите из теста/инструмента, не в горячем пути генерации.
 func validate() -> Array[String]:
 	var problems: Array[String] = []
+	if type_catalog:
+		problems.append_array(type_catalog.validate())
 	for p in presets:
 		if p == null:
 			problems.append("null-пресет в списке")
@@ -198,6 +247,14 @@ func validate_preset(preset: RS_RoomPreset) -> Array[String]:
 	if preset.scene == null:
 		problems.append("'%s': не назначена scene" % label)
 		return problems
+
+	# Тип из-за пределов каталога ломается тихо: пресет остаётся валидным,
+	# просто его никогда никому не предпочтут — узлам такой тип не загадывается.
+	if preset.room_type != &"" and type_catalog and type_catalog.by_id(preset.room_type) == null:
+		problems.append(
+			"'%s': тип «%s» отсутствует в каталоге — пресет не будет предпочтён никогда"
+			% [label, preset.room_type]
+		)
 
 	var room := preset.scene.instantiate()
 	var doors := RS_RoomLayout.door_entities(room)

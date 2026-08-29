@@ -34,6 +34,8 @@ const Picker := preload("res://addons/game_design_tool/world/picker.gd")
 const WorldGen := preload("res://addons/game_design_tool/tabs/world_gen.gd")
 const LabelsOverlay := preload("res://addons/game_design_tool/world/overlays/labels_overlay.gd")
 const OverlayRegistry := preload("res://addons/game_design_tool/world/overlay_registry.gd")
+const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
+const Library := preload("res://addons/game_design_tool/shared/library.gd")
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
 const SEED_COUNT := 30
 ## Сид с известным составом узлов — для проверки инлайн-редактора пресета
@@ -71,11 +73,11 @@ func _check_room_outline(library: RS_RoomPresetLibrary, host: ViewportHost) -> v
 		_check("обводка: слой L%d содержит хотя бы 2 узла для теста" % RS_LevelGraph.HOME_DEPTH, false, "%d" % layer_nodes.size())
 		return
 	var plan := RS_LayerPlan.build(layer_nodes)
-	host.show_layer(graph, layer_nodes, plan)
+	host.show_layer(LayerView.new(graph, layer_nodes, plan))
 
 	var first_id := layer_nodes[0].id
 	var second_id := layer_nodes[1].id
-	var overlay := host._rooms_overlay
+	var overlay := host.overlay(&"rooms")
 	var outline: Material = overlay.OUTLINE_MATERIAL
 
 	overlay.set_selected(first_id)
@@ -150,11 +152,14 @@ func _check_inline_preset_editor() -> void:
 			is_equal_approx(tab._weight_spin.value, preset.weight),
 			"форма=%s, ресурс=%s" % [tab._weight_spin.value, preset.weight]
 		)
-		var chip_count: int = tab._tag_flow.get_child_count()
+		# Облако тегов теперь общий GDT_TagCloud (его же берёт Room Wizard), и
+		# словарный запас держит оно само — счётчик спрашиваем у него.
+		var chip_count: int = tab._tag_cloud.get_child_count()
+		var vocabulary: int = tab._tag_cloud.known_tags.size()
 		_check(
 			"узел с пресетом: чекбоксов тегов по числу известных тегов",
-			chip_count == tab._known_tags.size(),
-			"чипов=%d, известных тегов=%d" % [chip_count, tab._known_tags.size()]
+			chip_count == vocabulary,
+			"чипов=%d, известных тегов=%d" % [chip_count, vocabulary]
 		)
 
 		# Оверлей «Подписи»: одна подпись на слой, показывается только по
@@ -165,7 +170,9 @@ func _check_inline_preset_editor() -> void:
 		var own_layer := tab._graph.get_nodes_by_depth(with_preset.depth)
 		var own_plan := RS_LayerPlan.build(own_layer)
 		var labels_overlay := LabelsOverlay.new()
-		labels_overlay.rebuild(own_layer, own_plan, tab._preset_labels_for(own_layer))
+		labels_overlay.rebuild(
+			LayerView.new(tab._graph, own_layer, own_plan, tab._preset_labels_for(own_layer))
+		)
 		_check("после rebuild без выделения: подпись скрыта", not labels_overlay._label.visible, "")
 
 		labels_overlay.set_selected(with_preset.id)
@@ -173,7 +180,7 @@ func _check_inline_preset_editor() -> void:
 		var label_text: String = labels_overlay._label.text
 		_check(
 			"узел с пресетом: подпись содержит id и имя пресета",
-			label_text.contains(String(with_preset.id)) and label_text.contains(tab._label_of(preset)),
+			label_text.contains(String(with_preset.id)) and label_text.contains(Library.label_of(preset)),
 			label_text
 		)
 
@@ -267,16 +274,18 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 		# синхронно (сид/глубина меняются в один тик) — отложенное удаление не
 		# успевало сработать между вызовами show_layer, и счётчик комнат рос от
 		# слоя к слою. Чинит free() вместо queue_free() в обоих оверлеях.
-		host.show_layer(graph, layer_nodes, plan)
+		host.show_layer(LayerView.new(graph, layer_nodes, plan))
+		var rooms := host.overlay(&"rooms")
+		var graph_overlay := host.overlay(&"graph")
 		_check(
 			"%s: комнат построено по числу узлов" % label,
-			host._rooms_overlay.get_child_count() == layer_nodes.size(),
-			"%d комнат, %d узлов" % [host._rooms_overlay.get_child_count(), layer_nodes.size()]
+			rooms.get_child_count() == layer_nodes.size(),
+			"%d комнат, %d узлов" % [rooms.get_child_count(), layer_nodes.size()]
 		)
 		_check(
 			"%s: сфер графа построено по числу узлов" % label,
-			host._graph_overlay._spheres.size() == layer_nodes.size(),
-			"%d сфер, %d узлов" % [host._graph_overlay._spheres.size(), layer_nodes.size()]
+			graph_overlay._spheres.size() == layer_nodes.size(),
+			"%d сфер, %d узлов" % [graph_overlay._spheres.size(), layer_nodes.size()]
 		)
 		# «Подписи» — одна на весь оверлей, показывается только по set_selected
 		# (see_layer завершается _select(&"") — см. viewport_host.gd), поэтому
@@ -286,7 +295,7 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 		# видимой с прошлого слоя».
 		_check(
 			"%s: подпись скрыта сразу после пересборки слоя" % label,
-			not host._labels_overlay._label.visible,
+			not host.overlay(&"labels")._label.visible,
 			""
 		)
 

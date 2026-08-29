@@ -11,6 +11,9 @@ var _ok := 0
 var _fail := 0
 
 const RoomWizard := preload("res://addons/game_design_tool/dock/room_wizard.gd")
+## Нормализация тега уехала из дока в общий GDT_Tags — там же её и проверяем,
+## иначе тест сторожил бы делегирующую обёртку, а не правило.
+const Tags := preload("res://addons/game_design_tool/shared/tags.gd")
 
 ## Не все 13 сцен — этого достаточно, чтобы поймать регресс в форме/пути.
 const ROOM_SCENES := [
@@ -25,7 +28,7 @@ const ROOM_SCENES := [
 func _ready() -> void:
 	var wizard := RoomWizard.new()
 
-	_check_tagify(wizard)
+	_check_tagify()
 	_check_no_scene(wizard)
 	for scene_path in ROOM_SCENES:
 		_check_scene(wizard, scene_path)
@@ -36,21 +39,29 @@ func _ready() -> void:
 	get_tree().quit(1 if _fail > 0 else 0)
 
 
-func _check_tagify(wizard: RoomWizard) -> void:
+func _check_tagify() -> void:
 	_check(
-		"_tagify нормализует регистр и пробелы",
-		wizard._tagify("  Vertical Hub  ") == &"vertical_hub",
-		String(wizard._tagify("  Vertical Hub  "))
+		"tagify нормализует регистр и пробелы",
+		Tags.tagify("  Vertical Hub  ") == &"vertical_hub",
+		String(Tags.tagify("  Vertical Hub  "))
 	)
 	_check(
-		"_tagify схлопывает пунктуацию в один _",
-		wizard._tagify("door--slot!!") == &"door_slot",
-		String(wizard._tagify("door--slot!!"))
+		"tagify схлопывает пунктуацию в один _",
+		Tags.tagify("door--slot!!") == &"door_slot",
+		String(Tags.tagify("door--slot!!"))
 	)
 	_check(
-		"_tagify пустой строки — пустой StringName",
-		wizard._tagify("   ") == &"",
-		String(wizard._tagify("   "))
+		"tagify пустой строки — пустой StringName",
+		Tags.tagify("   ") == &"",
+		String(Tags.tagify("   "))
+	)
+	# Теги — ASCII-ключи, в отличие от имён файлов (GDT_Fs.slug пропускает
+	# кириллицу). Разъедься эти два правила — кириллический тег молча уехал бы
+	# в RS_RoomPreset.tags и не совпал бы ни с одним ключом узла.
+	_check(
+		"tagify выбрасывает кириллицу (ключ, а не текст для игрока)",
+		Tags.tagify("Лаборатория lab") == &"lab",
+		String(Tags.tagify("Лаборатория lab"))
 	)
 
 
@@ -88,6 +99,22 @@ func _check_scene(wizard: RoomWizard, scene_path: String) -> void:
 		"%s: форма — ровно display_name/slot_count/weight" % label,
 		fields == ["display_name", "slot_count", "weight"],
 		str(fields)
+	)
+	# Тип помещения — отдельный контрол, а не поле рефлексивной формы (в форме
+	# StringName нарисовался бы нередактируемой строкой). Проверяем ровно то,
+	# чем он опасен: пустой или сбитый список делает сохранение РАЗРУШИТЕЛЬНЫМ —
+	# _apply_form_to_preset возьмёт из него «нет типа» и сотрёт авторский.
+	var selected: int = wizard._type_option.get_selected()
+	_check(
+		"%s: список типов заполнен и показывает тип пресета" % label,
+		(
+			wizard._type_option.item_count > 0
+			and selected >= 0
+			and selected < wizard._type_ids.size()
+			and wizard._type_ids[selected] == wizard._preset.room_type
+		),
+		"пунктов %d, выбран %d, у пресета «%s»" % [
+			wizard._type_option.item_count, selected, wizard._preset.room_type],
 	)
 	_check("%s: кнопка сохранения включена" % label, not wizard._save_btn.disabled, "")
 	_check(

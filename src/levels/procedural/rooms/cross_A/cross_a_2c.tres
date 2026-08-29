@@ -7,6 +7,5 @@
 script = ExtResource("2_1evys")
 display_name = "Cross_A_2C"
 scene = ExtResource("1_8bmnk")
-tags = Array[StringName]([&"floor_hub"])
 slot_count = 2
 metadata/_custom_type_script = "uid://wiaffa7aebsm"

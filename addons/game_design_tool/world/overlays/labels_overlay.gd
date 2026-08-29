@@ -8,11 +8,11 @@
 ## загромождает вид слоя целиком, а вопрос «что это за узел» и так возникает
 ## именно у ВЫДЕЛЕННОГО).
 ##
-## Имя пресета — не то, что можно посчитать по layer_nodes/plan: это выбор
+## Имя пресета — не то, что можно посчитать по узлам и раскладке: это выбор
 ## RS_RoomPresetLibrary по совпадению scene.resource_path, для которого нужна
 ## сама библиотека. Вместо того чтобы тащить сюда library (оверлей тогда бы
 ## знал о подборе пресетов — чужая забота), вкладка (world_gen.gd) считает
-## словарь node_id → имя пресета сама и просто отдаёт готовый текст.
+## словарь node_id → имя пресета сама и кладёт его в GDT_LayerView.
 ##
 ## billboard + no_depth_test: подпись должна читаться с любого ракурса камеры
 ## и не теряться за стеной комнаты — это debug-оверлей, не часть мира.
@@ -20,6 +20,7 @@
 extends Node3D
 
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
+const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
 
 const FONT_SIZE := 28
 ## world-space размер текста = font_size * pixel_size. 0.065 = 0.05 * 1.3 —
@@ -32,11 +33,9 @@ const COLOR := Color(0.95, 0.95, 0.9, 0.95)
 ## далеко висела над низкой.
 const ABOVE_AABB := 5.0
 
-## Данные слоя, кэшированные rebuild() — по ним set_selected() считает позицию
-## и текст ОДНОЙ подписи, не перестраивая ничего на каждый клик.
-var _layer_nodes: Array[RS_LevelNode] = []
-var _plan: RS_LayerPlan
-var _preset_labels: Dictionary = {}
+## Слой, кэшированный rebuild() — по нему set_selected() считает позицию и
+## текст ОДНОЙ подписи, не перестраивая ничего на каждый клик.
+var _view: LayerView
 
 var _label: Label3D
 
@@ -53,37 +52,22 @@ func _init() -> void:
 	add_child(_label)
 
 
-## [param preset_labels] node_id -> имя пресета ("" — пресет не найден,
-## например у узла-хаба: авторская сцена вне библиотеки).
-func rebuild(
-	layer_nodes: Array[RS_LevelNode], plan: RS_LayerPlan, preset_labels: Dictionary
-) -> void:
-	_layer_nodes = layer_nodes
-	_plan = plan
-	_preset_labels = preset_labels
+func rebuild(view: LayerView) -> void:
+	_view = view
 	_label.visible = false
 
 
 func set_selected(node_id: StringName) -> void:
-	var node_data := _find(node_id)
-	if node_data == null or _plan == null:
+	var node_data := _view.node_by_id(node_id) if _view else null
+	if node_data == null or _view.plan == null:
 		_label.visible = false
 		return
 
-	var aabb := Picker.room_aabb(node_id, _layer_nodes, _plan)
+	var aabb := Picker.room_aabb(node_id, _view.nodes, _view.plan)
 	var center := aabb.get_center()
 	_label.position = Vector3(center.x, aabb.position.y + aabb.size.y + ABOVE_AABB, center.z)
-	_label.text = _text_for(node_data, _preset_labels.get(node_id, ""))
+	_label.text = _text_for(node_data, _view.preset_labels.get(node_id, ""))
 	_label.visible = true
-
-
-func _find(node_id: StringName) -> RS_LevelNode:
-	if node_id == &"":
-		return null
-	for node_data: RS_LevelNode in _layer_nodes:
-		if node_data.id == node_id:
-			return node_data
-	return null
 
 
 func _text_for(node_data: RS_LevelNode, preset_label: String) -> String:
