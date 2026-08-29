@@ -1,6 +1,7 @@
 extends Node
 ## Единственный владелец рантайма byProd: держит менеджер, грузит собранный
-## проект звука, каждый кадр двигает слушателя и тикает движок.
+## проект звука, каждый кадр двигает слушателя, тикает движок и переводит его
+## уровень тика вслед за паузой игры.
 ##
 ## Ни один класс расширения здесь НЕ назван идентификатором — только строкой
 ## через `ClassDB`. Это не стилистика: автолоад со ссылкой на незагруженный
@@ -45,8 +46,25 @@ var _descriptions: Dictionary = {}
 ## превратился бы в поток предупреждений с частотой шагов.
 var _missing_reported: Dictionary = {}
 
+## Уровни тика рантайма — «сколько мира сейчас идёт». Берутся из ClassDB, а не
+## пишутся числами: имя класса расширения здесь нельзя называть идентификатором
+## (см. шапку), а магическая константа молча разъехалась бы с биндингом.
+var _tick_level_none := 0
+var _tick_level_full := 0
+
+## Уровень, отданный рантайму последним. Нужен именно кэш: у SceneTree нет
+## сигнала о смене `paused`, состояние приходится сверять каждый кадр, а звать
+## из-за этого нативный set_tick_level() по шестьдесят раз в секунду незачем.
+var _tick_level := -1
+
 
 func _ready() -> void:
+	# Пауза — единственный момент, когда этому автолоаду ОСОБЕННО есть что
+	# делать: обычный `_process` на паузе не вызывается, и сказать рантайму, что
+	# мир встал, было бы уже некому. Тикать движок на паузе тоже надо — команды
+	# он разбирает в update(), и без него уровень тика не доехал бы до голосов.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	# Громкость приезжает из настроек, а не наоборот: SettingsManager стоит в
 	# project.godot ВЫШЕ этого автолоада, поэтому к моменту _ready его settings
 	# уже загружены и подписка ничего не пропустит. Обратной зависимости нет
@@ -59,6 +77,9 @@ func _start() -> void:
 	if not ClassDB.class_exists("ByProdSoundManager"):
 		push_warning("byProd: расширение не загружено — игра идёт без звука.")
 		return
+
+	_tick_level_none = ClassDB.class_get_integer_constant("ByProdSoundManager", "TICK_LEVEL_NONE")
+	_tick_level_full = ClassDB.class_get_integer_constant("ByProdSoundManager", "TICK_LEVEL_FULL")
 
 	_manager = ClassDB.class_call_static("ByProdSoundManager", "create")
 	if _manager == null:
@@ -98,7 +119,27 @@ func _process(_delta: float) -> void:
 		var t := camera.global_transform
 		_manager.set_listener_transform(t.origin, -t.basis.z, t.basis.y)
 
+	_apply_tick_level(get_tree().paused)
 	_manager.update()
+
+
+## Переводит рантайм между «мир идёт» и «мир стоит».
+##
+## Пауза здесь — это `SceneTree.paused`, то есть ровно то, что ставит UIManager
+## под меню паузы. Экран, открытый без паузы (дерево навыков), мир не
+## останавливает — и звук под ним тоже не обязан замолкать.
+##
+## Промежуточный TICK_LEVEL_PARTIAL («мир идёт наполовину») биндинг знает, но
+## подписывать на него пока некого: он разводит музыку, которая играет под
+## открытым меню, и окружение, которое нет, а ни того ни другого в проекте
+## звука ещё нет. Появятся — уровень станет параметром подписки, а не вторым
+## состоянием здесь.
+func _apply_tick_level(paused: bool) -> void:
+	var level := _tick_level_none if paused else _tick_level_full
+	if level == _tick_level:
+		return
+	_tick_level = level
+	_manager.set_tick_level(level)
 
 
 func _on_settings_changed(_settings: RS_Settings) -> void:
@@ -150,9 +191,14 @@ func play_event_3d(event_path: String, position: Vector3) -> void:
 		return
 
 	instance.set_3d_attributes(position, Vector3.ZERO)
+	_follow_pause(instance)
 	instance.start()
 	# Владение уходит рантайму: одноразовый звук незачем держать со стороны игры,
 	# и без этого инстанс жил бы до сборки мусора, занимая голос.
+	#
+	# Отсюда же и порядок: после этой строки ручки инстанса у игры нет, и
+	# подписать его на паузу было бы уже нечем. Разовый звук слушается паузы
+	# ТОЛЬКО так — сам себя он не остановит, потому что его никто не держит.
 	instance.release_when_finished()
 
 
@@ -176,7 +222,25 @@ func create_event_instance(event_path: String) -> Object:
 	if description == null:
 		return null
 
-	return description.create_instance()
+	var instance = description.create_instance()
+	if instance != null:
+		_follow_pause(instance)
+	return instance
+
+
+## Подписывает инстанс на уровень тика: на паузе он встанет, после — поедет
+## дальше с того же места.
+##
+## Централизовано, а не оставлено вызывающему, по двум причинам. Подписка в
+## рантайме ВЫКЛЮЧЕНА по умолчанию, то есть забытый вызов не ломается заметно —
+## звук просто продолжает играть сквозь паузу, и это надо ещё услышать. И
+## заведённый на паузе инстанс (петля шагов, стартовавшая в тот же кадр)
+## подписки требует ровно так же, а вызывающий об этом думать не обязан.
+func _follow_pause(instance: Object) -> void:
+	# Уровень не передаётся: по умолчанию биндинг ставит TICK_LEVEL_NONE —
+	# «замолкнуть, когда мир остановлен целиком», — а другого уровня в игре
+	# пока нет (см. _apply_tick_level).
+	instance.set_auto_pause(true)
 
 
 func _description_for(event_path: String) -> Object:
