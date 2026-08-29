@@ -48,6 +48,10 @@ var _weight_spin: SpinBox
 var _tag_flow: HFlowContainer
 var _new_tag_edit: LineEdit
 var _known_tags: Array[StringName] = []
+## Словарь тегов из библиотеки. Здесь, как и в доке Room Wizard, описание живёт
+## тултипом: секция узла — приложение к 3D-превью, и отдавать её половину под
+## текст описаний неправильно. Читать их глазами — во вкладке «Генератор».
+var _tag_catalog: RS_RoomTagCatalog
 ## Пресет, который сейчас редактируется секцией выше — держим отдельно от
 ## _selected_node_data().preset, чтобы обработчики полей не искали его заново
 ## на каждое изменение спинбокса.
@@ -543,6 +547,7 @@ func _on_weight_changed(value: float) -> void:
 ## копия, не общий код: инструменты этого редактора самодостаточны (см.
 ## [[Единый редактор геймдизайна]]).
 func _collect_known_tags() -> void:
+	_tag_catalog = _library.tag_catalog if _library else null
 	var seen := {}
 	if _library:
 		for p: RS_RoomPreset in _library.presets:
@@ -553,6 +558,11 @@ func _collect_known_tags() -> void:
 		if _library.fallback:
 			for tag: StringName in _library.fallback.tags:
 				seen[tag] = true
+	# Теги словаря — тоже: заведённый, но ещё никем не носимый тег иначе не
+	# показался бы в облаке (см. presets.gd._collect_known_tags).
+	if _tag_catalog:
+		for id: StringName in _tag_catalog.ids():
+			seen[id] = true
 
 	var result: Array[StringName] = []
 	for tag: StringName in seen.keys():
@@ -570,8 +580,20 @@ func _rebuild_tag_chips() -> void:
 		var chip := CheckBox.new()
 		chip.text = String(tag)
 		chip.button_pressed = _editing_preset.tags.has(tag)
+		chip.tooltip_text = _tag_tooltip(tag)
 		chip.toggled.connect(_on_tag_chip_toggled.bind(tag))
 		_tag_flow.add_child(chip)
+
+
+## Описание тега из словаря — или прямая просьба его завести: тег без описания
+## неотличим от опечатки (см. presets.gd, там же он и заводится).
+func _tag_tooltip(tag: StringName) -> String:
+	if _tag_catalog == null:
+		return ""
+	var description := _tag_catalog.description_of(tag)
+	if description != "":
+		return description
+	return "Нет описания. Заведи его во вкладке «Генератор» → словарь тегов."
 
 
 func _on_tag_chip_toggled(pressed: bool, tag: StringName) -> void:
@@ -593,10 +615,23 @@ func _on_add_tag_pressed() -> void:
 	if not _known_tags.has(tag):
 		_known_tags.append(tag)
 		_known_tags.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+	_register_tag(tag)
 	if not _editing_preset.tags.has(tag):
 		_editing_preset.tags.append(tag)
 	_rebuild_tag_chips()
 	_save_editing_preset()
+
+
+## Новый тег заводится в словаре СРАЗУ — инвариант «каждый тег пресетов есть в
+## словаре» держит dev/room_tags_check, и только на нём работает отличие
+## настоящего тега от опечатки. Описание пишется во вкладке «Генератор».
+func _register_tag(tag: StringName) -> void:
+	if _tag_catalog == null or _tag_catalog.has_id(tag):
+		return
+	_tag_catalog.add_id(tag)
+	var path := _tag_catalog.resource_path
+	if path != "":
+		ResourceSaver.save(_tag_catalog, path)
 
 
 ## Тот же приём, что в presets.gd/room_wizard.gd — теги ASCII-идентификаторов,

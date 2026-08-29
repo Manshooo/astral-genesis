@@ -37,6 +37,13 @@ extends Resource
 ## generate_run: см. шапку RS_RoomTypeCatalog.
 @export var type_catalog: RS_RoomTypeCatalog
 
+## Словарь структурных тегов — ОПИСАНИЯ, а не список разрешённых. На подбор не
+## влияет вовсе (_tags_cover сравнивает сырые StringName), нужен только
+## инструментам: показать дизайнеру, что значит `vertical_hub`, и отличить
+## настоящий тег от опечатки. null = описаний нет, облака тегов работают как
+## раньше. См. RS_RoomTagCatalog.
+@export var tag_catalog: RS_RoomTagCatalog
+
 ## Запасной пресет, когда ни один не подошёл (напр. у узла рёбер больше, чем
 ## слотов у любой комнаты). Может быть null — тогда select_preset вернёт null и
 ## генератор оставит узлу заранее проставленный placeholder.

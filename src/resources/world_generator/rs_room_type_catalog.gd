@@ -80,6 +80,13 @@ func label_of(id: StringName) -> String:
 	return type.label() if type else String(id)
 
 
+## Описание типа или "" — как и у RS_RoomTagCatalog.description_of, вызывающий
+## сам решает, что показать вместо пустого.
+func description_of(id: StringName) -> String:
+	var type := by_id(id)
+	return type.description if type else ""
+
+
 ## Расхождения каталога — зовётся из проверок и инструментов, не в генерации.
 func validate() -> Array[String]:
 	var problems: Array[String] = []
