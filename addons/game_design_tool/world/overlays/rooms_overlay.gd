@@ -22,20 +22,21 @@
 extends Node3D
 
 const OUTLINE_MATERIAL: Material = preload("res://addons/game_design_tool/assets/selection_outline.tres")
+const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
 
 var _rooms: Dictionary[StringName, Node] = {}
 var _selected_id: StringName = &""
 
 
-func rebuild(layer_nodes: Array[RS_LevelNode], plan: RS_LayerPlan) -> void:
+func rebuild(view: LayerView) -> void:
 	clear()
-	for node_data: RS_LevelNode in layer_nodes:
+	for node_data: RS_LevelNode in view.nodes:
 		if node_data.room_scene_path == "" or not ResourceLoader.exists(node_data.room_scene_path):
 			continue
 		var room := (load(node_data.room_scene_path) as PackedScene).instantiate()
 		var spatial := room as Node3D
 		if spatial:
-			spatial.position = plan.positions.get(node_data.id, Vector3.ZERO)
+			spatial.position = view.plan.positions.get(node_data.id, Vector3.ZERO)
 		add_child(room)
 		_rooms[node_data.id] = room
 

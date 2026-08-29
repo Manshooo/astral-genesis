@@ -9,11 +9,19 @@
 @tool
 extends VBoxContainer
 
+const Ui := preload("res://addons/game_design_tool/shared/ui.gd")
+const Fs := preload("res://addons/game_design_tool/shared/fs.gd")
+
 ## Заголовок вкладки в TabContainer — тот берёт его из имени узла (см. _init).
 const TAB_TITLE := "Шаблоны"
 
 const TEMPLATE_DIR := "res://data/entity_templates"
 const ENTITY_DIR := "res://src/entities"
+
+## Зачем диалогу имени режим: окно ввода одно на три операции, а «ОК» в них
+## значит разное. Enum, а не строка: режим «create_entity» с опечаткой
+## проваливался бы во все ветки мимо и молча не делал ничего.
+enum NameMode { NEW, RENAME, CREATE_ENTITY }
 
 var _list: ItemList
 var _status: Label
@@ -22,7 +30,7 @@ var _loaded := false  # список уже собран (см. _on_visibility_c
 
 var _name_dialog: ConfirmationDialog
 var _name_edit: LineEdit
-var _name_mode := ""  # "new" | "rename" | "create_entity"
+var _name_mode := NameMode.NEW
 var _delete_dialog: ConfirmationDialog
 var _save_dialog: EditorFileDialog
 var _pending_template: RS_EntityTemplate
@@ -50,54 +58,43 @@ func _on_visibility_changed() -> void:
 
 #region UI
 func _build_ui() -> void:
-	add_child(_titled("Шаблоны сущностей"))
+	var title := Ui.label("Шаблоны сущностей")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(title)
 
 	_list = ItemList.new()
 	_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_list.allow_reselect = true
 	_list.item_activated.connect(_on_item_activated)
-	_list.item_selected.connect(func(_i): _update_status())
+	_list.item_selected.connect(func(_i: int) -> void: _update_status())
 	add_child(_list)
 
 	var row1 := HBoxContainer.new()
-	row1.add_child(_button("Новый", _on_new_pressed))
-	row1.add_child(_button("Дублировать", _on_duplicate_pressed))
-	row1.add_child(_button("Удалить", _on_delete_pressed))
+	row1.add_child(Ui.button("Новый", _on_new_pressed))
+	row1.add_child(Ui.button("Дублировать", _on_duplicate_pressed))
+	row1.add_child(Ui.button("Удалить", _on_delete_pressed))
 	add_child(row1)
 
 	var row2 := HBoxContainer.new()
-	row2.add_child(_button("Переименовать", _on_rename_pressed))
-	var edit_btn := _button("Редактировать", _on_edit_pressed)
+	row2.add_child(Ui.button("Переименовать", _on_rename_pressed))
+	var edit_btn := Ui.button("Редактировать", _on_edit_pressed)
 	edit_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row2.add_child(edit_btn)
 	add_child(row2)
 
 	add_child(HSeparator.new())
 
-	var create_btn := _button("Создать сущность из шаблона", _on_create_entity_pressed)
+	var create_btn := Ui.button("Создать сущность из шаблона", _on_create_entity_pressed)
 	create_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(create_btn)
 
-	# Статус — строго ОДНА строка с многоточием, а не autowrap. Label с autowrap
-	# считает минимальную высоту, перенося текст по минимальной ШИРИНЕ (до первой
-	# раскладки это ~17 px), и требует под себя сотни пикселей. В доке это
-	# разъезжало всю правую панель (см. [[Редакторские инструменты]]); на главном экране
-	# так не ломается, но однострочный статус всё равно правильнее — иначе длинный
-	# путь ресурса перекладывает вёрстку под собой. Полный текст — в подсказке.
-	_status = Label.new()
-	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_status.modulate = Color(1, 1, 1, 0.7)
+	_status = Ui.status_label()
 	add_child(_status)
 
-	# Диалог ввода имени (для «Новый» и «Переименовать»).
-	_name_dialog = ConfirmationDialog.new()
-	_name_dialog.title = "Имя шаблона"
-	_name_edit = LineEdit.new()
-	_name_edit.custom_minimum_size = Vector2(280, 0)
-	_name_dialog.add_child(_name_edit)
-	_name_dialog.register_text_enter(_name_edit)
-	_name_dialog.confirmed.connect(_on_name_confirmed)
+	# Диалог ввода имени — один на «Новый», «Переименовать» и «Создать сущность»
+	# (различаются режимом, см. NameMode).
+	_name_dialog = Ui.text_dialog("Имя шаблона", _on_name_confirmed)
+	_name_edit = Ui.dialog_edit(_name_dialog)
 	add_child(_name_dialog)
 
 	_delete_dialog = ConfirmationDialog.new()
@@ -114,25 +111,19 @@ func _build_ui() -> void:
 	add_child(_save_dialog)
 
 
-func _titled(text: String) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return l
-
-
-func _button(text: String, handler: Callable) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.pressed.connect(handler)
-	return b
-
-
-## Строка статуса обрезается многоточием (см. про autowrap в _build_ui), поэтому
-## целиком текст кладём в подсказку.
 func _set_status(text: String) -> void:
-	_status.text = text
-	_status.tooltip_text = text
+	Ui.set_status(_status, text)
+
+
+func _warn(text: String) -> void:
+	_set_status("⚠ " + text)
+
+
+## Открывает диалог имени в заданном режиме — три операции звали его тремя
+## одинаковыми пятистрочиями, различавшимися заголовком и подставленным текстом.
+func _ask_name(mode: NameMode, title: String, preset_text: String) -> void:
+	_name_mode = mode
+	Ui.popup_text_dialog(_name_dialog, title, preset_text)
 #endregion
 
 
@@ -147,8 +138,7 @@ func _refresh(select_path := "") -> void:
 			if not file.ends_with(".tres"):
 				continue
 			var path := TEMPLATE_DIR + "/" + file
-			var res := ResourceLoader.load(path)
-			var tmpl := res as RS_EntityTemplate
+			var tmpl := ResourceLoader.load(path) as RS_EntityTemplate
 			if tmpl == null:
 				continue  # чужой .tres — молча пропускаем
 			var label: String = tmpl.display_name if tmpl.display_name != "" else file.get_basename()
@@ -180,6 +170,15 @@ func _selected_template() -> RS_EntityTemplate:
 	return ResourceLoader.load(path) as RS_EntityTemplate
 
 
+## Возвращает выделенный шаблон, а если его нет — жалуется и отдаёт null.
+## Четыре кнопки начинались одной и той же трёхстрочной проверкой.
+func _require_selection() -> RS_EntityTemplate:
+	var tmpl := _selected_template()
+	if tmpl == null:
+		_warn("Сначала выбери шаблон.")
+	return tmpl
+
+
 func _update_status() -> void:
 	if _paths.is_empty():
 		_set_status("Нет шаблонов. Жми «Новый».")
@@ -196,25 +195,14 @@ func _on_item_activated(_index: int) -> void:
 
 
 func _on_new_pressed() -> void:
-	_name_mode = "new"
-	_name_dialog.title = "Новый шаблон — имя"
-	_name_edit.text = "Новая сущность"
-	_name_dialog.popup_centered(Vector2i(340, 90))
-	_name_edit.grab_focus()
-	_name_edit.select_all()
+	_ask_name(NameMode.NEW, "Новый шаблон — имя", "Новая сущность")
 
 
 func _on_rename_pressed() -> void:
-	var tmpl := _selected_template()
+	var tmpl := _require_selection()
 	if tmpl == null:
-		_warn("Сначала выбери шаблон.")
 		return
-	_name_mode = "rename"
-	_name_dialog.title = "Переименовать шаблон"
-	_name_edit.text = tmpl.display_name
-	_name_dialog.popup_centered(Vector2i(340, 90))
-	_name_edit.grab_focus()
-	_name_edit.select_all()
+	_ask_name(NameMode.RENAME, "Переименовать шаблон", tmpl.display_name)
 
 
 func _on_name_confirmed() -> void:
@@ -223,40 +211,40 @@ func _on_name_confirmed() -> void:
 		_warn("Пустое имя.")
 		return
 
-	if _name_mode == "new":
-		var tmpl := RS_EntityTemplate.new()
-		tmpl.display_name = entered
-		var path := _unique_path(_snake(entered, "entity_template"))
-		if _save_resource(tmpl, path):
-			_refresh(path)
-			_edit_resource(path)
-			_set_status("Создан: " + path.get_file())
-	elif _name_mode == "rename":
-		var path := _selected_path()
-		var tmpl := ResourceLoader.load(path) as RS_EntityTemplate
-		if tmpl == null:
-			return
-		tmpl.display_name = entered
-		if _save_resource(tmpl, path):
-			_refresh(path)
-	elif _name_mode == "create_entity":
-		# Имя → корень сцены; файл — то же имя в snake_case (папку выбираем в диалоге).
-		_pending_entity_name = entered
-		_save_dialog.current_dir = ENTITY_DIR
-		_save_dialog.current_file = _snake(entered) + ".tscn"
-		_save_dialog.popup_centered_ratio(0.6)
+	match _name_mode:
+		NameMode.NEW:
+			var tmpl := RS_EntityTemplate.new()
+			tmpl.display_name = entered
+			var path := Fs.unique_path(TEMPLATE_DIR, Fs.slug(entered, "entity_template"))
+			if _save_template(tmpl, path):
+				_refresh(path)
+				_edit_resource(path)
+				_set_status("Создан: " + path.get_file())
+		NameMode.RENAME:
+			var path := _selected_path()
+			var tmpl := ResourceLoader.load(path) as RS_EntityTemplate
+			if tmpl == null:
+				return
+			tmpl.display_name = entered
+			if _save_template(tmpl, path):
+				_refresh(path)
+		NameMode.CREATE_ENTITY:
+			# Имя → корень сцены; файл — то же имя в snake_case (папку выбираем в диалоге).
+			_pending_entity_name = entered
+			_save_dialog.current_dir = ENTITY_DIR
+			_save_dialog.current_file = Fs.slug(entered) + ".tscn"
+			_save_dialog.popup_centered_ratio(0.6)
 
 
 func _on_duplicate_pressed() -> void:
-	var src := _selected_template()
+	var src := _require_selection()
 	if src == null:
-		_warn("Сначала выбери шаблон.")
 		return
 	var copy := src.duplicate(true) as RS_EntityTemplate
 	copy.display_name = src.display_name + " (копия)"
 	var base := _selected_path().get_file().get_basename()
-	var path := _unique_path(base + "_copy")
-	if _save_resource(copy, path):
+	var path := Fs.unique_path(TEMPLATE_DIR, base + "_copy")
+	if _save_template(copy, path):
 		_refresh(path)
 		_set_status("Дубликат: " + path.get_file())
 
@@ -278,32 +266,25 @@ func _on_delete_confirmed() -> void:
 	if err != OK:
 		_warn("Не удалось удалить (код %d)." % err)
 		return
-	_rescan_filesystem()
+	Fs.rescan()
 	_refresh()
 	_set_status("Удалён: " + path.get_file())
 
 
 func _on_edit_pressed() -> void:
-	var tmpl := _selected_template()
+	var tmpl := _require_selection()
 	if tmpl == null:
-		_warn("Сначала выбери шаблон.")
 		return
 	EditorInterface.edit_resource(tmpl)
 	_set_status("Открыт в инспекторе → правь компоненты.")
 
 
 func _on_create_entity_pressed() -> void:
-	var tmpl := _selected_template()
+	var tmpl := _require_selection()
 	if tmpl == null:
-		_warn("Сначала выбери шаблон.")
 		return
 	_pending_template = tmpl
-	_name_mode = "create_entity"
-	_name_dialog.title = "Имя сущности (имя корня сцены)"
-	_name_edit.text = tmpl.display_name
-	_name_dialog.popup_centered(Vector2i(340, 90))
-	_name_edit.grab_focus()
-	_name_edit.select_all()
+	_ask_name(NameMode.CREATE_ENTITY, "Имя сущности (имя корня сцены)", tmpl.display_name)
 
 
 func _on_entity_path_chosen(path: String) -> void:
@@ -321,56 +302,18 @@ func _on_entity_path_chosen(path: String) -> void:
 	if err != OK:
 		_warn("Не удалось сохранить сцену (код %d)." % err)
 		return
-	_rescan_filesystem()
+	Fs.rescan()
 	EditorInterface.open_scene_from_path(path)
 	_set_status("Создана сущность: " + path.get_file())
 #endregion
 
 
 #region Утилиты
-## snake_case: буквы (в т.ч. кириллица) и цифры сохраняются в нижнем регистре,
-## любой разделитель/пунктуация → одно подчёркивание, края обрезаются.
-func _snake(text: String, fallback := "entity") -> String:
-	var out := ""
-	var prev_us := false
-	for c in text.strip_edges().to_lower():
-		if _is_word_char(c):
-			out += c
-			prev_us = false
-		elif not prev_us and out != "":
-			out += "_"
-			prev_us = true
-	out = out.rstrip("_")
-	return out if out != "" else fallback
-
-
-## Буква (латиница/кириллица/…) отличается регистром upper≠lower; плюс цифры и «_».
-func _is_word_char(c: String) -> bool:
-	return c == "_" or (c >= "0" and c <= "9") or c.to_lower() != c.to_upper()
-
-
-func _unique_path(base: String) -> String:
-	_ensure_dir()
-	var path := TEMPLATE_DIR + "/" + base + ".tres"
-	var n := 2
-	while FileAccess.file_exists(path):
-		path = "%s/%s_%d.tres" % [TEMPLATE_DIR, base, n]
-		n += 1
-	return path
-
-
-func _ensure_dir() -> void:
-	if not DirAccess.dir_exists_absolute(TEMPLATE_DIR):
-		DirAccess.make_dir_recursive_absolute(TEMPLATE_DIR)
-
-
-func _save_resource(res: Resource, path: String) -> bool:
-	res.take_over_path(path)
-	var err := ResourceSaver.save(res, path)
+func _save_template(res: Resource, path: String) -> bool:
+	var err := Fs.save_new(res, path)
 	if err != OK:
 		_warn("Ошибка сохранения (код %d)." % err)
 		return false
-	_rescan_filesystem()
 	return true
 
 
@@ -378,14 +321,4 @@ func _edit_resource(path: String) -> void:
 	var res := ResourceLoader.load(path)
 	if res != null:
 		EditorInterface.edit_resource(res)
-
-
-func _rescan_filesystem() -> void:
-	var fs := EditorInterface.get_resource_filesystem()
-	if fs != null:
-		fs.scan()
-
-
-func _warn(text: String) -> void:
-	_set_status("⚠ " + text)
 #endregion
