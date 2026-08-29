@@ -24,8 +24,9 @@
 ## комната умеет структурно», тип — «что это за помещение». Общий массив сделал
 ## бы тип жёстким требованием и сломал бы специфичность (см. RS_RoomPreset.room_type).
 ## @tool — иначе в редакторе ресурс грузится ПЛЕЙСХОЛДЕРОМ и его методы позвать
-## нельзя («Attempt to call a method on a placeholder instance»). Док «Генератор»
-## зовёт select_preset/explain_selection/validate прямо из редактора.
+## нельзя («Attempt to call a method on a placeholder instance»). «Редактор
+## пресетов» зовёт validate, «Генератор мира» — select_preset и
+## explain_selection, всё прямо из редактора.
 @tool
 class_name RS_RoomPresetLibrary
 extends Resource

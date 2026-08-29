@@ -1,6 +1,6 @@
 ## res://addons/game_design_tool/tabs/presets.gd
-## Вкладка «Генератор» единого редактора геймдизайна: таблица пресетов и словарь
-## тегов слева, карточка выделенного — справа.
+## Вкладка «Редактор пресетов» единого редактора геймдизайна: таблица пресетов и
+## словарь тегов слева, карточка выделенного — справа.
 ##
 ## Что она закрывает:
 ##   1. веса/slot_count/тип пресетов разбросаны по .tres рядом со своими сценами
@@ -15,8 +15,13 @@
 ##      появились имя и описание, а у инструмента — способ отличить настоящий
 ##      тег от опечатки (нет в словаре → «нет описания», и видно, что он
 ##      одинокий);
-##   4. нет обратной связи «что реально выберется» и рассинхрон «заявленные
-##      слоты ↔ сцена» — «Прогнать сиды» и «Проверить сцены», без изменений.
+##   4. рассинхрон «заявленные слоты ↔ сцена» — «Проверить сцены».
+##
+## ПОЧЕМУ «Редактор пресетов», а не прежний «Генератор»: генератор здесь больше
+## не запускается. «Прогнать сиды» уехал в «Генератор мира» — вопрос «что
+## реально выпадает в забеге» про мир, а не про отдельный пресет, и отвечать на
+## него правильно там, где этот мир видно. Здесь остались данные пресетов и
+## сверка их со сценами.
 ##
 ## ПОЧЕМУ master-detail, а не облако чекбоксов под таблицей, как было раньше:
 ## описание тега длиннее его ключа, и в HFlowContainer его можно показать разве
@@ -38,7 +43,7 @@
 extends VBoxContainer
 
 ## Заголовок вкладки в TabContainer — тот берёт его из имени узла (см. _init).
-const TAB_TITLE := "Генератор"
+const TAB_TITLE := "Редактор пресетов"
 
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
 ## Запасной путь словаря: обычно он приходит из библиотеки (tag_catalog), но с
@@ -75,7 +80,6 @@ var _tag_catalog: RS_RoomTagCatalog
 var _tree: Tree
 var _tag_tree: Tree
 var _report: RichTextLabel
-var _seeds_spin: SpinBox
 var _status: Label
 var _filter_edit: LineEdit
 var _filter_chip: Button
@@ -170,20 +174,8 @@ func _build_ui() -> void:
 
 	add_child(HSeparator.new())
 
-	var seeds_row := HBoxContainer.new()
-	var seeds_label := Label.new()
-	seeds_label.text = "Сидов:"
-	seeds_row.add_child(seeds_label)
-	_seeds_spin = SpinBox.new()
-	_seeds_spin.min_value = 1
-	_seeds_spin.max_value = 200
-	_seeds_spin.value = 30
-	seeds_row.add_child(_seeds_spin)
-	var run := _button("Прогнать сиды", _on_preview_pressed)
-	run.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	seeds_row.add_child(run)
-	add_child(seeds_row)
-
+	# Отчёт «Проверить сцены»: расхождения слотов и разбор дверей. Прогон сидов
+	# сюда больше не пишет — он уехал в «Генератор мира» (см. шапку файла).
 	_report = RichTextLabel.new()
 	_report.bbcode_enabled = true
 	_report.selection_enabled = true
@@ -1319,108 +1311,8 @@ func _door_lines(preset: RS_RoomPreset) -> Array[String]:
 #endregion
 
 
-#region Предпросмотр выборки
-## Гоняет генератор по N сидам и показывает, что реально выпало и почему остальные
-## пресеты отсеялись. Выбор берём из настоящего прогона (room_scene_path), причины
-## отсева — из RS_RoomPresetLibrary.explain_selection: жёсткие фильтры
-## (вместимость/теги/специфичность) от rng не зависят, поэтому цифры честные.
-func _on_preview_pressed() -> void:
-	if _library == null:
-		_refresh()
-	if _library == null:
-		return
-	var seeds := int(_seeds_spin.value)
-	var picks := {}  # label -> сколько раз реально выбран
-	var reasons := {}  # label -> { причина: сколько раз }
-	var degrees := {}  # число рёбер -> сколько узлов
-	var nodes_total := 0
-
-	for s in seeds:
-		var graph := RS_LevelGraph.new().generate_run(s, _library)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = s
-		for node: RS_LevelNode in graph.nodes.values():
-			nodes_total += 1
-			var degree: int = node.connections.size()
-			degrees[degree] = degrees.get(degree, 0) + 1
-			var picked := _label_for_scene(node.room_scene_path)
-			picks[picked] = picks.get(picked, 0) + 1
-
-			var explained: Dictionary = _library.explain_selection(node, rng)["reasons"]
-			for label: String in explained:
-				# Победителя броска у explain свой (у него отдельный rng), поэтому
-				# «выбран» сливаем с «дошёл до весов»: таблица отсева говорит только
-				# о ЖЁСТКИХ фильтрах, а они от rng не зависят. Кто реально выпал —
-				# в таблице «Что выпало», она из настоящего прогона.
-				var reason: String = explained[label]
-				if reason == RS_RoomPresetLibrary.REASON_SELECTED:
-					reason = RS_RoomPresetLibrary.REASON_CANDIDATE
-				if not reasons.has(label):
-					reasons[label] = {}
-				reasons[label][reason] = reasons[label].get(reason, 0) + 1
-
-	_report.text = _preview_report(seeds, nodes_total, picks, reasons, degrees)
-	_set_status("Прогнано сидов: %d, узлов: %d" % [seeds, nodes_total])
-
-
-func _preview_report(
-	seeds: int, nodes_total: int, picks: Dictionary, reasons: Dictionary, degrees: Dictionary
-) -> String:
-	var out := "[b]Прогон %d сидов, %d узлов[/b]\n" % [seeds, nodes_total]
-
-	out += "\n[b]Что выпало[/b]\n[code]"
-	var picked_labels := picks.keys()
-	picked_labels.sort_custom(func(a, b): return picks[a] > picks[b])
-	for label: String in picked_labels:
-		out += "%-24s %5d  %4.1f%%\n" % [label, picks[label], 100.0 * picks[label] / maxi(nodes_total, 1)]
-	out += "[/code]"
-
-	out += "\n[b]Почему отсеивались[/b] (по узлам всех сидов)\n[code]"
-	var reason_labels := reasons.keys()
-	reason_labels.sort()
-	for label: String in reason_labels:
-		var parts: Array[String] = []
-		var by_reason: Dictionary = reasons[label]
-		var keys := by_reason.keys()
-		keys.sort()
-		for reason: String in keys:
-			parts.append("%s×%d" % [reason, by_reason[reason]])
-		out += "%-24s %s\n" % [label, ", ".join(parts)]
-	out += "[/code]"
-
-	out += "\n[b]Степени узлов (сколько рёбер = сколько дверей нужно)[/b]\n[code]"
-	var degree_keys := degrees.keys()
-	degree_keys.sort()
-	for degree: int in degree_keys:
-		out += "рёбер %d: %5d узлов\n" % [degree, degrees[degree]]
-	out += "[/code]"
-
-	out += (
-		"\n[i]Порядок отбора: вместимость (slot_count ≥ рёбер) → теги "
-		+ "(node.tags ⊆ preset.tags) → специфичность (минимум лишних тегов) → "
-		+ "тип помещения → вес. "
-		+ "Тип — ПРЕДПОЧТЕНИЕ, а не фильтр: если в группе нет ни одного пресета "
-		+ "загаданного узлу типа, группа идёт дальше целиком. "
-		+ "Вес применяется ПОСЛЕДНИМ: если конкуренты отсеялись раньше, правка веса "
-		+ "не изменит ничего — сначала смотри на «вместимость» и «теги». "
-		+ "«Дошёл до весов» — сколько раз пресет участвовал в броске; сколько раз он "
-		+ "его выиграл, смотри в «Что выпало».[/i]"
-	)
-	return out
-
-
-## Пресет по пути сцены — для колонки «что выпало». Сцены вне библиотеки (хаб,
-## placeholder) показываем по имени файла.
-func _label_for_scene(scene_path: String) -> String:
-	for preset: RS_RoomPreset in _library.presets:
-		if preset and preset.scene and preset.scene.resource_path == scene_path:
-			return _label_of(preset)
-	if _library.fallback and _library.fallback.scene \
-			and _library.fallback.scene.resource_path == scene_path:
-		return _label_of(_library.fallback) + " (fallback)"
-	return scene_path.get_file().get_basename() + " (вне библиотеки)"
-
-
+#region Общее
+## Читаемое имя пресета для таблицы, карточки и отчёта проверки.
 func _label_of(preset: RS_RoomPreset) -> String:
 	if preset.display_name != "":
 		return preset.display_name
