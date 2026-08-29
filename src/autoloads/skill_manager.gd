@@ -36,7 +36,32 @@ func get_rank(id: StringName) -> int:
 	return save.ranks.get(id, 0)
 
 
-## Может ли игрок прокачать navyk дальше прямо сейчас.
+## Выполнены ли ВСЕ требования навыка. Отделено от can_unlock, потому что у
+## двух вопросов разные адресаты: «дошёл ли игрок до этой ветки» (граф решает
+## этим, показывать ли карточку) и «может ли купить прямо сейчас» (кнопка).
+## Слепив их, дерево прятало бы доступный навык всякий раз, когда кончились очки.
+func requirements_met(id: StringName) -> bool:
+	var def := SKILL_TREE.get_definition(id)
+	if def == null:
+		return false
+	for req in def.requires:
+		if not _requirement_met(req):
+			return false
+	return true
+
+
+## Показывать ли навык в дереве. Правило карточки Skill Tree: видно изученное и
+## следующее доступное, остальное не существует — поэтому ветка, открывающаяся
+## по сумме рангов, и появляется целиком и сразу, без «серых заглушек».
+## Изученный навык виден всегда, даже если требования задним числом перестали
+## выполняться: отобранная у игрока на глазах карточка выглядела бы багом.
+func is_revealed(id: StringName) -> bool:
+	if get_rank(id) > 0:
+		return true
+	return requirements_met(id)
+
+
+## Может ли игрок прокачать навык дальше прямо сейчас.
 func can_unlock(id: StringName) -> bool:
 	var def := SKILL_TREE.get_definition(id)
 	if def == null:
@@ -51,11 +76,7 @@ func can_unlock(id: StringName) -> bool:
 	if save.skill_points < cost:
 		return false
 
-	for req in def.requires:
-		if not _requirement_met(req):
-			return false
-
-	return true
+	return requirements_met(id)
 
 
 ## Пытается прокачать навык на 1 ранг. Возвращает true при успехе.
