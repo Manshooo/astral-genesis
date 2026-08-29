@@ -72,6 +72,16 @@ func _run() -> void:
 	# прогон целиком — при том, что все её ассерты успевали пройти.
 	var manager = AudioManager.sound_manager()
 
+	# --- Громкость: значение по умолчанию ------------------------------
+	# Спрашиваем ДЕФОЛТ, а не текущие настройки: проверка идёт на машине
+	# разработчика, где в user:// лежит его собственный ползунок.
+	_check(
+		"по умолчанию громкость на единице",
+		is_equal_approx(SettingsManager.default_settings().master_volume, 1.0),
+		"дефолт %f — тихий старт игры выглядел бы как поломка звука" % (
+			SettingsManager.default_settings().master_volume),
+	)
+
 	# --- 3. Деградация без рантайма ------------------------------------
 	if not runtime_present:
 		var version: int = ClassDB.class_call_static("ByProdSoundManager", "get_runtime_version")
@@ -157,6 +167,41 @@ func _run() -> void:
 	)
 
 	instance.stop()
+
+	# --- 6. Громкость доезжает из настроек в мастер-шину ----------------
+	# Через SettingsManager, а не прямым вызовом: проверяется именно цепочка
+	# «ползунок → настройки → сигнал → движок», ради которой AudioManager на
+	# settings_changed и подписан. Правка идёт по КОПИИ и откатывается ниже —
+	# проверка не имеет права оставить игроку свою громкость.
+	var original := SettingsManager.settings
+	_check(
+		"громкость из настроек доезжает до движка",
+		_volume_reaches_engine(manager, 0.5, 0.5),
+		"мастер-шина осталась на прежнем значении — оборвалась цепочка настроек",
+	)
+	_check(
+		"громкость выше единицы прижимается к единице",
+		_volume_reaches_engine(manager, 2.0, 1.0),
+		"движку ушло значение вне диапазона 0..1",
+	)
+	_check(
+		"нулевая громкость доезжает как ноль, а не как «нет значения»",
+		_volume_reaches_engine(manager, 0.0, 0.0),
+		"ноль потерялся по дороге — тишина не включилась бы",
+	)
+	SettingsManager.settings = original
+
+
+## Ставит громкость через настройки и отвечает, увидел ли её движок.
+##
+## Присваивание идёт в СВОЙСТВО settings целиком: сеттер и есть то, что
+## применяет эффекты и шлёт settings_changed, — правка поля на месте прошла бы
+## мимо всей цепочки и проверяла бы пустоту.
+func _volume_reaches_engine(manager, requested: float, expected: float) -> bool:
+	var draft := SettingsManager.settings.copy()
+	draft.master_volume = requested
+	SettingsManager.settings = draft
+	return is_equal_approx(manager.get_global_volume(), expected)
 
 
 ## Отдельной функцией, чтобы падение было видно как провал ассерта, а не как
