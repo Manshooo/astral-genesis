@@ -34,7 +34,7 @@ var _fail := 0
 
 
 func _ready() -> void:
-	_run()
+	await _run()
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
@@ -52,6 +52,16 @@ func _run() -> void:
 
 	if not ClassDB.class_exists("ByProdSoundManager"):
 		return
+
+	# Собранный аддон лежит в git и потому может отстать от биндинга: подписка
+	# на паузу появилась в godot-byprod позже первой выкладки. Спрашивается
+	# здесь, до всякого рантайма, — это единственный ассерт про паузу, который
+	# проходит и в CI, где рантайма нет вовсе.
+	_check(
+		"биндинг умеет подписывать инстанс на паузу",
+		ClassDB.class_has_method("ByProdEventInstance", "set_auto_pause"),
+		"в addons/byprod/bin/ лежит расширение старее godot-byprod@1de1fca — обновить",
+	)
 
 	# --- 2. Нативный рантайм ------------------------------------------
 	# Его отсутствие — не провал: он не в репозитории. Провал — если из-за
@@ -191,6 +201,43 @@ func _run() -> void:
 	)
 	SettingsManager.settings = original
 
+	# --- 7. Пауза игры останавливает звук ------------------------------
+	# Инстанс берётся у AudioManager, а не у описания напрямую: подписка на
+	# уровень тика ставится именно там, и проверка мимо него мерила бы путь,
+	# которым механика звук не заводит.
+	#
+	# Ломается это тихо во все три стороны сразу: не подписанный инстанс,
+	# автолоад, чей `_process` спит на паузе, и уровень тика, не вернувшийся к
+	# FULL, выглядят одинаково — «звук ведёт себя не так», без единой ошибки в
+	# логе. Поэтому проверяется наблюдаемое состояние голоса, а не вызовы.
+	var paused_state := ClassDB.class_get_integer_constant("ByProdEventInstance", "STATE_PAUSED")
+	var loop = AudioManager.create_event_instance(DEMO_EVENT)
+	_check("AudioManager отдаёт инстанс события", loop != null, "create_event_instance() вернул null")
+	if loop == null:
+		return
+
+	loop.start()
+	manager.update()
+
+	get_tree().paused = true
+	var stopped_on_pause: bool = await _reaches_state(loop, paused_state)
+	_check(
+		"на паузе игры звук замолкает",
+		stopped_on_pause,
+		"состояние %d вместо %d — инстанс не подписан на уровень тика либо AudioManager спит на паузе" % [
+			loop.get_state(), paused_state],
+	)
+
+	get_tree().paused = false
+	var resumed: bool = await _reaches_state(loop, playing)
+	_check(
+		"после паузы звук едет дальше с того же места",
+		resumed,
+		"состояние %d вместо %d — уровень тика не вернулся к FULL" % [loop.get_state(), playing],
+	)
+
+	loop.stop()
+
 
 ## Ставит громкость через настройки и отвечает, увидел ли её движок.
 ##
@@ -202,6 +249,22 @@ func _volume_reaches_engine(manager, requested: float, expected: float) -> bool:
 	draft.master_volume = requested
 	SettingsManager.settings = draft
 	return is_equal_approx(manager.get_global_volume(), expected)
+
+
+## Ждёт, пока голос не придёт в состояние `state`, но не дольше нескольких
+## кадров.
+##
+## Кадрами, а не одним ожиданием: уровень тика доезжает до рантайма из
+## `AudioManager._process`, а `process_frame` летит ДО `_process` узлов — после
+## одного `await` автолоад ещё не тикал ни разу. Запас сверх этого — на то, что
+## рантайм мешает в своём потоке и применяет команду не обязательно в тот же
+## вызов `update()`.
+func _reaches_state(instance, state: int, frames: int = 8) -> bool:
+	for _i in frames:
+		await get_tree().process_frame
+		if instance.get_state() == state:
+			return true
+	return false
 
 
 ## Отдельной функцией, чтобы падение было видно как провал ассерта, а не как
