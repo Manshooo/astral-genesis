@@ -18,6 +18,13 @@ extends Resource
 @export_group("Interaction")
 @export var interact_range: float = 3.0        ## Дальность луча взаимодействия
 
+@export_group("Audio")
+## Общая громкость: ЛИНЕЙНЫЙ множитель 0..1, не децибелы. byProd масштабирует им
+## всё поверх собственной громкости событий, поэтому пересчёт ползунка через
+## linear_to_db — то, чего потребовала бы шина Godot, — здесь не нужен и был бы
+## ошибкой: он сделал бы середину ползунка почти тишиной.
+@export_range(0.0, 1.0) var master_volume: float = 1.0
+
 @export_group("Graphics")
 @export var max_fps: int = 60
 

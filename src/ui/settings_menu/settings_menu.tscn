@@ -128,6 +128,35 @@ layout_mode = 2
 text = "60"
 horizontal_alignment = 2
 
+[node name="Volume" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110080]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Volume" unique_id=11110081]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Громкость"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Volume" unique_id=11110082]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+rounded = true
+tick_count = 5
+ticks_on_borders = true
+ticks_position = 3
+script = ExtResource("3_kktd5")
+setting_key = "master_volume"
+display_multiplier = 100.0
+display_format = "%d%%"
+value_label_path = NodePath("../Value")
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Volume" unique_id=11110083]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
 [node name="ControlsTitle" type="Label" parent="Panel/MarginContainer/VBox" unique_id=11110070]
 layout_mode = 2
 text = "Управление"

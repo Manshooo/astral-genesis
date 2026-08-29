@@ -47,6 +47,11 @@ var _missing_reported: Dictionary = {}
 
 
 func _ready() -> void:
+	# Громкость приезжает из настроек, а не наоборот: SettingsManager стоит в
+	# project.godot ВЫШЕ этого автолоада, поэтому к моменту _ready его settings
+	# уже загружены и подписка ничего не пропустит. Обратной зависимости нет
+	# намеренно — SettingsManager не должен знать про byProd.
+	SettingsManager.settings_changed.connect(_on_settings_changed)
 	_start()
 
 
@@ -64,6 +69,11 @@ func _start() -> void:
 	# Ставится до загрузки проекта: банки рантайм просит сам, и без каталога он
 	# сообщит «нет такого банка» вместо того, чтобы молча остаться без волн.
 	_manager.set_bank_directory(BANK_DIRECTORY)
+
+	# До загрузки проекта: громкость — свойство менеджера, а не проекта, и
+	# применить её надо даже когда проекта нет, иначе первый же поворот
+	# ползунка после неудачной загрузки застал бы движок на единице.
+	_apply_volume()
 
 	if not FileAccess.file_exists(PROJECT_PATH):
 		push_warning("byProd: нет собранного проекта %s — игра идёт без звука." % PROJECT_PATH)
@@ -89,6 +99,28 @@ func _process(_delta: float) -> void:
 		_manager.set_listener_transform(t.origin, -t.basis.z, t.basis.y)
 
 	_manager.update()
+
+
+func _on_settings_changed(_settings: RS_Settings) -> void:
+	_apply_volume()
+
+
+## Общая громкость из настроек — в мастер-шину byProd.
+##
+## Значение уходит КАК ЕСТЬ: громкость byProd — линейный множитель (1.0 —
+## «как записано»), а не децибелы, поэтому linear_to_db, обязательный для шин
+## Godot, здесь только испортил бы шкалу. Мастер-шина и глобальная громкость —
+## одно и то же число, отсюда set_global_volume, а не поиск шины по пути.
+##
+## Громкостей по шинам («музыка», «эффекты») пока нет и завести их из кода
+## нельзя: шины объявляет ПРОЕКТ byProd, а в пробном (assets/sound/demo) их
+## ноль — get_group_bus вернул бы null, и ползунок оказался бы мёртвым. Когда
+## настоящий проект их объявит, добавятся поля в RS_Settings и вызовы
+## get_group_bus(...).set_volume() рядом с этим.
+func _apply_volume() -> void:
+	if _manager == null:
+		return
+	_manager.set_global_volume(clampf(SettingsManager.settings.master_volume, 0.0, 1.0))
 
 
 ## Менеджер byProd этого процесса, или null, если рантайма нет.
