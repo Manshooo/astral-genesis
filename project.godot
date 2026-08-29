@@ -28,6 +28,7 @@ SkillManager="*uid://bwpci4sr0qv4f"
 UIManager="*uid://d13q83ngp0nm4"
 WorldSave="*res://src/autoloads/world_save.gd"
 RunManager="*uid://c6536kxev8382"
+AudioManager="*res://src/autoloads/audio_manager.gd"
 ECS="*uid://dfqwl5njvdnmq"
 
 [display]

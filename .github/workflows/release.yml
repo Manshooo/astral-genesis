@@ -109,6 +109,24 @@ jobs:
           lfs: true
           submodules: recursive
 
+      # То же, что в build.yml: рантайм скачивается прямо с byprod.io (не
+      # хранится копией нигде между прогонами — так требует лицензия), а
+      # byprod.gdextension объявляет его зависимостью — без файла Godot обрывает
+      # экспорт. Здесь шаг тем более обязателен: это ТА САМАЯ сборка, которая
+      # уезжает игрокам, и она обязана быть со звуком.
+      - name: Скачать рантайм byProd
+        shell: bash
+        env:
+          BYPROD_SDK_URL: https://byprod.io/packages/byProdSDK0.5.2.zip
+          BYPROD_SDK_SHA256: 00ab7d4616e7bec209c51a5ce302bd6a839f0dbea35146cdbe44b41c93e40766
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BYPROD_SDK_URL" -e "https://byprod.io/" -o /tmp/byprod-sdk.zip
+          echo "${BYPROD_SDK_SHA256}  /tmp/byprod-sdk.zip" | sha256sum -c -
+          unzip -jo /tmp/byprod-sdk.zip "*/bin/byProd.dll" "*/bin/libbyProd.so" -d addons/byprod/bin/
+          rm /tmp/byprod-sdk.zip
+          ls -l addons/byprod/bin/
+
       - name: Собрать Windows
         uses: ./.github/actions/godot-export
         with:

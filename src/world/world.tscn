@@ -27,6 +27,7 @@
 [ext_resource type="Script" uid="uid://bmffrjcgeesnb" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
 [ext_resource type="Script" uid="uid://dvcwemjjoh26w" path="res://src/observers/o_run_ended.gd" id="17_runend"]
 [ext_resource type="Script" uid="uid://cr8trq4a1wwxw" path="res://src/systems/gameplay/s_screen_message.gd" id="18_screenmsg"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_footsteps.gd" id="19_footsteps"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -78,6 +79,10 @@ group = &"gameplay"
 
 [node name="S_ScreenMessage" type="Node" parent="World/Systems/gameplay" unique_id=1979994348]
 script = ExtResource("18_screenmsg")
+group = &"gameplay"
+
+[node name="S_Footsteps" type="Node" parent="World/Systems/gameplay" unique_id=1979994349]
+script = ExtResource("19_footsteps")
 group = &"gameplay"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

@@ -38,3 +38,12 @@
 *.ogg -text
 # .theme is a binary Godot resource (ResourceFormatBinary), not text like .tres.
 *.theme -text
+# Собранный проект byProd (.byprod) и его банки (.bybank) — бинарные:
+# нормализация переводов строк портит их так же незаметно, как wav.
+*.byprod -text
+*.bybank -text
+
+# Бинарники GDExtension (addons/byprod) — по той же причине, что png/wav выше:
+# `* text=auto` не должен трогать их переводы строк.
+*.dll -text
+*.so -text
