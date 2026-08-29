@@ -133,7 +133,11 @@ func code_display_name(code: String) -> String:
 
 ## Кодирует событие ввода в короткую строку для сейва: "key:70", "mouse:1".
 ## "" — событие непривязываемого типа (движение мыши, джойстик и т.п.).
-static func event_to_code(event: InputEvent) -> String:
+##
+## Не static, хотя от состояния не зависит: class_name у скрипта нет (его имя
+## занято автолоадом), поэтому единственный способ дозваться до кодека — через
+## инстанс автолоада, а статический вызов на инстансе парсер считает ошибкой.
+func event_to_code(event: InputEvent) -> String:
 	if event is InputEventKey:
 		# physical_keycode: привязка к ФИЗИЧЕСКОЙ клавише, чтобы WASD не разъезжались
 		# на не-QWERTY раскладках (так же заданы действия в project.godot).
@@ -146,7 +150,7 @@ static func event_to_code(event: InputEvent) -> String:
 
 
 ## Обратная операция к event_to_code. null, если строка не разбирается.
-static func code_to_event(code: String) -> InputEvent:
+func code_to_event(code: String) -> InputEvent:
 	var parts := code.split(":")
 	if parts.size() != 2 or not parts[1].is_valid_int():
 		return null

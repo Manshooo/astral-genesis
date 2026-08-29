@@ -68,14 +68,14 @@ func _process(_delta: float) -> void:
 	if player == null:
 		return
 
-	var position := player.global_position
+	var player_position := player.global_position
 	var forward := _forward_of(player)
-	var moved := position.distance_squared_to(_last_position) >= REDRAW_MOVE * REDRAW_MOVE
+	var moved := player_position.distance_squared_to(_last_position) >= REDRAW_MOVE * REDRAW_MOVE
 	var turned := forward.dot(_last_forward) <= 1.0 - REDRAW_TURN
 	if not moved and not turned:
 		return
 
-	_last_position = position
+	_last_position = player_position
 	_last_forward = forward
 	queue_redraw()
 
