@@ -22,15 +22,17 @@
 ## что без перевода в FIELD_LABELS — сырое имя лучше молчаливо потерянного
 ## поля. scene и tags — не в общем цикле: первым распоряжается сам Wizard
 ## (он и есть источник scene), у второго своя вёрстка (облако чекбоксов, тот
-## же приём, что у вкладки «Генератор» — presets.gd, — опечатка в
+## же приём, что у вкладки «Редактор пресетов» — presets.gd, — опечатка в
 ## существующем теге тогда невозможна структурно).
 @tool
 extends VBoxContainer
 
 const LIBRARY_PATH := "res://data/room_preset_library.tres"
 
-## Поля scene и tags — своя вёрстка ниже, в общий рефлексивный цикл не идут.
-const CUSTOM_FIELDS := ["scene", "tags"]
+## Поля scene, tags и room_type — своя вёрстка ниже, в общий рефлексивный цикл
+## не идут. Тип — выпадающий список: он у комнаты один и берётся из каталога,
+## а рефлексивная форма нарисовала бы StringName нередактируемой строкой.
+const CUSTOM_FIELDS := ["scene", "tags", "room_type"]
 const FIELD_LABELS := {
 	"display_name": "Название",
 	"slot_count": "Слоты",
@@ -46,8 +48,17 @@ var _form_box: VBoxContainer
 var _field_controls: Dictionary = {}  # имя @export-поля -> Control формы
 
 var _known_tags: Array[StringName] = []
+## Словарь тегов из библиотеки. В доке описание показывается ТОЛЬКО тултипом:
+## переносящаяся подпись под каждым чипом раздула бы минимальную ширину панели
+## (грабля №3 в [[Редакторские инструменты]] — она про этот док буквально).
+## Читать описания глазами — во вкладке «Редактор пресетов», там для этого карточка.
+var _tag_catalog: RS_RoomTagCatalog
 var _tag_flow: HFlowContainer
 var _new_tag_edit: LineEdit
+
+## Ключи в порядке пунктов _type_option: [&""] + каталог.
+var _type_ids: Array[StringName] = []
+var _type_option: OptionButton
 
 var _resource_status: Label
 var _save_btn: Button
@@ -77,6 +88,19 @@ func _build_ui() -> void:
 
 	_form_box = VBoxContainer.new()
 	add_child(_form_box)
+
+	var type_row := HBoxContainer.new()
+	var type_label := _label("Тип:")
+	type_label.custom_minimum_size = Vector2(64, 0)
+	type_row.add_child(type_label)
+	_type_option = OptionButton.new()
+	_type_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_type_option.tooltip_text = (
+		"Что это за помещение. Отдельная ось от тегов: тегами узел фильтруется"
+		+ " жёстко, типом — только предпочитается."
+	)
+	type_row.add_child(_type_option)
+	add_child(type_row)
 
 	add_child(_label("Теги:"))
 	_tag_flow = HFlowContainer.new()
@@ -169,6 +193,7 @@ func refresh_for_scene(scene_root: Node) -> void:
 		_resource_status.text = "Будет создан: " + _preset_path.get_file()
 
 	_collect_known_tags()
+	_rebuild_type_options()
 	_build_form()
 	_set_active(true)
 
@@ -183,6 +208,7 @@ func refresh_for_scene(scene_root: Node) -> void:
 func _set_active(active: bool) -> void:
 	_form_box.visible = active
 	_tag_flow.visible = active
+	_type_option.disabled = not active
 	_save_btn.disabled = not active
 	# _scene_path не сбрасывается в false-ветках refresh_for_scene (там кнопка
 	# и так выключена через not active) — is_hub смотрим только пока active,
@@ -263,10 +289,40 @@ func _add_field_row(prop: Dictionary) -> void:
 	_field_controls[prop.name] = control
 
 
+## Список типов помещений из каталога библиотеки. Тип, который у пресета уже
+## стоит, но каталогу неизвестен, дописывается отдельным пунктом — иначе
+## сохранение молча стёрло бы авторскую правку, подставив первый пункт.
+func _rebuild_type_options() -> void:
+	var library := ResourceLoader.load(LIBRARY_PATH) as RS_RoomPresetLibrary
+	var catalog := library.type_catalog if library else null
+
+	_type_ids = [&""]
+	if catalog:
+		_type_ids.append_array(catalog.ids())
+	if _preset and _preset.room_type != &"" and not _type_ids.has(_preset.room_type):
+		_type_ids.append(_preset.room_type)
+
+	_type_option.clear()
+	for id: StringName in _type_ids:
+		var label := catalog.label_of(id) if catalog else ("—" if id == &"" else String(id))
+		if id != &"" and (catalog == null or catalog.by_id(id) == null):
+			label += " (нет в каталоге)"
+		_type_option.add_item(label)
+
+	var index := _type_ids.find(_preset.room_type) if _preset else 0
+	_type_option.select(index if index >= 0 else 0)
+
+
 ## Переносит значения из формы в _preset. Зовётся перед сохранением, а не
 ## держит _preset синхронизированным на каждое нажатие клавиши — дешевле и
 ## ничего не теряет, потому что сохраняем мы только по кнопке.
 func _apply_form_to_preset() -> void:
+	# get_selected(), а не get_selected_id(): id совпадает с индексом только пока
+	# его никто не задал явно, а _type_ids индексируется именно позицией пункта.
+	var selected := _type_option.get_selected()
+	_preset.room_type = (
+		_type_ids[selected] if selected >= 0 and selected < _type_ids.size() else &""
+	)
 	for field_name: String in _field_controls:
 		var control: Control = _field_controls[field_name]
 		if control is LineEdit:
@@ -281,6 +337,7 @@ func _apply_form_to_preset() -> void:
 ## код: вкладка и док самодостаточны (см. [[Единый редактор геймдизайна]]).
 func _collect_known_tags() -> void:
 	var library := ResourceLoader.load(LIBRARY_PATH) as RS_RoomPresetLibrary
+	_tag_catalog = library.tag_catalog if library else null
 	var seen := {}
 	if library:
 		for p: RS_RoomPreset in library.presets:
@@ -291,6 +348,11 @@ func _collect_known_tags() -> void:
 		if library.fallback:
 			for tag: StringName in library.fallback.tags:
 				seen[tag] = true
+	# Теги из словаря — тоже: заведённый, но ещё никем не носимый тег иначе не
+	# показался бы в облаке, и завести его было бы негде, кроме как опечаткой.
+	if _tag_catalog:
+		for id: StringName in _tag_catalog.ids():
+			seen[id] = true
 
 	var result: Array[StringName] = []
 	for tag: StringName in seen.keys():
@@ -308,8 +370,20 @@ func _rebuild_tag_chips() -> void:
 		var chip := CheckBox.new()
 		chip.text = String(tag)
 		chip.button_pressed = _preset.tags.has(tag)
+		chip.tooltip_text = _tag_tooltip(tag)
 		chip.toggled.connect(_on_tag_chip_toggled.bind(tag))
 		_tag_flow.add_child(chip)
+
+
+## Описание тега из словаря — или прямая просьба его завести: тег без описания
+## неотличим от опечатки, и молчать об этом хуже, чем показать пустой тултип.
+func _tag_tooltip(tag: StringName) -> String:
+	if _tag_catalog == null:
+		return ""
+	var description := _tag_catalog.description_of(tag)
+	if description != "":
+		return description
+	return "Нет описания. Заведи его во вкладке «Геймдизайн» → «Редактор пресетов» → словарь тегов."
 
 
 func _on_tag_chip_toggled(pressed: bool, tag: StringName) -> void:
@@ -328,9 +402,23 @@ func _on_add_tag_pressed() -> void:
 	if not _known_tags.has(tag):
 		_known_tags.append(tag)
 		_known_tags.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+	_register_tag(tag)
 	if not _preset.tags.has(tag):
 		_preset.tags.append(tag)
 	_rebuild_tag_chips()
+
+
+## Новый тег заводится в словаре СРАЗУ, а не когда для него напишут описание:
+## инвариант «каждый тег пресетов есть в словаре» держит dev/room_tags_check и
+## только на нём и работает отличие настоящего тега от опечатки. Описание
+## пишется во вкладке «Редактор пресетов» — здесь для него нет места.
+func _register_tag(tag: StringName) -> void:
+	if _tag_catalog == null or _tag_catalog.has_id(tag):
+		return
+	_tag_catalog.add_id(tag)
+	var path := _tag_catalog.resource_path
+	if path != "":
+		ResourceSaver.save(_tag_catalog, path)
 
 
 ## Тот же приём, что в presets.gd — теги ASCII-идентификаторов, кириллица не

@@ -35,8 +35,11 @@ func _ready() -> void:
 	var total_sealed_sum := 0
 	var nodes_with_sealed_sum := 0
 	var total_nodes_sum := 0
+	var type_totals := {}
 	for s in SEED_COUNT:
 		var res := _verify_seed(s, library)
+		for key: StringName in res["types"]:
+			type_totals[key] = type_totals.get(key, 0) + res["types"][key]
 		worst_graph = max(worst_graph, res["unreachable_graph"])
 		worst_doors = max(worst_doors, res["unreachable_doors"])
 		worst_multi_vertical = max(worst_multi_vertical, res["multi_vertical"])
@@ -60,8 +63,34 @@ func _ready() -> void:
 			]
 		)
 	)
+	_report_room_types(library, type_totals, total_nodes_sum)
 	if library == null:
 		print("ПОДСКАЗКА: room_preset_library не назначена в data/game_config.tres — всё на placeholder.")
+
+
+## Распределение типов помещений по всем прогонам. Каталог задаёт, что МОЖЕТ
+## выпасть, но встанет тип только там, где под него есть пресет: расхождение
+## между «каталог знает 11 типов» и «в графе встречается один» — это не поломка,
+## а мера того, сколько комнат ещё не нарисовано.
+func _report_room_types(library: RS_RoomPresetLibrary, totals: Dictionary, total_nodes: int) -> void:
+	if total_nodes <= 0:
+		return
+	var catalog := library.type_catalog if library else null
+
+	var parts: Array[String] = []
+	var keys := totals.keys()
+	keys.sort_custom(func(a, b) -> bool: return totals[a] > totals[b])
+	for key: StringName in keys:
+		var label := catalog.label_of(key) if catalog else ("—" if key == &"" else String(key))
+		parts.append("%s=%d" % [label, totals[key]])
+	print(
+		"--- Типы помещений (%s, %d встретилось): %s ---"
+		% [
+			("%d в каталоге" % catalog.types.size()) if catalog else "каталог не назначен",
+			maxi(totals.size() - 1, 0),
+			", ".join(parts),
+		]
+	)
 
 
 func _report_library(library: RS_RoomPresetLibrary) -> void:
@@ -112,7 +141,22 @@ func _verify_seed(seed_value: int, library: RS_RoomPresetLibrary) -> Dictionary:
 		"total_sealed": sealed["total_sealed"],
 		"nodes_with_sealed": sealed["nodes_with_sealed"],
 		"total_nodes": total,
+		"types": _room_type_counts(graph),
 	}
+
+
+## Сколько комнат каждого типа реально встало в графе — метрика, не проверка.
+## Считается по ФАКТИЧЕСКОМУ room_type узла (после подбора он равен типу
+## вставшего пресета), а не по загаданному: интересно, чем комплекс населён на
+## самом деле, а не что генератор хотел. Пока пресетов с типами почти нет,
+## строка честно показывает, что почти всё безликое, — это и есть текущее
+## состояние контента.
+func _room_type_counts(graph: RS_LevelGraph) -> Dictionary:
+	var counts := {}
+	for node in graph.nodes.values():
+		var key: StringName = node.room_type
+		counts[key] = counts.get(key, 0) + 1
+	return counts
 
 
 ## Узлы с БОЛЬШЕ ЧЕМ ОДНИМ вертикальным (меняющим depth) ребром. В комнате

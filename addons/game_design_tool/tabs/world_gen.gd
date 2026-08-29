@@ -14,6 +14,12 @@
 ## Пересборка — только по явной кнопке. Генерация инстанцирует реальные сцены
 ## комнат (см. GDT_RoomsOverlay), автоперегенерация на каждое изменение сида
 ## пересобирала бы слой на каждый тик спинбокса.
+##
+## Здесь же живёт «Прогон сидов» — статистика подбора по N сидам, приехавшая из
+## вкладки пресетов. Оба инструмента отвечают на один вопрос «что генератор
+## выдаёт», только с разного расстояния: превью — про ОДИН слой одного сида,
+## прогон — про выборку из многих; разводить их по вкладкам значило заставлять
+## переключаться между вопросом и его же ответом в цифрах.
 @tool
 extends VBoxContainer
 
@@ -33,14 +39,24 @@ var _seed_spin: SpinBox
 var _depth_option: OptionButton
 var _visibility_menu: MenuButton
 var _status: Label
+
+## Прогон сидов: панель внизу, по умолчанию свёрнута. Живёт здесь, а не во
+## вкладке пресетов, где была раньше: «что реально выпадает в забеге» — вопрос
+## про мир, а не про отдельный пресет, и смотреть ответ правильно там, где этот
+## мир видно. Свёрнута по умолчанию, потому что 3D-превью — главное содержимое
+## вкладки, а отчёт нужен раз в несколько правок.
+var _seeds_panel: VBoxContainer
+var _seeds_toggle: Button
+var _seeds_spin: SpinBox
+var _seeds_report: RichTextLabel
 var _host: ViewportHost
 var _info_label: RichTextLabel
 var _open_preset_btn: Button
 var _open_scene_btn: Button
 
 ## Инлайн-редактор пресета выделенного узла (v3-стретч) — прямо здесь, без
-## похода на вкладку «Генератор» или в инспектор. Виден, только когда у узла
-## есть сцена, для которой в библиотеке нашёлся пресет (_preset_for).
+## похода на вкладку «Редактор пресетов» или в инспектор. Виден, только когда
+## у узла есть сцена, для которой в библиотеке нашёлся пресет (_preset_for).
 var _preset_section: VBoxContainer
 var _preset_label: Label
 var _slot_spin: SpinBox
@@ -48,6 +64,10 @@ var _weight_spin: SpinBox
 var _tag_flow: HFlowContainer
 var _new_tag_edit: LineEdit
 var _known_tags: Array[StringName] = []
+## Словарь тегов из библиотеки. Здесь, как и в доке Room Wizard, описание живёт
+## тултипом: секция узла — приложение к 3D-превью, и отдавать её половину под
+## текст описаний неправильно. Читать их глазами — во вкладке «Редактор пресетов».
+var _tag_catalog: RS_RoomTagCatalog
 ## Пресет, который сейчас редактируется секцией выше — держим отдельно от
 ## _selected_node_data().preset, чтобы обработчики полей не искали его заново
 ## на каждое изменение спинбокса.
@@ -63,9 +83,9 @@ func _init() -> void:
 	_build_ui()
 
 
-## Первую генерацию откладываем до первого показа вкладки — как и «Генератор»,
-## строить слой (реальные сцены комнат) ради вкладки, которую могут не открыть
-## за сессию, незачем.
+## Первую генерацию откладываем до первого показа вкладки — как и «Редактор
+## пресетов»: строить слой (реальные сцены комнат) ради вкладки, которую могут
+## не открыть за сессию, незачем.
 func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 	_on_visibility_changed()
@@ -85,10 +105,19 @@ func _build_ui() -> void:
 
 	add_child(_build_toolbar())
 
+	# Вертикальный сплит: превью сверху, отчёт прогона снизу. Панель отчёта
+	# скрыта — SplitContainer со скрытым вторым ребёнком отдаёт всю высоту
+	# первому, поэтому свёрнутый прогон не отъедает у вьюпорта ничего.
+	var rows := VSplitContainer.new()
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(rows)
+
 	var split := HSplitContainer.new()
 	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	add_child(split)
+	rows.add_child(split)
+	rows.add_child(_build_seeds_panel())
 
 	_host = ViewportHost.new()
 	_host.node_picked.connect(_on_node_picked)
@@ -139,7 +168,52 @@ func _build_toolbar() -> Control:
 	# _orbit_pivot_hint). Явная кнопка предсказуема и не привязана к жесту.
 	row.add_child(_button("Сбросить вид", _on_reset_view_pressed))
 
+	row.add_child(VSeparator.new())
+	_seeds_toggle = Button.new()
+	_seeds_toggle.text = "Прогон сидов"
+	_seeds_toggle.toggle_mode = true
+	_seeds_toggle.tooltip_text = (
+		"Статистика подбора по N сидам: что выпало и почему остальные пресеты отсеялись"
+	)
+	_seeds_toggle.toggled.connect(_on_seeds_toggled)
+	row.add_child(_seeds_toggle)
+
 	return row
+
+
+## Панель прогона. Отдельный сид у неё не спрашивается намеренно: прогон гоняет
+## сиды 0..N-1 и отвечает на статистический вопрос «что вообще выпадает», а сид
+## в тулбаре — про КОНКРЕТНЫЙ слой во вьюпорте. Связать их одним полем значило
+## бы смешать разбор одного забега с выборкой по многим.
+func _build_seeds_panel() -> Control:
+	_seeds_panel = VBoxContainer.new()
+	_seeds_panel.visible = false
+	_seeds_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var row := HBoxContainer.new()
+	row.add_child(_label("Сидов:"))
+	_seeds_spin = SpinBox.new()
+	_seeds_spin.min_value = 1
+	_seeds_spin.max_value = 200
+	_seeds_spin.value = 30
+	row.add_child(_seeds_spin)
+	var run := _button("Прогнать", _on_preview_pressed)
+	run.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(run)
+	_seeds_panel.add_child(row)
+
+	_seeds_report = RichTextLabel.new()
+	_seeds_report.bbcode_enabled = true
+	_seeds_report.selection_enabled = true
+	_seeds_report.custom_minimum_size = Vector2(0, 140)
+	_seeds_report.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_seeds_panel.add_child(_seeds_report)
+	return _seeds_panel
+
+
+func _on_seeds_toggled(pressed: bool) -> void:
+	_seeds_panel.visible = pressed
+	_set_meta("seeds_panel", pressed)
 
 
 func _build_side_panel() -> Control:
@@ -169,7 +243,7 @@ func _build_side_panel() -> Control:
 
 ## Слоты/вес/теги ПРЕСЕТА выделенного узла — редактируются прямо здесь, тем же
 ## приёмом (чекбоксы облака тегов, сохранение на каждое изменение), что и
-## вкладка «Генератор» (presets.gd) и Room Wizard (dock/room_wizard.gd). Не то
+## вкладка «Редактор пресетов» (presets.gd) и Room Wizard (room_wizard.gd). Не то
 ## же самое, что «Теги узла» в _info_label выше: node_data.tags — структурные
 ## требования УЗЛА графа (их проставляет генератор), preset.tags — способности
 ## РЕСУРСА комнаты; путать их нельзя, поэтому секции визуально разделены.
@@ -297,6 +371,8 @@ func _on_rebuild_pressed() -> void:
 ## прежде чем restore_camera успеет её поставить.
 func _restore_state() -> void:
 	_seed_spin.value = _get_meta("seed", 0)
+	# button_pressed сам зовёт _on_seeds_toggled, панель встаёт вместе с кнопкой.
+	_seeds_toggle.button_pressed = _get_meta("seeds_panel", false)
 
 	var depth: int = _get_meta("depth", RS_LevelGraph.HOME_DEPTH)
 	var depth_idx := _depth_option.get_item_index(depth)
@@ -432,6 +508,10 @@ func _node_report(node_data: RS_LevelNode) -> String:
 	lines.append("Рёбер: %d" % node_data.connections.size())
 	if not node_data.tags.is_empty():
 		lines.append("Теги: " + ", ".join(node_data.tags))
+	# Отдельной строкой от тегов — намеренно: это ДРУГАЯ ось подбора, и слитый
+	# с тегами тип ровно тем и путал бы, чего разведение осей избегает.
+	# После генерации здесь тип фактически вставшей комнаты, а не загаданный.
+	lines.append("Тип: " + _room_type_label(node_data.room_type))
 	lines.append("Сцена: " + (node_data.room_scene_path if node_data.room_scene_path != "" else "—"))
 
 	if not node_data.connections.is_empty():
@@ -453,6 +533,13 @@ func _node_report(node_data: RS_LevelNode) -> String:
 ## RS_RoomPreset (hub.tres), просто вне пула автоподбора (см.
 ## RS_RoomPresetLibrary.hub) — секция инлайн-редактора должна узнавать его
 ## так же, как любой другой узел с пресетом, не только узлы из .presets.
+func _room_type_label(id: StringName) -> String:
+	var catalog := _library.type_catalog if _library else null
+	if catalog:
+		return catalog.label_of(id)
+	return "—" if id == &"" else String(id)
+
+
 func _preset_for(node_data: RS_LevelNode) -> RS_RoomPreset:
 	if _library == null or node_data.room_scene_path == "":
 		return null
@@ -532,6 +619,7 @@ func _on_weight_changed(value: float) -> void:
 ## копия, не общий код: инструменты этого редактора самодостаточны (см.
 ## [[Единый редактор геймдизайна]]).
 func _collect_known_tags() -> void:
+	_tag_catalog = _library.tag_catalog if _library else null
 	var seen := {}
 	if _library:
 		for p: RS_RoomPreset in _library.presets:
@@ -542,6 +630,11 @@ func _collect_known_tags() -> void:
 		if _library.fallback:
 			for tag: StringName in _library.fallback.tags:
 				seen[tag] = true
+	# Теги словаря — тоже: заведённый, но ещё никем не носимый тег иначе не
+	# показался бы в облаке (см. presets.gd._collect_known_tags).
+	if _tag_catalog:
+		for id: StringName in _tag_catalog.ids():
+			seen[id] = true
 
 	var result: Array[StringName] = []
 	for tag: StringName in seen.keys():
@@ -559,8 +652,20 @@ func _rebuild_tag_chips() -> void:
 		var chip := CheckBox.new()
 		chip.text = String(tag)
 		chip.button_pressed = _editing_preset.tags.has(tag)
+		chip.tooltip_text = _tag_tooltip(tag)
 		chip.toggled.connect(_on_tag_chip_toggled.bind(tag))
 		_tag_flow.add_child(chip)
+
+
+## Описание тега из словаря — или прямая просьба его завести: тег без описания
+## неотличим от опечатки (см. presets.gd, там же он и заводится).
+func _tag_tooltip(tag: StringName) -> String:
+	if _tag_catalog == null:
+		return ""
+	var description := _tag_catalog.description_of(tag)
+	if description != "":
+		return description
+	return "Нет описания. Заведи его во вкладке «Редактор пресетов» → словарь тегов."
 
 
 func _on_tag_chip_toggled(pressed: bool, tag: StringName) -> void:
@@ -582,10 +687,23 @@ func _on_add_tag_pressed() -> void:
 	if not _known_tags.has(tag):
 		_known_tags.append(tag)
 		_known_tags.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+	_register_tag(tag)
 	if not _editing_preset.tags.has(tag):
 		_editing_preset.tags.append(tag)
 	_rebuild_tag_chips()
 	_save_editing_preset()
+
+
+## Новый тег заводится в словаре СРАЗУ — инвариант «каждый тег пресетов есть в
+## словаре» держит dev/room_tags_check, и только на нём работает отличие
+## настоящего тега от опечатки. Описание пишется во вкладке «Редактор пресетов».
+func _register_tag(tag: StringName) -> void:
+	if _tag_catalog == null or _tag_catalog.has_id(tag):
+		return
+	_tag_catalog.add_id(tag)
+	var path := _tag_catalog.resource_path
+	if path != "":
+		ResourceSaver.save(_tag_catalog, path)
 
 
 ## Тот же приём, что в presets.gd/room_wizard.gd — теги ASCII-идентификаторов,
@@ -616,4 +734,112 @@ func _label_of(preset: RS_RoomPreset) -> String:
 	if preset.display_name != "":
 		return preset.display_name
 	return preset.resource_path.get_file().get_basename()
+#endregion
+
+
+#region Прогон сидов
+## Гоняет генератор по N сидам и показывает, что реально выпало и почему остальные
+## пресеты отсеялись. Выбор берём из настоящего прогона (room_scene_path), причины
+## отсева — из RS_RoomPresetLibrary.explain_selection: жёсткие фильтры
+## (вместимость/теги/специфичность) от rng не зависят, поэтому цифры честные.
+##
+## Прогон НЕ трогает ни _graph, ни вьюпорт: он строит свои графы и выбрасывает
+## их. Иначе кнопка «Прогнать» незаметно подменяла бы слой под камерой на
+## последний из просчитанных сидов.
+func _on_preview_pressed() -> void:
+	if _library == null:
+		_rebuild_graph()
+	if _library == null:
+		return
+	var seeds := int(_seeds_spin.value)
+	var picks := {}  # label -> сколько раз реально выбран
+	var reasons := {}  # label -> { причина: сколько раз }
+	var degrees := {}  # число рёбер -> сколько узлов
+	var nodes_total := 0
+
+	for s in seeds:
+		var graph := RS_LevelGraph.new().generate_run(s, _library)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = s
+		for node: RS_LevelNode in graph.nodes.values():
+			nodes_total += 1
+			var degree: int = node.connections.size()
+			degrees[degree] = degrees.get(degree, 0) + 1
+			var picked := _label_for_scene(node.room_scene_path)
+			picks[picked] = picks.get(picked, 0) + 1
+
+			var explained: Dictionary = _library.explain_selection(node, rng)["reasons"]
+			for label: String in explained:
+				# Победителя броска у explain свой (у него отдельный rng), поэтому
+				# «выбран» сливаем с «дошёл до весов»: таблица отсева говорит только
+				# о ЖЁСТКИХ фильтрах, а они от rng не зависят. Кто реально выпал —
+				# в таблице «Что выпало», она из настоящего прогона.
+				var reason: String = explained[label]
+				if reason == RS_RoomPresetLibrary.REASON_SELECTED:
+					reason = RS_RoomPresetLibrary.REASON_CANDIDATE
+				if not reasons.has(label):
+					reasons[label] = {}
+				reasons[label][reason] = reasons[label].get(reason, 0) + 1
+
+	_seeds_report.text = _preview_report(seeds, nodes_total, picks, reasons, degrees)
+	_set_status("Прогнано сидов: %d, узлов: %d" % [seeds, nodes_total])
+
+
+func _preview_report(
+	seeds: int, nodes_total: int, picks: Dictionary, reasons: Dictionary, degrees: Dictionary
+) -> String:
+	var out := "[b]Прогон %d сидов, %d узлов[/b]\n" % [seeds, nodes_total]
+
+	out += "\n[b]Что выпало[/b]\n[code]"
+	var picked_labels := picks.keys()
+	picked_labels.sort_custom(func(a, b): return picks[a] > picks[b])
+	for label: String in picked_labels:
+		out += "%-24s %5d  %4.1f%%\n" % [label, picks[label], 100.0 * picks[label] / maxi(nodes_total, 1)]
+	out += "[/code]"
+
+	out += "\n[b]Почему отсеивались[/b] (по узлам всех сидов)\n[code]"
+	var reason_labels := reasons.keys()
+	reason_labels.sort()
+	for label: String in reason_labels:
+		var parts: Array[String] = []
+		var by_reason: Dictionary = reasons[label]
+		var keys := by_reason.keys()
+		keys.sort()
+		for reason: String in keys:
+			parts.append("%s×%d" % [reason, by_reason[reason]])
+		out += "%-24s %s\n" % [label, ", ".join(parts)]
+	out += "[/code]"
+
+	out += "\n[b]Степени узлов (сколько рёбер = сколько дверей нужно)[/b]\n[code]"
+	var degree_keys := degrees.keys()
+	degree_keys.sort()
+	for degree: int in degree_keys:
+		out += "рёбер %d: %5d узлов\n" % [degree, degrees[degree]]
+	out += "[/code]"
+
+	out += (
+		"\n[i]Порядок отбора: вместимость (slot_count ≥ рёбер) → теги "
+		+ "(node.tags ⊆ preset.tags) → специфичность (минимум лишних тегов) → "
+		+ "тип помещения → вес. "
+		+ "Тип — ПРЕДПОЧТЕНИЕ, а не фильтр: если в группе нет ни одного пресета "
+		+ "загаданного узлу типа, группа идёт дальше целиком. "
+		+ "Вес применяется ПОСЛЕДНИМ: если конкуренты отсеялись раньше, правка веса "
+		+ "не изменит ничего — сначала смотри на «вместимость» и «теги». "
+		+ "«Дошёл до весов» — сколько раз пресет участвовал в броске; сколько раз он "
+		+ "его выиграл, смотри в «Что выпало». Слоты, вес и теги правятся во вкладке "
+		+ "«Редактор пресетов» или в панели узла справа.[/i]"
+	)
+	return out
+
+
+## Пресет по пути сцены — для колонки «что выпало». Сцены вне библиотеки (хаб,
+## placeholder) показываем по имени файла.
+func _label_for_scene(scene_path: String) -> String:
+	for preset: RS_RoomPreset in _library.presets:
+		if preset and preset.scene and preset.scene.resource_path == scene_path:
+			return _label_of(preset)
+	if _library.fallback and _library.fallback.scene \
+			and _library.fallback.scene.resource_path == scene_path:
+		return _label_of(_library.fallback) + " (fallback)"
+	return scene_path.get_file().get_basename() + " (вне библиотеки)"
 #endregion
