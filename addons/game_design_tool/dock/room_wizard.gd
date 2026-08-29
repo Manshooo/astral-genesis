@@ -54,7 +54,7 @@ const DEFAULT_INT_RANGE := {"min": -99999.0, "max": 99999.0, "step": 1.0}
 const DEFAULT_FLOAT_RANGE := {"min": -99999.0, "max": 99999.0, "step": 0.01}
 
 ## Куда идти писать описание тега — текст для тултипов облака.
-const TAG_HINT_WHERE := "вкладке «Геймдизайн» → «Редактор пресетов» → словарь тегов"
+const TAG_HINT_WHERE := "вкладке «Геймдизайн» → «Редактор пресетов» → облако тегов"
 
 var _scene_path := ""
 var _preset_path := ""

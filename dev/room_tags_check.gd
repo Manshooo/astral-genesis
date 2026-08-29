@@ -38,7 +38,7 @@ func _run() -> void:
 		return
 
 	var catalog := library.tag_catalog
-	_check("словарь тегов назначен библиотеке", catalog != null, "tag_catalog == null")
+	_check("облако тегов назначен библиотеке", catalog != null, "tag_catalog == null")
 	if catalog == null:
 		return
 

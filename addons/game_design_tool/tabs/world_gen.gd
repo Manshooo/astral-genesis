@@ -39,7 +39,7 @@ const TAB_TITLE := "Генератор мира"
 const SETTINGS_SECTION := "world_gen_tool"
 
 ## Куда идти писать описание тега — текст для тултипов облака.
-const TAG_HINT_WHERE := "вкладке «Редактор пресетов» → словарь тегов"
+const TAG_HINT_WHERE := "вкладке «Редактор пресетов» → облако тегов"
 
 var _seed_spin: SpinBox
 var _depth_option: OptionButton

@@ -1,6 +1,6 @@
 ## res://addons/game_design_tool/tabs/presets.gd
 ## Вкладка «Редактор пресетов» единого редактора геймдизайна: таблица пресетов и
-## словарь тегов слева, карточка выделенного — справа.
+## облако тегов слева, карточка выделенного — справа.
 ##
 ## Что она закрывает:
 ##   1. веса/slot_count/тип пресетов разбросаны по .tres рядом со своими сценами
@@ -8,20 +8,29 @@
 ##      на месте;
 ##   2. теги правились строкой через запятую в ячейке таблицы — опечатка тихо
 ##      создавала новый тег вместо использования существующего. Тег теперь
-##      только выбирается чекбоксом: печатать нечего, опечатка невозможна;
+##      только выбирается из списка известных: печатать нечего, опечатка
+##      невозможна;
 ##   3. ЧТО тег значит, прочитать было негде вовсе — список тегов нигде не
 ##      хранился, все три инструмента собирали его обходом preset.tags. Отсюда
 ##      словарь (RS_RoomTagCatalog, data/room_tag_catalog.tres): у тега
 ##      появились имя и описание, а у инструмента — способ отличить настоящий
 ##      тег от опечатки (нет в словаре → «нет описания», и видно, что он
 ##      одинокий);
-##   4. рассинхрон «заявленные слоты ↔ сцена» — «Проверить сцены».
+##   4. рассинхрон «заявленные слоты ↔ сцена» — «Проверка сцен».
 ##
 ## ПОЧЕМУ «Редактор пресетов», а не прежний «Генератор»: генератор здесь больше
 ## не запускается. «Прогнать сиды» уехал в «Генератор мира» — вопрос «что
 ## реально выпадает в забеге» про мир, а не про отдельный пресет, и отвечать на
 ## него правильно там, где этот мир видно. Здесь остались данные пресетов и
 ## сверка их со сценами.
+##
+## ПОЧЕМУ проверка — свёрнутая панель по кнопке-тумблеру, а не отчёт, постоянно
+## висящий под таблицами: она устроена ровно как «Прогон сидов» в «Генераторе
+## мира», и по той же причине. Отчёт нужен раз в несколько правок, а главное
+## содержимое вкладки — таблицы и карточка; пустой RichTextLabel внизу отъедал
+## у них высоту всё время, включая сессии, где проверку не запускают ни разу.
+## Состояние тумблера переживает перезапуск редактора — иначе панель, открытая
+## под разбор дверей, закрывалась бы сама на каждый перезапуск.
 ##
 ## ПОЧЕМУ master-detail, а не облако чекбоксов под таблицей, как было раньше:
 ## описание тега длиннее его ключа, и в HFlowContainer его можно показать разве
@@ -38,6 +47,16 @@
 ## тег; выделения в двух таблицах независимы, поэтому возврат к пресету стоит
 ## одного клика.
 ##
+## ПОЧЕМУ теги пресета в карточке — табличка навешанных + выпадающий список для
+## добавления, а не чекбокс на каждый тег проекта: чекбоксов было бы по одному
+## на КАЖДЫЙ тег библиотеки, а не только пресета, — при полусотне тегов карточка
+## превращалась бы в длинный список, где смысл несёт меньшинство отмеченных
+## строк. Табличка показывает только навешанные (снять — кнопкой ✕ в строке),
+## добавление — тем же списком тегов проекта, но как источником, а не самоцелью.
+## Описание — тултипом на строке и на пункте выпадающего списка, а не текстом
+## под чекбоксом, как было: тултип не отъедает высоту у списка, который растёт
+## вместе со словарём, а не только с числом отмеченных тегов.
+##
 ## Проверка стороны двери идёт через RS_RoomLayout — тем же правилом, которым
 ## RS_LayerPlan раскладывает слой, иначе инструмент проверял бы не то, что делает
 ## игра.
@@ -52,12 +71,23 @@ const Library := preload("res://addons/game_design_tool/shared/library.gd")
 ## Заголовок вкладки в TabContainer — тот берёт его из имени узла (см. _init).
 const TAB_TITLE := "Редактор пресетов"
 
+## EditorSettings.set_project_metadata — раздел проектных метаданных вкладки:
+## сейчас в нём только состояние панели проверки. Свой раздел, а не общий с
+## «Генератором мира» (world_gen_tool): ключи там про сид и камеру, и общее имя
+## означало бы, что переименование ключа в одной вкладке молча ломает другую.
+const SETTINGS_SECTION := "presets_tool"
+
 ## Только для «Новый пресет» — заготовки БЕЗ сцены, планируешь пресет раньше,
 ## чем нарисована комната. Готовые пресеты (у которых уже есть scene) лежат
 ## РЯДОМ со своей сценой в src/levels/procedural/rooms/, тем же именем — это
 ## соглашение, на которое опирается Room Wizard (см. [[Единый редактор
 ## геймдизайна]]); data/room/ ему не нужен, он ищет .tres по пути сцены.
 const PRESET_DIR := "res://data/room"
+
+## Куда идти писать описание тега — текст тултипа-подсказки для тега без записи
+## в словаре (см. GDT_Tags.description_or_hint). Тот же приём, что у world_gen.gd
+## и Room Wizard, здесь просто указывает на соседнюю панель, а не на другую вкладку.
+const TAG_HINT_WHERE := "облаке тегов слева"
 
 const COL_NAME := 0
 const COL_SLOTS := 1
@@ -75,12 +105,16 @@ const COLOR_MUTED := Color(1, 1, 1, 0.7)
 const COLOR_WARN := Color(1, 0.8, 0.45)
 
 var _library: RS_RoomPresetLibrary
-## Словарь тегов. null — библиотека без словаря: описаний нет, всё остальное
+## Облако тегов. null — библиотека без словаря: описаний нет, всё остальное
 ## работает ровно как до его появления.
 var _tag_catalog: RS_RoomTagCatalog
 
 var _tree: Tree
 var _tag_tree: Tree
+## Проверка сцен: панель внизу, по умолчанию свёрнута, — тот же приём, что у
+## «Прогона сидов» в «Генераторе мира» (см. шапку файла).
+var _check_toggle: Button
+var _check_panel: VBoxContainer
 var _report: RichTextLabel
 var _status: Label
 var _filter_edit: LineEdit
@@ -111,7 +145,15 @@ var _p_actual: Label
 var _p_weight: SpinBox
 var _p_type: OptionButton
 var _p_type_desc: Label
+## Табличка навешанных тегов — строка на тег, кнопка ✕ убирает.
 var _p_tag_list: VBoxContainer
+## Выпадающий список для добавления тега пресету — все известные теги МИНУС уже
+## навешанные. Пересобирается вместе с табличкой: добавив тег, отдай его назад
+## тому же списку, а не только уменьши табличку.
+var _p_add_tag_option: OptionButton
+## Кандидаты выпадающего списка в порядке его пунктов — оттуда обработчик кнопки
+## «+» берёт StringName по индексу выделения (у OptionButton своих тегов нет).
+var _p_add_tag_candidates: Array[StringName] = []
 
 var _tag_card: VBoxContainer
 var _t_title: Label
@@ -155,28 +197,33 @@ func _ready() -> void:
 
 
 func _on_visibility_changed() -> void:
-	if _library == null and is_visible_in_tree():
-		_refresh()
+	if _library != null or not is_visible_in_tree():
+		return
+	# button_pressed сам зовёт _on_check_toggled — панель встаёт вместе с кнопкой.
+	_check_toggle.button_pressed = _get_meta("check_panel", false)
+	_refresh()
 
 
 #region Вёрстка
 func _build_ui() -> void:
 	add_child(_build_toolbar())
 
+	# Вертикальный сплит: таблицы сверху, отчёт проверки снизу. Панель отчёта
+	# скрыта — SplitContainer со скрытым вторым ребёнком отдаёт всю высоту
+	# первому, поэтому свёрнутая проверка не отъедает у таблиц ничего.
+	var rows := VSplitContainer.new()
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(rows)
+
 	var split := HSplitContainer.new()
+	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.size_flags_stretch_ratio = 3.0  # таблицам места больше, чем отчёту внизу
 	split.split_offset = 520
 	split.add_child(_build_lists())
 	split.add_child(_build_detail())
-	add_child(split)
-
-	add_child(HSeparator.new())
-
-	# Отчёт «Проверить сцены»: расхождения слотов и разбор дверей. Прогон сидов
-	# сюда больше не пишет — он уехал в «Генератор мира» (см. шапку файла).
-	_report = Ui.report_label(96)
-	add_child(_report)
+	rows.add_child(split)
+	rows.add_child(_build_check_panel())
 
 	_status = Ui.status_label()
 	add_child(_status)
@@ -198,7 +245,17 @@ func _build_toolbar() -> Control:
 	bar.add_child(Ui.button("Новый пресет", _on_new_preset_pressed))
 	bar.add_child(Ui.button("Открыть сцену", _on_open_scene_pressed))
 	bar.add_child(Ui.button("Открыть в инспекторе", _on_edit_in_inspector_pressed))
-	bar.add_child(Ui.button("Проверить сцены", _on_validate_pressed))
+
+	bar.add_child(VSeparator.new())
+	_check_toggle = Button.new()
+	_check_toggle.text = "Проверка сцен"
+	_check_toggle.toggle_mode = true
+	_check_toggle.tooltip_text = (
+		"Сверка «заявленные слоты ↔ двери сцены» и разбор дверей: какая на какой стене"
+	)
+	_check_toggle.toggled.connect(_on_check_toggled)
+	bar.add_child(_check_toggle)
+
 	bar.add_child(Ui.spacer())
 
 	_filter_chip = Ui.button("", _clear_tag_filter)
@@ -215,7 +272,51 @@ func _build_toolbar() -> Control:
 	return bar
 
 
-## Левая колонка: таблица пресетов и словарь тегов. Разделитель между ними
+## Панель проверки. Кнопка запуска внутри неё обязательна — открытие панели само
+## ничего не считает: проверка инстанцирует ВСЕ сцены комнат (двери считаются
+## по-настоящему), и вешать это на разворот панели значило бы платить паузой за
+## взгляд на прошлый отчёт. Ровно тем же соображением «Прогон сидов» не гоняется
+## сам при открытии своей панели.
+func _build_check_panel() -> Control:
+	_check_panel = VBoxContainer.new()
+	_check_panel.visible = false
+	_check_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var run := Ui.button("Проверить сцены", _on_validate_pressed)
+	run.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_check_panel.add_child(run)
+
+	_report = Ui.report_label(140)
+	_check_panel.add_child(_report)
+	return _check_panel
+
+
+func _on_check_toggled(pressed: bool) -> void:
+	_check_panel.visible = pressed
+	_set_meta("check_panel", pressed)
+
+
+## EditorSettings — редакторский API: вне настоящего работающего редактора
+## (в т.ч. в headless-прогонах сцен, где Engine.is_editor_hint() ложно)
+## singleton не инициализирован, а состояние заведомо некому читать между
+## сессиями редактора, которых не было. Копия того же приёма из world_gen.gd —
+## в shared/ не вынесено намеренно: это пять строк на две вкладки, а не
+## инвариант, который может разъехаться (в отличие от GDT_Tags).
+func _get_meta(key: String, default: Variant) -> Variant:
+	if not Engine.is_editor_hint():
+		return default
+	# set_project_metadata/get_project_metadata — методы ЭКЗЕМПЛЯРА синглтона
+	# (не статика класса EditorSettings) — только через EditorInterface.
+	return EditorInterface.get_editor_settings().get_project_metadata(SETTINGS_SECTION, key, default)
+
+
+func _set_meta(key: String, value: Variant) -> void:
+	if not Engine.is_editor_hint():
+		return
+	EditorInterface.get_editor_settings().set_project_metadata(SETTINGS_SECTION, key, value)
+
+
+## Левая колонка: таблица пресетов и облако тегов. Разделитель между ними
 ## двигается — у одной библиотеки длиннее список комнат, у другой словарь.
 func _build_lists() -> Control:
 	var column := VSplitContainer.new()
@@ -249,7 +350,7 @@ func _build_lists() -> Control:
 	column.add_child(presets_box)
 
 	var tags_box := VBoxContainer.new()
-	tags_box.add_child(Ui.section_label("Словарь тегов"))
+	tags_box.add_child(Ui.section_label("Облако тегов"))
 	_tag_tree = Tree.new()
 	_tag_tree.columns = 2
 	_tag_tree.column_titles_visible = true
@@ -344,14 +445,20 @@ func _build_preset_card() -> VBoxContainer:
 	card.add_child(HSeparator.new())
 	card.add_child(
 		Ui.wrap_label(
-			"Теги — ЖЁСТКИЙ фильтр: узел получит эту комнату, только если все теги"
-			+ " узла есть здесь. Лишние теги не запрещены, но по специфичности уводят"
-			+ " пресет от простых узлов."
+			"Узел получит эту комнату, только если все теги узла есть здесь. Лишние теги не запрещены, но по специфичности уводят пресет от простых узлов."
 		)
 	)
 	_p_tag_list = VBoxContainer.new()
 	_p_tag_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.add_child(_p_tag_list)
+
+	var add_row := HBoxContainer.new()
+	_p_add_tag_option = OptionButton.new()
+	_p_add_tag_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_p_add_tag_option.item_selected.connect(_on_add_tag_option_selected)
+	add_row.add_child(_p_add_tag_option)
+	add_row.add_child(Ui.button("+", _on_add_known_tag_pressed))
+	card.add_child(add_row)
 	return card
 
 
@@ -452,7 +559,7 @@ func _refresh() -> void:
 	_show_nothing()  # таблица только что очищена — выделения нет
 
 	var catalog_note := (
-		"" if _tag_catalog else " ⚠ словарь тегов не назначен библиотеке — описаний не будет."
+		"" if _tag_catalog else " ⚠ облако тегов не назначено библиотеке. Описаний не будет."
 	)
 	_set_status(
 		"%d пресетов + fallback. Теги и описания — в карточке справа.%s"
@@ -713,7 +820,7 @@ func _show_preset_card(preset: RS_RoomPreset) -> void:
 	_syncing = false
 
 	_update_type_desc(preset.room_type)
-	_rebuild_tag_checkboxes(preset)
+	_rebuild_tag_table(preset)
 
 
 ## «В сцене N» рядом со слотами: тот же рассинхрон, что подсвечен красным в
@@ -779,32 +886,90 @@ func _on_card_type_selected(index: int) -> void:
 	_update_type_desc(_editing_preset.room_type)
 
 
-## Список тегов карточки: чекбокс и описание ПОД ним. Порядок — алфавитный и
-## не зависит от того, отмечен тег или нет: сортировка «свои сверху» переставляла
-## бы строки прямо под курсором на каждый клик.
-func _rebuild_tag_checkboxes(preset: RS_RoomPreset) -> void:
+## Табличка навешанных тегов: строка на тег (имя + кнопка ✕), под ней — выпадающий
+## список для добавления. Порядок строк — алфавитный, чтобы снятие/добавление не
+## переставляло уже показанные теги местами.
+func _rebuild_tag_table(preset: RS_RoomPreset) -> void:
 	# free(), не queue_free(): перестройка идёт на каждую смену выделения, и
-	# отложенное удаление копило бы старые чекбоксы поверх новых.
+	# отложенное удаление копило бы старые строки поверх новых.
 	for child: Node in _p_tag_list.get_children():
 		child.free()
 
+	var assigned: Array[StringName] = preset.tags.duplicate()
+	assigned.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
+
+	if assigned.is_empty():
+		_p_tag_list.add_child(Ui.wrap_label("Тегов нет — добавь ниже."))
+	for tag: StringName in assigned:
+		_p_tag_list.add_child(_build_tag_row(tag))
+
+	_rebuild_add_tag_option(assigned)
+
+
+## Одна строка таблички: имя тега (тултип — описание из словаря либо просьба
+## его завести) и кнопка ✕, снимающая тег с пресета.
+func _build_tag_row(tag: StringName) -> Control:
+	var row := HBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var known := _tag_catalog != null and _tag_catalog.has_id(tag)
+	var name_label := Ui.ellipsis_label(String(tag) if not known else _tag_catalog.label_of(tag))
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.tooltip_text = Tags.description_or_hint(_tag_catalog, tag, TAG_HINT_WHERE)
+	if not known:
+		name_label.modulate = COLOR_WARN
+	row.add_child(name_label)
+
+	row.add_child(Ui.button("✕", _on_remove_tag_pressed.bind(tag)))
+	return row
+
+
+## Кандидаты выпадающего списка — известные теги минус уже навешанные: список
+## только предлагает то, чего у пресета ещё нет, иначе «+» либо ничего не менял
+## бы (тег уже стоит), либо требовал сперва найти его в уже длинном списке.
+func _rebuild_add_tag_option(assigned: Array[StringName]) -> void:
+	_p_add_tag_option.clear()
+	_p_add_tag_candidates.clear()
 	for tag: StringName in _known_tags:
+		if assigned.has(tag):
+			continue
+		_p_add_tag_candidates.append(tag)
 		var known := _tag_catalog != null and _tag_catalog.has_id(tag)
-		var chip := CheckBox.new()
-		chip.text = String(tag) if not known else "%s — %s" % [tag, _tag_catalog.label_of(tag)]
-		chip.button_pressed = preset.tags.has(tag)
-		chip.toggled.connect(_on_tag_chip_toggled.bind(tag))
-		_p_tag_list.add_child(chip)
+		_p_add_tag_option.add_item(String(tag) if not known else _tag_catalog.label_of(tag))
+		var idx := _p_add_tag_option.item_count - 1
+		_p_add_tag_option.set_item_tooltip(idx, Tags.description_or_hint(_tag_catalog, tag, TAG_HINT_WHERE))
 
-		var description := _tag_catalog.description_of(tag) if _tag_catalog else ""
-		var note := Ui.wrap_label(
-			description if description != "" else "Описания нет — выдели тег в словаре слева."
-		)
-		note.modulate = Color(1, 1, 1, 0.6) if description != "" else Color(1, 0.8, 0.45, 0.8)
-		_p_tag_list.add_child(note)
+	var has_candidates := not _p_add_tag_candidates.is_empty()
+	_p_add_tag_option.disabled = not has_candidates
+	_p_add_tag_option.tooltip_text = (
+		"" if not has_candidates else _p_add_tag_option.get_item_tooltip(0)
+	)
+	if not has_candidates:
+		_p_add_tag_option.add_item("— все известные теги уже здесь —")
 
 
-func _on_tag_chip_toggled(pressed: bool, tag: StringName) -> void:
+## Наведение на СВЁРНУТУЮ кнопку списка тоже должно показывать описание — иначе
+## тултип был бы виден только в развёрнутом попапе, а не там, где взгляд обычно
+## первым и падает.
+func _on_add_tag_option_selected(index: int) -> void:
+	if index >= 0 and index < _p_add_tag_option.item_count:
+		_p_add_tag_option.tooltip_text = _p_add_tag_option.get_item_tooltip(index)
+
+
+func _on_add_known_tag_pressed() -> void:
+	if _editing_preset == null or _p_add_tag_candidates.is_empty():
+		return
+	var index := _p_add_tag_option.selected
+	if index < 0 or index >= _p_add_tag_candidates.size():
+		return
+	_apply_tag_change(_p_add_tag_candidates[index], true)
+
+
+func _on_remove_tag_pressed(tag: StringName) -> void:
+	_apply_tag_change(tag, false)
+
+
+func _apply_tag_change(tag: StringName, pressed: bool) -> void:
 	if _editing_preset == null:
 		return
 	Tags.toggle(_editing_preset, tag, pressed)
@@ -815,10 +980,16 @@ func _on_tag_chip_toggled(pressed: bool, tag: StringName) -> void:
 		item.set_text(COL_TAGS, ", ".join(_editing_preset.tags))
 	_collect_known_tags()
 	_rebuild_tag_tree()
+	# call_deferred, а не напрямую: сюда приходят и от кнопки ✕ ВНУТРИ самой
+	# таблички — прямой вызов освобождал бы строку, пока её же сигнал pressed
+	# ещё обрабатывается («Object was freed... while a signal is being emitted»).
+	# Одна отложенная пересборка, а не двойной рендер со старыми и новыми
+	# строками разом: free() внутри неё по-прежнему безусловный.
+	_rebuild_tag_table.call_deferred(_editing_preset)
 #endregion
 
 
-#region Словарь тегов
+#region Облако тегов
 func _collect_known_tags() -> void:
 	_tag_uses = Tags.uses(_library)
 	_known_tags = Tags.known_tags(_library, _tag_catalog)
@@ -893,7 +1064,7 @@ func _show_tag_card(tag: StringName) -> void:
 		if _t_rename_btn.disabled
 		else ""
 	)
-	_t_used_by.text = "Стоит у: " + _presets_with_tag_text(tag)
+	_t_used_by.text = _presets_with_tag_text(tag)
 
 
 func _presets_with_tag_text(tag: StringName) -> String:
@@ -922,7 +1093,7 @@ func _flush_tag_edits() -> void:
 
 func _save_tag_catalog() -> bool:
 	if _tag_catalog == null:
-		_set_status("⚠ Словарь тегов не назначен библиотеке — описания сохранять некуда.")
+		_set_status("⚠ Облако тегов не назначено библиотеке. Описания сохранять некуда.")
 		return false
 	var err := Tags.save_catalog(_tag_catalog)
 	if err != OK:
@@ -957,7 +1128,7 @@ func _on_add_tag_pressed() -> void:
 			item.set_text(COL_TAGS, ", ".join(preset.tags))
 	_collect_known_tags()
 	_rebuild_tag_tree()
-	_rebuild_tag_checkboxes(preset)
+	_rebuild_tag_table(preset)
 	_set_status("Тег «%s» заведён и повешен на «%s»." % [tag, Library.label_of(preset)])
 
 
@@ -1024,7 +1195,7 @@ func _on_forget_tag_pressed() -> void:
 	_collect_known_tags()
 	_rebuild_tag_tree()
 	if _editing_preset:
-		_rebuild_tag_checkboxes(_editing_preset)
+		_rebuild_tag_table(_editing_preset)
 	_show_nothing()
 	_set_status("«%s» убран из словаря.%s" % [removed, tail])
 #endregion
@@ -1077,8 +1248,8 @@ func _select_row(path: String) -> void:
 
 
 #region Проверка сцен
-## Отчёт по каждому пресету: расхождения slot_count ↔ сцена и разбор дверей —
-## какая дверь на какой стене и что у неё в slot_id.
+## Отчёт по каждому пресету в свёрнутую панель внизу: расхождения slot_count ↔
+## сцена и разбор дверей — какая дверь на какой стене и что у неё в slot_id.
 ##
 ## slot_id мы НЕ проставляем автоматически, хотя рекомендацию печатаем: у дверей,
 ## не перекрывших component_resources, C_DoorSlot приходит из complex_door.tscn и
