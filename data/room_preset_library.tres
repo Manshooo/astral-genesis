@@ -16,8 +16,8 @@
 [ext_resource type="Resource" uid="uid://xle0niud60rg" path="res://src/levels/procedural/rooms/cross_A/cross_a_4.tres" id="13_8mgwu"]
 [ext_resource type="Resource" uid="uid://doo4ogyybiomc" path="res://src/levels/procedural/rooms/cross_A/cross_a_2c.tres" id="14_v72dq"]
 [ext_resource type="Resource" path="res://src/levels/hub/hub.tres" id="15_hub"]
-[ext_resource type="Resource" path="res://data/room_type_catalog.tres" id="16_types"]
-[ext_resource type="Resource" path="res://data/room_tag_catalog.tres" id="17_tags"]
+[ext_resource type="Resource" uid="uid://bmb060jh75fai" path="res://data/room_type_catalog.tres" id="16_types"]
+[ext_resource type="Resource" uid="uid://cvurmu7r4liha" path="res://data/room_tag_catalog.tres" id="17_tags"]
 
 [resource]
 script = ExtResource("2_v4gys")
