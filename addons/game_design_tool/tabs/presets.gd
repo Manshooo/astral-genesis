@@ -30,7 +30,10 @@
 ## содержимое вкладки — таблицы и карточка; пустой RichTextLabel внизу отъедал
 ## у них высоту всё время, включая сессии, где проверку не запускают ни разу.
 ## Состояние тумблера переживает перезапуск редактора — иначе панель, открытая
-## под разбор дверей, закрывалась бы сама на каждый перезапуск.
+## под разбор дверей, закрывалась бы сама на каждый перезапуск. Соотношения
+## сплиттеров (список пресетов ↔ карточка, пресеты ↔ облако тегов, таблицы ↔
+## панель проверки) — туда же, тем же GDT_EditorState: подвинутое рукой под
+## свой монитор иначе съезжало бы на дефолт при каждом запуске редактора.
 ##
 ## ПОЧЕМУ master-detail, а не облако чекбоксов под таблицей, как было раньше:
 ## описание тега длиннее его ключа, и в HFlowContainer его можно показать разве
@@ -67,12 +70,13 @@ const Ui := preload("res://addons/game_design_tool/shared/ui.gd")
 const Fs := preload("res://addons/game_design_tool/shared/fs.gd")
 const Tags := preload("res://addons/game_design_tool/shared/tags.gd")
 const Library := preload("res://addons/game_design_tool/shared/library.gd")
+const EditorState := preload("res://addons/game_design_tool/shared/editor_state.gd")
 
 ## Заголовок вкладки в TabContainer — тот берёт его из имени узла (см. _init).
 const TAB_TITLE := "Редактор пресетов"
 
-## EditorSettings.set_project_metadata — раздел проектных метаданных вкладки:
-## сейчас в нём только состояние панели проверки. Свой раздел, а не общий с
+## Раздел проектных метаданных вкладки (см. GDT_EditorState) — состояние
+## панели проверки и соотношения сплиттеров. Свой раздел, а не общий с
 ## «Генератором мира» (world_gen_tool): ключи там про сид и камеру, и общее имя
 ## означало бы, что переименование ключа в одной вкладке молча ломает другую.
 const SETTINGS_SECTION := "presets_tool"
@@ -200,7 +204,7 @@ func _on_visibility_changed() -> void:
 	if _library != null or not is_visible_in_tree():
 		return
 	# button_pressed сам зовёт _on_check_toggled — панель встаёт вместе с кнопкой.
-	_check_toggle.button_pressed = _get_meta("check_panel", false)
+	_check_toggle.button_pressed = EditorState.read(SETTINGS_SECTION, "check_panel", false)
 	_refresh()
 
 
@@ -214,12 +218,13 @@ func _build_ui() -> void:
 	var rows := VSplitContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	EditorState.bind_split(rows, SETTINGS_SECTION, "check_panel_split", 0)
 	add_child(rows)
 
 	var split := HSplitContainer.new()
 	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.split_offset = 520
+	EditorState.bind_split(split, SETTINGS_SECTION, "lists_detail_split", 520)
 	split.add_child(_build_lists())
 	split.add_child(_build_detail())
 	rows.add_child(split)
@@ -293,27 +298,7 @@ func _build_check_panel() -> Control:
 
 func _on_check_toggled(pressed: bool) -> void:
 	_check_panel.visible = pressed
-	_set_meta("check_panel", pressed)
-
-
-## EditorSettings — редакторский API: вне настоящего работающего редактора
-## (в т.ч. в headless-прогонах сцен, где Engine.is_editor_hint() ложно)
-## singleton не инициализирован, а состояние заведомо некому читать между
-## сессиями редактора, которых не было. Копия того же приёма из world_gen.gd —
-## в shared/ не вынесено намеренно: это пять строк на две вкладки, а не
-## инвариант, который может разъехаться (в отличие от GDT_Tags).
-func _get_meta(key: String, default: Variant) -> Variant:
-	if not Engine.is_editor_hint():
-		return default
-	# set_project_metadata/get_project_metadata — методы ЭКЗЕМПЛЯРА синглтона
-	# (не статика класса EditorSettings) — только через EditorInterface.
-	return EditorInterface.get_editor_settings().get_project_metadata(SETTINGS_SECTION, key, default)
-
-
-func _set_meta(key: String, value: Variant) -> void:
-	if not Engine.is_editor_hint():
-		return
-	EditorInterface.get_editor_settings().set_project_metadata(SETTINGS_SECTION, key, value)
+	EditorState.write(SETTINGS_SECTION, "check_panel", pressed)
 
 
 ## Левая колонка: таблица пресетов и облако тегов. Разделитель между ними
@@ -321,7 +306,7 @@ func _set_meta(key: String, value: Variant) -> void:
 func _build_lists() -> Control:
 	var column := VSplitContainer.new()
 	column.custom_minimum_size = Vector2(360, 0)
-	column.split_offset = 240
+	EditorState.bind_split(column, SETTINGS_SECTION, "presets_tags_split", 240)
 
 	var presets_box := VBoxContainer.new()
 	presets_box.add_child(Ui.section_label("Пресеты комнат"))

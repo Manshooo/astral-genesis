@@ -29,13 +29,15 @@ const TagCloud := preload("res://addons/game_design_tool/shared/tag_cloud.gd")
 const ViewportHost := preload("res://addons/game_design_tool/world/viewport_host.gd")
 const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
 const OverlayRegistry := preload("res://addons/game_design_tool/world/overlay_registry.gd")
+const EditorState := preload("res://addons/game_design_tool/shared/editor_state.gd")
 
 const TAB_TITLE := "Генератор мира"
 
-## EditorSettings.set_project_metadata — тот самый пробел из [[Единый редактор
-## геймдизайна]] («Решено, но не реализовано» в MVP): сид/глубина/оверлеи/
-## камера переживают перезапуск редактора. Метаданные ПРОЕКТА, не установки
-## Godot — у другого проекта своя генерация, чужой сид тут бессмысленен.
+## Раздел проектных метаданных вкладки (см. GDT_EditorState) — тот самый пробел
+## из [[Единый редактор геймдизайна]] («Решено, но не реализовано» в MVP):
+## сид/глубина/оверлеи/камера/сплиттеры переживают перезапуск редактора.
+## Метаданные ПРОЕКТА, не установки Godot — у другого проекта своя генерация,
+## чужой сид тут бессмысленен.
 const SETTINGS_SECTION := "world_gen_tool"
 
 ## Куда идти писать описание тега — текст для тултипов облака.
@@ -116,11 +118,14 @@ func _build_ui() -> void:
 	var rows := VSplitContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	EditorState.bind_split(rows, SETTINGS_SECTION, "seeds_panel_split", 0)
 	add_child(rows)
 
 	var split := HSplitContainer.new()
 	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# боковая панель у правого края, вьюпорту — остальное
+	EditorState.bind_split(split, SETTINGS_SECTION, "viewport_side_split", -320)
 	rows.add_child(split)
 	rows.add_child(_build_seeds_panel())
 
@@ -128,7 +133,6 @@ func _build_ui() -> void:
 	_host.node_picked.connect(_on_node_picked)
 	split.add_child(_host)
 	split.add_child(_build_side_panel())
-	split.split_offset = -320  # боковая панель у правого края, вьюпорту — остальное
 
 	_status = Ui.status_label()
 	add_child(_status)
@@ -209,7 +213,7 @@ func _build_seeds_panel() -> Control:
 
 func _on_seeds_toggled(pressed: bool) -> void:
 	_seeds_panel.visible = pressed
-	_set_meta("seeds_panel", pressed)
+	EditorState.write(SETTINGS_SECTION, "seeds_panel", pressed)
 
 
 func _build_side_panel() -> Control:
@@ -326,7 +330,7 @@ func _on_visibility_item_pressed(id: int) -> void:
 	popup.set_item_checked(idx, new_state)
 	var overlay: Dictionary = OverlayRegistry.OVERLAYS[id]
 	_host.set_overlay_visible(overlay["id"], new_state)
-	_set_meta("overlay_" + String(overlay["id"]), new_state)
+	EditorState.write(SETTINGS_SECTION, "overlay_" + String(overlay["id"]), new_state)
 #endregion
 
 
@@ -351,11 +355,11 @@ func _on_rebuild_pressed() -> void:
 ## перезаписало бы в EditorSettings ЕЩЁ НЕ ПРИМЕНЁННУЮ сохранённую позицию,
 ## прежде чем restore_camera успеет её поставить.
 func _restore_state() -> void:
-	_seed_spin.value = _get_meta("seed", 0)
+	_seed_spin.value = EditorState.read(SETTINGS_SECTION, "seed", 0)
 	# button_pressed сам зовёт _on_seeds_toggled, панель встаёт вместе с кнопкой.
-	_seeds_toggle.button_pressed = _get_meta("seeds_panel", false)
+	_seeds_toggle.button_pressed = EditorState.read(SETTINGS_SECTION, "seeds_panel", false)
 
-	var depth: int = _get_meta("depth", RS_LevelGraph.HOME_DEPTH)
+	var depth: int = EditorState.read(SETTINGS_SECTION, "depth", RS_LevelGraph.HOME_DEPTH)
 	var depth_idx := _depth_option.get_item_index(depth)
 	if depth_idx >= 0:
 		_depth_option.select(depth_idx)
@@ -363,46 +367,26 @@ func _restore_state() -> void:
 	var popup := _visibility_menu.get_popup()
 	for i in OverlayRegistry.OVERLAYS.size():
 		var overlay: Dictionary = OverlayRegistry.OVERLAYS[i]
-		var visible_state: bool = _get_meta(
-			"overlay_" + String(overlay["id"]), overlay["default_visible"]
+		var visible_state: bool = EditorState.read(
+			SETTINGS_SECTION, "overlay_" + String(overlay["id"]), overlay["default_visible"]
 		)
 		popup.set_item_checked(popup.get_item_index(i), visible_state)
 		_host.set_overlay_visible(overlay["id"], visible_state)
 
 	_rebuild_graph()
 
-	if _get_meta("camera_saved", false):
-		var pos: Vector3 = _get_meta("camera_position", Vector3.ZERO)
-		var rot: Vector3 = _get_meta("camera_rotation", Vector3.ZERO)
+	if EditorState.read(SETTINGS_SECTION, "camera_saved", false):
+		var pos: Vector3 = EditorState.read(SETTINGS_SECTION, "camera_position", Vector3.ZERO)
+		var rot: Vector3 = EditorState.read(SETTINGS_SECTION, "camera_rotation", Vector3.ZERO)
 		_host.restore_camera(pos, rot)
 
 	_host.camera_changed.connect(_on_camera_changed)
 
 
 func _on_camera_changed() -> void:
-	_set_meta("camera_position", _host.camera_position())
-	_set_meta("camera_rotation", _host.camera_rotation_degrees())
-	_set_meta("camera_saved", true)
-
-
-## EditorSettings — редакторский API: за пределами настоящего работающего
-## редактора (в т.ч. в headless-прогонах dev/world_gen_tool_check.gd, где
-## Engine.is_editor_hint() ложно — это ИГРОВОЙ прогон сцены, не редактор)
-## singleton не инициализирован и звать его незачем — состояние заведомо
-## некому будет читать между сессиями редактора, которых не было. Тот же
-## приём, каким e_body_crawler.gd отсекает физическую симуляцию в редакторе.
-func _get_meta(key: String, default: Variant) -> Variant:
-	if not Engine.is_editor_hint():
-		return default
-	# set_project_metadata/get_project_metadata — методы ЭКЗЕМПЛЯРА синглтона
-	# (не статика класса EditorSettings) — только через EditorInterface.
-	return EditorInterface.get_editor_settings().get_project_metadata(SETTINGS_SECTION, key, default)
-
-
-func _set_meta(key: String, value: Variant) -> void:
-	if not Engine.is_editor_hint():
-		return
-	EditorInterface.get_editor_settings().set_project_metadata(SETTINGS_SECTION, key, value)
+	EditorState.write(SETTINGS_SECTION, "camera_position", _host.camera_position())
+	EditorState.write(SETTINGS_SECTION, "camera_rotation", _host.camera_rotation_degrees())
+	EditorState.write(SETTINGS_SECTION, "camera_saved", true)
 
 
 func _rebuild_graph() -> void:
@@ -414,7 +398,7 @@ func _rebuild_graph() -> void:
 	_graph = RS_LevelGraph.new().generate_run(run_seed, _library)
 	_rebuild_layer()
 	_set_status("Сид %d, узлов в графе: %d" % [run_seed, _graph.nodes.size()])
-	_set_meta("seed", run_seed)
+	EditorState.write(SETTINGS_SECTION, "seed", run_seed)
 
 
 func _current_depth() -> int:
@@ -426,7 +410,7 @@ func _current_depth() -> int:
 
 func _on_depth_selected(_index: int) -> void:
 	_rebuild_layer()
-	_set_meta("depth", _current_depth())
+	EditorState.write(SETTINGS_SECTION, "depth", _current_depth())
 
 
 func _rebuild_layer() -> void:
