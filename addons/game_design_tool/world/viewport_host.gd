@@ -2,8 +2,14 @@
 ## SubViewportContainer с 3D-превью генератора: владеет SubViewport, камерой,
 ## оверлеями и пикингом. Сам не знает, ЧТО содержательно показывать (граф,
 ## слой) — граф и раскладку считает вкладка «Генератор мира» (world_gen.gd) и
-## отдаёт их через show_layer; этот узел решает, КАК это отрисовать и как по
-## нему кликнуть.
+## отдаёт их одним GDT_LayerView через show_layer; этот узел решает, КАК это
+## отрисовать и как по нему кликнуть.
+##
+## Оверлеи не перечислены здесь поимённо: узел создаёт, пересобирает и
+## переключает их циклом по GDT_OverlayRegistry.OVERLAYS. Раньше на каждый был
+## свой var, свой вызов rebuild() со своей подписью и своя ветка match в
+## set_overlay_visible — реестр обещал, что новый оверлей стоит одной строки
+## данных, а на деле требовал ещё трёх правок здесь.
 ##
 ## Камера — не Control и GUI-события не получает; узел ловит их через
 ## _gui_input и передаёт камере руками, а не полагается на встроенную
@@ -21,9 +27,8 @@ signal camera_changed
 
 const EditorCamera := preload("res://addons/game_design_tool/world/editor_camera.gd")
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
-const RoomsOverlay := preload("res://addons/game_design_tool/world/overlays/rooms_overlay.gd")
-const GraphOverlay := preload("res://addons/game_design_tool/world/overlays/graph_overlay.gd")
-const LabelsOverlay := preload("res://addons/game_design_tool/world/overlays/labels_overlay.gd")
+const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
+const OverlayRegistry := preload("res://addons/game_design_tool/world/overlay_registry.gd")
 
 ## Меньше — клик по узлу, больше — это уже был драг камеры, а не выбор.
 const CLICK_DRAG_THRESHOLD := 6.0
@@ -38,12 +43,10 @@ const DEFAULT_ORBIT_DISTANCE := 20.0
 
 var _viewport: SubViewport
 var _camera: EditorCamera
-var _rooms_overlay: RoomsOverlay
-var _graph_overlay: GraphOverlay
-var _labels_overlay: LabelsOverlay
+## id оверлея -> его узел, в порядке OverlayRegistry.OVERLAYS.
+var _overlays: Dictionary[StringName, Node3D] = {}
 
-var _layer_nodes: Array[RS_LevelNode] = []
-var _plan: RS_LayerPlan
+var _view: LayerView = LayerView.new()
 var _selected_id: StringName = &""
 
 var _press_pos := Vector2.ZERO
@@ -76,14 +79,13 @@ func _init() -> void:
 	_camera.far = 4000.0
 	_viewport.add_child(_camera)
 
-	_rooms_overlay = RoomsOverlay.new()
-	_viewport.add_child(_rooms_overlay)
-
-	_graph_overlay = GraphOverlay.new()
-	_viewport.add_child(_graph_overlay)
-
-	_labels_overlay = LabelsOverlay.new()
-	_viewport.add_child(_labels_overlay)
+	# Порядок в дереве — порядок реестра: оверлеи не перекрывают друг друга по
+	# глубине, но предсказуемый порядок узлов упрощает отладку сцены вьюпорта.
+	for descriptor: Dictionary in OverlayRegistry.OVERLAYS:
+		var overlay := (descriptor["script"] as GDScript).new() as Node3D
+		overlay.name = String(descriptor["id"])
+		_overlays[descriptor["id"]] = overlay
+		_viewport.add_child(overlay)
 
 
 func _build_environment() -> WorldEnvironment:
@@ -105,37 +107,28 @@ func _build_sun() -> DirectionalLight3D:
 	return sun
 
 
-## Отдаёт вьюпорту готовую раскладку: graph — для роли узла (вход/выход) и
-## рёбер, layer_nodes/plan — что и где рисовать. Граф и раскладку считает
-## вызывающий (RS_LevelGraph.generate_run + RS_LayerPlan.build) — этот узел
-## сам ничего не генерирует, только отображает.
-##
-## [param preset_labels] node_id -> имя подобранного пресета, для оверлея
-## «Подписи». Резолвится вызывающим (world_gen.gd уже умеет искать пресет по
-## сцене узла для инлайн-редактора) — оверлей сам библиотеку не знает.
-func show_layer(
-	graph: RS_LevelGraph,
-	layer_nodes: Array[RS_LevelNode],
-	plan: RS_LayerPlan,
-	preset_labels: Dictionary = {},
-) -> void:
-	_layer_nodes = layer_nodes
-	_plan = plan
-	_rooms_overlay.rebuild(layer_nodes, plan)
-	_graph_overlay.rebuild(graph, layer_nodes, plan)
-	_labels_overlay.rebuild(layer_nodes, plan, preset_labels)
+## Отдаёт вьюпорту готовый слой: граф — для роли узла (вход/выход) и рёбер,
+## узлы и раскладку — что и где рисовать, подписи пресетов — оверлею
+## «Подписи». Всё считает вызывающий (RS_LevelGraph.generate_run +
+## RS_LayerPlan.build); этот узел сам ничего не генерирует, только отображает.
+func show_layer(view: LayerView) -> void:
+	_view = view
+	for overlay: Node3D in _overlays.values():
+		overlay.rebuild(view)
 	_select(&"")
 	frame_layer()
 
 
+## Оверлей по id из реестра — для проверок и отладки; вкладке он не нужен, она
+## ходит через set_overlay_visible.
+func overlay(overlay_id: StringName) -> Node3D:
+	return _overlays.get(overlay_id)
+
+
 func set_overlay_visible(overlay_id: StringName, is_visible: bool) -> void:
-	match overlay_id:
-		&"rooms":
-			_rooms_overlay.visible = is_visible
-		&"graph":
-			_graph_overlay.visible = is_visible
-		&"labels":
-			_labels_overlay.visible = is_visible
+	var target := _overlays.get(overlay_id)
+	if target:
+		target.visible = is_visible
 
 
 func selected_node_id() -> StringName:
@@ -158,9 +151,9 @@ func restore_camera(pos: Vector3, rot_degrees: Vector3) -> void:
 
 
 func focus_selected() -> void:
-	if _selected_id == &"" or _plan == null:
+	if _selected_id == &"" or _view.plan == null:
 		return
-	_camera.focus_on(Picker.room_aabb(_selected_id, _layer_nodes, _plan))
+	_camera.focus_on(Picker.room_aabb(_selected_id, _view.nodes, _view.plan))
 	camera_changed.emit()
 
 
@@ -170,11 +163,11 @@ func focus_selected() -> void:
 ## вернуться к осмысленному виду, без побочных эффектов на СКМ (см.
 ## _orbit_pivot_hint — раньше сброс происходил неявно как эффект орбиты).
 func frame_layer() -> void:
-	if _layer_nodes.is_empty() or _plan == null:
+	if _view.is_empty():
 		return
-	var bounds := Picker.room_aabb(_layer_nodes[0].id, _layer_nodes, _plan)
-	for i in range(1, _layer_nodes.size()):
-		bounds = bounds.merge(Picker.room_aabb(_layer_nodes[i].id, _layer_nodes, _plan))
+	var bounds := Picker.room_aabb(_view.nodes[0].id, _view.nodes, _view.plan)
+	for i in range(1, _view.nodes.size()):
+		bounds = bounds.merge(Picker.room_aabb(_view.nodes[i].id, _view.nodes, _view.plan))
 	_camera.focus_on(bounds)
 	camera_changed.emit()
 
@@ -221,6 +214,11 @@ func _handle_mouse_button(mb: InputEventMouseButton) -> void:
 			if mb.pressed:
 				_camera.dolly(-1.0)  # вниз — от взгляда, отдаление
 				camera_changed.emit()
+		_:
+			# Боковые кнопки мыши вьюпорту не нужны — и глотать их незачем:
+			# accept_event() на них отнимал бы у редактора его собственные
+			# «назад/вперёд», не давая взамен ничего.
+			return
 	accept_event()
 
 
@@ -234,8 +232,8 @@ func _handle_key(key: InputEventKey) -> void:
 ## есть, иначе — комната по центру экрана (тот же пикинг, что и по клику, но
 ## без самого клика), иначе — фиксированная точка перед камерой.
 func _orbit_pivot_hint() -> Vector3:
-	if _selected_id != &"" and _plan and _plan.positions.has(_selected_id):
-		return _plan.positions[_selected_id] + Vector3(0, ORBIT_PIVOT_HEIGHT, 0)
+	if _selected_id != &"" and _view.plan and _view.plan.positions.has(_selected_id):
+		return _view.plan.positions[_selected_id] + Vector3(0, ORBIT_PIVOT_HEIGHT, 0)
 	return _pivot_ahead_of_camera()
 
 
@@ -245,26 +243,25 @@ func _orbit_pivot_hint() -> Vector3:
 ## уводили пивот далеко за пределы видимого — выглядело так, будто камера
 ## «сбрасывается» и вращается из начала координат слоя.
 func _pivot_ahead_of_camera() -> Vector3:
-	if _plan != null and not _layer_nodes.is_empty():
+	if not _view.is_empty():
 		var origin := _camera.project_ray_origin(size / 2.0)
 		var dir := _camera.project_ray_normal(size / 2.0)
-		var hit_id := Picker.pick(origin, dir, _layer_nodes, _plan)
+		var hit_id := Picker.pick(origin, dir, _view.nodes, _view.plan)
 		if hit_id != &"":
-			return Picker.room_aabb(hit_id, _layer_nodes, _plan).get_center()
+			return Picker.room_aabb(hit_id, _view.nodes, _view.plan).get_center()
 	return _camera.position + (-_camera.transform.basis.z) * DEFAULT_ORBIT_DISTANCE
 
 
 func _pick_at(local_pos: Vector2) -> void:
-	if _plan == null:
+	if _view.plan == null:
 		return
 	var origin := _camera.project_ray_origin(local_pos)
 	var dir := _camera.project_ray_normal(local_pos)
-	_select(Picker.pick(origin, dir, _layer_nodes, _plan))
+	_select(Picker.pick(origin, dir, _view.nodes, _view.plan))
 
 
 func _select(node_id: StringName) -> void:
 	_selected_id = node_id
-	_rooms_overlay.set_selected(node_id)
-	_graph_overlay.set_selected(node_id)
-	_labels_overlay.set_selected(node_id)
+	for target: Node3D in _overlays.values():
+		target.set_selected(node_id)
 	node_picked.emit(node_id)
