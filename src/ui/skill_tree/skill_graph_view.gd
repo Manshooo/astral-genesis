@@ -1,10 +1,11 @@
 # res://src/ui/skill_tree/skill_graph_view.gd
 ## Граф дерева навыков: карточки-узлы, связи-требования, панорама и зум.
 ##
-## Показывает НЕ всё дерево, а только изученное и следующее доступное
-## (SkillManager.is_revealed) — правило карточки Skill Tree. Отсюда главный
-## приём версии: ветка, открывающаяся по сумме рангов, не висит серыми
-## заглушками, а появляется целиком в момент, когда условие выполнилось.
+## Показывает НЕ всё дерево, а изученное, следующее доступное
+## (SkillManager.is_revealed) и ровно один шаг за ними — серым предпросмотром
+## (SkillManager.is_previewed): игрок читает, куда ветка ведёт дальше, но купить
+## это ещё не может. Дальше предпросмотра дерево для игрока не существует, и
+## ветка, открывающаяся по сумме рангов, по-прежнему появляется целиком и сразу.
 ##
 ## Скрытый узел не рисуется, но МЕСТО за ним закреплено: раскладка считается по
 ## всему дереву разом (SkillGraphLayout), поэтому открытие соседа не двигает уже
@@ -31,6 +32,8 @@ signal skill_activated(id: StringName)
 @export_group("Дорожки")
 @export var lane_fill_alpha := 0.06
 @export var lane_label_alpha := 0.8
+## Насколько подложка дорожки выступает за крайние карточки ветки.
+@export var lane_padding := Vector2(18.0, 10.0)
 
 @export_group("Связи")
 @export var link_width := 2.0
@@ -94,6 +97,12 @@ func setup(skill_manager, tree_data: RS_SkillTree) -> void:
 	_links = Control.new()
 	_links.name = "Links"
 	_links.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Размер нужен, хотя всё рисуется вручную: свой прямоугольник Control отдаёт
+	# движку как область видимости, и при нулевом ректе весь слой отсекается,
+	# едва точка (0,0) уходит за край экрана. Рисование за пределы ректа не
+	# обрезается, но КУЛЛИТСЯ по нему — от этого подложки дорожек и связи разом
+	# пропадали, стоило увести камеру с верхней дорожки («Захват»).
+	_links.size = _content_size()
 	_links.draw.connect(_draw_links)
 	_canvas.add_child(_links)
 
@@ -110,7 +119,8 @@ func refresh() -> void:
 	for def in _tree_data.skills:
 		if def == null:
 			continue
-		if not _skill_manager.is_revealed(def.id):
+		var previewed: bool = not _skill_manager.is_revealed(def.id)
+		if previewed and not _skill_manager.is_previewed(def.id):
 			continue
 		var card: UI_SkillNode = _nodes.get(def.id)
 		if card == null:
@@ -120,7 +130,12 @@ func refresh() -> void:
 			if _fitted:
 				_animate_reveal(card)
 			appeared = true
-		card.refresh(_skill_manager.get_rank(def.id), _skill_manager.can_unlock(def.id))
+		card.refresh(
+			_skill_manager.get_rank(def.id),
+			_skill_manager.can_unlock(def.id),
+			previewed,
+			_requirement_hint(def)
+		)
 
 	_links.queue_redraw()
 	if appeared:
@@ -150,6 +165,29 @@ func _create_node(def: RS_SkillDefinition) -> UI_SkillNode:
 
 func _on_card_pressed(id: StringName) -> void:
 	skill_activated.emit(id)
+
+
+## Требования словами — карточке-предпросмотру, чтобы серый узел объяснял, чем
+## он открывается. Собирает граф, а не карточка: имена соседних навыков и веток
+## лежат в дереве, а карточка знает только про себя.
+func _requirement_hint(def: RS_SkillDefinition) -> String:
+	var parts := PackedStringArray()
+	for req in def.requires:
+		if req == null:
+			continue
+		match req.type:
+			RS_SkillRequirement.Type.SKILL_RANK:
+				var target := _tree_data.get_definition(req.target_skill)
+				var target_name := (
+					target.display_name if target != null else String(req.target_skill)
+				)
+				parts.append("«%s» ранга %d" % [target_name, req.min_value])
+			RS_SkillRequirement.Type.BRANCH_TOTAL_RANKS:
+				parts.append(
+					"%d рангов в ветке «%s»"
+					% [req.min_value, _tree_data.branch_display_name(req.target_branch)]
+				)
+	return ", ".join(parts)
 
 
 func _animate_reveal(card: UI_SkillNode) -> void:
@@ -206,6 +244,18 @@ func _content_width() -> float:
 	return lane_label_width + _layout.columns * (node_size.x + cell_gap.x) - cell_gap.x
 
 
+## Место, забронированное под ВСЁ дерево, а не под открытую его часть: слой
+## дорожек и связей живёт всю жизнь экрана, и пересчитывать его рект на каждом
+## открытии ветки незачем — раскладка всё равно посчитана разом.
+func _content_size() -> Vector2:
+	if _layout == null:
+		return Vector2.ZERO
+	return Vector2(
+		_content_width(),
+		maxf(0.0, _layout.rows * (node_size.y + cell_gap.y) - cell_gap.y)
+	)
+
+
 ## Границы того, что реально показано, плюс жёлоб с подписями дорожек: камера
 ## наводится на видимое, а не на пустое место, забронированное под будущее.
 func _revealed_bounds() -> Rect2:
@@ -234,7 +284,10 @@ func _draw_links() -> void:
 	for def in _tree_data.skills:
 		if def == null or not _nodes.has(def.id):
 			continue
-		var color := Color(_tree_data.branch_color(def.branch), link_alpha)
+		# Связь в предпросмотр бледнее самой связи: она ведёт туда, куда игрок
+		# пока не может пойти, и наравне с рабочими рёбрами читалась бы как путь.
+		var node_alpha := link_alpha * (0.45 if _nodes[def.id].previewed else 1.0)
+		var color := Color(_tree_data.branch_color(def.branch), node_alpha)
 		for req in def.requires:
 			if req == null or req.type != RS_SkillRequirement.Type.SKILL_RANK:
 				continue
@@ -248,21 +301,18 @@ func _draw_links() -> void:
 func _draw_lanes() -> void:
 	var font := _links.get_theme_default_font()
 	var font_size := _links.get_theme_default_font_size()
-	var cell_height := node_size.y + cell_gap.y
-	var width := _content_width()
 
 	for lane in _layout.lanes:
-		if not _lane_has_revealed(lane):
+		var band := _lane_band(lane)
+		if band.size.y <= 0.0:
 			continue
 		var color := _tree_data.branch_color(lane["branch"])
-		var top: float = lane["row"] * cell_height
-		var height: float = lane["height"] * cell_height - cell_gap.y
-		_links.draw_rect(Rect2(0.0, top, width, height), Color(color, lane_fill_alpha))
+		_links.draw_rect(band, Color(color, lane_fill_alpha))
 		if font == null:
 			continue
 		_links.draw_string(
 			font,
-			Vector2(0.0, top + height * 0.5 + font_size * 0.35),
+			Vector2(0.0, band.get_center().y + font_size * 0.35),
 			_tree_data.branch_display_name(lane["branch"]),
 			HORIZONTAL_ALIGNMENT_RIGHT,
 			lane_label_width - 18.0,
@@ -271,11 +321,28 @@ func _draw_lanes() -> void:
 		)
 
 
-func _lane_has_revealed(lane: Dictionary) -> bool:
+## Подложка дорожки — по ПОКАЗАННЫМ карточкам ветки, а не по забронированным
+## под неё клеткам. Место в раскладке закреплено за всем деревом, и подложка во
+## всю его ширину означала бы полосу, уходящую в пустоту: игрок читает её как
+## «здесь что-то есть», хотя там ничего нет и не показано. Левый край всё равно
+## доводится до нуля — в жёлобе лежит подпись ветки, она часть дорожки.
+func _lane_band(lane: Dictionary) -> Rect2:
+	var band := Rect2()
+	var first := true
 	for def in _tree_data.get_branch_skills(lane["branch"]):
-		if _nodes.has(def.id):
-			return true
-	return false
+		var card: UI_SkillNode = _nodes.get(def.id)
+		if card == null:
+			continue
+		var rect := Rect2(card.position, node_size)
+		band = rect if first else band.merge(rect)
+		first = false
+	if first:
+		return Rect2()
+
+	band = band.grow_individual(0.0, lane_padding.y, lane_padding.x, lane_padding.y)
+	band.size.x += band.position.x
+	band.position.x = 0.0
+	return band
 
 
 ## Связь — кубическая кривая с горизонтальными «усами»: ветки лежат дорожками,

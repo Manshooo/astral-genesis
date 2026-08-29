@@ -16,8 +16,17 @@ extends Button
 const PIP_SIZE := Vector2(14.0, 6.0)
 const PIP_GAP := 4.0
 
+## Серый оттенок карточки-предпросмотра. Приглушаются только каналы цвета, а
+## альфа сохраняется: ею анимируется появление узла, и запись целого Color
+## оборвала бы въезд карточки на середине.
+const PREVIEW_TINT := Color(0.62, 0.64, 0.68)
+## Переход из предпросмотра в доступный навык.
+const UNGREY_DURATION := 0.25
+
 var definition: RS_SkillDefinition
 var accent: Color = RS_SkillBranch.DEFAULT_COLOR
+## Навык показан «на шаг вперёд»: описание читается, купить нельзя.
+var previewed: bool = false
 
 var _pips: Control
 var _status: Label
@@ -81,12 +90,22 @@ func setup(def: RS_SkillDefinition, accent_color: Color) -> void:
 	bottom.add_child(_status)
 
 
-## Состояние приносит граф: ранг и «можно ли купить прямо сейчас».
-func refresh(rank: int, unlockable: bool) -> void:
+## Состояние приносит граф: ранг, «можно ли купить прямо сейчас» и показан ли
+## навык лишь предпросмотром. [param requirement_hint] — чего не хватает; граф
+## складывает его из требований, потому что имена соседних навыков знает он.
+func refresh(
+	rank: int, unlockable: bool, is_preview: bool = false, requirement_hint: String = ""
+) -> void:
 	_rank = rank
+	var was_previewed := previewed
+	previewed = is_preview
 	var maxed := rank >= definition.max_rank
 
-	if maxed:
+	if previewed:
+		# Стоимость не показывается намеренно: пока условие не выполнено, цена
+		# игроку не решение, а шум — ему нужно знать, ЧТО открывает навык.
+		_status.text = "Недоступно"
+	elif maxed:
 		_status.text = "Максимум"
 	else:
 		_status.text = _points_text(definition.cost_for_next_rank(rank))
@@ -94,18 +113,32 @@ func refresh(rank: int, unlockable: bool) -> void:
 	# disabled, а не своя проверка в обработчике нажатия: нужен именно
 	# «выключенный» вид из темы, а подсказка на disabled-кнопке всё равно
 	# показывается — она про наведение, а не про нажатие.
-	disabled = maxed or not unlockable
-	tooltip_text = _tooltip_for(rank)
+	disabled = previewed or maxed or not unlockable
+	if was_previewed and not previewed:
+		# Узел не появился, а ОЖИЛ — это событие того же порядка, что и въезд
+		# новой карточки, и мгновенная смена цвета читалась бы как перерисовка.
+		create_tween().tween_property(
+			self, "modulate", Color(Color.WHITE, modulate.a), UNGREY_DURATION
+		)
+	else:
+		modulate = Color(PREVIEW_TINT if previewed else Color.WHITE, modulate.a)
+	tooltip_text = _tooltip_for(rank, requirement_hint)
 	_pips.queue_redraw()
 
 
 ## Подсказка при наведении. Пока это движковый tooltip с общей задержкой
 ## (gui/timers/tooltip_delay_sec) — свой таймер на 300 мс заведён отдельной
 ## задачей версии; здесь важно лишь то, что подсказка висит на ВСЕЙ карточке.
-func _tooltip_for(rank: int) -> String:
+func _tooltip_for(rank: int, requirement_hint: String) -> String:
 	var lines := PackedStringArray([definition.display_name])
 	if not definition.description.is_empty():
 		lines.append(definition.description)
+	if previewed:
+		# Ради этой строки предпросмотр и заведён: карточка обязана объяснить,
+		# что именно откроет доступ, иначе серый узел — просто дразнилка.
+		if not requirement_hint.is_empty():
+			lines.append("Требуется: " + requirement_hint)
+		return "\n".join(lines)
 	if rank >= definition.max_rank:
 		lines.append("Ранг %d/%d — максимум" % [rank, definition.max_rank])
 	else:

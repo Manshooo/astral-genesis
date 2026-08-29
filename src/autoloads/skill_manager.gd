@@ -50,15 +50,36 @@ func requirements_met(id: StringName) -> bool:
 	return true
 
 
-## Показывать ли навык в дереве. Правило карточки Skill Tree: видно изученное и
-## следующее доступное, остальное не существует — поэтому ветка, открывающаяся
-## по сумме рангов, и появляется целиком и сразу, без «серых заглушек».
+## Доступен ли навык игроку в дереве — то есть можно ли его вообще брать.
+## Правило карточки Skill Tree: видно изученное и следующее доступное; на шаг
+## дальше карточка показывается серой (см. is_previewed), а всё, что за ним, не
+## существует — поэтому ветка, открывающаяся по сумме рангов, и появляется
+## целиком и сразу, а не полем «серых заглушек» на всю глубину.
 ## Изученный навык виден всегда, даже если требования задним числом перестали
 ## выполняться: отобранная у игрока на глазах карточка выглядела бы багом.
 func is_revealed(id: StringName) -> bool:
 	if get_rank(id) > 0:
 		return true
 	return requirements_met(id)
+
+
+## Показать ли навык как «следующий шаг»: карточка видна, но серая и не
+## нажимается — игрок читает, что его ждёт, ещё не имея на это права.
+##
+## Ровно ОДИН шаг за границу открытого, а не всё дерево: требование считается
+## «почти выполненным», только если его цель сама уже показана игроку и до неё
+## остался один ранг. Без проверки на показанность условие «ранг >= 1 - 1»
+## выполняется для нуля, и серым засветилась бы вся ветка на два шага вперёд.
+func is_previewed(id: StringName) -> bool:
+	if is_revealed(id):
+		return false
+	var def := SKILL_TREE.get_definition(id)
+	if def == null:
+		return false
+	for req in def.requires:
+		if not _requirement_within_one_step(req):
+			return false
+	return true
 
 
 ## Может ли игрок прокачать навык дальше прямо сейчас.
@@ -119,6 +140,23 @@ func _requirement_met(req: RS_SkillRequirement) -> bool:
 			for skill_def in SKILL_TREE.get_branch_skills(req.target_branch):
 				total += get_rank(skill_def.id)
 			return total >= req.min_value
+	return false
+
+
+## «Требованию не хватает одного шага» — для is_previewed.
+func _requirement_within_one_step(req: RS_SkillRequirement) -> bool:
+	match req.type:
+		RS_SkillRequirement.Type.SKILL_RANK:
+			if not is_revealed(req.target_skill):
+				return false
+			return get_rank(req.target_skill) >= req.min_value - 1
+		RS_SkillRequirement.Type.BRANCH_TOTAL_RANKS:
+			var total := 0
+			var any_revealed := false
+			for skill_def in SKILL_TREE.get_branch_skills(req.target_branch):
+				total += get_rank(skill_def.id)
+				any_revealed = any_revealed or is_revealed(skill_def.id)
+			return any_revealed and total >= req.min_value - 1
 	return false
 
 
