@@ -38,9 +38,10 @@ extends Button
 
 @export_group("Звук")
 ## Событие byProd на покупку ранга. Путь, а не файл: что прозвучит и из скольких
-## вариантов выберется — решает проект звука (см. how-to/Звук.md). События пока
-## нет в пробном проекте, и это штатно: byProd один раз предупредит, экран
-## останется беззвучным. Пустая строка — «молча», без предупреждения вовсе.
+## вариантов выберется — решает проект звука (см. how-to/Звук.md). Промах по этой
+## строке ничего не роняет: byProd один раз предупредит, экран останется
+## беззвучным — поэтому её сверяет с проектом dev/byprod_check.tscn. Пустая
+## строка — «молча», без предупреждения вовсе.
 @export var unlock_event := "event:/ui/skill_unlock"
 
 @export_group("Предпросмотр")
@@ -129,6 +130,12 @@ func play_reveal() -> void:
 ## тайминг вслепую. Искры и звук зовутся дорожкой методов, поэтому сдвинуть их
 ## по времени можно, не трогая скрипт.
 func play_unlock_effect() -> void:
+	# stop() перед play() — это «с начала», а не «продолжить». play() на уже
+	# играющей анимации её НЕ перематывает, а идёт дальше с текущего места, и
+	# дорожка методов бьёт по одному разу за проход: покупая ранги подряд (очки
+	# есть, щёлкаешь быстро), игрок получил бы звук и искры только от первой.
+	# Ошибка тихая вдвойне — на неспешных кликах всё выглядит правильно.
+	_effects.stop()
 	_effects.play(&"unlock")
 
 
@@ -136,7 +143,7 @@ func play_unlock_effect() -> void:
 func _spawn_sparks() -> void:
 	# Точку вылета держит узел-якорь в сцене, а не деление размера пополам в
 	# коде: откуда бьют искры — решение того же порядка, что и где лежит подпись.
-	var sparks: CPUParticles2D = SPARKS_SCENE.instantiate()
+	var sparks: GPUParticles2D = SPARKS_SCENE.instantiate()
 	_sparks_anchor.add_child(sparks)
 	_emit_from_perimeter(sparks)
 	sparks.emitting = true
@@ -159,7 +166,18 @@ func _play_unlock_sound() -> void:
 ## нормаль наружу, поэтому искра отталкивается от своей стороны, а не летит в
 ## случайную сторону из общего центра. Считается кодом, потому что зависит от
 ## размера карточки, а он приходит из её же сцены.
-func _emit_from_perimeter(sparks: CPUParticles2D) -> void:
+##
+## У GPU-частиц точки живут не массивом, а ТЕКСТУРОЙ (см. _points_texture): всё
+## это считает видеокарта, и массива у неё нет.
+func _emit_from_perimeter(sparks: GPUParticles2D) -> void:
+	# Материал правится под размер конкретной карточки, поэтому он обязан быть
+	# resource_local_to_scene (помечен в скильных искрах) — иначе он ОДИН на все
+	# экземпляры сцены, и периметр последней покупки достался бы всем. Ровно та
+	# же ловушка, что со стилбоксом полоски ветки в setup().
+	var material := sparks.process_material as ParticleProcessMaterial
+	if material == null:
+		return
+
 	var half := size * 0.5
 	var corners := PackedVector2Array([
 		Vector2(-half.x, -half.y),
@@ -183,9 +201,24 @@ func _emit_from_perimeter(sparks: CPUParticles2D) -> void:
 			points.append(from + edge * (float(step) / float(steps)))
 			normals.append(normal)
 
-	sparks.emission_shape = CPUParticles2D.EMISSION_SHAPE_DIRECTED_POINTS
-	sparks.emission_points = points
-	sparks.emission_normals = normals
+	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_DIRECTED_POINTS
+	material.emission_point_count = points.size()
+	material.emission_point_texture = _points_texture(points)
+	material.emission_normal_texture = _points_texture(normals)
+
+
+## Пакует вектора в текстуру, какой их ждёт ParticleProcessMaterial: строка из
+## пикселей RGBF, по пикселю на вектор, x и y в первых двух каналах.
+##
+## Обычно такую текстуру печёт редактор («Load Emission Mask» по спрайту), но
+## периметр здесь зависит от размера карточки и известен только в рантайме.
+## Формат обязан быть с плавающей точкой: в RGB8 координаты прижались бы к 0..1,
+## то есть все точки схлопнулись бы в угол карточки.
+func _points_texture(points: PackedVector2Array) -> ImageTexture:
+	var image := Image.create_empty(maxi(points.size(), 1), 1, false, Image.FORMAT_RGBF)
+	for i in points.size():
+		image.set_pixel(i, 0, Color(points[i].x, points[i].y, 0.0))
+	return ImageTexture.create_from_image(image)
 
 
 ## Состояние приносит граф: ранг, «можно ли купить прямо сейчас» и показан ли

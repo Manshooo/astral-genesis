@@ -1,36 +1,42 @@
 [gd_scene format=3 uid="uid://bkpu07mysirt0"]
 
-[sub_resource type="Curve" id="Curve_4ar0o"]
+[sub_resource type="Curve" id="Curve_35lts"]
 _limits = [-360.0, 360.0, 0.0, 1.0]
 _data = [Vector2(0, -90), 0.0, 0.0, 0, 0, Vector2(1, 90), 0.0, 0.0, 0, 0]
 point_count = 2
+metadata/_snap_enabled = true
 
-[sub_resource type="Curve" id="Curve_3owqy"]
+[sub_resource type="CurveTexture" id="CurveTexture_35lts"]
+curve = SubResource("Curve_35lts")
+
+[sub_resource type="Curve" id="Curve_00rvm"]
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="Gradient" id="Gradient_umnco"]
-offsets = PackedFloat32Array(0, 0.18154761)
-colors = PackedColorArray(0.6421665, 0.6421665, 0.6421665, 0.5, 1, 1, 1, 1)
+[sub_resource type="CurveTexture" id="CurveTexture_00rvm"]
+curve = SubResource("Curve_00rvm")
 
-[node name="SkillSparks" type="CPUParticles2D" unique_id=342621159]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_3owqy"]
+resource_local_to_scene = true
+particle_flag_disable_z = true
+angle_min = -89.99999
+angle_max = 90.000015
+angle_curve = SubResource("CurveTexture_35lts")
+spread = 180.0
+initial_velocity_min = 25.0
+initial_velocity_max = 125.0
+gravity = Vector3(0, -2, 0)
+scale_min = 2.0
+scale_max = 4.0
+scale_curve = SubResource("CurveTexture_00rvm")
+color = Color(1, 1, 0, 1)
+
+[node name="SkillSparks" type="GPUParticles2D" unique_id=1519809641]
 z_index = 10
 emitting = false
-amount = 18
+local_coords = true
+amount = 24
 lifetime = 0.33
 one_shot = true
 explosiveness = 1.0
-lifetime_randomness = 0.5
-direction = Vector2(0, 0)
-spread = 180.0
-gravity = Vector2(0, 0)
-initial_velocity_min = 50.0
-initial_velocity_max = 100.0
-angle_min = -90.0
-angle_max = 90.0
-angle_curve = SubResource("Curve_4ar0o")
-scale_amount_min = 2.0
-scale_amount_max = 4.0
-scale_amount_curve = SubResource("Curve_3owqy")
-color = Color(1, 1, 0, 1)
-color_ramp = SubResource("Gradient_umnco")
+process_material = SubResource("ParticleProcessMaterial_3owqy")

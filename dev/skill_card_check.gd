@@ -17,6 +17,9 @@ extends Control
 ## место: прогресс игрока к геометрии карточки отношения не имеет.
 
 const GRAPH_SCENE := preload("res://src/ui/skill_tree/skill_graph_view.tscn")
+## Нужна отдельно от карточки: по второму экземпляру проверяется, что материал
+## частиц у каждых искр свой, а не общий на все карточки.
+const SPARKS_SCENE := preload("res://src/ui/skill_tree/skill_sparks.tscn")
 
 var _ok := 0
 var _fail := 0
@@ -72,8 +75,9 @@ func _run() -> void:
 ## просто перестаёт искрить и звучать.
 ##
 ## Звук наблюдается запросом (`AudioManager.event_requested`), как в
-## footsteps_check: сигнал шлётся до проверки на загруженный проект byProd, и
-## события покупки в пробном проекте звука пока нет вовсе.
+## footsteps_check: сигнал шлётся до проверки на загруженный проект byProd, так
+## что проверка не зависит ни от рантайма, ни от контента. Есть ли просимое
+## событие в собранном проекте — вопрос отдельный, и он в byprod_check.
 func _check_unlock_effect() -> void:
 	SkillManager.save = SkillManager._fresh_save()
 	SkillManager.save.skill_points = 5
@@ -129,7 +133,6 @@ func _check_unlock_effect() -> void:
 		requested.has(card.unlock_event),
 		"запрошено: %s" % ", ".join(requested)
 	)
-	AudioManager.event_requested.disconnect(collect)
 
 	var anchor: Control = card.get_node("%SparksAnchor")
 	_check(
@@ -137,26 +140,83 @@ func _check_unlock_effect() -> void:
 		anchor.get_child_count() > 0,
 		"дорожка методов никого не позвала"
 	)
+
+	# Второй ранг куплен, пока эффект от первого ещё играет — обычное дело, если
+	# очки есть и по карточке щёлкают подряд. Дорожки методов бьют по ОДНОМУ разу
+	# за проход, и AnimationPlayer.play() на уже играющей анимации её не
+	# перезапускает, а продолжает с текущего места: вторая покупка прошла бы
+	# молча и без искр. Ошибка тихая вдвойне — на медленных кликах всё правильно.
+	var sound_after_first := requested.size()
+	var sparks_after_first := anchor.get_child_count()
+	card.play_unlock_effect()
+	await get_tree().process_frame
+	_check(
+		"эффект: покупка подряд звучит каждая, а не только первая",
+		requested.size() > sound_after_first,
+		"звук просили %d раз на две покупки" % requested.size()
+	)
+	_check(
+		"эффект: покупка подряд сыплет искрами каждая",
+		anchor.get_child_count() > sparks_after_first,
+		"искр после двух покупок: %d" % anchor.get_child_count()
+	)
+	AudioManager.event_requested.disconnect(collect)
 	if anchor.get_child_count() == 0:
 		graph.queue_free()
 		return
 
-	var sparks: CPUParticles2D = anchor.get_child(0)
-	var points := sparks.emission_points
+	var sparks: GPUParticles2D = anchor.get_child(0)
+	var material: ParticleProcessMaterial = sparks.process_material
+
+	# Материал правится под размер конкретной карточки, поэтому у каждых искр он
+	# обязан быть СВОЙ (resource_local_to_scene). Общий не падает и даже не
+	# мигает: карточки одного размера, и периметр совпадает — до первой карточки
+	# другого размера. Та же ловушка, что со стилбоксом полоски ветки.
+	var other: GPUParticles2D = SPARKS_SCENE.instantiate()
+	_check(
+		"эффект: у каждых искр свой материал, а не общий на все карточки",
+		other.process_material != material,
+		"resource_local_to_scene снят с ParticleProcessMaterial"
+	)
+	other.free()
+
+	# Искры обязаны быть приклеены к карточке. По умолчанию у частиц (и CPU, и
+	# GPU — это не разница узлов) local_coords выключен: они живут в ГЛОБАЛЬНЫХ
+	# координатах и остаются висеть на месте, когда граф после покупки подводит
+	# камеру к новым узлам, — карточка уезжает из-под собственной вспышки.
+	# Одна булева, вид ломается целиком, ошибки нет.
+	_check(
+		"эффект: искры приклеены к карточке, а не к экрану",
+		sparks.local_coords,
+		"local_coords выключен — искры отстанут при подводке камеры"
+	)
+
+	# Точки вылета у GPU-частиц лежат ТЕКСТУРОЙ, а не массивом: считает их
+	# видеокарта. Читаем обратно тем же способом, каким карточка их кладёт.
+	var points := _texture_points(material.emission_point_texture)
+	var normals := _texture_points(material.emission_normal_texture)
+	_check(
+		"эффект: точки вылета доехали до материала",
+		not points.is_empty() and points.size() == normals.size(),
+		"точек %d, нормалей %d" % [points.size(), normals.size()]
+	)
+	if points.is_empty() or points.size() != normals.size():
+		graph.queue_free()
+		return
+
 	var perimeter := Rect2(-card.size * 0.5, card.size)
 	var covered := Rect2(points[0], Vector2.ZERO)
 	for point in points:
 		covered = covered.expand(point)
 	_check(
 		"эффект: искры вылетают с кромки карточки, а не из центра",
-		sparks.emission_shape == CPUParticles2D.EMISSION_SHAPE_DIRECTED_POINTS
+		material.emission_shape == ParticleProcessMaterial.EMISSION_SHAPE_DIRECTED_POINTS
 			and covered.position.is_equal_approx(perimeter.position)
 			and covered.size.is_equal_approx(perimeter.size),
-		"форма=%d, точки в %s при карточке %s" % [sparks.emission_shape, covered, perimeter]
+		"форма=%d, точки в %s при карточке %s" % [material.emission_shape, covered, perimeter]
 	)
 
 	var inward := PackedStringArray()
-	var normals := sparks.emission_normals
 	for i in points.size():
 		# Нормаль наружу — та, что смотрит ОТ центра: скалярное произведение с
 		# самой точкой (она же вектор из центра) положительно.
@@ -169,6 +229,19 @@ func _check_unlock_effect() -> void:
 	)
 
 	graph.queue_free()
+
+
+## Распаковывает текстуру точек вылета обратно в вектора: пиксель RGBF на точку,
+## x и y в первых двух каналах.
+func _texture_points(texture: Texture2D) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	if texture == null:
+		return points
+	var image := texture.get_image()
+	for i in image.get_width():
+		var pixel := image.get_pixel(i, 0)
+		points.append(Vector2(pixel.r, pixel.g))
+	return points
 
 
 func _check_cards(state: String, ranks: Dictionary, check_lines: bool = true) -> void:

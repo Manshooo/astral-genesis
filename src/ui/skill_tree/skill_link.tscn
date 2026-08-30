@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://b8qfh2uy0x4wr"]
 
-[ext_resource type="Script" path="res://src/ui/skill_tree/skill_link.gd" id="1_link"]
+[ext_resource type="Script" uid="uid://bj536tusryfav" path="res://src/ui/skill_tree/skill_link.gd" id="1_link"]
 
-[node name="SkillLink" type="Line2D"]
+[node name="SkillLink" type="Line2D" unique_id=1332302111]
 points = PackedVector2Array(0, 0, 120, 0)
 width = 2.0
 default_color = Color(1, 1, 1, 0.5)
