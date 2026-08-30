@@ -83,6 +83,7 @@ Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillMana
 | Editor tooling traps, template authoring | [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md) |
 | byProd, единственность менеджера, пауза, шаги | [Звук](docs/astral-genesis/how-to/Звук.md) |
 | Physics layers, UI theme, prefixes, rebinding codec | [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md) |
+| Blender→Godot: раскладка assets, бюджет карт, ORM, подмена материалов | [Blender-Godot пайплайн](docs/astral-genesis/Справка/Blender-Godot%20пайплайн.md) |
 | Debug cheats for a live run, and which tool checks what | [Отладочный оверлей](docs/astral-genesis/how-to/Отладочный%20оверлей.md) |
 | CI, versioning, local and manual releases | [Релизы и сборка](docs/astral-genesis/how-to/Релизы%20и%20сборка.md) |
 | Controls, player-facing | [Управление](docs/astral-genesis/Справка/Управление.md) |
