@@ -118,6 +118,15 @@ func unlock(id: StringName) -> bool:
 	return true
 
 
+## «Новая игра» — чистый лист целиком: дерево обнуляется вместе с миром.
+## Смерть этого НЕ делает и делать не должна: прокачанное дерево и есть то, что
+## игрок уносит из провалившегося забега (см. RunManager.die и экран смерти).
+func reset() -> void:
+	save = _fresh_save()
+	_save()
+	skills_changed.emit()
+
+
 func add_skill_points(amount: int) -> void:
 	save.skill_points += amount
 	_save()
@@ -172,4 +181,15 @@ func _load() -> PlayerSkillSave:
 		if loaded:
 			return loaded
 		push_warning("SkillManager: файл сохранения повреждён, загружаю дефолтные")
-	return DEFAULT_SAVE.duplicate()
+	return _fresh_save()
+
+
+## Чистый сейв из дефолтного ресурса. Словарь рангов копируется ОТДЕЛЬНО:
+## Resource.duplicate() не копирует Dictionary, а отдаёт тот же объект, что лежит
+## в res://data/default_skill_save.tres, — и первая же покупка навыка писала бы
+## ранги прямо в дефолт, общий на весь процесс. Тогда reset() возвращал бы
+## «чистый лист» с чужими рангами, то есть ровно не работал.
+func _fresh_save() -> PlayerSkillSave:
+	var fresh := DEFAULT_SAVE.duplicate()
+	fresh.ranks = DEFAULT_SAVE.ranks.duplicate()
+	return fresh

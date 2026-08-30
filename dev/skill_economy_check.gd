@@ -123,6 +123,33 @@ func _run(world: World) -> void:
 	for id in expected_ids:
 		_check("навык объявлен в дереве: %s" % id, tree.get_definition(id) != null, "get_definition вернул null")
 
+	# --- 5. «Новая игра» обнуляет дерево --------------------------------------
+	# Смерть метапрогресс сохраняет, новая игра — снимает. Вторая проверка здесь
+	# важнее первой: Resource.duplicate() отдаёт ТОТ ЖЕ Dictionary, что лежит в
+	# дефолтном ресурсе, поэтому без отдельного копирования рангов покупка
+	# навыка писала бы прямо в дефолт — и «чистый лист» приезжал бы уже с
+	# рангами, причём только в живой игре, где сейва на диске ещё нет.
+	SkillManager.save = SkillManager._fresh_save()
+	SkillManager.save.skill_points = 5
+	SkillManager.unlock(&"body_snatch")
+	_check(
+		"новая игра: покупка навыка не пишет в дефолтный сейв",
+		SkillManager.DEFAULT_SAVE.ranks.is_empty(),
+		"дефолт унёс ранги: %s" % [SkillManager.DEFAULT_SAVE.ranks]
+	)
+
+	SkillManager.reset()
+	_check(
+		"новая игра: ранги сброшены",
+		SkillManager.save.ranks.is_empty(),
+		"остались ранги: %s" % [SkillManager.save.ranks]
+	)
+	_check(
+		"новая игра: очки сброшены",
+		SkillManager.save.skill_points == SkillManager.DEFAULT_SAVE.skill_points,
+		"skill_points=%d" % SkillManager.save.skill_points
+	)
+
 
 ## Надеть на душу тело с заданным остатком кармана распада (maximum фиксирован
 ## BODY_DECAY_MAX, модификаторов на BODY_DECAY нет — эффективный максимум
