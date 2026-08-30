@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/skill_tree/skill_link.gd" id="1_link"]
+
+[node name="SkillLink" type="Line2D"]
+points = PackedVector2Array(0, 0, 120, 0)
+width = 2.0
+default_color = Color(1, 1, 1, 0.5)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+script = ExtResource("1_link")

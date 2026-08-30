@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://bovfjbnwr8ut5"]
+
+[ext_resource type="Script" uid="uid://jr4q0henu2m5" path="res://src/ui/skill_tree/skill_lane.gd" id="1_lane"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fill"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+corner_detail = 5
+
+[node name="SkillLane" type="Control" unique_id=1336143589]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 400.0
+offset_bottom = 96.0
+mouse_filter = 2
+script = ExtResource("1_lane")
+
+[node name="Fill" type="Panel" parent="." unique_id=1717423537]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fill")
+
+[node name="Gutter" type="MarginContainer" parent="." unique_id=2069522471]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 136.0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_right = 18
+
+[node name="Name" type="Label" parent="Gutter" unique_id=557944841]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Ветка"
+horizontal_alignment = 2
+vertical_alignment = 1
