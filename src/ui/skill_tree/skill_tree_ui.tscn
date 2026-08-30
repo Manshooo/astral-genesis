@@ -1,6 +1,7 @@
-[gd_scene format=3 uid="uid://bs4mhbbdotjwg"]
+[gd_scene load_steps=4 format=3 uid="uid://bs4mhbbdotjwg"]
 
 [ext_resource type="Script" uid="uid://hqbvgrlg6emm" path="res://src/ui/skill_tree/skill_tree_ui.gd" id="1_4ij35"]
+[ext_resource type="PackedScene" path="res://src/ui/skill_tree/skill_graph_view.tscn" id="2_graph"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_3owqy"]
 font_size = 32
@@ -56,6 +57,7 @@ text = "Улучшения"
 label_settings = SubResource("LabelSettings_3owqy")
 
 [node name="PointsLabel" type="Label" parent="Panel/MarginContainer/VBox/Header" unique_id=335534320]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Очки: 0"
 
@@ -63,14 +65,15 @@ text = "Очки: 0"
 layout_mode = 2
 text = "Закрыть"
 
-[node name="GraphHost" type="Control" parent="Panel/MarginContainer/VBox"]
+[node name="Graph" parent="Panel/MarginContainer/VBox" instance=ExtResource("2_graph")]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Hint" type="Label" parent="Panel/MarginContainer/VBox"]
 layout_mode = 2
-text = "ЛКМ по пустому месту — перетащить, колесо — масштаб"
+text = "Чтобы перетащить нажмите ЛКМ по пустому месту.\nДля изменения масштаба используйте колёсико мышки."
 label_settings = SubResource("LabelSettings_hint")
 
 [connection signal="pressed" from="Panel/MarginContainer/VBox/Header/CloseButton" to="." method="_on_close_pressed"]

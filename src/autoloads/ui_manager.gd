@@ -145,4 +145,9 @@ func _set_player_input_blocked(blocked: bool) -> void:
 
 
 func _get_player_entity() -> Entity:
+	# Мира может уже не быть: экран смерти гасит стек, находясь В СВОЕЙ сцене —
+	# игровая к тому моменту выгружена вместе с ECS.world. Отсутствие мира здесь
+	# нормально, on_close дерева навыков просто некому применить.
+	if ECS.world == null:
+		return null
 	return ECS.world.query.with_all([C_PlayerInput]).execute_one()

@@ -1,10 +1,11 @@
 # res://src/ui/skill_tree/skill_graph_view.gd
 ## Граф дерева навыков: карточки-узлы, связи-требования, панорама и зум.
 ##
-## Показывает НЕ всё дерево, а только изученное и следующее доступное
-## (SkillManager.is_revealed) — правило карточки Skill Tree. Отсюда главный
-## приём версии: ветка, открывающаяся по сумме рангов, не висит серыми
-## заглушками, а появляется целиком в момент, когда условие выполнилось.
+## Показывает НЕ всё дерево, а изученное, следующее доступное
+## (SkillManager.is_revealed) и ровно один шаг за ними — серым предпросмотром
+## (SkillManager.is_previewed): игрок читает, куда ветка ведёт дальше, но купить
+## это ещё не может. Дальше предпросмотра дерево для игрока не существует, и
+## ветка, открывающаяся по сумме рангов, по-прежнему появляется целиком и сразу.
 ##
 ## Скрытый узел не рисуется, но МЕСТО за ним закреплено: раскладка считается по
 ## всему дереву разом (SkillGraphLayout), поэтому открытие соседа не двигает уже
@@ -15,6 +16,13 @@
 ## проверяет требование SKILL_RANK. Требование «сумма рангов в ветке» рёбер не
 ## даёт намеренно — оно про ветку целиком, и веер линий из всех её узлов
 ## сообщал бы не структуру, а шум.
+##
+## Что правится глазами и что кодом. Слои графа (полотно панорамы, дорожки,
+## связи) лежат в skill_graph_view.tscn, карточка и дорожка ветки — своими
+## сценами (skill_node_card.tscn, skill_lane.tscn), а размеры и цвета, которые
+## нельзя нарисовать, вынесены в @export и правятся в инспекторе. Кодом остаётся
+## только то, что зависит от данных: где стоит узел, что показано, куда идёт
+## связь и какой прямоугольник заняла ветка.
 class_name UI_SkillGraph
 extends Control
 
@@ -23,47 +31,47 @@ extends Control
 signal skill_activated(id: StringName)
 
 @export_group("Клетка")
-@export var node_size := Vector2(196.0, 80.0)
 @export var cell_gap := Vector2(68.0, 20.0)
-## Левый жёлоб под подписи дорожек.
-@export var lane_label_width := 136.0
 
 @export_group("Дорожки")
-@export var lane_fill_alpha := 0.06
-@export var lane_label_alpha := 0.8
-
-@export_group("Связи")
-@export var link_width := 2.0
-@export var link_alpha := 0.5
-## Сегментов на кривую связи. Больше — глаже, но связи пересчитываются на каждой
-## перерисовке, а на глаз разница выше десятка уже не видна.
-@export var link_segments := 14
+## Насколько подложка дорожки выступает за крайние карточки ветки. Всё
+## остальное в её виде — подложка, жёлоб, подпись — лежит в skill_lane.tscn.
+@export var lane_padding := Vector2(18.0, 10.0)
 
 @export_group("Панорама")
 @export var zoom_min := 0.45
 @export var zoom_max := 1.6
 @export var zoom_step := 1.12
 @export var fit_padding := 48.0
+## Наведение камеры на новое. Единственная длительность, оставшаяся графу: она
+## про движение кадра, а не про вид какого-то элемента — те живут в своих сценах.
+@export var fit_duration := 0.35
 
-## Появление новой карточки: подъезд из полупрозрачности, чтобы открытие ветки
-## читалось как событие, а не как «граф моргнул».
-const REVEAL_DURATION := 0.35
-const FIT_DURATION := 0.35
-
-## Цвет вспышки карточки и искр при разблокировке — тёплый golden, не из темы:
-## тема несёт форму контролов, а разовый эффект-реакция к ней не относится.
-const FLASH_COLOR := Color(1.6, 1.35, 0.7)
-const FLASH_DURATION := 0.5
-const SPARK_COUNT := 16
-const SPARK_LIFETIME := 0.5
+## Сцена карточки-узла. Её же размер задаёт клетку сетки — см. _card_size().
+const CARD_SCENE := preload("res://src/ui/skill_tree/skill_node_card.tscn")
+## Сцена дорожки ветки. Её жёлоб задаёт левый отступ всей сетки — см. _lane_gutter().
+const LANE_SCENE := preload("res://src/ui/skill_tree/skill_lane.tscn")
+## Сцена связи-требования. Толщина, сглаживание и густота линии — в ней.
+const LINK_SCENE := preload("res://src/ui/skill_tree/skill_link.tscn")
 
 var _skill_manager
 var _tree_data: RS_SkillTree
 var _layout: SkillGraphLayout
 
-var _canvas: Control
-var _links: Control
+## Размер клетки = размер карточки, и берётся он ИЗ ЕЁ СЦЕНЫ. Второе число
+## здесь (@export на графе) означало бы, что карточку, растянутую в редакторе,
+## сетка, связи и подложки дорожек считают по-старому.
+var node_size := Vector2(196.0, 96.0)
+## Левый жёлоб под подписи дорожек — тоже из сцены, см. _lane_gutter().
+var lane_label_width := 136.0
+
+@onready var _canvas: Control = %Canvas
+@onready var _lanes_host: Control = %Lanes
+@onready var _links_host: Control = %Links
+
 var _nodes: Dictionary = {}  ## StringName -> UI_SkillNode
+var _lanes: Dictionary = {}  ## StringName (ветка) -> UI_SkillLane
+var _links: Dictionary = {}  ## "требование→навык" -> UI_SkillLink
 
 var _panning := false
 var _fitted := false
@@ -77,7 +85,6 @@ var zoom: float = 1.0:
 
 
 func _ready() -> void:
-	clip_contents = true
 	resized.connect(_on_resized)
 
 
@@ -85,19 +92,46 @@ func setup(skill_manager, tree_data: RS_SkillTree) -> void:
 	_skill_manager = skill_manager
 	_tree_data = tree_data
 	_layout = SkillGraphLayout.build(tree_data)
-
-	_canvas = Control.new()
-	_canvas.name = "Canvas"
-	_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_canvas)
-
-	_links = Control.new()
-	_links.name = "Links"
-	_links.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_links.draw.connect(_draw_links)
-	_canvas.add_child(_links)
+	node_size = _card_size()
+	lane_label_width = _lane_gutter()
+	_build_lanes()
 
 	refresh()
+
+
+## Клетка сетки — это карточка, поэтому её размер спрашивается у самой сцены
+## карточки, а не хранится вторым числом в графе. Пробный экземпляр дешевле
+## любой синхронизации руками: сцену правят в редакторе, и разъехаться нечему.
+func _card_size() -> Vector2:
+	var probe: Control = CARD_SCENE.instantiate()
+	var probe_size := Vector2(
+		maxf(probe.size.x, probe.custom_minimum_size.x),
+		maxf(probe.size.y, probe.custom_minimum_size.y)
+	)
+	probe.free()
+	return probe_size
+
+
+## Тем же приёмом, что и клетка: ширину жёлоба под подписи держит сцена дорожки,
+## а граф лишь отодвигает на неё карточки.
+func _lane_gutter() -> float:
+	var probe: UI_SkillLane = LANE_SCENE.instantiate()
+	var width := probe.gutter_width()
+	probe.free()
+	return width
+
+
+## Дорожка заводится на КАЖДУЮ ветку раскладки сразу и навсегда: ветка без
+## показанных карточек просто спрятана. Создавать её в момент появления первой
+## карточки значило бы решать одно и то же дважды — здесь и в refresh().
+func _build_lanes() -> void:
+	for lane in _layout.lanes:
+		var branch_id: StringName = lane["branch"]
+		var view: UI_SkillLane = LANE_SCENE.instantiate()
+		_lanes_host.add_child(view)
+		view.setup(_tree_data.branch_display_name(branch_id), _tree_data.branch_color(branch_id))
+		view.visible = false
+		_lanes[branch_id] = view
 
 
 ## Пересобрать граф под текущее состояние навыков. Узлы не удаляются никогда:
@@ -110,7 +144,8 @@ func refresh() -> void:
 	for def in _tree_data.skills:
 		if def == null:
 			continue
-		if not _skill_manager.is_revealed(def.id):
+		var previewed: bool = not _skill_manager.is_revealed(def.id)
+		if previewed and not _skill_manager.is_previewed(def.id):
 			continue
 		var card: UI_SkillNode = _nodes.get(def.id)
 		if card == null:
@@ -118,32 +153,52 @@ func refresh() -> void:
 			# Первая сборка — не «появление»: анимировать въезд десятка карточек
 			# при открытии экрана значит показать анимацию вместо дерева.
 			if _fitted:
-				_animate_reveal(card)
+				card.play_reveal()
 			appeared = true
-		card.refresh(_skill_manager.get_rank(def.id), _skill_manager.can_unlock(def.id))
+		card.refresh(
+			_skill_manager.get_rank(def.id),
+			_skill_manager.can_unlock(def.id),
+			previewed,
+			_requirement_hint(def)
+		)
 
-	_links.queue_redraw()
+	_update_lanes()
+	_update_links()
 	if appeared:
 		_request_fit(_fitted)
 
 
+## Прямоугольник дорожки — по показанным карточкам её ветки, поэтому он и
+## пересчитывается на каждом refresh(), а не выдаётся раз при сборке.
+func _update_lanes() -> void:
+	for lane in _layout.lanes:
+		var view: UI_SkillLane = _lanes.get(lane["branch"])
+		if view == null:
+			continue
+		var band := _lane_band(lane)
+		view.visible = band.size.y > 0.0
+		if not view.visible:
+			continue
+		view.position = band.position
+		view.size = band.size
+
+
 func play_unlock_effect(id: StringName) -> void:
 	var card: UI_SkillNode = _nodes.get(id)
-	if card == null:
-		return
-	_flash(card)
-	_spawn_sparks(card)
+	if card != null:
+		card.play_unlock_effect()
 
 
 func _create_node(def: RS_SkillDefinition) -> UI_SkillNode:
-	var card := UI_SkillNode.new()
+	var card: UI_SkillNode = CARD_SCENE.instantiate()
+	# В дерево сцены — ДО setup(): начинку карточки держат @onready-ссылки, а они
+	# поднимаются только на входе в дерево.
+	_canvas.add_child(card)
 	card.setup(def, _tree_data.branch_color(def.branch))
-	card.custom_minimum_size = node_size
 	card.size = node_size
 	card.pivot_offset = node_size * 0.5
 	card.position = _cell_to_pixel(_layout.cells.get(def.id, Vector2i.ZERO))
 	card.pressed.connect(_on_card_pressed.bind(def.id))
-	_canvas.add_child(card)
 	_nodes[def.id] = card
 	return card
 
@@ -152,42 +207,27 @@ func _on_card_pressed(id: StringName) -> void:
 	skill_activated.emit(id)
 
 
-func _animate_reveal(card: UI_SkillNode) -> void:
-	card.modulate.a = 0.0
-	card.scale = Vector2(0.86, 0.86)
-	var tween := create_tween().set_parallel()
-	tween.tween_property(card, "modulate:a", 1.0, REVEAL_DURATION)
-	tween.tween_property(card, "scale", Vector2.ONE, REVEAL_DURATION) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-
-func _flash(card: Control) -> void:
-	card.modulate = FLASH_COLOR
-	var tween := create_tween()
-	tween.tween_property(card, "modulate", Color.WHITE, FLASH_DURATION) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-
-
-func _spawn_sparks(anchor: Control) -> void:
-	var particles := CPUParticles2D.new()
-	anchor.add_child(particles)
-	particles.position = anchor.size / 2.0
-	particles.z_index = 10
-	particles.one_shot = true
-	particles.amount = SPARK_COUNT
-	particles.lifetime = SPARK_LIFETIME
-	particles.explosiveness = 1.0
-	particles.direction = Vector2.UP
-	particles.spread = 180.0
-	particles.initial_velocity_min = 60.0
-	particles.initial_velocity_max = 140.0
-	particles.gravity = Vector2(0.0, 220.0)
-	particles.scale_amount_min = 2.0
-	particles.scale_amount_max = 4.0
-	particles.color = Color(1.0, 0.85, 0.4)
-	particles.emitting = true
-
-	get_tree().create_timer(SPARK_LIFETIME).timeout.connect(particles.queue_free)
+## Требования словами — карточке-предпросмотру, чтобы серый узел объяснял, чем
+## он открывается. Собирает граф, а не карточка: имена соседних навыков и веток
+## лежат в дереве, а карточка знает только про себя.
+func _requirement_hint(def: RS_SkillDefinition) -> String:
+	var parts := PackedStringArray()
+	for req in def.requires:
+		if req == null:
+			continue
+		match req.type:
+			RS_SkillRequirement.Type.SKILL_RANK:
+				var target := _tree_data.get_definition(req.target_skill)
+				var target_name := (
+					target.display_name if target != null else String(req.target_skill)
+				)
+				parts.append("«%s» ранга %d" % [target_name, req.min_value])
+			RS_SkillRequirement.Type.BRANCH_TOTAL_RANKS:
+				parts.append(
+					"%d рангов в ветке «%s»"
+					% [req.min_value, _tree_data.branch_display_name(req.target_branch)]
+				)
+	return ", ".join(parts)
 
 
 # --- Раскладка в пикселях ----------------------------------------------------
@@ -198,12 +238,6 @@ func _cell_to_pixel(cell: Vector2i) -> Vector2:
 		lane_label_width + cell.x * (node_size.x + cell_gap.x),
 		cell.y * (node_size.y + cell_gap.y)
 	)
-
-
-func _content_width() -> float:
-	if _layout.columns <= 0:
-		return lane_label_width
-	return lane_label_width + _layout.columns * (node_size.x + cell_gap.x) - cell_gap.x
 
 
 ## Границы того, что реально показано, плюс жёлоб с подписями дорожек: камера
@@ -226,71 +260,59 @@ func _revealed_bounds() -> Rect2:
 # --- Отрисовка дорожек и связей ----------------------------------------------
 
 
-func _draw_links() -> void:
-	if _layout == null:
-		return
-	_draw_lanes()
-
+## Ребро есть ровно там, где SkillManager проверяет требование SKILL_RANK и обе
+## карточки уже показаны. Связи, как и карточки, не удаляются: показанное
+## остаётся показанным, поэтому существующие только обновляются.
+func _update_links() -> void:
 	for def in _tree_data.skills:
 		if def == null or not _nodes.has(def.id):
 			continue
-		var color := Color(_tree_data.branch_color(def.branch), link_alpha)
+		var target: UI_SkillNode = _nodes[def.id]
 		for req in def.requires:
 			if req == null or req.type != RS_SkillRequirement.Type.SKILL_RANK:
 				continue
 			if not _nodes.has(req.target_skill):
 				continue
 			var source: UI_SkillNode = _nodes[req.target_skill]
-			var target: UI_SkillNode = _nodes[def.id]
-			_draw_link(source.position, target.position, color)
+			var key := "%s→%s" % [req.target_skill, def.id]
+			var link: UI_SkillLink = _links.get(key)
+			if link == null:
+				link = LINK_SCENE.instantiate()
+				_links_host.add_child(link)
+				_links[key] = link
+			# Связь входит в карточку слева, а выходит справа: ветки лежат
+			# дорожками, и требование через дорожку прямой линией резало бы
+			# чужие карточки.
+			link.connect_cards(
+				source.position + Vector2(node_size.x, node_size.y * 0.5),
+				target.position + Vector2(0.0, node_size.y * 0.5),
+				_tree_data.branch_color(def.branch),
+				target.previewed
+			)
 
 
-func _draw_lanes() -> void:
-	var font := _links.get_theme_default_font()
-	var font_size := _links.get_theme_default_font_size()
-	var cell_height := node_size.y + cell_gap.y
-	var width := _content_width()
-
-	for lane in _layout.lanes:
-		if not _lane_has_revealed(lane):
-			continue
-		var color := _tree_data.branch_color(lane["branch"])
-		var top: float = lane["row"] * cell_height
-		var height: float = lane["height"] * cell_height - cell_gap.y
-		_links.draw_rect(Rect2(0.0, top, width, height), Color(color, lane_fill_alpha))
-		if font == null:
-			continue
-		_links.draw_string(
-			font,
-			Vector2(0.0, top + height * 0.5 + font_size * 0.35),
-			_tree_data.branch_display_name(lane["branch"]),
-			HORIZONTAL_ALIGNMENT_RIGHT,
-			lane_label_width - 18.0,
-			font_size,
-			Color(color, lane_label_alpha)
-		)
-
-
-func _lane_has_revealed(lane: Dictionary) -> bool:
+## Прямоугольник дорожки — по ПОКАЗАННЫМ карточкам ветки, а не по забронированным
+## под неё клеткам. Место в раскладке закреплено за всем деревом, и подложка во
+## всю его ширину означала бы полосу, уходящую в пустоту: игрок читает её как
+## «здесь что-то есть», хотя там ничего нет и не показано. Левый край всё равно
+## доводится до нуля — в жёлобе лежит подпись ветки, она часть дорожки.
+func _lane_band(lane: Dictionary) -> Rect2:
+	var band := Rect2()
+	var first := true
 	for def in _tree_data.get_branch_skills(lane["branch"]):
-		if _nodes.has(def.id):
-			return true
-	return false
+		var card: UI_SkillNode = _nodes.get(def.id)
+		if card == null:
+			continue
+		var rect := Rect2(card.position, node_size)
+		band = rect if first else band.merge(rect)
+		first = false
+	if first:
+		return Rect2()
 
-
-## Связь — кубическая кривая с горизонтальными «усами»: ветки лежат дорожками,
-## и требование через дорожку прямой линией резало бы чужие карточки.
-func _draw_link(from_position: Vector2, to_position: Vector2, color: Color) -> void:
-	var a := from_position + Vector2(node_size.x, node_size.y * 0.5)
-	var b := to_position + Vector2(0.0, node_size.y * 0.5)
-	var handle := maxf((b.x - a.x) * 0.5, 40.0)
-	var c1 := a + Vector2(handle, 0.0)
-	var c2 := b - Vector2(handle, 0.0)
-
-	var points := PackedVector2Array()
-	for i in link_segments + 1:
-		points.append(a.bezier_interpolate(c1, c2, b, float(i) / float(link_segments)))
-	_links.draw_polyline(points, color, link_width, true)
+	band = band.grow_individual(0.0, lane_padding.y, lane_padding.x, lane_padding.y)
+	band.size.x += band.position.x
+	band.position.x = 0.0
+	return band
 
 
 # --- Панорама и зум ----------------------------------------------------------
@@ -378,9 +400,9 @@ func _fit(animated: bool) -> void:
 		return
 
 	_fit_tween = create_tween().set_parallel()
-	_fit_tween.tween_property(self, "zoom", target_zoom, FIT_DURATION) \
+	_fit_tween.tween_property(self, "zoom", target_zoom, fit_duration) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	_fit_tween.tween_property(_canvas, "position", target_position, FIT_DURATION) \
+	_fit_tween.tween_property(_canvas, "position", target_position, fit_duration) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
