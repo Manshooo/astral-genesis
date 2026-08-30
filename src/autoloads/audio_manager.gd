@@ -202,6 +202,36 @@ func play_event_3d(event_path: String, position: Vector3) -> void:
 	instance.release_when_finished()
 
 
+## Разовый звук интерфейса: у него нет точки в мире — щелчок по кнопке, покупка
+## навыка, открытие экрана.
+##
+## Отдельно от `play_event_3d` по двум причинам, и обе про то, что интерфейс
+## живёт НАД миром. Атрибуты 3D не ставятся вовсе: с ними звук приехал бы в
+## какую-то точку сцены и получил бы её затухание и панораму, а у щелчка по
+## карточке места в мире нет — он звучит «здесь», у игрока в ушах.
+##
+## И на паузу он не подписывается — единственное место в этом файле, где подписка
+## пропущена намеренно. `_follow_pause` глушит голос, когда мир остановлен, а
+## меню паузы — ровно то место, где интерфейс обязан звучать: подписанный щелчок
+## пропал бы именно там, где по нему и щёлкают.
+func play_event_ui(event_path: String) -> void:
+	event_requested.emit(event_path, Vector3.ZERO)
+
+	if not _loaded:
+		return
+
+	var description := _description_for(event_path)
+	if description == null:
+		return
+
+	var instance = description.create_instance()
+	if instance == null:
+		return
+
+	instance.start()
+	instance.release_when_finished()
+
+
 ## Длящийся звук: инстанс отдаётся вызывающему, и дальше он сам решает, когда
 ## его завести, чем параметризовать и когда отпустить.
 ##

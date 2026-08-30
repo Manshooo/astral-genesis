@@ -43,18 +43,9 @@ signal skill_activated(id: StringName)
 @export var zoom_max := 1.6
 @export var zoom_step := 1.12
 @export var fit_padding := 48.0
-
-@export_group("Эффекты")
-## Появление новой карточки: подъезд из полупрозрачности, чтобы открытие ветки
-## читалось как событие, а не как «граф моргнул».
-@export var reveal_duration := 0.35
+## Наведение камеры на новое. Единственная длительность, оставшаяся графу: она
+## про движение кадра, а не про вид какого-то элемента — те живут в своих сценах.
 @export var fit_duration := 0.35
-## Цвет вспышки карточки и искр при разблокировке — тёплый golden, не из темы:
-## тема несёт форму контролов, а разовый эффект-реакция к ней не относится.
-@export var flash_color := Color(1.6, 1.35, 0.7)
-@export var flash_duration := 0.5
-@export var spark_count := 16
-@export var spark_lifetime := 0.5
 
 ## Сцена карточки-узла. Её же размер задаёт клетку сетки — см. _card_size().
 const CARD_SCENE := preload("res://src/ui/skill_tree/skill_node_card.tscn")
@@ -162,7 +153,7 @@ func refresh() -> void:
 			# Первая сборка — не «появление»: анимировать въезд десятка карточек
 			# при открытии экрана значит показать анимацию вместо дерева.
 			if _fitted:
-				_animate_reveal(card)
+				card.play_reveal()
 			appeared = true
 		card.refresh(
 			_skill_manager.get_rank(def.id),
@@ -194,10 +185,8 @@ func _update_lanes() -> void:
 
 func play_unlock_effect(id: StringName) -> void:
 	var card: UI_SkillNode = _nodes.get(id)
-	if card == null:
-		return
-	_flash(card)
-	_spawn_sparks(card)
+	if card != null:
+		card.play_unlock_effect()
 
 
 func _create_node(def: RS_SkillDefinition) -> UI_SkillNode:
@@ -239,44 +228,6 @@ func _requirement_hint(def: RS_SkillDefinition) -> String:
 					% [req.min_value, _tree_data.branch_display_name(req.target_branch)]
 				)
 	return ", ".join(parts)
-
-
-func _animate_reveal(card: UI_SkillNode) -> void:
-	card.modulate.a = 0.0
-	card.scale = Vector2(0.86, 0.86)
-	var tween := create_tween().set_parallel()
-	tween.tween_property(card, "modulate:a", 1.0, reveal_duration)
-	tween.tween_property(card, "scale", Vector2.ONE, reveal_duration) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-
-func _flash(card: Control) -> void:
-	card.modulate = flash_color
-	var tween := create_tween()
-	tween.tween_property(card, "modulate", Color.WHITE, flash_duration) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-
-
-func _spawn_sparks(anchor: Control) -> void:
-	var particles := CPUParticles2D.new()
-	anchor.add_child(particles)
-	particles.position = anchor.size / 2.0
-	particles.z_index = 10
-	particles.one_shot = true
-	particles.amount = spark_count
-	particles.lifetime = spark_lifetime
-	particles.explosiveness = 1.0
-	particles.direction = Vector2.UP
-	particles.spread = 180.0
-	particles.initial_velocity_min = 60.0
-	particles.initial_velocity_max = 140.0
-	particles.gravity = Vector2(0.0, 220.0)
-	particles.scale_amount_min = 2.0
-	particles.scale_amount_max = 4.0
-	particles.color = Color(1.0, 0.85, 0.4)
-	particles.emitting = true
-
-	get_tree().create_timer(spark_lifetime).timeout.connect(particles.queue_free)
 
 
 # --- Раскладка в пикселях ----------------------------------------------------

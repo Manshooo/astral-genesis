@@ -56,6 +56,120 @@ func _run() -> void:
 	SkillManager.SKILL_TREE = _tree_with_long_name()
 	await _check_cards("длинное название", {}, false)
 
+	SkillManager.SKILL_TREE = tree
+	await _check_unlock_effect()
+
+
+## Эффект покупки: золотая рамка по кромке, искры с этой же кромки и звук.
+## Проверяется то, что ломается молча — рамка, забытая зажжённой или погашенной,
+## и нормали точек вылета: перепутанный знак не уронит ничего, искры просто
+## посыплются ВНУТРЬ карточки, и заметить это можно только глазами и только в
+## момент покупки.
+##
+## С переездом эффекта в AnimationPlayer добавился ещё один тихий способ сломать:
+## искры и звук зовутся ДОРОЖКОЙ МЕТОДОВ, а её связь с методом — строка в сцене.
+## Переименованный метод не даёт ни ошибки парсера, ни предупреждения — карточка
+## просто перестаёт искрить и звучать.
+##
+## Звук наблюдается запросом (`AudioManager.event_requested`), как в
+## footsteps_check: сигнал шлётся до проверки на загруженный проект byProd, и
+## события покупки в пробном проекте звука пока нет вовсе.
+func _check_unlock_effect() -> void:
+	SkillManager.save = SkillManager._fresh_save()
+	SkillManager.save.skill_points = 5
+
+	var graph: UI_SkillGraph = GRAPH_SCENE.instantiate()
+	add_child(graph)
+	graph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	graph.setup(SkillManager, SkillManager.SKILL_TREE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var card: UI_SkillNode = graph._nodes[&"body_snatch"]
+	var glow: Control = card.get_node("%Glow")
+	_check(
+		"эффект: рамка погашена, пока ничего не куплено",
+		is_zero_approx(glow.modulate.a),
+		"alpha=%.2f" % glow.modulate.a
+	)
+
+	# Появление тоже дорожка, и путь свойства в ней — строка: промах по нему не
+	# ошибка, а «карточка не доехала». Хуже всего последний кадр — карточка,
+	# оставшаяся полупрозрачной и уменьшенной, выглядит как выключенная.
+	var effects: AnimationPlayer = card.get_node("%Effects")
+	# Заведомо «недоехавшее» состояние: карточка в дереве уже видима и своего
+	# размера, и без этого проверка зеленела бы вхолостую — сломанная дорожка
+	# просто не трогала бы то, что и так верно.
+	card.modulate.a = 0.0
+	card.scale = Vector2(0.5, 0.5)
+	card.play_reveal()
+	effects.advance(effects.get_animation(&"reveal").length + 0.01)
+	_check(
+		"появление: карточка доезжает до полной видимости и своего размера",
+		is_equal_approx(card.modulate.a, 1.0) and card.scale.is_equal_approx(Vector2.ONE),
+		"alpha=%.2f, scale=%s" % [card.modulate.a, card.scale]
+	)
+
+	var requested: Array[String] = []
+	var collect := func(event_path: String, _position: Vector3) -> void:
+		requested.append(event_path)
+	AudioManager.event_requested.connect(collect)
+
+	card.play_unlock_effect()
+	# Кадр: AnimationPlayer накладывает дорожки в своём процессе, а не в play().
+	# За него рамка уже чуть погасла — поэтому «зажглась», а не «ровно единица».
+	await get_tree().process_frame
+	_check(
+		"эффект: покупка зажигает рамку",
+		glow.modulate.a > 0.5,
+		"alpha=%.2f" % glow.modulate.a
+	)
+	_check(
+		"эффект: покупка просит звук",
+		requested.has(card.unlock_event),
+		"запрошено: %s" % ", ".join(requested)
+	)
+	AudioManager.event_requested.disconnect(collect)
+
+	var anchor: Control = card.get_node("%SparksAnchor")
+	_check(
+		"эффект: покупка порождает искры",
+		anchor.get_child_count() > 0,
+		"дорожка методов никого не позвала"
+	)
+	if anchor.get_child_count() == 0:
+		graph.queue_free()
+		return
+
+	var sparks: CPUParticles2D = anchor.get_child(0)
+	var points := sparks.emission_points
+	var perimeter := Rect2(-card.size * 0.5, card.size)
+	var covered := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		covered = covered.expand(point)
+	_check(
+		"эффект: искры вылетают с кромки карточки, а не из центра",
+		sparks.emission_shape == CPUParticles2D.EMISSION_SHAPE_DIRECTED_POINTS
+			and covered.position.is_equal_approx(perimeter.position)
+			and covered.size.is_equal_approx(perimeter.size),
+		"форма=%d, точки в %s при карточке %s" % [sparks.emission_shape, covered, perimeter]
+	)
+
+	var inward := PackedStringArray()
+	var normals := sparks.emission_normals
+	for i in points.size():
+		# Нормаль наружу — та, что смотрит ОТ центра: скалярное произведение с
+		# самой точкой (она же вектор из центра) положительно.
+		if points[i].dot(normals[i]) <= 0.0:
+			inward.append("%s→%s" % [points[i], normals[i]])
+	_check(
+		"эффект: искра отталкивается от своей стороны, а не летит внутрь",
+		inward.is_empty(),
+		", ".join(inward)
+	)
+
+	graph.queue_free()
+
 
 func _check_cards(state: String, ranks: Dictionary, check_lines: bool = true) -> void:
 	SkillManager.save = SkillManager._fresh_save()
@@ -82,9 +196,44 @@ func _check_cards(state: String, ranks: Dictionary, check_lines: bool = true) ->
 
 	var spilled := PackedStringArray()
 	var clipped := PackedStringArray()
+	var wrong_stripe := PackedStringArray()
+	var wrong_pips := PackedStringArray()
+	var stripe_boxes: Dictionary = {}  # instance_id стилбокса -> id навыка
 	for id in graph._nodes:
 		var card: UI_SkillNode = graph._nodes[id]
 		var bounds := card.get_global_rect()
+
+		# Делений ровно столько, сколько у навыка рангов, и закрашено ровно
+		# столько, сколько куплено: число копий образца считает код, и ошибка в
+		# нём — это молча навравший игроку счётчик прокачки.
+		var pips: Container = card.get_node("%Pips")
+		var filled := 0
+		for pip in pips.get_children():
+			if is_equal_approx(pip.modulate.a, 1.0):
+				filled += 1
+		if pips.get_child_count() != card.definition.max_rank:
+			wrong_pips.append(
+				"%s → делений %d при максимуме %d"
+				% [id, pips.get_child_count(), card.definition.max_rank]
+			)
+		elif filled != SkillManager.get_rank(id):
+			wrong_pips.append(
+				"%s → закрашено %d при ранге %d" % [id, filled, SkillManager.get_rank(id)]
+			)
+
+		# Полоска ветки красится через свой StyleBoxFlat. Если он перестанет быть
+		# resource_local_to_scene, стилбокс станет ОДНИМ на все карточки: цвет
+		# последней покрашенной ветки молча растечётся по всему дереву, и видно
+		# это только глазами. Отсюда две проверки разом — свой ли объект у
+		# карточки и тот ли на нём цвет.
+		var box: StyleBoxFlat = card.get_node("%Stripe").get_theme_stylebox("panel")
+		if box == null or not box.bg_color.is_equal_approx(card.accent):
+			wrong_stripe.append("%s → цвет не ветки" % id)
+		elif stripe_boxes.has(box.get_instance_id()):
+			wrong_stripe.append("%s → общий стилбокс с %s" % [id, stripe_boxes[box.get_instance_id()]])
+		else:
+			stripe_boxes[box.get_instance_id()] = id
+
 		for child in _descendants(card):
 			if not child.visible:
 				continue
@@ -99,6 +248,16 @@ func _check_cards(state: String, ranks: Dictionary, check_lines: bool = true) ->
 		"%s: начинка карточки не выходит за её границы" % state,
 		spilled.is_empty(),
 		", ".join(spilled)
+	)
+	_check(
+		"%s: полоска ветки своя у каждой карточки" % state,
+		wrong_stripe.is_empty(),
+		", ".join(wrong_stripe)
+	)
+	_check(
+		"%s: делений по числу рангов, закрашено по купленным" % state,
+		wrong_pips.is_empty(),
+		", ".join(wrong_pips)
 	)
 	if check_lines:
 		_check(
