@@ -72,8 +72,9 @@ func _run() -> void:
 ## просто перестаёт искрить и звучать.
 ##
 ## Звук наблюдается запросом (`AudioManager.event_requested`), как в
-## footsteps_check: сигнал шлётся до проверки на загруженный проект byProd, и
-## события покупки в пробном проекте звука пока нет вовсе.
+## footsteps_check: сигнал шлётся до проверки на загруженный проект byProd, так
+## что проверка не зависит ни от рантайма, ни от контента. Есть ли просимое
+## событие в собранном проекте — вопрос отдельный, и он в byprod_check.
 func _check_unlock_effect() -> void:
 	SkillManager.save = SkillManager._fresh_save()
 	SkillManager.save.skill_points = 5

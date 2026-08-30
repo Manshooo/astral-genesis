@@ -21,13 +21,12 @@ extends Node
 ## (major << 16) | (minor << 8) | patch.
 const EXPECTED_RUNTIME_VERSION := (0 << 16) | (5 << 8) | 2
 
-## Событие пробного проекта звука (assets/sound/demo). Первое и пока
-## единственное, чем озвучена механика, — им же проверяется, что контент вообще
-## доезжает до рантайма.
-const DEMO_EVENT := "event:/walk"
+## Событие шагов — им проверяется, что контент вообще доезжает до рантайма, и
+## заодно что параметры события живы (у него есть темп).
+const WALK_EVENT := "event:/sfx/walk"
 
 ## Float-параметр этого события — темп ходьбы, им S_Footsteps правит петлю.
-const DEMO_TEMPO_PARAMETER := "Param1"
+const WALK_TEMPO_PARAMETER := "Param1"
 
 var _ok := 0
 var _fail := 0
@@ -143,13 +142,25 @@ func _run() -> void:
 	# Событие находится только если рантайм принял и .byprod, и его банк: банки
 	# он просит у хоста сам, и промах по каталогу выглядит ровно как «нет такого
 	# события». Проверяется поэтому здесь, а не по флагу «проект загружен».
-	var description = manager.get_event_description(DEMO_EVENT)
+	var description = manager.get_event_description(WALK_EVENT)
 	_check(
-		"событие пробного проекта на месте",
+		"событие шагов на месте",
 		description != null,
 		"«%s» не найдено — проверить %s и банки рядом с ним" % [
-			DEMO_EVENT, AudioManager.PROJECT_PATH],
+			WALK_EVENT, AudioManager.PROJECT_PATH],
 	)
+
+	# Спрашивается СТРОКА С КАРТОЧКИ, а не константа рядом: разойтись могут
+	# только собранный проект и то, что просит механика, — а сверка литерала с
+	# самим собой зеленела бы всегда.
+	var card: Control = load("res://src/ui/skill_tree/skill_node_card.tscn").instantiate()
+	_check(
+		"карточка навыка просит событие, которое есть в проекте",
+		manager.get_event_description(card.unlock_event) != null,
+		"карточка просит «%s» — в собранном проекте такого события нет" % card.unlock_event
+	)
+	card.free()
+
 	if description == null:
 		return
 
@@ -162,7 +173,7 @@ func _run() -> void:
 		return
 
 	instance.start()
-	instance.set_parameter(DEMO_TEMPO_PARAMETER, 1.0)
+	instance.set_parameter(WALK_TEMPO_PARAMETER, 1.0)
 	manager.update()
 
 	# Константа берётся из ClassDB, а не пишется числом: имя расширения нельзя
@@ -211,7 +222,7 @@ func _run() -> void:
 	# FULL, выглядят одинаково — «звук ведёт себя не так», без единой ошибки в
 	# логе. Поэтому проверяется наблюдаемое состояние голоса, а не вызовы.
 	var paused_state := ClassDB.class_get_integer_constant("ByProdEventInstance", "STATE_PAUSED")
-	var loop = AudioManager.create_event_instance(DEMO_EVENT)
+	var loop = AudioManager.create_event_instance(WALK_EVENT)
 	_check("AudioManager отдаёт инстанс события", loop != null, "create_event_instance() вернул null")
 	if loop == null:
 		return
