@@ -32,6 +32,15 @@ extends Node
 const PROJECT_PATH := "res://assets/sound/astral-genesis.byprod"
 const BANK_DIRECTORY := "res://assets/sound"
 
+## Частота дискретизации headless-рантайма (см. _start). Слушать этот звук
+## некому, но считать в каком-то темпе рантайму надо; 44100 — то же, на чём он
+## работает вживую, так что headless и живой прогон меряют одно и то же.
+const HEADLESS_SAMPLE_RATE := 44100
+## Потолок кадров за один тик. На первом кадре и после долгой загрузки сцены
+## delta бывает в секунды, и без потолка рантайм посчитал бы их разом — впустую
+## и с заметной паузой на ровном месте.
+const HEADLESS_MIX_FRAMES_MAX := 4096
+
 ## Просьба сыграть событие — до всякой проверки на то, есть ли чем играть.
 ## Подписчику (проверке в dev/, вибрации, отладочному оверлею) важно, что
 ## механика ЗАПРОСИЛА звук, а не сложилось ли воспроизведение.
@@ -42,6 +51,10 @@ var _manager: Object = null
 
 ## Проект загружен — до этого играть нечего.
 var _loaded := false
+
+## Рантайм поднят БЕЗ своего устройства вывода (headless-прогон, см. _start):
+## буфер у него забирает хост и выбрасывает.
+var _host_mixed := false
 
 ## Описания событий по пути: поиск по строке стоит дороже, чем словарь, а шаги
 ## спрашивают одно и то же событие по нескольку раз в секунду.
@@ -86,7 +99,23 @@ func _start() -> void:
 	_tick_level_none = ClassDB.class_get_integer_constant("ByProdSoundManager", "TICK_LEVEL_NONE")
 	_tick_level_full = ClassDB.class_get_integer_constant("ByProdSoundManager", "TICK_LEVEL_FULL")
 
-	_manager = ClassDB.class_call_static("ByProdSoundManager", "create")
+	# В headless звук слушать некому, а устройство рантайм открывает настоящее:
+	# без этой развилки каждая проверка в dev/ и каждый прогон мира играли бы в
+	# наушниках у того, кто их запустил, — а запускают их пачками.
+	#
+	# Глушить громкостью нельзя: ровно эту цепочку («настройки → сигнал →
+	# движок») проверяет byprod_check, и обнулённая громкость превратила бы её
+	# ассерты в сверку нуля с нулём. Поэтому не тише, а НЕКУДА: host-mixed —
+	# режим, в котором рантайм не открывает устройство вовсе, а буфер у него
+	# забирает хост (см. _mix_and_discard). Для рантайма это обычная работа, и
+	# все проверки — состояние голоса, пауза, громкость — остаются честными.
+	_host_mixed = DisplayServer.get_name() == "headless"
+	if _host_mixed:
+		_manager = ClassDB.class_call_static(
+			"ByProdSoundManager", "create_host_mixed", HEADLESS_SAMPLE_RATE
+		)
+	else:
+		_manager = ClassDB.class_call_static("ByProdSoundManager", "create")
 	if _manager == null:
 		push_warning("byProd: %s — игра идёт без звука." % ClassDB.class_call_static(
 				"ByProdSoundManager", "get_last_error"))
@@ -112,7 +141,7 @@ func _start() -> void:
 	_loaded = true
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _manager == null:
 		return
 
@@ -126,6 +155,21 @@ func _process(_delta: float) -> void:
 
 	_apply_tick_level(get_tree().paused)
 	_manager.update()
+	if _host_mixed:
+		_mix_and_discard(delta)
+
+
+## Прокрутить звук, никуда его не выводя, — headless-режим (см. _start).
+##
+## В host-mixed рантайм сам ничего не микширует и ждёт, когда буфер попросят;
+## без этого голоса стоят на месте, и «играет ли событие» проверить было бы
+## нечем. Кадров берём по РЕАЛЬНОМУ времени кадра, а не фиксированной пачкой:
+## иначе звуковые часы поедут относительно игровых, и проверка паузы мерила бы
+## не то, что думает.
+func _mix_and_discard(delta: float) -> void:
+	var frames := mini(int(delta * HEADLESS_SAMPLE_RATE), HEADLESS_MIX_FRAMES_MAX)
+	if frames > 0:
+		_manager.mix(frames)
 
 
 ## Переводит рантайм между «мир идёт» и «мир стоит».
