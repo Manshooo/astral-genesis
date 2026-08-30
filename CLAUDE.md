@@ -19,7 +19,7 @@ Engine specifics (`project.godot`): **Godot 4.7.2**, Forward+, **Jolt Physics** 
 ## Running, testing & building
 
 - **Running the game**: play the project from the Godot editor, or play a scene directly (F6) to skip straight into it. Zed launch configs: `.zed/debug.json` (adapter `godot`).
-- **Testing and debugging** is the **`gameplay-testing`** skill's job — it writes and runs the headless checks in `dev/` (`godot --headless <scene>`, they exit nonzero on failure) and carries the manual-playtest checklist. Invoke it rather than reinventing a run command; there is no third-party test framework (GUT/gdUnit) in this project, the checks are plain Godot scenes.
+- **Testing and debugging** is the **`gameplay-testing`** skill's job — it writes and runs the headless checks in `dev/` (`godot --headless <scene>`, they exit nonzero on failure) and carries the manual-playtest checklist. Invoke it rather than reinventing a run command; there is no third-party test framework (GUT/gdUnit) in this project, the checks are plain Godot scenes. For what headless cannot judge — timings, sound, feel — the state for a live run is set up by the **debug overlay** (`dev/debug_overlay.tscn`, F1): skill points, the skill screen anywhere, layer teleport, decay off. It lives in `dev/` and is loaded by path, never `preload`, because `dev/*` is excluded from export — no file must mean «no cheats», not a broken build. [Отладочный оверлей](docs/astral-genesis/how-to/Отладочный%20оверлей.md).
 - **Releases are driven by the branch name — the version is never written by hand.** Merging a `release/vX.Y.Z` PR into master derives the number, bumps, tags and publishes it. Never add a manual version bump to a PR; it will be overwritten. Local builds: `dev/release.ps1` → `dist/`. Details: [Релизы и сборка](docs/astral-genesis/how-to/Релизы%20и%20сборка.md).
 - **Assets** (`.glb`, `.svg`, images) are tracked via **Git LFS** — see [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md).
 
@@ -83,6 +83,7 @@ Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillMana
 | Editor tooling traps, template authoring | [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md) |
 | byProd, единственность менеджера, пауза, шаги | [Звук](docs/astral-genesis/how-to/Звук.md) |
 | Physics layers, UI theme, prefixes, rebinding codec | [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md) |
+| Debug cheats for a live run, and which tool checks what | [Отладочный оверлей](docs/astral-genesis/how-to/Отладочный%20оверлей.md) |
 | CI, versioning, local and manual releases | [Релизы и сборка](docs/astral-genesis/how-to/Релизы%20и%20сборка.md) |
 | Controls, player-facing | [Управление](docs/astral-genesis/Справка/Управление.md) |
 | Lore | [История](docs/astral-genesis/История.md) |
