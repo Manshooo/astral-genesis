@@ -9,22 +9,17 @@
 class_name SkillTreeUI
 extends Control
 
-@onready var points_label: Label = $Panel/MarginContainer/VBox/Header/PointsLabel
-@onready var graph_host: Control = $Panel/MarginContainer/VBox/GraphHost
+@onready var points_label: Label = %PointsLabel
+@onready var _graph: UI_SkillGraph = %Graph
 
 var _skill_manager
 var _tree_data: RS_SkillTree
-var _graph: UI_SkillGraph
 
 
 func setup(skill_manager, tree_data: RS_SkillTree) -> void:
 	_skill_manager = skill_manager
 	_tree_data = tree_data
 
-	_graph = UI_SkillGraph.new()
-	_graph.name = "Graph"
-	graph_host.add_child(_graph)
-	_graph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_graph.skill_activated.connect(_on_skill_activated)
 	_graph.setup(skill_manager, tree_data)
 

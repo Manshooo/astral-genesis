@@ -16,6 +16,12 @@
 ## проверяет требование SKILL_RANK. Требование «сумма рангов в ветке» рёбер не
 ## даёт намеренно — оно про ветку целиком, и веер линий из всех её узлов
 ## сообщал бы не структуру, а шум.
+##
+## Что правится глазами и что кодом. Слои графа (полотно панорамы и слой
+## дорожек-со-связями) лежат в skill_graph_view.tscn, карточка — своей сценой
+## skill_node_card.tscn, а размеры и цвета, которые нельзя нарисовать, вынесены
+## в @export и правятся в инспекторе. Кодом остаётся только то, что зависит от
+## данных: где стоит узел, что показано, куда идёт связь.
 class_name UI_SkillGraph
 extends Control
 
@@ -24,7 +30,6 @@ extends Control
 signal skill_activated(id: StringName)
 
 @export_group("Клетка")
-@export var node_size := Vector2(196.0, 80.0)
 @export var cell_gap := Vector2(68.0, 20.0)
 ## Левый жёлоб под подписи дорожек.
 @export var lane_label_width := 136.0
@@ -48,24 +53,33 @@ signal skill_activated(id: StringName)
 @export var zoom_step := 1.12
 @export var fit_padding := 48.0
 
+@export_group("Эффекты")
 ## Появление новой карточки: подъезд из полупрозрачности, чтобы открытие ветки
 ## читалось как событие, а не как «граф моргнул».
-const REVEAL_DURATION := 0.35
-const FIT_DURATION := 0.35
-
+@export var reveal_duration := 0.35
+@export var fit_duration := 0.35
 ## Цвет вспышки карточки и искр при разблокировке — тёплый golden, не из темы:
 ## тема несёт форму контролов, а разовый эффект-реакция к ней не относится.
-const FLASH_COLOR := Color(1.6, 1.35, 0.7)
-const FLASH_DURATION := 0.5
-const SPARK_COUNT := 16
-const SPARK_LIFETIME := 0.5
+@export var flash_color := Color(1.6, 1.35, 0.7)
+@export var flash_duration := 0.5
+@export var spark_count := 16
+@export var spark_lifetime := 0.5
+
+## Сцена карточки-узла. Её же размер задаёт клетку сетки — см. _card_size().
+const CARD_SCENE := preload("res://src/ui/skill_tree/skill_node_card.tscn")
 
 var _skill_manager
 var _tree_data: RS_SkillTree
 var _layout: SkillGraphLayout
 
-var _canvas: Control
-var _links: Control
+## Размер клетки = размер карточки, и берётся он ИЗ ЕЁ СЦЕНЫ. Второе число
+## здесь (@export на графе) означало бы, что карточку, растянутую в редакторе,
+## сетка, связи и подложки дорожек считают по-старому.
+var node_size := Vector2(196.0, 96.0)
+
+@onready var _canvas: Control = %Canvas
+@onready var _links: Control = %Links
+
 var _nodes: Dictionary = {}  ## StringName -> UI_SkillNode
 
 var _panning := false
@@ -80,33 +94,37 @@ var zoom: float = 1.0:
 
 
 func _ready() -> void:
-	clip_contents = true
 	resized.connect(_on_resized)
+	_links.draw.connect(_draw_links)
 
 
 func setup(skill_manager, tree_data: RS_SkillTree) -> void:
 	_skill_manager = skill_manager
 	_tree_data = tree_data
 	_layout = SkillGraphLayout.build(tree_data)
+	node_size = _card_size()
 
-	_canvas = Control.new()
-	_canvas.name = "Canvas"
-	_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_canvas)
-
-	_links = Control.new()
-	_links.name = "Links"
-	_links.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Размер нужен, хотя всё рисуется вручную: свой прямоугольник Control отдаёт
-	# движку как область видимости, и при нулевом ректе весь слой отсекается,
-	# едва точка (0,0) уходит за край экрана. Рисование за пределы ректа не
-	# обрезается, но КУЛЛИТСЯ по нему — от этого подложки дорожек и связи разом
-	# пропадали, стоило увести камеру с верхней дорожки («Захват»).
+	# Размер слою нужен, хотя всё рисуется вручную: свой прямоугольник Control
+	# отдаёт движку как область видимости, и при нулевом ректе весь слой
+	# отсекается, едва точка (0,0) уходит за край экрана. Рисование за пределы
+	# ректа не обрезается, но КУЛЛИТСЯ по нему — от этого подложки дорожек и
+	# связи разом пропадали, стоило увести камеру с верхней дорожки («Захват»).
 	_links.size = _content_size()
-	_links.draw.connect(_draw_links)
-	_canvas.add_child(_links)
 
 	refresh()
+
+
+## Клетка сетки — это карточка, поэтому её размер спрашивается у самой сцены
+## карточки, а не хранится вторым числом в графе. Пробный экземпляр дешевле
+## любой синхронизации руками: сцену правят в редакторе, и разъехаться нечему.
+func _card_size() -> Vector2:
+	var probe: Control = CARD_SCENE.instantiate()
+	var probe_size := Vector2(
+		maxf(probe.size.x, probe.custom_minimum_size.x),
+		maxf(probe.size.y, probe.custom_minimum_size.y)
+	)
+	probe.free()
+	return probe_size
 
 
 ## Пересобрать граф под текущее состояние навыков. Узлы не удаляются никогда:
@@ -151,14 +169,15 @@ func play_unlock_effect(id: StringName) -> void:
 
 
 func _create_node(def: RS_SkillDefinition) -> UI_SkillNode:
-	var card := UI_SkillNode.new()
+	var card: UI_SkillNode = CARD_SCENE.instantiate()
+	# В дерево сцены — ДО setup(): начинку карточки держат @onready-ссылки, а они
+	# поднимаются только на входе в дерево.
+	_canvas.add_child(card)
 	card.setup(def, _tree_data.branch_color(def.branch))
-	card.custom_minimum_size = node_size
 	card.size = node_size
 	card.pivot_offset = node_size * 0.5
 	card.position = _cell_to_pixel(_layout.cells.get(def.id, Vector2i.ZERO))
 	card.pressed.connect(_on_card_pressed.bind(def.id))
-	_canvas.add_child(card)
 	_nodes[def.id] = card
 	return card
 
@@ -194,15 +213,15 @@ func _animate_reveal(card: UI_SkillNode) -> void:
 	card.modulate.a = 0.0
 	card.scale = Vector2(0.86, 0.86)
 	var tween := create_tween().set_parallel()
-	tween.tween_property(card, "modulate:a", 1.0, REVEAL_DURATION)
-	tween.tween_property(card, "scale", Vector2.ONE, REVEAL_DURATION) \
+	tween.tween_property(card, "modulate:a", 1.0, reveal_duration)
+	tween.tween_property(card, "scale", Vector2.ONE, reveal_duration) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _flash(card: Control) -> void:
-	card.modulate = FLASH_COLOR
+	card.modulate = flash_color
 	var tween := create_tween()
-	tween.tween_property(card, "modulate", Color.WHITE, FLASH_DURATION) \
+	tween.tween_property(card, "modulate", Color.WHITE, flash_duration) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
@@ -212,8 +231,8 @@ func _spawn_sparks(anchor: Control) -> void:
 	particles.position = anchor.size / 2.0
 	particles.z_index = 10
 	particles.one_shot = true
-	particles.amount = SPARK_COUNT
-	particles.lifetime = SPARK_LIFETIME
+	particles.amount = spark_count
+	particles.lifetime = spark_lifetime
 	particles.explosiveness = 1.0
 	particles.direction = Vector2.UP
 	particles.spread = 180.0
@@ -225,7 +244,7 @@ func _spawn_sparks(anchor: Control) -> void:
 	particles.color = Color(1.0, 0.85, 0.4)
 	particles.emitting = true
 
-	get_tree().create_timer(SPARK_LIFETIME).timeout.connect(particles.queue_free)
+	get_tree().create_timer(spark_lifetime).timeout.connect(particles.queue_free)
 
 
 # --- Раскладка в пикселях ----------------------------------------------------
@@ -445,9 +464,9 @@ func _fit(animated: bool) -> void:
 		return
 
 	_fit_tween = create_tween().set_parallel()
-	_fit_tween.tween_property(self, "zoom", target_zoom, FIT_DURATION) \
+	_fit_tween.tween_property(self, "zoom", target_zoom, fit_duration) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	_fit_tween.tween_property(_canvas, "position", target_position, FIT_DURATION) \
+	_fit_tween.tween_property(_canvas, "position", target_position, fit_duration) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 

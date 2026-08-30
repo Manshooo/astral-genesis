@@ -1,10 +1,16 @@
 # res://src/ui/skill_tree/skill_node_card.gd
 ## Карточка одного навыка — узел графа дерева.
 ##
+## Вёрстка живёт в skill_node_card.tscn, а не в этом файле: карточку правят
+## глазами (отступы, шрифт, полоска ветки, место под деления рангов), и код,
+## собирающий её из new(), означал бы, что каждая такая правка — правка кода.
+## Скрипт держит только то, что вёрсткой не выражается: текст состояния,
+## подсказку и деления рангов, которых столько, сколько у навыка рангов.
+##
 ## Это Button, а не составной Control с кнопкой внутри: узел графа кликабелен
 ## целиком, и наведение с подсказкой обязано ловиться всей площадью карточки.
-## Поэтому же вся начинка помечена MOUSE_FILTER_IGNORE — иначе подпись под
-## курсором «съедала» бы и hover, и tooltip у своего же узла.
+## Поэтому же вся начинка помечена MOUSE_FILTER_IGNORE (в сцене) — иначе подпись
+## под курсором «съедала» бы и hover, и tooltip у своего же узла.
 ##
 ## Карточка ничего не знает про SkillManager и ничего не решает сама: состояние
 ## ей приносит граф вызовом refresh(). Так у «можно ли купить» остаётся один
@@ -12,82 +18,55 @@
 class_name UI_SkillNode
 extends Button
 
-## Ранговые деления: заполненные — купленные ранги.
-const PIP_SIZE := Vector2(14.0, 6.0)
-const PIP_GAP := 4.0
+@export_group("Деления рангов")
+## Одно деление ранга. Заполненные — купленные ранги.
+@export var pip_size := Vector2(14.0, 6.0)
+@export var pip_gap := 4.0
+## Непрожитый ранг тем же цветом ветки, но еле видный.
+@export var pip_empty_alpha := 0.22
 
-## Серый оттенок карточки-предпросмотра. Приглушаются только каналы цвета, а
-## альфа сохраняется: ею анимируется появление узла, и запись целого Color
-## оборвала бы въезд карточки на середине.
-const PREVIEW_TINT := Color(0.62, 0.64, 0.68)
+@export_group("Предпросмотр")
+## Серость карточки-предпросмотра. Приглушаются только каналы цвета, а альфа
+## сохраняется: ею анимируется появление узла, и запись целого Color оборвала бы
+## въезд карточки на середине.
+@export var preview_tint := Color(0.62, 0.64, 0.68)
 ## Переход из предпросмотра в доступный навык.
-const UNGREY_DURATION := 0.25
+@export var ungrey_duration := 0.25
+## Что стоит в строке состояния, пока навык только показан.
+@export var preview_status_text := "Недоступно"
+@export var maxed_status_text := "Максимум"
+
+@onready var _stripe: ColorRect = %Stripe
+@onready var _title: Label = %Title
+@onready var _pips: Control = %Pips
+@onready var _status: Label = %Status
 
 var definition: RS_SkillDefinition
 var accent: Color = RS_SkillBranch.DEFAULT_COLOR
 ## Навык показан «на шаг вперёд»: описание читается, купить нельзя.
 var previewed: bool = false
 
-var _pips: Control
-var _status: Label
 var _rank: int = 0
 
 
+func _ready() -> void:
+	_pips.draw.connect(_draw_pips)
+
+
+## Зовётся графом ПОСЛЕ добавления карточки в дерево сцены: до этого @onready
+## ссылки на начинку ещё не подняты.
 func setup(def: RS_SkillDefinition, accent_color: Color) -> void:
 	definition = def
 	accent = accent_color
 	name = "Node_" + String(def.id)
-	clip_text = false
 
-	# Полоска ветки: цвет дорожки на самой карточке, иначе на панораме с
-	# отъехавшими подписями дорожек уже не понять, из какой ветки узел.
-	var stripe := ColorRect.new()
-	stripe.color = accent
-	stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stripe.set_anchors_preset(Control.PRESET_LEFT_WIDE)
-	stripe.offset_right = 4.0
-	add_child(stripe)
-
-	var margin := MarginContainer.new()
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	add_child(margin)
-
-	var box := VBoxContainer.new()
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_constant_override("separation", 6)
-	margin.add_child(box)
-
-	var title := Label.new()
-	title.text = def.display_name
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(title)
-
-	var bottom := HBoxContainer.new()
-	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bottom.add_theme_constant_override("separation", 8)
-	box.add_child(bottom)
-
-	_pips = Control.new()
-	_pips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_title.text = def.display_name
+	_stripe.color = accent
+	# Делений столько, сколько у навыка рангов, — единственный размер в карточке,
+	# который вёрсткой не задать: он приходит из данных навыка.
 	_pips.custom_minimum_size = Vector2(
-		def.max_rank * PIP_SIZE.x + maxi(0, def.max_rank - 1) * PIP_GAP, PIP_SIZE.y
+		def.max_rank * pip_size.x + maxi(0, def.max_rank - 1) * pip_gap, pip_size.y
 	)
-	_pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_pips.draw.connect(_draw_pips)
-	bottom.add_child(_pips)
-
-	_status = Label.new()
-	_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bottom.add_child(_status)
 
 
 ## Состояние приносит граф: ранг, «можно ли купить прямо сейчас» и показан ли
@@ -104,9 +83,9 @@ func refresh(
 	if previewed:
 		# Стоимость не показывается намеренно: пока условие не выполнено, цена
 		# игроку не решение, а шум — ему нужно знать, ЧТО открывает навык.
-		_status.text = "Недоступно"
+		_status.text = preview_status_text
 	elif maxed:
-		_status.text = "Максимум"
+		_status.text = maxed_status_text
 	else:
 		_status.text = _points_text(definition.cost_for_next_rank(rank))
 
@@ -118,10 +97,10 @@ func refresh(
 		# Узел не появился, а ОЖИЛ — это событие того же порядка, что и въезд
 		# новой карточки, и мгновенная смена цвета читалась бы как перерисовка.
 		create_tween().tween_property(
-			self, "modulate", Color(Color.WHITE, modulate.a), UNGREY_DURATION
+			self, "modulate", Color(Color.WHITE, modulate.a), ungrey_duration
 		)
 	else:
-		modulate = Color(PREVIEW_TINT if previewed else Color.WHITE, modulate.a)
+		modulate = Color(preview_tint if previewed else Color.WHITE, modulate.a)
 	tooltip_text = _tooltip_for(rank, requirement_hint)
 	_pips.queue_redraw()
 
@@ -151,9 +130,9 @@ func _tooltip_for(rank: int, requirement_hint: String) -> String:
 
 func _draw_pips() -> void:
 	var filled := accent
-	var empty := Color(accent, 0.22)
+	var empty := Color(accent, pip_empty_alpha)
 	for i in definition.max_rank:
-		var rect := Rect2(Vector2(i * (PIP_SIZE.x + PIP_GAP), 0.0), PIP_SIZE)
+		var rect := Rect2(Vector2(i * (pip_size.x + pip_gap), 0.0), pip_size)
 		_pips.draw_rect(rect, filled if i < _rank else empty)
 
 
