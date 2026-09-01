@@ -45,13 +45,19 @@ jobs:
       # обновит контент по тому же имени файла, шаг явно упадёт на сверке
       # суммы, а не подсунет молча другую версию библиотеки.
       #
+      # Двигать версию приходится не по желанию: старые пакеты с byprod.io
+      # ПРОПАДАЮТ — 0.5.2 отдал 404 в тот же день, когда вышла 0.5.3, и сборка
+      # встала. Поэтому «закрепились и забыли» тут не работает: обновление
+      # версии это реакция на 404, а не плановая работа, и сверять новую пару
+      # (рантайм + биндинг) надо прогоном dev/byprod_check.tscn.
+      #
       # Шаг обязателен: byprod.gdextension объявляет библиотеку зависимостью, а
       # Godot обрывает экспорт, если объявленной зависимости нет на диске.
       - name: Скачать рантайм byProd
         shell: bash
         env:
-          BYPROD_SDK_URL: https://byprod.io/packages/byProdSDK0.5.2.zip
-          BYPROD_SDK_SHA256: 00ab7d4616e7bec209c51a5ce302bd6a839f0dbea35146cdbe44b41c93e40766
+          BYPROD_SDK_URL: https://byprod.io/packages/byProdSDK0.5.3.zip
+          BYPROD_SDK_SHA256: 0d7225913b2892bdfaea936f3a39aa57c418b416d3c30a6e18856477914bcd6c
         run: |
           set -euo pipefail
           curl -fsSL "$BYPROD_SDK_URL" -e "https://byprod.io/" -o /tmp/byprod-sdk.zip

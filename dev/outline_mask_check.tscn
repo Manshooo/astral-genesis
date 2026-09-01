@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dev/outline_mask_check.gd" id="1_outline"]
+
+[node name="OutlineMaskCheck" type="Node"]
+script = ExtResource("1_outline")
