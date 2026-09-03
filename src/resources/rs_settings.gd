@@ -27,6 +27,20 @@ extends Resource
 
 @export_group("Graphics")
 @export var max_fps: int = 60
+## Применённый пресет ("low"/"medium"/"high", каталог — data/graphics_presets.tres)
+## или &"custom", если игрок вручную поменял хоть одно из полей пресета ниже
+## (render_scale/shadows_enabled/shadow_atlas_size/aa_mode — см.
+## RS_GraphicsPreset и settings_menu.gd.GRAPHICS_PRESET_FIELDS). Значения по
+## умолчанию здесь равны пресету "medium" — свежая установка не должна
+## выглядеть как "собственные" настройки.
+@export var graphics_preset_id: StringName = &"medium"
+@export_range(0.5, 1.5, 0.05) var render_scale: float = 1.0
+@export var shadows_enabled: bool = true
+@export var shadow_atlas_size: int = 2048
+@export var aa_mode: RS_GraphicsPreset.AAMode = RS_GraphicsPreset.AAMode.FXAA
+## Вне пресета: про разрыв кадров на конкретном мониторе, а не про качество
+## картинки — пресет её не меняет и правка не считается "отступлением" от него.
+@export var vsync_enabled: bool = true
 
 @export_group("Controls")
 ## Переназначенные клавиши: имя действия → код события ("key:70", "mouse:1"),

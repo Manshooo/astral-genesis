@@ -3,6 +3,9 @@
 [ext_resource type="Script" uid="uid://crscukie12pyp" path="res://src/ui/settings_menu/settings_menu.gd" id="2_sett"]
 [ext_resource type="Script" uid="uid://dg1gkitvqvfdf" path="res://src/ui/settings/slider_setting.gd" id="3_kktd5"]
 [ext_resource type="Script" uid="uid://d25wxvtt5nxci" path="res://src/ui/settings/keybinds_setting.gd" id="4_keybd"]
+[ext_resource type="Script" path="res://src/ui/settings/checkbox_setting.gd" id="5_chkbx"]
+[ext_resource type="Script" path="res://src/ui/settings/graphics_preset_setting.gd" id="6_presetui"]
+[ext_resource type="Script" path="res://src/ui/settings/aa_mode_setting.gd" id="7_aaui"]
 
 [node name="SettingsMenu" type="Control" unique_id=11110001]
 layout_mode = 3
@@ -61,6 +64,129 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
+
+[node name="Preset" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Preset"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Пресет"
+autowrap_mode = 0
+
+[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Preset"]
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("6_presetui")
+setting_key = "graphics_preset_id"
+
+[node name="PresetSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="RenderScale" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Масштаб разрешения"
+autowrap_mode = 0
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.5
+max_value = 1.5
+step = 0.05
+value = 1.0
+script = ExtResource("3_kktd5")
+setting_key = "render_scale"
+display_format = "%.2f"
+value_label_path = NodePath("../Value")
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+text = "1.00"
+horizontal_alignment = 2
+autowrap_mode = 0
+
+[node name="Shadows" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Shadows"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Тени"
+autowrap_mode = 0
+
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Shadows"]
+layout_mode = 2
+script = ExtResource("5_chkbx")
+setting_key = "shadows_enabled"
+
+[node name="ShadowAtlas" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Разрешение теней"
+autowrap_mode = 0
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 512.0
+max_value = 4096.0
+step = 512.0
+value = 2048.0
+rounded = true
+script = ExtResource("3_kktd5")
+setting_key = "shadow_atlas_size"
+display_format = "%d"
+value_label_path = NodePath("../Value")
+
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+text = "2048"
+horizontal_alignment = 2
+autowrap_mode = 0
+
+[node name="AA" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/AA"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Сглаживание"
+autowrap_mode = 0
+
+[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/AA"]
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("7_aaui")
+setting_key = "aa_mode"
+
+[node name="FOVSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="Vsync" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Vsync"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Vsync"
+autowrap_mode = 0
+
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Vsync"]
+layout_mode = 2
+script = ExtResource("5_chkbx")
+setting_key = "vsync_enabled"
 
 [node name="FOV" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox" unique_id=11110040]
 layout_mode = 2
