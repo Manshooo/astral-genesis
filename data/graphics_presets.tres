@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="RS_GraphicsPresetLibrary" format=3]
+
+[ext_resource type="Script" path="res://src/resources/rs_graphics_preset.gd" id="1_preset"]
+[ext_resource type="Script" path="res://src/resources/rs_graphics_preset_library.gd" id="2_library"]
+
+[sub_resource type="Resource" id="Resource_low"]
+script = ExtResource("1_preset")
+id = &"low"
+display_name = "Низкий"
+render_scale = 0.75
+shadows_enabled = false
+shadow_atlas_size = 1024
+aa_mode = 0
+
+[sub_resource type="Resource" id="Resource_medium"]
+script = ExtResource("1_preset")
+id = &"medium"
+display_name = "Средний"
+render_scale = 1.0
+shadows_enabled = true
+shadow_atlas_size = 2048
+aa_mode = 1
+
+[sub_resource type="Resource" id="Resource_high"]
+script = ExtResource("1_preset")
+id = &"high"
+display_name = "Высокий"
+render_scale = 1.0
+shadows_enabled = true
+shadow_atlas_size = 4096
+aa_mode = 3
+
+[resource]
+script = ExtResource("2_library")
+presets = Array[ExtResource("1_preset")]([SubResource("Resource_low"), SubResource("Resource_medium"), SubResource("Resource_high")])

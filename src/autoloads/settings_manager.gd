@@ -8,6 +8,11 @@ const SETTINGS_PATH := "user://settings.tres"
 const DEFAULT_SETTINGS_PATH := "res://data/settings.tres"
 var DEFAULT_SETTINGS: RS_Settings
 
+## Тот же обход preload-бага (см. DEFAULT_SETTINGS выше) — каталог тоже
+## кастомный ресурс.
+const GRAPHICS_PRESETS_PATH := "res://data/graphics_presets.tres"
+var GRAPHICS_PRESETS: RS_GraphicsPresetLibrary
+
 ## Действия, доступные для переназначения, в порядке показа в настройках.
 ## pause_game сюда НЕ входит намеренно: Esc — инвариант UI (им закрывается любой
 ## экран, включая сам экран настроек, где идёт захват клавиши).
@@ -49,6 +54,7 @@ var _default_codes: Dictionary = {}
 
 func _init() -> void:
 	DEFAULT_SETTINGS = load(DEFAULT_SETTINGS_PATH)
+	GRAPHICS_PRESETS = load(GRAPHICS_PRESETS_PATH)
 	# Автолоады создаются уже после инициализации InputMap из project.godot,
 	# поэтому здесь в нём ещё нетронутая дефолтная раскладка.
 	_snapshot_default_codes()
@@ -67,6 +73,11 @@ func reset() -> void:
 func default_settings() -> RS_Settings:
 	return DEFAULT_SETTINGS.copy()
 
+## Пресет по id ("low"/"medium"/"high") или null — для &"custom" и любого
+## неизвестного id (например сейв старше проекта, из каталога пропал пресет).
+func preset_by_id(id: StringName) -> RS_GraphicsPreset:
+	return GRAPHICS_PRESETS.by_id(id) if GRAPHICS_PRESETS else null
+
 func _load() -> RS_Settings:
 	if ResourceLoader.exists(SETTINGS_PATH):
 		var loaded := ResourceLoader.load(SETTINGS_PATH) as RS_Settings
@@ -82,7 +93,44 @@ func _apply_runtime_effects() -> void:
 		return
 	Engine.max_fps = settings.max_fps
 	_apply_keybinds()
+	_apply_graphics_settings()
 	settings_changed.emit(settings)
+
+
+# ---------------------------------------------------------------------------
+# Графика
+# ---------------------------------------------------------------------------
+
+
+## "Тени выкл" — это занулённые атласы, а не свойство конкретного света: автолоад
+## не должен знать про DirectionalLight3D из world.tscn — сцена может смениться
+## (меню, будущие уровни), а настройка обязана продолжать работать без правки
+## каждой новой сцены. directional-атлас не зануляем совсем (0 там не валиден),
+## а сжимаем до минимума — эффект тот же, тени неотличимы от выключенных.
+func _apply_graphics_settings() -> void:
+	var viewport := get_viewport()
+	if viewport:
+		viewport.scaling_3d_scale = settings.render_scale
+		viewport.positional_shadow_atlas_size = settings.shadow_atlas_size if settings.shadows_enabled else 0
+		match settings.aa_mode:
+			RS_GraphicsPreset.AAMode.OFF:
+				viewport.msaa_3d = Viewport.MSAA_DISABLED
+				viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+			RS_GraphicsPreset.AAMode.FXAA:
+				viewport.msaa_3d = Viewport.MSAA_DISABLED
+				viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+			RS_GraphicsPreset.AAMode.MSAA_2X:
+				viewport.msaa_3d = Viewport.MSAA_2X
+				viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+			RS_GraphicsPreset.AAMode.MSAA_4X:
+				viewport.msaa_3d = Viewport.MSAA_4X
+				viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	RenderingServer.directional_shadow_atlas_set_size(
+		settings.shadow_atlas_size if settings.shadows_enabled else 1, false
+	)
+	DisplayServer.window_set_vsync_mode(
+		DisplayServer.VSYNC_ENABLED if settings.vsync_enabled else DisplayServer.VSYNC_DISABLED
+	)
 
 
 # ---------------------------------------------------------------------------

@@ -24,6 +24,12 @@ const TAB_ORDER: Array[String] = ["Графика", "Аудио", "Управл�
 const EXPECTED_TAB := {
 	"fov": "Графика",
 	"max_fps": "Графика",
+	"graphics_preset_id": "Графика",
+	"render_scale": "Графика",
+	"shadows_enabled": "Графика",
+	"shadow_atlas_size": "Графика",
+	"aa_mode": "Графика",
+	"vsync_enabled": "Графика",
 	"master_volume": "Аудио",
 	"mouse_sensitivity": "Управление",
 	"keybinds": "Управление",
@@ -118,7 +124,61 @@ func _run() -> void:
 			"правка со скрытой вкладки не доехала до черновика",
 		)
 
-	# --- 5. Минимальный размер не растёт по самой длинной вкладке --------
+	# --- 5. Пресет графики ↔ «Собственный» --------------------------------
+	# Специфичная для фичи логика settings_menu.gd: выбор пресета раскатывает
+	# его значения на связанные поля, а ручная правка любого из них откатывает
+	# список обратно на «Собственный». Проверяется ТОЛЬКО через утиный контракт
+	# контролов (set_setting_value + setting_changed), без обращения к
+	# приватному _draft — так же, как раздел 4 выше правит master_volume.
+	var preset = by_key.get("graphics_preset_id")
+	var render_scale = by_key.get("render_scale")
+	if preset != null and render_scale != null:
+		var low := SettingsManager.preset_by_id(&"low")
+		preset.set_setting_value(&"low")
+		preset.setting_changed.emit(preset)
+		_check(
+			"выбор пресета «Низкий» раскатывает render_scale на контрол",
+			is_equal_approx(float(render_scale.get_setting_value()), low.render_scale),
+			"контрол показывает %s, ожидалось %s" % [render_scale.get_setting_value(), low.render_scale],
+		)
+		var shadows = by_key.get("shadows_enabled")
+		if shadows != null:
+			_check(
+				"и на shadows_enabled тоже",
+				bool(shadows.get_setting_value()) == low.shadows_enabled,
+				"контрол показывает %s, ожидалось %s" % [shadows.get_setting_value(), low.shadows_enabled],
+			)
+
+		# Ручная правка одного поля черновика — как будто игрок подвинул слайдер.
+		render_scale.set_setting_value(1.5 if not is_equal_approx(low.render_scale, 1.5) else 0.5)
+		render_scale.setting_changed.emit(render_scale)
+		_check(
+			"правка render_scale переводит пресет на «Собственный»",
+			preset.get_setting_value() == GraphicsPresetSetting.CUSTOM_ID,
+			"список пресетов остался на «%s»" % [preset.get_setting_value()],
+		)
+
+		# Vsync вынесен из пресета намеренно (не про качество картинки) — ни туда,
+		# ни обратно он ходить не должен.
+		var vsync = by_key.get("vsync_enabled")
+		if vsync != null:
+			var vsync_before = vsync.get_setting_value()
+			preset.set_setting_value(&"high")
+			preset.setting_changed.emit(preset)
+			_check(
+				"смена пресета не трогает vsync",
+				vsync.get_setting_value() == vsync_before,
+				"vsync изменился на «%s» после выбора пресета" % [vsync.get_setting_value()],
+			)
+			vsync.set_setting_value(not bool(vsync_before))
+			vsync.setting_changed.emit(vsync)
+			_check(
+				"правка vsync не переводит пресет на «Собственный»",
+				preset.get_setting_value() == &"high",
+				"список пресетов откатился на «%s»" % [preset.get_setting_value()],
+			)
+
+	# --- 6. Минимальный размер не растёт по самой длинной вкладке --------
 	# Знакомая грабля TabContainer: он запрашивает минимум по ВСЕМ вкладкам
 	# сразу, и «Управление» с восемью строками раскладки растянула бы окно и на
 	# «Аудио» с единственным ползунком. Прокрутка внутри вкладки эту связь рвёт.

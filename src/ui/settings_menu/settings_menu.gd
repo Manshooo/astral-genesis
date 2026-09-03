@@ -23,6 +23,24 @@ var caller_node: Control = null
 
 var _controls: Array = []
 
+## Поля, из которых складывается пресет графики. Правка любого из них вручную
+## переводит graphics_preset_id на CUSTOM_PRESET_ID (см. _on_any_setting_changed) —
+## список централизован здесь же, рядом с единственным местом, которое его читает.
+## vsync_enabled сюда намеренно не входит: это не про качество картинки, а про
+## разрыв кадров на конкретном мониторе — независимая настройка, пресет её не
+## трогает (см. RS_GraphicsPreset).
+const GRAPHICS_PRESET_FIELDS := [
+	"render_scale", "shadows_enabled", "shadow_atlas_size", "aa_mode",
+]
+const GRAPHICS_PRESET_KEY := "graphics_preset_id"
+const CUSTOM_PRESET_ID := &"custom"
+
+## Контрол выпадающего списка пресетов — держим отдельно от _controls, чтобы
+## после отката на CUSTOM обновить его отображение напрямую, в обход
+## setting_changed (иначе правка одного поля привела бы к повторной подмене
+## остальных полей значениями текущего, уже покинутого, пресета).
+var _preset_control: Control = null
+
 ## Черновик — независимая копия настроек. Все контролы читают/пишут только сюда.
 ## SettingsManager.settings трогается один-единственный раз — в _on_apply_pressed().
 var _draft: RS_Settings
@@ -36,6 +54,8 @@ func _collect_controls(node: Node) -> void:
 	for child in node.get_children():
 		if child.has_method("get_setting_value") and child.has_method("set_setting_value"):
 			_controls.append(child)
+			if child.setting_key == GRAPHICS_PRESET_KEY:
+				_preset_control = child
 			if child.has_signal("setting_changed"):
 				child.setting_changed.connect(_on_any_setting_changed)
 		else:
@@ -93,8 +113,51 @@ func _update_apply_button() -> void:
 	apply_button.flat = not dirty
 
 func _on_any_setting_changed(control: Variant) -> void:
-	_draft.set(control.setting_key, control.get_setting_value())
+	var key: String = control.setting_key
+	_draft.set(key, control.get_setting_value())
+	if key == GRAPHICS_PRESET_KEY:
+		_apply_preset_to_draft(control.get_setting_value())
+	elif key in GRAPHICS_PRESET_FIELDS:
+		_sync_preset_with_draft()
 	_update_apply_button()
+
+## Выбор пресета в списке раскатывает его значения на все поля черновика и
+## обновляет соответствующие контролы — иначе выбор "Высокий" был бы виден
+## только после Apply, а до тех пор слайдеры показывали бы старые цифры.
+func _apply_preset_to_draft(preset_id: StringName) -> void:
+	if preset_id == CUSTOM_PRESET_ID:
+		return  # "Собственный" выбран руками — раскатывать нечего
+	var preset := SettingsManager.preset_by_id(preset_id)
+	if preset == null:
+		return
+	_draft.render_scale = preset.render_scale
+	_draft.shadows_enabled = preset.shadows_enabled
+	_draft.shadow_atlas_size = preset.shadow_atlas_size
+	_draft.aa_mode = preset.aa_mode
+	for control in _controls:
+		var field_key: String = control.setting_key
+		if field_key in GRAPHICS_PRESET_FIELDS:
+			control.set_setting_value(_draft.get(field_key))
+
+## Правка отдельного графического поля разошлась с применённым пресетом —
+## список переводится на "Собственный". select() контрола не эмитит
+## setting_changed (в отличие от Range/CheckButton), так что это безопасно от
+## повторного заезда в _apply_preset_to_draft.
+func _sync_preset_with_draft() -> void:
+	var preset := SettingsManager.preset_by_id(_draft.graphics_preset_id)
+	if preset != null and _draft_matches_preset(preset):
+		return
+	_draft.graphics_preset_id = CUSTOM_PRESET_ID
+	if _preset_control:
+		_preset_control.set_setting_value(CUSTOM_PRESET_ID)
+
+func _draft_matches_preset(preset: RS_GraphicsPreset) -> bool:
+	return (
+		is_equal_approx(_draft.render_scale, preset.render_scale)
+		and _draft.shadows_enabled == preset.shadows_enabled
+		and _draft.shadow_atlas_size == preset.shadow_atlas_size
+		and _draft.aa_mode == preset.aa_mode
+	)
 
 func _on_apply_pressed() -> void:
 	SettingsManager.settings = _draft
