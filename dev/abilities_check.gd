@@ -28,7 +28,8 @@ func _ready() -> void:
 	# кого какая выборка забирает, и на неполном наборе она проверяла бы пустоту.
 	for system in [
 		S_BodySnatch.new(), S_Phasing.new(), S_Gravity.new(),
-		S_EnemyAI.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(), S_Movement.new(),
+		S_EnemyAI.new(), S_Sprint.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(),
+		S_Movement.new(),
 	]:
 		system.group = "physics"
 		world.add_system(system)
@@ -80,6 +81,7 @@ func _run(world: World) -> void:
 	_check("во плоти сквозь решётки не пройти", not player.has_component(C_Phasing), "")
 	_check("тело дало ходьбу", player.has_component(C_Walk), "")
 	_check("тело дало прыжок", player.has_component(C_Jump), "")
+	_check("тело дало бег", player.has_component(C_Sprint), "")
 
 	# --- 3. Пересадка тело→тело не теряет возможности души -----------------
 	# Главная ловушка модели: буфер коалесцирует remove+add C_Embodied в один
@@ -100,6 +102,13 @@ func _run(world: World) -> void:
 		"безногому телу прыгать нечем",
 		not player.has_component(C_Jump),
 		"C_Jump прошлого тела остался на душе (ползун %s его не даёт)" % crawler
+	)
+	# Ползун и бегать не умеет — то же значимое отсутствие, что и у прыжка:
+	# половине тела, которая волочится по полу, разгоняться нечем.
+	_check(
+		"безногому телу бежать нечем",
+		not player.has_component(C_Sprint),
+		"C_Sprint прошлого тела остался на душе (ползун %s его не даёт)" % crawler
 	)
 
 	# --- 4. Развоплощение будит возможности души ---------------------------
@@ -235,6 +244,81 @@ func _run(world: World) -> void:
 		str(vel.velocity.y)
 	)
 
+	# --- 7б. Бег: множитель ложится на ПОСЧИТАННЫЙ стат, а не на поле --------
+	# Смысл проверки не в самом ускорении, а в том, ГДЕ оно живёт: S_Sprint не
+	# считает скорость и не трогает C_Walk.speed, он кладёт источник в
+	# C_StatModifiers. Отсюда два инварианта, которые ломаются молча: база тела
+	# обязана остаться нетронутой (иначе выход из тела «запечёт» разгон в сцену),
+	# а перк на ходьбу обязан ускорять и бег тоже.
+	var sprint := player.get_component(C_Sprint) as C_Sprint
+	var walk := player.get_component(C_Walk) as C_Walk
+	var base_speed := walk.speed
+
+	inp.sprint_held = true
+	await _physics(1)
+	var running := C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, walk.speed)
+	_check(
+		"бег ускоряет ход ровно во столько раз, во сколько сказано телом",
+		is_equal_approx(running, base_speed * sprint.speed_multiplier),
+		"%.3f при базе %.3f × %.2f" % [running, base_speed, sprint.speed_multiplier]
+	)
+	_check(
+		"база тела не переписана — разгон живёт в модификаторах",
+		is_equal_approx(walk.speed, base_speed),
+		"%.3f вместо %.3f" % [walk.speed, base_speed]
+	)
+
+	# Перк на ходьбу и бег обязаны СКЛАДЫВАТЬСЯ по общему правилу свёртки
+	# (base + Σflat) * Πmult, а не спорить, кто главнее. Источник &"skills" —
+	# тот же, которым пользуется O_ApplySkillEffects.
+	var mods := player.get_component(C_StatModifiers) as C_StatModifiers
+	mods.set_source(&"skills", {C_StatModifiers.WALK_SPEED: 1.0}, {})
+	await _physics(1)
+	_check(
+		"перк на ходьбу ускоряет и бег — множитель ложится поверх прибавки",
+		is_equal_approx(
+			C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, walk.speed),
+			(base_speed + 1.0) * sprint.speed_multiplier
+		),
+		str(C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, walk.speed))
+	)
+	mods.clear_source(&"skills")
+
+	inp.sprint_held = false
+	await _physics(1)
+	_check(
+		"клавишу отпустили — скорость вернулась к шагу",
+		is_equal_approx(
+			C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, walk.speed), base_speed
+		),
+		str(C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, walk.speed))
+	)
+
+	# Главная ловушка: C_Sprint уходит вместе с телом, а C_StatModifiers
+	# принадлежит ДУШЕ и переживает любую пересадку. Оставь источник висеть — и
+	# призрак, и следующее тело бегали бы вечно. Уходим из тела ПРЯМО В БЕГЕ.
+	inp.sprint_held = true
+	await _physics(1)
+	O_ExpelFromBody.expel(player, true)
+	await get_tree().process_frame
+	await _physics(1)
+	_check(
+		"разгон не пережил тело — источник снят вместе с C_Sprint",
+		is_equal_approx(C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, 3.0), 3.0),
+		str(C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, 3.0))
+	)
+	inp.sprint_held = false
+
+	# Возвращаем душу во плоть: следующая секция проверяет ПЕРЕСАДКУ в безногое
+	# тело, а из призрака это была бы не пересадка, а обычное вселение.
+	var walker5 := _spawn_body(world, WALKER_SCENE, Vector3(12.0, 0.0, 0.0))
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	bs.capture_requested = true
+	await _physics(1)
+	await get_tree().process_frame
+	_check("после выхода в бег новое тело снова даёт бег", player.has_component(C_Sprint), str(walker5))
+
 	# --- 8. Обратная связь на недоступное действие --------------------------
 	# Раньше S_Jump молча гасил защёлку у безногого тела. Теперь безногому телу
 	# отвечают явно, а призраку — нет: по «Управлению» подниматься взглядом это
@@ -261,6 +345,32 @@ func _run(world: World) -> void:
 		str(msg.text) if msg else "нет C_ScreenMessage"
 	)
 
+	# Тот же отказ, но у бега. Проверяем и его СОДЕРЖАНИЕ, и главное — что
+	# удержание клавиши ползуна не разгоняет: у бега нет своей арифметики, и
+	# «не умеет бегать» обязано означать ровно «модификатора не появилось».
+	if player.has_component(C_ScreenMessage):
+		player.remove_component(player.get_component(C_ScreenMessage))
+	var crawl_walk := player.get_component(C_Walk) as C_Walk
+	var crawl_speed := crawl_walk.speed
+	inp.sprint_held = true
+	inp.sprint_pressed = true
+	await _physics(1)
+	var sprint_msg := player.get_component(C_ScreenMessage) as C_ScreenMessage
+	_check(
+		"телу без бега отвечают явно, а не тишиной",
+		sprint_msg != null and sprint_msg.text == "Это тело не умеет бегать",
+		str(sprint_msg.text) if sprint_msg else "нет C_ScreenMessage"
+	)
+	_check(
+		"удержание клавиши безногое тело не разгоняет",
+		is_equal_approx(
+			C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, crawl_walk.speed), crawl_speed
+		),
+		str(C_StatModifiers.of(player, C_StatModifiers.WALK_SPEED, crawl_walk.speed))
+	)
+	_check("защёлка нажатия бега погашена и не доживёт до следующего тела", not inp.sprint_pressed, "")
+	inp.sprint_held = false
+
 	O_ExpelFromBody.expel(player, true)
 	await get_tree().process_frame
 	# Развоплощение C_ScreenMessage не трогает (сообщение живёт своим таймером,
@@ -285,10 +395,12 @@ func _run(world: World) -> void:
 	var move_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/MoveLabel") as Label
 	var separator := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/HSeparator") as Control
 	var jump_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/JumpLabel") as Label
+	var sprint_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/SprintLabel") as Label
 	await get_tree().process_frame
 
 	_check("HUD: призрак — «Полёт»", move_label.text == "Полёт", move_label.text)
 	_check("HUD: у призрака нет строки прыжка", not jump_label.visible, "")
+	_check("HUD: у призрака нет строки бега", not sprint_label.visible, "")
 	_check(
 		"HUD: у одинокого «Ход» разделителя нет",
 		not separator.visible,
@@ -296,7 +408,7 @@ func _run(world: World) -> void:
 	)
 
 	# Подложка размером под контент, а не фиксированной коробкой: одна видимая
-	# строка обязана дать меньшую высоту, чем две.
+	# строка обязана дать меньшую высоту, чем три.
 	var size_one_row := abilities_panel.size.y
 
 	var walker4 := _spawn_body(world, WALKER_SCENE, Vector3(-6.0, 0.0, 6.0))
@@ -313,16 +425,21 @@ func _run(world: World) -> void:
 		jump_label.text
 	)
 	_check(
+		"HUD: у бегающего тела строка бега есть и содержит клавишу",
+		sprint_label.visible and sprint_label.text.contains("Бег"),
+		sprint_label.text
+	)
+	_check(
 		"HUD: между Ход и Прыжок появился разделитель",
 		separator.visible,
 		"две видимые строки — разделителю пора появиться"
 	)
 
-	var size_two_rows := abilities_panel.size.y
+	var size_all_rows := abilities_panel.size.y
 	_check(
-		"HUD: подложка выросла под вторую строку, а не осталась под одну",
-		size_two_rows > size_one_row,
-		"%.1f против %.1f" % [size_two_rows, size_one_row]
+		"HUD: подложка выросла под появившиеся строки, а не осталась под одну",
+		size_all_rows > size_one_row,
+		"%.1f против %.1f" % [size_all_rows, size_one_row]
 	)
 
 	var crawler3 := _spawn_body(world, CRAWLER_SCENE, Vector3(0.0, 0.0, 12.0))
@@ -338,22 +455,29 @@ func _run(world: World) -> void:
 		"тело %s" % crawler3
 	)
 	_check(
+		"HUD: у безногого тела строка бега пропадает вместе со строкой прыжка",
+		not sprint_label.visible,
+		"тело %s" % crawler3
+	)
+	_check(
 		"HUD: у безногого тела разделитель пропадает вместе с прыжком",
 		not separator.visible,
 		""
 	)
 
 	_check(
-		"HUD: подложка сжалась обратно, потеряв строку прыжка",
-		is_equal_approx(abilities_panel.size.y, size_one_row) and abilities_panel.size.y < size_two_rows,
-		"%.1f (одна строка была %.1f, две строки — %.1f)"
-		% [abilities_panel.size.y, size_one_row, size_two_rows]
+		"HUD: подложка сжалась обратно, потеряв прыжок и бег",
+		is_equal_approx(abilities_panel.size.y, size_one_row) and abilities_panel.size.y < size_all_rows,
+		"%.1f (одна строка была %.1f, полный набор — %.1f)"
+		% [abilities_panel.size.y, size_one_row, size_all_rows]
 	)
 
 	# --- 9б. Разделители между N строк, не только между двумя -------------
-	# Сегодня в сцене ровно две строки-способности, и этого мало, чтобы поймать
-	# ошибку в общем правиле: если строк три и СРЕДНЯЯ скрыта, разделитель между
-	# первой и третьей обязан остаться ОДИН, а не задвоиться и не пропасть.
+	# Правило разделителей общее, и проверять его надо на случае с ДЫРОЙ: если
+	# строк три и СРЕДНЯЯ скрыта, разделитель между первой и третьей обязан
+	# остаться ОДИН, а не задвоиться и не пропасть. В боевой сцене такое
+	# состояние сегодня не собрать (нет тела с бегом, но без прыжка), поэтому
+	# панель здесь синтетическая.
 	# Собираем синтетическую панель той же формы (Margin/Abilities/…), чтобы
 	# дёрнуть _sync_separators() в изоляции от реального состояния игрока.
 	var synthetic := UI_HudAbilities.new()
@@ -370,7 +494,10 @@ func _run(world: World) -> void:
 	row_b.name = "JumpLabel"  # аналогично для _jump_label
 	var sep_bc := HSeparator.new()
 	var row_c := Label.new()
-	row_c.name = "ThirdAbilityLabel"  # третья строка без @onready — их и не будет у каждой новой способности
+	# Каждая строка, на которую у UI_HudAbilities есть @onready, обязана здесь
+	# найтись: синтетическая панель проходит тот же _ready(), и недостающий узел
+	# уронил бы её ещё до первой проверки разделителей.
+	row_c.name = "SprintLabel"
 	for node in [row_a, sep_ab, row_b, sep_bc, row_c]:
 		syn_abilities.add_child(node)
 	add_child(synthetic)

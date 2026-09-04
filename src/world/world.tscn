@@ -29,6 +29,8 @@
 [ext_resource type="Script" uid="uid://cr8trq4a1wwxw" path="res://src/systems/gameplay/s_screen_message.gd" id="18_screenmsg"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_footsteps.gd" id="19_footsteps"]
 [ext_resource type="Script" uid="uid://q0edrod0xky3" path="res://src/systems/gameplay/s_outline_mask.gd" id="23_outline"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
+[ext_resource type="Script" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -90,6 +92,10 @@ group = &"gameplay"
 script = ExtResource("23_outline")
 group = &"gameplay"
 
+[node name="S_VoidFall" type="Node" parent="World/Systems/gameplay" unique_id=1979994351]
+script = ExtResource("24_voidfall")
+group = &"gameplay"
+
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]
 script = ExtResource("4_mmdvd")
 metadata/_custom_type_script = "uid://b3vi2ingux88g"
@@ -106,6 +112,10 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_EnemyAI" type="Node" parent="World/Systems/physics" unique_id=201843330]
 script = ExtResource("7_enemyai")
+group = &"physics"
+
+[node name="S_Sprint" type="Node" parent="World/Systems/physics" unique_id=201843331]
+script = ExtResource("25_sprint")
 group = &"physics"
 
 [node name="S_Walk" type="Node" parent="World/Systems/physics" unique_id=201843323]
