@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="RS_RunStatCatalog" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/resources/run_stats/rs_run_stat_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://src/resources/run_stats/rs_run_stat_row.gd" id="2_row"]
+
+[sub_resource type="Resource" id="Resource_time"]
+script = ExtResource("2_row")
+key = &"time"
+label_key = &"RUN_STAT_TIME"
+format = 1
+hide_when_empty = false
+
+[sub_resource type="Resource" id="Resource_rooms"]
+script = ExtResource("2_row")
+key = &"rooms"
+label_key = &"RUN_STAT_ROOMS"
+format = 0
+hide_when_empty = false
+
+[sub_resource type="Resource" id="Resource_bodies"]
+script = ExtResource("2_row")
+key = &"bodies"
+label_key = &"RUN_STAT_BODIES"
+format = 0
+hide_when_empty = false
+
+[sub_resource type="Resource" id="Resource_body_list"]
+script = ExtResource("2_row")
+key = &""
+label_key = &"RUN_STAT_BODY_LIST"
+format = 2
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_damage_taken"]
+script = ExtResource("2_row")
+key = &"damage_taken"
+label_key = &"RUN_STAT_DAMAGE_TAKEN"
+format = 0
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_damage_dealt"]
+script = ExtResource("2_row")
+key = &"damage_dealt"
+label_key = &"RUN_STAT_DAMAGE_DEALT"
+format = 0
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_skill_points"]
+script = ExtResource("2_row")
+key = &"skill_points"
+label_key = &"RUN_STAT_SKILL_POINTS"
+format = 0
+hide_when_empty = true
+
+[resource]
+script = ExtResource("1_catalog")
+rows = Array[ExtResource("2_row")]([SubResource("Resource_time"), SubResource("Resource_rooms"), SubResource("Resource_bodies"), SubResource("Resource_body_list"), SubResource("Resource_damage_taken"), SubResource("Resource_damage_dealt"), SubResource("Resource_skill_points")])

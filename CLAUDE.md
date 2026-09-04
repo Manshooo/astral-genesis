@@ -67,7 +67,7 @@ Each area below is one paragraph of orientation. **Read the linked doc before re
 | `a_` | `A_*` | `resources/interaction/`, entity dirs | interaction actions (`RS_InteractionAction`) |
 | `rs_` | `RS_*` | `resources/` | data resources (configs, graph, presets, skills) |
 
-Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillManager`, `UIManager`, `WorldSave`, `RunManager`, `AudioManager`. Tunable game data lives as `.tres` under `data/` and is edited in-editor, not hardcoded. Autoload responsibilities, physics layers, the project-wide UI theme and the key-rebinding codec: [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md).
+Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillManager`, `UIManager`, `WorldSave`, `RunManager`, `RunStats`, `AudioManager` — **declaration order in `[autoload]` is `_ready()` order**, and `RunStats` subscribes to `RunManager`'s signals, so it must stay after it. Tunable game data lives as `.tres` under `data/` and is edited in-editor, not hardcoded. **Player-facing text goes through translation keys** (`assets/locale/ui.csv`, `tr()`; data stores the key, never the finished string) — only new text is migrated so far. Autoload responsibilities, physics layers, the project-wide UI theme, the localization convention and the key-rebinding codec: [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md).
 
 ## Документация — карта
 
@@ -77,7 +77,7 @@ Autoloads (`src/autoloads/`): `ECS`, `GameConfig`, `SettingsManager`, `SkillMana
 |---|---|
 | What is actually implemented, subsystem by subsystem | [Состояние проекта](docs/astral-genesis/Состояние%20проекта.md) |
 | ECS model, «Правило v9», FSM/pattern knowledge | [GECS и правила движка](docs/astral-genesis/how-to/GECS%20и%20правила%20движка.md) |
-| World gen, layer streaming, doors, travel, save/load | [Цикл забега](docs/astral-genesis/how-to/Цикл%20забега.md) |
+| World gen, layer streaming, doors, travel, save/load, run summary | [Цикл забега](docs/astral-genesis/how-to/Цикл%20забега.md) |
 | Interactables, raycast, prompts, screen messages | [Взаимодействие](docs/astral-genesis/how-to/Взаимодействие.md) |
 | Capture/expel, body traits, decay model, `E_Body` contract | [Захват тела](docs/astral-genesis/how-to/Захват%20тела.md) |
 | Editor tooling traps, template authoring | [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md) |

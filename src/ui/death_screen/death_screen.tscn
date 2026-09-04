@@ -1,8 +1,8 @@
-[gd_scene format=3 uid="uid://ddth5cr33n01a"]
+[gd_scene load_steps=2 format=3 uid="uid://ddth5cr33n01a"]
 
 [ext_resource type="Script" uid="uid://dgjcwsj5cku87" path="res://src/ui/death_screen/death_screen.gd" id="2_script"]
 
-[node name="DeathScreen" type="Control" unique_id=1995404847]
+[node name="DeathScreen" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,72 +11,74 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_script")
 
-[node name="Background" type="ColorRect" parent="." unique_id=2146840821]
+[node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.050708726, 0.025840001, 0.025840001, 0.5)
+color = Color(0.050708726, 0.025840001, 0.025840001, 0.85)
 
-[node name="Panel" type="Panel" parent="." unique_id=1656977351]
-custom_minimum_size = Vector2(320, 240)
+[node name="Panel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(420, 0)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = -120.0
-offset_right = 160.0
-offset_bottom = 120.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=713945344]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 20
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=1375062689]
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/separation = 15
-alignment = 1
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 24
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer" unique_id=2044343805]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
-text = "СОЗНАНИЕ УГАСЛО"
+text = "RUN_SUMMARY_TITLE_DEATH"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="Panel/MarginContainer/VBoxContainer" unique_id=88046428]
-custom_maximum_size = Vector2(295, -1)
+[node name="Subtitle" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "БФЖ распался, не найдя нового тела."
+text = "RUN_SUMMARY_SUBTITLE_DEATH"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer" unique_id=1145303483]
+[node name="Separator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "RUN_SUMMARY_HEADING"
+horizontal_alignment = 1
+
+[node name="StatRows" type="GridContainer" parent="Panel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 6
+columns = 2
+
+[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="Retry" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=1658935289]
+[node name="Revive" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
-text = "Новый забег"
+text = "RUN_SUMMARY_REVIVE"
 
-[node name="Menu" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=2060769723]
-layout_mode = 2
-text = "В меню"
-
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Retry" to="." method="_on_retry_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Menu" to="." method="_on_menu_pressed"]
+[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Revive" to="." method="_on_revive_pressed"]

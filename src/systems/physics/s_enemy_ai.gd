@@ -27,6 +27,11 @@
 class_name S_EnemyAI
 extends System
 
+## Чем враг бьёт — атрибуция удара для сводки забега (S_Health.Damage.means).
+## Одно значение на всех врагов: разных атак у них пока нет, а когда появятся,
+## различать их будет по этому же полю.
+const MEANS := &"enemy_melee"
+
 
 func deps() -> Dictionary[int, Array]:
 	return {Runs.Before: [S_Walk]}
@@ -73,23 +78,22 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 			# погасит остаточную горизонтальную скорость, отдельно обнулять
 			# vel.velocity здесь не нужно.
 			inp.move_direction = Vector3.ZERO
-			_attack(target, ai)
+			_attack(entity, target, ai)
 		else:
 			# Только что довернулись к цели (look_at выше) — вперёд для тела
 			# и есть «к цели», как договорено для взгляда всех тел (−Z).
 			inp.move_direction = Vector3.FORWARD
 
 
-func _attack(target: Entity, ai: C_EnemyAI) -> void:
+func _attack(entity: Entity, target: Entity, ai: C_EnemyAI) -> void:
 	if ai.attack_cooldown_left > 0.0:
 		return
 	ai.attack_cooldown_left = ai.attack_interval
 
-	# Прямая запись C_Health.current — намеренно: S_Health (группа "gameplay")
-	# только клэмпит и объявляет смерть, а урон — дело боевых систем, как
-	# прямо сказано в его собственном комментарии.
-	var health := target.get_component(C_Health) as C_Health
-	health.current -= ai.attack_damage
+	# Через воронку, а не записью в C_Health.current: удар обязан оставить след
+	# «кто, кому, сколько и чем» — из него собирается сводка забега, и на нём же
+	# вырастет всё, что реагирует на урон (см. S_Health.deal_damage).
+	S_Health.deal_damage(target, ai.attack_damage, entity, MEANS)
 
 
 ## Единственная цель на всех врагов сразу — одна выборка вне цикла, а не

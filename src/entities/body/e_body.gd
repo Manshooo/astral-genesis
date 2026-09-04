@@ -23,6 +23,15 @@
 class_name E_Body
 extends Entity
 
+## Ключ ПЕРЕВОДА имени тела («BODY_WALKER»), а не само имя: всё, что видит
+## игрок, обязано переводиться (`assets/locale/ui.csv`), а сводка забега вдобавок
+## переживает смену языка — в её записях лежит ключ, не строка.
+##
+## Свойство сцены, а не компонент: имя не переносится на душу при вселении и ни
+## одна система не читает его в кадре — это метка сцены, ровно как облик и
+## габарит, которые тоже берутся из неё (visual_of/form_of), а не из чисел в коде.
+@export var display_name_key: StringName = &""
+
 
 ## Облик тела: меш, переопределение материала и трансформ его основной геометрии.
 ##
@@ -181,6 +190,25 @@ static func traits_of_scene(path: String) -> Array[Component]:
 	# Компоненты — Resource и переживают освобождение узла (считаются по ссылкам).
 	probe.free()
 	return found
+
+
+## Ключ имени тела по пути его сцены — тем же приёмом, что visual_of_scene:
+## спрашивают об этом уже ПОСЛЕ захвата, когда самой сущности в мире нет.
+##
+## Пустой ключ — не ошибка: у тела просто нет имени, и показывать его будут
+## прочерком. Валить сводку из-за незаполненного поля в сцене незачем.
+static func name_key_of_scene(path: String) -> StringName:
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return &""
+	var scene := load(path) as PackedScene
+	if scene == null:
+		return &""
+
+	var probe := scene.instantiate()
+	var body := probe as E_Body
+	var key: StringName = body.display_name_key if body else &""
+	probe.free()
+	return key
 
 
 static func _wearable(source: Array) -> Array[Component]:

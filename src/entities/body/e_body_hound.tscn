@@ -275,6 +275,7 @@ tempo_parameter = "Param1"
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("1_y0plc")
+display_name_key = &"BODY_HOUND"
 component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_swvon"), SubResource("Resource_qxb0x"), SubResource("Resource_hound_decay"), SubResource("Resource_w3ko0"), SubResource("Resource_a0cgm"), SubResource("Resource_footsteps")])
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=944537717]

@@ -1,0 +1,17 @@
+keys,ru,en
+RUN_SUMMARY_TITLE_DEATH,СОЗНАНИЕ УГАСЛО,CONSCIOUSNESS FADED
+RUN_SUMMARY_SUBTITLE_DEATH,"БФЖ распался, не найдя нового тела.","The incorporeal one decayed, finding no new body."
+RUN_SUMMARY_HEADING,ИТОГИ ЗАБЕГА,RUN SUMMARY
+RUN_SUMMARY_REVIVE,Возродиться,Revive
+RUN_SUMMARY_REVIVING,Возрождение…,Reviving…
+RUN_STAT_TIME,Время забега,Run time
+RUN_STAT_ROOMS,Комнат пройдено,Rooms visited
+RUN_STAT_BODIES,Тел занято,Bodies taken
+RUN_STAT_BODY_LIST,Какие тела,Which bodies
+RUN_STAT_DAMAGE_TAKEN,Урона получено,Damage taken
+RUN_STAT_DAMAGE_DEALT,Урона нанесено,Damage dealt
+RUN_STAT_SKILL_POINTS,Очков навыков получено,Skill points earned
+BODY_CORPSE,Труп,Corpse
+BODY_WALKER,Ходок,Walker
+BODY_CRAWLER,Ползун,Crawler
+BODY_HOUND,Гончая,Hound

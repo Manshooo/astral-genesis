@@ -144,6 +144,60 @@ func _set_player_input_blocked(blocked: bool) -> void:
 		player.remove_component(C_UIBlocked)
 
 
+# ---------------------------------------------------------------------------
+# Затемнение экрана
+# ---------------------------------------------------------------------------
+
+## Шторка живёт НЕ в сцене, а прямым ребёнком root: затемняют как раз для того,
+## чтобы под ним сменить сцену, и уехавшая вместе со старой сценой шторка мигнула
+## бы миром ровно в момент перехода. По той же причине снимает её уже НОВАЯ сцена
+## (fade_from_black) — иначе после смены сцены экран остался бы чёрным навсегда.
+var _fade: ColorRect
+
+
+## Гасит экран в чёрный за [param duration] секунд и возвращает управление, когда
+## погасло. Отдельного экрана-сцены под шторку нет намеренно: это один
+## непрозрачный прямоугольник без начинки, и сцена ради него была бы файлом,
+## который нечего открывать.
+func fade_to_black(duration: float) -> void:
+	_ensure_fade()
+	_fade.color.a = 0.0
+	_fade.show()
+	# PROCESS_MODE_ALWAYS: гасить экран может понадобиться и на паузе, а твин
+	# считает время процессом того узла, к которому привязан.
+	var tween := create_tween()
+	tween.tween_property(_fade, "color:a", 1.0, duration)
+	await tween.finished
+
+
+## Проявляет новую сцену из-под шторки. Молча ничего не делает, если экран и не
+## гасили, — новой сцене не нужно знать, как в неё попали.
+func fade_from_black(duration: float) -> void:
+	if _fade == null or not _fade.visible:
+		return
+	var tween := create_tween()
+	tween.tween_property(_fade, "color:a", 0.0, duration)
+	await tween.finished
+	_fade.hide()
+
+
+func _ensure_fade() -> void:
+	if is_instance_valid(_fade):
+		return
+	_fade = ColorRect.new()
+	_fade.name = "FadeOverlay"
+	_fade.color = Color(0.0, 0.0, 0.0, 0.0)
+	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Мышь сквозь шторку проходит: она рисует, а не перехватывает — иначе кнопки
+	# экрана итогов оказались бы под невидимой крышкой.
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade.process_mode = Node.PROCESS_MODE_ALWAYS
+	# Поверх всего, включая экраны стека: затемнение — это переход между сценами,
+	# а не ещё один экран в очереди.
+	_fade.z_index = 128
+	get_tree().root.add_child(_fade)
+
+
 func _get_player_entity() -> Entity:
 	# Мира может уже не быть: экран смерти гасит стек, находясь В СВОЕЙ сцене —
 	# игровая к тому моменту выгружена вместе с ECS.world. Отсутствие мира здесь
