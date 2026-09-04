@@ -22,6 +22,7 @@ const REBINDABLE_ACTIONS := {
 	&"move_left": "Влево",
 	&"move_right": "Вправо",
 	&"jump": "Прыжок",
+	&"sprint": "Бег",
 	&"interact": "Взаимодействие",
 	&"snatch_body": "Захват тела",
 	&"leave_body": "Покинуть тело",

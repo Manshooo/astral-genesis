@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://brejetk5bt2cr" path="res://src/components/gameplay/skills/c_body_decay.gd" id="8_decay"]
 [ext_resource type="Script" uid="uid://buxoowbmksowk" path="res://src/components/gameplay/skills/c_jump.gd" id="9_jump"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_footsteps.gd" id="ext_footsteps"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_sprint.gd" id="ext_sprint"]
 
 [sub_resource type="Resource" id="Resource_s5lx7"]
 script = ExtResource("3_health")
@@ -30,6 +31,10 @@ metadata/_custom_type_script = "uid://brejetk5bt2cr"
 [sub_resource type="Resource" id="Resource_walk_jump"]
 script = ExtResource("9_jump")
 metadata/_custom_type_script = "uid://buxoowbmksowk"
+
+[sub_resource type="Resource" id="Resource_walk_sprint"]
+script = ExtResource("ext_sprint")
+speed_multiplier = 1.6
 
 [sub_resource type="Skin" id="Skin_je7e3"]
 resource_name = "Skin"
@@ -249,7 +254,7 @@ tempo_parameter = "Param1"
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("1_0oeey")
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_s5lx7"), SubResource("Resource_xllr1"), SubResource("Resource_h2i6v"), SubResource("Resource_walk_decay"), SubResource("Resource_walk_jump"), SubResource("Resource_footsteps")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_s5lx7"), SubResource("Resource_xllr1"), SubResource("Resource_h2i6v"), SubResource("Resource_walk_decay"), SubResource("Resource_walk_jump"), SubResource("Resource_walk_sprint"), SubResource("Resource_footsteps")])
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=497117336]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

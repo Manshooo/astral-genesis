@@ -125,6 +125,13 @@ layout_mode = 2
 layout_mode = 2
 text = "[Space] Прыжок"
 
+[node name="HSeparator2" type="HSeparator" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=2002045984]
+layout_mode = 2
+
+[node name="SprintLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000105]
+layout_mode = 2
+text = "[Shift] Бег"
+
 [node name="MapPanel" type="PanelContainer" parent="Hud" unique_id=1336408021]
 layout_mode = 1
 anchors_preset = 1
