@@ -29,6 +29,9 @@ var last: RS_RunStats
 
 
 func _ready() -> void:
+	# Итоги прошлого забега поднимаем с диска: игру могли закрыть прямо на экране
+	# итогов, и открытая заново она не должна делать вид, что забега не было.
+	last = WorldSave.save.last_run
 	RunManager.complex_entered.connect(_on_complex_entered)
 	RunManager.room_changed.connect(_on_room_changed)
 
@@ -101,3 +104,7 @@ func finish(outcome: StringName, skill_points: int) -> void:
 	current.add(RS_RunStats.SKILL_POINTS, float(skill_points))
 	last = current
 	current = null
+	# Сразу на диск, а не «когда-нибудь потом»: следующий шаг зовущего —
+	# record_death()/clear_run(), который ссылку сейва на текущий забег отпустит,
+	# и незаписанные итоги остались бы жить только в памяти процесса.
+	WorldSave.record_run_summary(last)

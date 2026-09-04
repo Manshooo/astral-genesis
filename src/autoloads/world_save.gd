@@ -8,6 +8,13 @@ extends Node
 ## save.run_seed() (см. RunManager.enter_complex), поэтому сейв — это несколько
 ## чисел, а не дамп мира.
 
+## Прогресс забега ушёл на диск. Слушает HUD, чтобы показать «Сохранено»:
+## запись проходит между кадрами и без отклика игрок не знает, что точка
+## поставлена. Сигнал именно у сейва, а не у RunManager: точку ставят из
+## нескольких мест (смена комнаты, автосохранение по времени, смена воплощения,
+## кнопка в паузе), а факт записи один.
+signal progress_saved
+
 const SAVE_PATH := "user://world_save.tres"
 
 var save: RS_WorldSave
@@ -63,6 +70,17 @@ func record_progress(
 	save.body_health_max = body_health_max
 	save.body_lifespan_remaining = body_lifespan_left
 	save.body_lifespan_max = body_lifespan_max
+	_save()
+	progress_saved.emit()
+
+
+## Итоги ЗАВЕРШЁННОГО забега. Лежат отдельно от прогресса и переживают
+## `clear_run()`: забега больше нет, а его сводка — уже часть прохождения. Без
+## записи на диск итоги жили бы только в памяти, и закрытая на экране итогов игра
+## теряла бы их вместе с процессом — а на них встанет доска истории забегов в
+## хабе.
+func record_run_summary(stats: RS_RunStats) -> void:
+	save.last_run = stats
 	_save()
 
 

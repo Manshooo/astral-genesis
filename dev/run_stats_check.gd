@@ -19,8 +19,23 @@ var _ok := 0
 var _fail := 0
 var _pending_ticks := 0
 
+## Сколько раз сейв отчитался о записи (WorldSave.progress_saved). Поле, а не
+## локальная переменная в лямбде: лямбда GDScript захватывает переменную ПО
+## ЗНАЧЕНИЮ, и счётчик внутри неё увеличивал бы копию.
+var _saves := 0
+
+## Настоящий сейв разработчика на момент старта проверки. Прогон пишет на диск
+## (иначе контрольную точку не проверить), и чужой забег он ронять не должен.
+var _save_backup := PackedByteArray()
+var _had_save := false
+
 
 func _ready() -> void:
+	# ДО всего остального: конец забега (RunStats.finish) пишет итоги на диск, и
+	# бэкап, снятый позже, застал бы уже испорченный файл.
+	_save_backup = FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH)
+	_had_save = not _save_backup.is_empty()
+
 	var world := World.new()
 	add_child(world)
 	ECS.world = world
@@ -48,6 +63,8 @@ func _ready() -> void:
 	await _check_world(world)
 	_check_run_boundaries()
 	await _check_screen()
+	_check_autosave()
+	_restore_save()
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
@@ -301,6 +318,77 @@ func _check_screen() -> void:
 	)
 
 	screen.queue_free()
+
+
+# ---------------------------------------------------------------------------
+# Автосохранение
+# ---------------------------------------------------------------------------
+
+
+## Контрольная точка проверяется настоящей записью на диск — иначе не проверяется
+## вовсе. Сейв разработчика снят в _ready и возвращается в _restore_save.
+func _check_autosave() -> void:
+	WorldSave.progress_saved.connect(_count_save)
+
+	# Итоги забега переживают обнуление прогресса: забег кончился, а его сводка —
+	# уже часть прохождения. Иначе экран итогов, открытый после перезапуска,
+	# оказался бы пустым.
+	var summary := RS_RunStats.new()
+	summary.add(RS_RunStats.TIME, 77.0)
+	WorldSave.record_run_summary(summary)
+	WorldSave.save.clear_run()
+	_check("итоги забега не сносятся вместе с прогрессом", WorldSave.save.last_run == summary, "")
+
+	# Дальше нужен «идущий забег»: save_progress() без графа отказывает первым же
+	# условием и ничего бы не доказал.
+	RunManager.current_graph = RS_LevelGraph.new()
+	RunManager.current_node_id = &"проверочный_узел"
+	RunManager._ending = false
+	RunManager._since_autosave = 0.0
+
+	_saves = 0
+	_check("контрольная точка ставится и сообщает о себе", RunManager.save_progress() and _saves == 1,
+		"записей: %d" % _saves)
+
+	# Регресс: пока идёт смерть, точку не ставит НИКТО. die() к этому моменту уже
+	# снял снимок статистики, и запись воскресила бы законченный забег в сейве.
+	RunManager._ending = true
+	_saves = 0
+	_check("во время смерти точка не ставится", not RunManager.save_progress() and _saves == 0,
+		"записей: %d" % _saves)
+	RunManager._ending = false
+
+	# Автосохранение по времени: до интервала молчит, после — пишет.
+	var interval: float = GameConfig.config.autosave_interval
+	RunManager._since_autosave = 0.0
+	_saves = 0
+	RunManager._process(interval * 0.5)
+	_check("до интервала автосохранение молчит", _saves == 0, "записей: %d" % _saves)
+	RunManager._process(interval * 0.6)
+	_check("после интервала автосохранение пишет точку", _saves == 1, "записей: %d" % _saves)
+	_check("своя точка обнуляет счётчик интервала", is_zero_approx(RunManager._since_autosave),
+		"%.2f" % RunManager._since_autosave)
+
+	WorldSave.progress_saved.disconnect(_count_save)
+	RunManager.current_graph = null
+	RunManager.current_node_id = &""
+
+
+func _count_save() -> void:
+	_saves += 1
+
+
+## Возвращает сейв разработчика ровно таким, каким он был до прогона.
+func _restore_save() -> void:
+	if _had_save:
+		var file := FileAccess.open(WorldSave.SAVE_PATH, FileAccess.WRITE)
+		if file:
+			file.store_buffer(_save_backup)
+			file.close()
+	else:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(WorldSave.SAVE_PATH))
+	_check("сейв разработчика возвращён на место",
+		FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH) == _save_backup, "")
 
 
 # ---------------------------------------------------------------------------
