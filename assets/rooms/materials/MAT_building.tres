@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cv3cyxh6ac3r4"]
+
+[ext_resource type="Texture2D" uid="uid://hq1tsms7ipa1" path="res://assets/rooms/buildings_Gradient Pallete.png" id="1_edjld"]
+
+[resource]
+resource_name = "MAT_building"
+cull_mode = 2
+albedo_texture = ExtResource("1_edjld")
+roughness = 0.5
+metadata/_gltf_primary_texture_coord = 0
