@@ -410,7 +410,13 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 
 	current_node_id = node_id
 	# Смена комнаты — гранула сохранения забега: дальше игрок продолжит отсюда.
-	_checkpoint(node_id)
+	#
+	# А вот ВХОД в забег (came_from пуст: старт, загрузка, возрождение) точкой не
+	# считается: сохранять там нечего, на диске уже лежит ровно это состояние, —
+	# и лишняя запись сразу после загрузки только мигала бы игроку «Сохранено» на
+	# ровном месте. Состояние в памяти при этом обновляется всё равно: комната,
+	# в которой игрок стоит, обязана попасть в visited_node_ids (см. persist).
+	_checkpoint(node_id, came_from != &"")
 	room_changed.emit(node_id)
 	_place_player_in_room(room, came_from)
 
@@ -777,10 +783,14 @@ func _get_player() -> E_Player:
 ## Контрольная точка: снимает с БФЖ всё, что не выводится из сида, и отдаёт
 ## сейву числами. Разбор компонентов живёт здесь, а не в WorldSave: автолоад
 ## сохранения про ECS ничего не знает и знать не должен.
-func _checkpoint(node_id: StringName) -> void:
+## [param persist] false — только обновить состояние в памяти (см.
+## WorldSave.record_progress и вход в забег в _enter_node).
+func _checkpoint(node_id: StringName, persist: bool = true) -> void:
 	# Счётчик автосохранения обнуляет ЛЮБАЯ точка, а не только своя: смена
 	# комнаты и кнопка в паузе пишут то же самое, и отсчитывать интервал от
-	# предыдущего автосохранения значило бы писать на диск чаще без нужды.
+	# предыдущего автосохранения значило бы писать на диск чаще без нужды. Вход
+	# в забег счётчик тоже обнуляет — отсчёт до первого автосохранения идёт с
+	# момента, когда игрок оказался в мире, а не с прошлой сессии.
 	_since_autosave = 0.0
 
 	var lifespan_left := -1.0
@@ -816,7 +826,8 @@ func _checkpoint(node_id: StringName) -> void:
 		body_health,
 		body_health_max,
 		body_lifespan_left,
-		body_lifespan_max
+		body_lifespan_max,
+		persist
 	)
 
 

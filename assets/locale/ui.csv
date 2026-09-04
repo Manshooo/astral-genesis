@@ -4,7 +4,6 @@ RUN_SUMMARY_SUBTITLE_DEATH,"БФЖ распался, не найдя новог�
 RUN_SUMMARY_HEADING,ИТОГИ ЗАБЕГА,RUN SUMMARY
 RUN_SUMMARY_REVIVE,Возродиться,Revive
 RUN_SUMMARY_REVIVING,Возрождение…,Reviving…
-HUD_SAVED,Сохранено,Saved
 RUN_STAT_TIME,Время забега,Run time
 RUN_STAT_ROOMS,Комнат пройдено,Rooms visited
 RUN_STAT_BODIES,Тел занято,Bodies taken

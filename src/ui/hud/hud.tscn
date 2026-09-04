@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://ek66xvjkfy67" path="res://src/ui/hud/vital_bar.gd" id="7_bar"]
 [ext_resource type="Script" uid="uid://dh6qrlpmpgil0" path="res://src/ui/hud/hud_abilities.gd" id="8_abilities"]
 [ext_resource type="Script" path="res://src/ui/hud/hud_save_indicator.gd" id="9_save"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -293,8 +294,8 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -140.0
-offset_top = -46.0
+offset_left = -58.0
+offset_top = -58.0
 offset_right = -12.0
 offset_bottom = -12.0
 grow_horizontal = 0
@@ -304,13 +305,14 @@ script = ExtResource("9_save")
 
 [node name="Margin" type="MarginContainer" parent="Hud/SavePanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 6
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
-[node name="Saved" type="Label" parent="Hud/SavePanel/Margin"]
+[node name="Icon" type="TextureRect" parent="Hud/SavePanel/Margin"]
+custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
-text = "HUD_SAVED"
-horizontal_alignment = 1
-vertical_alignment = 1
+texture = ExtResource("10_save_icon")
+expand_mode = 1
+stretch_mode = 5

@@ -14,6 +14,7 @@ const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 const CATALOG_PATH := "res://data/run_stat_catalog.tres"
+const SAVE_ICON_PATH := "res://assets/ui/icons/save.svg"
 
 var _ok := 0
 var _fail := 0
@@ -64,6 +65,7 @@ func _ready() -> void:
 	_check_run_boundaries()
 	await _check_screen()
 	_check_autosave()
+	await _check_save_indicator()
 	_restore_save()
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
@@ -350,6 +352,17 @@ func _check_autosave() -> void:
 	_check("контрольная точка ставится и сообщает о себе", RunManager.save_progress() and _saves == 1,
 		"записей: %d" % _saves)
 
+	# Вход в забег (старт, загрузка, возрождение) точкой НЕ считается: на диске
+	# уже лежит ровно это состояние, и запись сразу после загрузки только мигала
+	# бы игроку «сохранено» на ровном месте. Но комната, в которой он оказался,
+	# обязана попасть в посещённые — её рисует карта и считает статистика.
+	WorldSave.save.visited_node_ids.clear()
+	_saves = 0
+	RunManager._checkpoint(&"узел_входа", false)
+	_check("вход в забег не пишет на диск", _saves == 0, "записей: %d" % _saves)
+	_check("но комната входа отмечена посещённой",
+		WorldSave.save.visited_node_ids.has(&"узел_входа"), "")
+
 	# Регресс: пока идёт смерть, точку не ставит НИКТО. die() к этому моменту уже
 	# снял снимок статистики, и запись воскресила бы законченный забег в сейве.
 	RunManager._ending = true
@@ -372,6 +385,32 @@ func _check_autosave() -> void:
 	WorldSave.progress_saved.disconnect(_count_save)
 	RunManager.current_graph = null
 	RunManager.current_node_id = &""
+
+
+## Отметка сохранения обязана гаснуть даже на ПАУЗЕ: сохранить можно кнопкой из
+## меню паузы, а твин по умолчанию идёт вместе с миром — значок замирал и
+## встречал игрока висящим, когда тот возвращался в игру. Проверяем поведением,
+## а не режимом твина: режим — это как раз то, что можно переставить и не
+## заметить.
+func _check_save_indicator() -> void:
+	_check("иконка сохранения на месте", ResourceLoader.exists(SAVE_ICON_PATH), SAVE_ICON_PATH)
+
+	var indicator := UI_HudSaveIndicator.new()
+	add_child(indicator)
+	await get_tree().process_frame
+
+	get_tree().paused = true
+	WorldSave.progress_saved.emit()
+	_check("после записи значок виден", indicator.visible, "")
+
+	# Ждём заведомо дольше показа с гашением, но по РЕАЛЬНОМУ времени: сцена на
+	# паузе, и обычный таймер тоже стоял бы.
+	var wait := UI_HudSaveIndicator.VISIBLE_SECONDS + UI_HudSaveIndicator.FADE_SECONDS + 0.3
+	await get_tree().create_timer(wait, true).timeout
+	_check("на паузе значок всё равно погас", not indicator.visible, "")
+
+	get_tree().paused = false
+	indicator.queue_free()
 
 
 func _count_save() -> void:
