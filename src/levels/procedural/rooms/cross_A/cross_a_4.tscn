@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_dha02"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_6roth"]
 [ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_5xn7n"]
-[ext_resource type="ArrayMesh" uid="uid://18qbbebvo5lo" path="res://assets/rooms/models/buildings_room_A_2_002.tres" id="4_dha02"]
+[ext_resource type="ArrayMesh" uid="uid://dp08y4afigode" path="res://assets/rooms/models/buildings_room_A_4.res" id="4_dha02"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_5rd2h"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_1p8jw"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_iusou"]
@@ -61,19 +61,19 @@ shape = SubResource("ConcavePolygonShape3D_dha02")
 [node name="Doors" type="Node3D" parent="." unique_id=2018284566]
 
 [node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_5rd2h")]
-transform = Transform3D(1, 0, 0, 0, 1.15, 0, 0, 0, 1, -1.171808, 2.2, 7.349473)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.014551878, -0.0068917274, 7.349473)
 component_resources = Array[ExtResource("2_6roth")]([SubResource("Resource_yc7b2"), SubResource("Resource_f1gtk")])
 
 [node name="Door2" parent="Doors" unique_id=169055856 instance=ExtResource("5_5rd2h")]
-transform = Transform3D(1, 0, 0, 0, 1.15, 0, 0, 0, 1, -1.171808, 2.2, -7.650527)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.014551878, -0.0068917274, -7.650527)
 component_resources = Array[ExtResource("2_6roth")]([SubResource("Resource_vta66"), SubResource("Resource_xht3i")])
 
 [node name="Door3" parent="Doors" unique_id=1161530617 instance=ExtResource("5_5rd2h")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1.15, 0, 1, 0, -4.371139e-08, -7.1718082, 2.2, -1.4505271)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -7.1718082, -0.0068917274, 0.008705258)
 component_resources = Array[ExtResource("2_6roth")]([SubResource("Resource_8ssbo"), SubResource("Resource_wparc")])
 
 [node name="Door4" parent="Doors" unique_id=1062442561 instance=ExtResource("5_5rd2h")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1.15, 0, 1, 0, -4.371139e-08, 7.8281918, 2.2, -1.4505271)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 7.8281918, -0.0068917274, 0.008705258)
 component_resources = Array[ExtResource("2_6roth")]([SubResource("Resource_8ssbo"), SubResource("Resource_dha02")])
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]

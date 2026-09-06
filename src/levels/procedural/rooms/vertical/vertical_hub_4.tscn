@@ -47,19 +47,19 @@ mesh = ExtResource("4_dhosw")
 [node name="Doors" type="Node3D" parent="Room" unique_id=1093078624]
 
 [node name="Door" parent="Room/Doors" unique_id=1986258941 instance=ExtResource("5_lbhih")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7313477, 1.8816316, -9.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13593066, 0.043256044, -9.6)
 component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_kvf8c")])
 
 [node name="Door2" parent="Room/Doors" unique_id=1042643329 instance=ExtResource("5_lbhih")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0626955, 1.891434, 9.599999)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13592339, 0.053058386, 9.599999)
 component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_jspcr")])
 
 [node name="Door3" parent="Room/Doors" unique_id=1817518063 instance=ExtResource("5_lbhih")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.268652, 1.8816316, 2.3999996)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.268652, 0.043256044, -0.15456891)
 component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_dhosw")])
 
 [node name="Door4" parent="Room/Doors" unique_id=1298178528 instance=ExtResource("5_lbhih")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 9.731348, 1.8816316, -2.1000004)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 9.731348, 0.043256044, -0.14650631)
 component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_sf4mg")])
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Room" unique_id=588637070]
@@ -68,6 +68,7 @@ component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo
 shape = SubResource("ConcavePolygonShape3D_dhosw")
 
 [node name="VerticalPortal" parent="." unique_id=1972028151 instance=ExtResource("8_7gnft")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4132774, 0)
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1666931604]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.8, -5.4)

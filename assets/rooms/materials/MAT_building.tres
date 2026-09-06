@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://cv3cyxh6ac3r4"]
 
-[ext_resource type="Texture2D" uid="uid://hq1tsms7ipa1" path="res://assets/rooms/buildings_Gradient Pallete.png" id="1_edjld"]
+[ext_resource type="Texture2D" uid="uid://dpqwova1u32dn" path="res://assets/shared/palette/Gradient Pallete.png" id="1_edjld"]
 
 [resource]
 resource_name = "MAT_building"

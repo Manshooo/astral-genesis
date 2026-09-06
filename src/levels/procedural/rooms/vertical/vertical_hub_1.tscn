@@ -35,7 +35,7 @@ mesh = ExtResource("2_3rh27")
 [node name="Doors" type="Node3D" parent="Room" unique_id=1383123660]
 
 [node name="Door" parent="Room/Doors" unique_id=1986258941 instance=ExtResource("5_y5cco")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9449501, 1.9880631, 9.54356)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.044950128, -0.011936903, 9.54356)
 component_resources = Array[ExtResource("2_ykosf")]([SubResource("Resource_8ssbo"), SubResource("Resource_2ofcx")])
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Room" unique_id=2090789735]
@@ -44,7 +44,7 @@ component_resources = Array[ExtResource("2_ykosf")]([SubResource("Resource_8ssbo
 shape = SubResource("ConcavePolygonShape3D_eahun")
 
 [node name="VerticalPortal" parent="." unique_id=1972028151 instance=ExtResource("3_0833h")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.40323448, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.4167378, -6)
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=824471634]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -6.4118447)

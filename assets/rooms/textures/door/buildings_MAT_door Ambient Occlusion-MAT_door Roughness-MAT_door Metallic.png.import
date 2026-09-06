@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://gwqp6y7hwmnu"
-path.s3tc="res://.godot/imported/buildings_MAT_door AO.png-b88138c7382351d3162e1193f8544f16.s3tc.ctex"
+uid="uid://bt7lcaxc6lyu7"
+path.s3tc="res://.godot/imported/buildings_MAT_door Ambient Occlusion-MAT_door Roughness-MAT_door Metallic.png-33e08d0183eb4c68cfb87cdfbe4a53fc.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "74f3fee10ce02de3fffe0701d707d3c4"
+"md5": "e9e4de073f6ff309bf027e248ef9617c"
 }
 
 [deps]
 
-source_file="res://assets/rooms/buildings_MAT_door AO.png"
-dest_files=["res://.godot/imported/buildings_MAT_door AO.png-b88138c7382351d3162e1193f8544f16.s3tc.ctex"]
+source_file="res://assets/rooms/textures/door/buildings_MAT_door Ambient Occlusion-MAT_door Roughness-MAT_door Metallic.png"
+dest_files=["res://.godot/imported/buildings_MAT_door Ambient Occlusion-MAT_door Roughness-MAT_door Metallic.png-33e08d0183eb4c68cfb87cdfbe4a53fc.s3tc.ctex"]
 
 [params]
 
@@ -29,8 +29,8 @@ compress/normal_map=0
 compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1
-roughness/mode=0
-roughness/src_normal=""
+roughness/mode=8
+roughness/src_normal="res://assets/rooms/buildings_MAT_door Normal.png"
 process/channel_remap/red=0
 process/channel_remap/green=1
 process/channel_remap/blue=2

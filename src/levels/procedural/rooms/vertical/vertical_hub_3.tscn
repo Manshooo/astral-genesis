@@ -43,15 +43,15 @@ mesh = ExtResource("4_b7vy5")
 [node name="Doors" type="Node3D" parent="Room" unique_id=2094803442]
 
 [node name="Door" parent="Room/Doors" unique_id=1986258941 instance=ExtResource("5_grwat")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7313477, 1.9782233, -9.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09911311, -0.009911537, -9.6)
 component_resources = Array[ExtResource("2_pdoc4")]([SubResource("Resource_8ssbo"), SubResource("Resource_kvf8c")])
 
 [node name="Door2" parent="Room/Doors" unique_id=1042643329 instance=ExtResource("5_grwat")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7644644, 1.9901974, 9.599999)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1322298, 0.0020625591, 9.599999)
 component_resources = Array[ExtResource("2_pdoc4")]([SubResource("Resource_8ssbo"), SubResource("Resource_jspcr")])
 
 [node name="Door3" parent="Room/Doors" unique_id=206349484 instance=ExtResource("5_grwat")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -9.4373045, 1.9752066, -1.8918467)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -9.4373045, -0.012928247, -0.12693691)
 component_resources = Array[ExtResource("2_pdoc4")]([SubResource("Resource_8ssbo"), SubResource("Resource_b7vy5")])
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Room" unique_id=2080971748]
@@ -60,7 +60,7 @@ component_resources = Array[ExtResource("2_pdoc4")]([SubResource("Resource_8ssbo
 shape = SubResource("ConcavePolygonShape3D_b7vy5")
 
 [node name="VerticalPortal" parent="." unique_id=1972028151 instance=ExtResource("8_ryc4f")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.45408034, -4)
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1361025197]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.8, -3.4)

@@ -3,7 +3,7 @@
 [ext_resource type="Material" uid="uid://cv3cyxh6ac3r4" path="res://assets/rooms/materials/MAT_building.tres" id="1_xwkx2"]
 [ext_resource type="Material" uid="uid://ch27152k33ewh" path="res://assets/rooms/materials/MAT_glass.tres" id="2_nmbcg"]
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_ejx3f"]
+[sub_resource type="ArrayMesh" id="ArrayMesh_xwkx2"]
 _surfaces = [{
 "aabb": AABB(-8.282153, -0.03881362, -8.282153, 16.564306, 9.693044, 17.282154),
 "format": 34359742465,
@@ -59,4 +59,4 @@ _surfaces = [{
 "vertex_data": PackedByteArray("E/8AAPG1rMgRtPO5AGusyP//AABJTKvIvLPyufuVrsjttQAA6wBHJBG087kAa0ck0ZXzuUJMSCT//wAASUxGJElMAAAAAJIn0ZXzuUJMkicAa/O57kuSJ+21AADrAJInAAAAALazhxtCTPO5A2qFG/FL87kKlYEb6gAAAA1KiRsAAAAAtrNKsgNq87m8s0uyDUoAABP/SbLxS/O5CpVNsrWzAAD//9mxvLPyufuV2LET/wAA8bXbsf2U87kRtNWxDUoAABP/kqf9lPO5EbSSp7WzAAD//5KnA2rzubyzkqdJTAAAAABoJEJM87kDamok6gAAAA1KZyQAa/O57kttJPV////1f2Mue4XK71lzYy7ajGXw7npjLitznvEjhZQkUnOo8JF6lCT1f///9X+UJIt6OfK5jCW09X////V/JbQehR3y34wltB6FHfLfjKa89X////V/pry0jFvxgIWmvHuFyu9ZcyQy9X////V/JDLneubvMnMkMvV////1f/wj2oxl8O56/CO0jFvxgIX8I1JzqPCRetou53rm7zJz2i71f///9X/aLvV////1fwi9i3o58rmMCL0rc57xI4UIvUeUI71Osvi4dI0P8bWF97j8sSO9PZX5uHOFD/GFjfW4tE0jvVSUarlHekbxdI12ucFqJL38sWO5enId8XeFiLm0TSO9VJSHIYpy5/BIep4henId8XeFwSECTiK9wWp6IbdrI72xTdswp4X5741y2DCKegzxeXLRMBOVHb0DTtww/LEjvT2V1SKHjfjvkXrVIk2yHb23ayXNdI0P8bWF1SJNsh29t2u4LKeF+e+NcrcsE5UdvQNOuSyHjfjvkXq2LLdrI72xTa0sinLn8Eh6pCwCTiK9wWqyLIp6DPF5cpcsR5QjvU6yr7BHekbxdI2vsHOFD/GFja+wwWokvfyxr7DcwRIh3MERId3BFCHbwQ0hBM5FkQXORJEHzkKRAs5GkS3/R4Aw/0WAOv8+gCf/S4Bb5eMyWuXiMlfl3jJc5eUyy7nyrci58q3PufGtv7nzrZjSoTqY0qU6l9KbOprSsTp1/gCBfP79gGr+A4GP/veA/+7LTgHvzk777sZOCO/XTlDMepVQzHqVUMx6lRPfuTET37kxE9+5MUf/aYBH/2mAR/9pgFjakz5Y2pM+WNqTPpz9/ICc/fyAnP38gN+wOKHfsDih37A4oT/rI04/6yNOP+sjTvC9+qXwvfql8L36pczZyj/N2c8/y9nIP8/Z1T+1vtqmjL7mpsy+1KZNvviml98GMKffHTC/30Awjt/5L9b91IDR+wmC4/jJgwP/IIAssaCfLLGgn/LJNSUssaCfAMuPlf7KkJUCy46V+sqTld7q3EvN6sNL6OrrS7LqnEs+/26A2P9AgLX/937X/piA")
 }]
 blend_shape_mode = 0
-shadow_mesh = SubResource("ArrayMesh_ejx3f")
+shadow_mesh = SubResource("ArrayMesh_xwkx2")

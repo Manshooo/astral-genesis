@@ -1,15 +1,15 @@
 [remap]
 
-importer="MeshLibrary"
+importer="scene"
 importer_version=1
-type="MeshLibrary"
+type="PackedScene"
 uid="uid://dh03yue6o8y3a"
-path="res://.godot/imported/buildings.glb-0b5cf6b986b8e261aef30b21438b7eef.res"
+path="res://.godot/imported/buildings.glb-0b5cf6b986b8e261aef30b21438b7eef.scn"
 
 [deps]
 
 source_file="res://assets/rooms/buildings.glb"
-dest_files=["res://.godot/imported/buildings.glb-0b5cf6b986b8e261aef30b21438b7eef.res"]
+dest_files=["res://.godot/imported/buildings.glb-0b5cf6b986b8e261aef30b21438b7eef.scn"]
 
 [params]
 
@@ -41,16 +41,37 @@ materials/extract_format=0
 materials/extract_path="res://assets/rooms/materials"
 _subresources={
 "materials": {
-"@MATERIAL:14": {
+"MAT_building": {
 "use_external/enabled": true,
-"use_external/path": "uid://cnya23x5qxi1x"
+"use_external/fallback_path": "res://assets/rooms/materials/MAT_building.tres",
+"use_external/path": "uid://cv3cyxh6ac3r4"
 },
-"@MATERIAL:15": {
+"MAT_door": {
 "use_external/enabled": true,
-"use_external/path": "uid://8jj8ae88b4yc"
+"use_external/fallback_path": "res://assets/rooms/materials/MAT_door.tres",
+"use_external/path": "uid://qldk63vshef2"
+},
+"MAT_furniture": {
+"use_external/enabled": true,
+"use_external/fallback_path": "res://assets/rooms/materials/MAT_furniture.tres",
+"use_external/path": "uid://btbalovdwgws1"
+},
+"MAT_glass": {
+"use_external/enabled": true,
+"use_external/fallback_path": "res://assets/rooms/materials/MAT_glass.tres",
+"use_external/path": "uid://ch27152k33ewh"
 }
 },
 "meshes": {
+"buildings_SM_Door": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_SM_Door.res",
+"save_to_file/path": "uid://416t15cvwoqy"
+},
 "buildings_book_shelf_A": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
@@ -68,6 +89,42 @@ _subresources={
 "save_to_file/enabled": true,
 "save_to_file/fallback_path": "res://assets/rooms/models/buildings_chair_A.tres",
 "save_to_file/path": "uid://gn0cwl78xw3y"
+},
+"buildings_corridor_A_2": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_corridor_A_2.res",
+"save_to_file/path": "uid://dg47epqai31dc"
+},
+"buildings_corridor_A_2C": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_corridor_A_2C.res",
+"save_to_file/path": "uid://d3k6ktkvk0c6t"
+},
+"buildings_corridor_A_3": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_corridor_A_3.res",
+"save_to_file/path": "uid://bxayy7bykuw30"
+},
+"buildings_corridor_A_4": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_corridor_A_4.res",
+"save_to_file/path": "uid://bnd8mnibc0j1b"
 },
 "buildings_desk_A": {
 "generate/lightmap_uv": 0,
@@ -113,6 +170,24 @@ _subresources={
 "save_to_file/enabled": true,
 "save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_2C.tres",
 "save_to_file/path": "uid://bwywggcscny76"
+},
+"buildings_room_A_3": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_3.res",
+"save_to_file/path": "uid://cy0s3d5ifj3cx"
+},
+"buildings_room_A_4": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/rooms/models/buildings_room_A_4.res",
+"save_to_file/path": "uid://dp08y4afigode"
 },
 "buildings_room_B_1": {
 "generate/lightmap_uv": 0,

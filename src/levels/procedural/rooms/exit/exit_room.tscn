@@ -52,16 +52,16 @@ shape = SubResource("ConcavePolygonShape3D_2ks8g")
 [node name="Doors" type="Node3D" parent="MeshInstance3D" unique_id=1730526942]
 
 [node name="Door" parent="MeshInstance3D/Doors" unique_id=1986258941 instance=ExtResource("5_g6fwc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 2, -10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13231403, 0.022136688, -10)
 actions = Array[ExtResource("6_k843v")]([SubResource("Resource_k843v")])
 component_resources = Array[ExtResource("2_uf4in")]([SubResource("Resource_8ssbo")])
 
 [node name="Door2" parent="MeshInstance3D/Doors" unique_id=674122192 instance=ExtResource("5_g6fwc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 2, 9.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14422965, 0.022136688, 9.3)
 component_resources = Array[ExtResource("2_uf4in")]([SubResource("Interactable_door2"), SubResource("Slot_south")])
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)
 
 [node name="BodyCrawler" parent="." unique_id=710000001 instance=ExtResource("90_body")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.00089758635, 3)
