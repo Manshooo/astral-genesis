@@ -1,8 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://ch27152k33ewh"]
-
-[resource]
-resource_name = "MAT_glass"
-transparency = 4
-cull_mode = 2
-albedo_color = Color(0.84810996, 0.8447251, 0.7468172, 0.020384545)
-roughness = 0.042307694

@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cs5xo7m48fxr"]
+
+[ext_resource type="Texture2D" uid="uid://dpqwova1u32dn" path="res://assets/shared/palette/Gradient Pallete.png" id="1_kxmsq"]
+
+[resource]
+resource_name = "MAT_furniture"
+albedo_texture = ExtResource("1_kxmsq")
