@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://ctv3xq0statmods"]
+
+[ext_resource type="Script" path="res://dev/stat_modifiers_check.gd" id="1_check"]
+
+[node name="StatModifiersCheck" type="Node"]
+script = ExtResource("1_check")

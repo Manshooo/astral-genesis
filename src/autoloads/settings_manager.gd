@@ -19,6 +19,7 @@ const REBINDABLE_ACTIONS := {
 	&"jump": "Прыжок",
 	&"interact": "Взаимодействие",
 	&"snatch_body": "Захват тела",
+	&"leave_body": "Покинуть тело",
 }
 
 ## Человекочитаемые имена кнопок мыши: OS.get_keycode_string умеет только клавиши.

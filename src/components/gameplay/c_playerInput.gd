@@ -1,4 +1,4 @@
-# res://src/components/input/c_playerInput.gd
+# res://src/components/gameplay/c_playerInput.gd
 class_name C_PlayerInput
 extends Component
 

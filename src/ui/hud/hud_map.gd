@@ -25,9 +25,26 @@ extends Control
 @export var color_link_locked: Color = Color(0.9, 0.5, 0.35, 0.7)
 @export var link_width: float = 2.0
 
+@export_group("Маркер игрока")
+## Размер маркера в долях клетки: вместе с картой он и масштабируется.
+@export_range(0.05, 0.5) var marker_size: float = 0.22
+@export var color_player: Color = Color(1, 1, 1, 0.95)
+## Контур маркера. Комната под ним бывает светлой (текущая — почти белая), и без
+## обводки треугольник в ней тонет.
+@export var color_player_outline: Color = Color(0.1, 0.1, 0.12, 0.85)
+
 @export_group("Прочее")
 ## Отступ от краёв контрола, чтобы комнаты не липли к рамке.
 @export var padding: float = 8.0
+
+## Насколько игрок должен сдвинуться (метры) или повернуться, чтобы карта
+## перерисовалась. Перерисовывать вектор каждый кадр незачем: клетка карты — это
+## 60 м мира, и шаг в полметра на ней не виден.
+const REDRAW_MOVE := 0.3
+const REDRAW_TURN := 0.02  # ~1° по косинусу между направлениями
+
+var _last_position := Vector3.INF
+var _last_forward := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -37,6 +54,29 @@ func _ready() -> void:
 
 
 func _on_run_changed(_arg: Variant = null) -> void:
+	queue_redraw()
+
+
+## Маркер игрока живёт непрерывно, а сигналов о том, что игрок прошёл два шага,
+## нет — поэтому опрашиваем, как и остальной HUD (см. UI_HudVitals). Но карта
+## рисуется вектором целиком, так что перерисовку просим только когда игрок
+## реально сместился или повернулся.
+func _process(_delta: float) -> void:
+	if not is_visible_in_tree():
+		return
+	var player := _player_node()
+	if player == null:
+		return
+
+	var position := player.global_position
+	var forward := _forward_of(player)
+	var moved := position.distance_squared_to(_last_position) >= REDRAW_MOVE * REDRAW_MOVE
+	var turned := forward.dot(_last_forward) <= 1.0 - REDRAW_TURN
+	if not moved and not turned:
+		return
+
+	_last_position = position
+	_last_forward = forward
 	queue_redraw()
 
 
@@ -64,8 +104,11 @@ func _draw() -> void:
 		return
 
 	var to_screen := _projector(known, plan)
+	# Шаг сетки нужен и комнатам, и маркеру — считаем один раз.
+	var step := _step_of(plan, known, to_screen)
 	_draw_links(floor_nodes, known, plan, to_screen)
-	_draw_rooms(known, plan, to_screen, here)
+	_draw_rooms(known, plan, to_screen, here, step)
+	_draw_player(current, plan, to_screen, step)
 
 
 ## Комнаты, которые игрок вправе видеть: посещённые плюс соседи посещённых —
@@ -135,12 +178,10 @@ func _draw_links(
 
 
 func _draw_rooms(
-	known: Array[RS_LevelNode], plan, to_screen: Callable, here: StringName
+	known: Array[RS_LevelNode], plan, to_screen: Callable, here: StringName, step: float
 ) -> void:
 	var visited := WorldSave.save.visited_node_ids
-	# Сторона комнаты — доля шага сетки; шаг восстанавливаем из двух соседних
-	# клеток, чтобы не тащить его отдельным параметром.
-	var step := _step_of(plan, known, to_screen)
+	# Сторона комнаты — доля шага сетки.
 	var room := Vector2(step, step) * room_fill
 
 	for node_data in known:
@@ -153,6 +194,71 @@ func _draw_rooms(
 		else:
 			# Знаем, что есть, но не были — только контур.
 			draw_rect(rect, color_known, false, 1.5)
+
+
+## Маркер игрока: где он ВНУТРИ комнаты и куда смотрит. Подсветки одной лишь
+## комнаты мало — на карте из комнат и дверей вопрос обычно звучит «в какую дверь
+## я сейчас упёрся», а на него отвечает именно направление взгляда.
+##
+## Смещение внутри комнаты мерим ГАБАРИТОМ комнаты, а не шагом сетки. Величины
+## разные: между центрами комнат RunManager.ROOM_SPACING = 60 м, а сама комната
+## около 20 м. По шагу сетки игрок, упёршийся в северную дверь, рисовался бы у
+## середины клетки — и маркер не отвечал бы на тот единственный вопрос, ради
+## которого он есть. Габарит считает RS_RoomLayout по положению дверей.
+##
+## Начало координат комнаты — её центр, а to_screen возвращает центр клетки,
+## поэтому смещение просто складывается. limit_length держит маркер внутри своей
+## комнаты: развоплощённый БФЖ пролезает сквозь решётки, и заезжать на соседнюю
+## клетку маркер не должен.
+func _draw_player(current: RS_LevelNode, plan, to_screen: Callable, step: float) -> void:
+	var player := _player_node()
+	var here := current.id
+	if player == null or not plan.positions.has(here) or not plan.cells.has(here):
+		return
+
+	var center: Vector2 = to_screen.call(plan.cells[here])
+	var extent := RS_RoomLayout.half_extent_of_scene(current.room_scene_path)
+	if extent > 0.0:
+		var offset: Vector3 = player.global_position - plan.positions[here]
+		center += Vector2(offset.x, offset.z).limit_length(extent) / extent * step * room_fill * 0.5
+
+	var forward := _forward_of(player)
+	var side := Vector2(-forward.y, forward.x)
+	var radius := step * marker_size
+	var points := PackedVector2Array(
+		[
+			center + forward * radius,
+			center - forward * radius * 0.55 + side * radius * 0.6,
+			center - forward * radius * 0.55 - side * radius * 0.6,
+		]
+	)
+	draw_colored_polygon(points, color_player)
+
+	var outline := PackedVector2Array(points)
+	outline.append(points[0])
+	draw_polyline(outline, color_player_outline, 1.0)
+
+
+## Куда смотрит игрок, в осях карты. Клетка — это Vector2i(x, z) (RS_RoomLayout),
+## поэтому мировые X и Z ложатся на экранные X и Y напрямую. Направление берём из
+## базиса узла, а не собираем из угла рыскания: «вперёд» у Node3D — это −Z, и
+## складывать это из синусов руками значит один раз ошибиться знаком.
+##
+## Рыскание живёт на самой сущности (S_FPSLook зовёт player.rotate_y), тангаж — на
+## камере, так что взгляд вверх маркер не заваливает.
+func _forward_of(player: Node3D) -> Vector2:
+	var forward := -player.global_basis.z
+	var flat := Vector2(forward.x, forward.z)
+	return flat.normalized() if flat.length_squared() > 0.000001 else Vector2.DOWN
+
+
+## Игрок как узел сцены. HUD опрашивает мир напрямую — та же схема, что в
+## UI_HudVitals. Через Node: Entity наследует Node, и прямой каст Entity→Node3D
+## анализатор GDScript не пропускает (тот же приём, что в RunManager).
+func _player_node() -> Node3D:
+	if ECS.world == null:
+		return null
+	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as Node as Node3D
 
 
 ## Длина шага сетки в экранных пикселях. Берём разницу между двумя соседними по

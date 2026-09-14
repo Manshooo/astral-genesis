@@ -5,6 +5,10 @@
 [sub_resource type="LabelSettings" id="LabelSettings_3owqy"]
 font_size = 32
 
+[sub_resource type="LabelSettings" id="LabelSettings_hint"]
+font_size = 13
+font_color = Color(0.72, 0.76, 0.84, 0.6)
+
 [node name="SkillTreeUI" type="Control" unique_id=577831709]
 layout_mode = 3
 anchors_preset = 15
@@ -16,15 +20,13 @@ script = ExtResource("1_4ij35")
 
 [node name="Panel" type="Panel" parent="." unique_id=1017318689]
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -280.0
-offset_right = 300.0
-offset_bottom = 280.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = 40.0
+offset_right = -48.0
+offset_bottom = -40.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -61,14 +63,14 @@ text = "Очки: 0"
 layout_mode = 2
 text = "Закрыть"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="Panel/MarginContainer/VBox" unique_id=1015005479]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BranchesContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBox/ScrollContainer" unique_id=1049628721]
+[node name="GraphHost" type="Control" parent="Panel/MarginContainer/VBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 20
+
+[node name="Hint" type="Label" parent="Panel/MarginContainer/VBox"]
+layout_mode = 2
+text = "ЛКМ по пустому месту — перетащить, колесо — масштаб"
+label_settings = SubResource("LabelSettings_hint")
 
 [connection signal="pressed" from="Panel/MarginContainer/VBox/Header/CloseButton" to="." method="_on_close_pressed"]

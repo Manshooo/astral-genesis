@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://dtsbk0vab2ynp"]
+
+[ext_resource type="Script" uid="uid://yf7vkrby4iip" path="res://src/entities/enemy/e_enemy.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
+[ext_resource type="Script" uid="uid://dt7g6v8bchojd" path="res://src/components/gameplay/c_enemy_ai.gd" id="3_ai"]
+[ext_resource type="Script" uid="uid://ye3ihee7rux0" path="res://src/components/gameplay/c_enemy_input.gd" id="4_input"]
+[ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="5_velocity"]
+[ext_resource type="Script" uid="uid://dknqwce2loh3r" path="res://src/components/gameplay/skills/c_walk.gd" id="6_walk"]
+
+[sub_resource type="Resource" id="Resource_ai"]
+script = ExtResource("3_ai")
+
+[sub_resource type="Resource" id="Resource_input"]
+script = ExtResource("4_input")
+
+[sub_resource type="Resource" id="Resource_velocity"]
+script = ExtResource("5_velocity")
+
+[sub_resource type="Resource" id="Resource_walk"]
+script = ExtResource("6_walk")
+speed = 3.5
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_enemy"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_enemy"]
+albedo_color = Color(0.55, 0.14, 0.14, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_enemy"]
+material = SubResource("StandardMaterial3D_enemy")
+radius = 0.4
+height = 1.8
+
+[node name="Enemy" type="CharacterBody3D" unique_id=594366078]
+collision_layer = 16
+script = ExtResource("1_enemy")
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_ai"), SubResource("Resource_input"), SubResource("Resource_velocity"), SubResource("Resource_walk")])
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2044748675]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=834207135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_enemy")

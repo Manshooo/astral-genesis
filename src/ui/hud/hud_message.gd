@@ -5,8 +5,15 @@
 ##
 ## Реагируем на добавление/снятие компонента через сигналы мира — тем же
 ## паттерном, что crosshair.gd и hud_prompt.gd.
+##
+## Скрипт — на ПОДЛОЖКЕ (PanelContainer), а не на самом Label: подложка нужна
+## ровно тогда, когда есть сообщение, иначе на экране висела бы пустая плашка.
+## show()/hide() self прячут подложку целиком вместе с текстом — тот же приём,
+## что у hud_prompt.gd и hud_abilities.gd.
 class_name UI_HudMessage
-extends Label
+extends PanelContainer
+
+@onready var _label: Label = $Margin/Message
 
 
 func _ready() -> void:
@@ -32,7 +39,7 @@ func _connect_world_signals(world: World) -> void:
 func _on_component_added(_entity: Entity, component: Variant) -> void:
 	if not (component is C_ScreenMessage):
 		return
-	text = (component as C_ScreenMessage).text
+	_label.text = (component as C_ScreenMessage).text
 	show()
 
 

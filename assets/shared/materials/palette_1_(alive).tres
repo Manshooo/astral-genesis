@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c0cjgya67i1fn"]
+
+[ext_resource type="Texture2D" uid="uid://dpqwova1u32dn" path="res://assets/shared/palette/Gradient Pallete.png" id="1_a7hyi"]
+
+[resource]
+albedo_texture = ExtResource("1_a7hyi")
+metallic_specular = 0.0

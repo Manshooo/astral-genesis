@@ -5,6 +5,10 @@
 .obsidian/
 builds/
 
+# Локальная сборка релиза (dev/release.ps1) — то же, что CI кладёт на раннере.
+build/
+dist/
+
 *.tscn[0-9]*.tmp
 *.tscn.tmp
 

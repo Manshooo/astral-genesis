@@ -2,6 +2,13 @@
 extends Node
 
 signal skill_unlocked(id: StringName, new_rank: int)
+## «Таблица рангов изменилась — пересчитайте всё». Отдельный сигнал от
+## skill_unlocked, потому что у них разные адресаты: skill_unlocked — про
+## событие для UI («что именно открыли»), а этот — про состояние, и на него
+## подписан O_ApplySkillEffects, который читает таблицу целиком. Слать вместо
+## него skill_unlocked по разу на каждый уже открытый навык (так делал
+## reapply_all) значило бы врать UI о событиях, которых не было.
+signal skills_changed
 
 const SAVE_PATH := "user://skills.tres"
 ## Не preload: preload резолвится на компиляции и в debug/export-сборке падает на
@@ -29,7 +36,32 @@ func get_rank(id: StringName) -> int:
 	return save.ranks.get(id, 0)
 
 
-## Может ли игрок прокачать navyk дальше прямо сейчас.
+## Выполнены ли ВСЕ требования навыка. Отделено от can_unlock, потому что у
+## двух вопросов разные адресаты: «дошёл ли игрок до этой ветки» (граф решает
+## этим, показывать ли карточку) и «может ли купить прямо сейчас» (кнопка).
+## Слепив их, дерево прятало бы доступный навык всякий раз, когда кончились очки.
+func requirements_met(id: StringName) -> bool:
+	var def := SKILL_TREE.get_definition(id)
+	if def == null:
+		return false
+	for req in def.requires:
+		if not _requirement_met(req):
+			return false
+	return true
+
+
+## Показывать ли навык в дереве. Правило карточки Skill Tree: видно изученное и
+## следующее доступное, остальное не существует — поэтому ветка, открывающаяся
+## по сумме рангов, и появляется целиком и сразу, без «серых заглушек».
+## Изученный навык виден всегда, даже если требования задним числом перестали
+## выполняться: отобранная у игрока на глазах карточка выглядела бы багом.
+func is_revealed(id: StringName) -> bool:
+	if get_rank(id) > 0:
+		return true
+	return requirements_met(id)
+
+
+## Может ли игрок прокачать навык дальше прямо сейчас.
 func can_unlock(id: StringName) -> bool:
 	var def := SKILL_TREE.get_definition(id)
 	if def == null:
@@ -44,11 +76,7 @@ func can_unlock(id: StringName) -> bool:
 	if save.skill_points < cost:
 		return false
 
-	for req in def.requires:
-		if not _requirement_met(req):
-			return false
-
-	return true
+	return requirements_met(id)
 
 
 ## Пытается прокачать навык на 1 ранг. Возвращает true при успехе.
@@ -65,6 +93,7 @@ func unlock(id: StringName) -> bool:
 	_save()
 
 	skill_unlocked.emit(id, current_rank + 1)
+	skills_changed.emit()
 	return true
 
 
@@ -73,11 +102,12 @@ func add_skill_points(amount: int) -> void:
 	_save()
 
 
-## Применяет ВСЕ уже разблокированные навыки — вызывай при спавне игрока,
-## чтобы S_ApplySkillEffects получил актуальные ранги для только что созданной entity.
+## Применяет ВСЕ уже разблокированные навыки — зовётся при спавне игрока, чтобы
+## свежая душа получила модификаторы от уже прокачанного дерева. До появления
+## C_StatModifiers это был бессмысленный вызов (его и не звали ниоткуда): эффекты
+## присваивались полям в момент разблокировки, и новый забег стартовал без них.
 func reapply_all() -> void:
-	for id in save.ranks.keys():
-		skill_unlocked.emit(id, save.ranks[id])
+	skills_changed.emit()
 
 
 func _requirement_met(req: RS_SkillRequirement) -> bool:

@@ -1,0 +1,231 @@
+name: Экспорт Godot
+description: >-
+  Ставит Godot с шаблонами экспорта и собирает сборку под ту платформу,
+  на раннере которой запущен. Кладёт готовый .zip в dist/.
+
+inputs:
+  godot-version:
+    description: Версия движка; должна совпадать с той, на которой ведётся разработка.
+    required: false
+    default: "4.7.1"
+  platform:
+    description: "windows или linux — определяет, какой пресет экспортировать."
+    required: true
+  label:
+    description: "Что подставить в имя архива после названия игры: v0.5.0, pr42 и т.п."
+    required: true
+
+outputs:
+  archive:
+    description: Путь к собранному архиву относительно корня репозитория.
+    value: ${{ steps.export.outputs.archive }}
+
+runs:
+  using: composite
+  steps:
+    # Движок и шаблоны — больше гигабайта на распаковке, качать их каждый прогон
+    # незачем: они меняются только вместе с godot-version, она и есть ключ кэша.
+    - name: Кэш движка и шаблонов экспорта
+      id: cache
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/godot-bin
+          ${{ runner.os == 'Windows' && '~/AppData/Roaming/Godot/export_templates' || '~/.local/share/godot/export_templates' }}
+        key: godot-${{ inputs.godot-version }}-${{ runner.os }}
+
+    - name: Установить Godot ${{ inputs.godot-version }}
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GODOT_VERSION: ${{ inputs.godot-version }}
+      run: |
+        set -euo pipefail
+        base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+        mkdir -p ~/godot-bin
+
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          # Тот же каталог, что и %APPDATA%\Godot, но в POSIX-форме: путь с
+          # обратными слешами внутри bash-скрипта разъезжается на экранировании.
+          templates_dir="${HOME}/AppData/Roaming/Godot/export_templates/${GODOT_VERSION}.stable"
+        else
+          templates_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+        fi
+
+        # Action вызывается дважды за джоб (по разу на платформу), а кэш пишется
+        # только в post-job — на втором вызове снова промах, и шаг отрабатывает
+        # повторно. Раньше это не всплывало: прогон не доживал до второго вызова,
+        # вис на импорте. Проверка по факту на диске, а не по cache-hit.
+        if [ -n "$(ls -A ~/godot-bin 2>/dev/null)" ] && [ -d "$templates_dir" ]; then
+          echo "Движок и шаблоны уже установлены этим джобом — пропускаю"
+          exit 0
+        fi
+
+        # Распаковка идёт в фиксированные пути, поэтому мусор от прерванной
+        # прошлой попытки сносим: unzip иначе спросит про замену файла, получит
+        # EOF в неинтерактивной сессии и упадёт.
+        rm -rf /tmp/godot /tmp/templates
+
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          # unzip в образе windows-latest не гарантирован, 7-Zip — есть всегда.
+          curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${GODOT_VERSION}-stable_win64.exe.zip"
+          7z x -y -o/tmp/godot -bso0 /tmp/godot.zip
+          # Оба .exe кладутся под своими исходными именами: _console — тонкая
+          # обёртка на 200 КБ, которая запускает соседний основной файл по имени,
+          # и переименование рвёт эту связь.
+          cp /tmp/godot/*.exe ~/godot-bin/
+        else
+          curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
+          linux_bin="$(find /tmp/godot -name '*linux.x86_64' | head -1)"
+          cp "$linux_bin" ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+        fi
+
+        curl -fsSL -o /tmp/templates.tpz "${base}/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          7z x -y -tzip -o/tmp/templates -bso0 /tmp/templates.tpz
+        else
+          unzip -q -o /tmp/templates.tpz -d /tmp/templates
+        fi
+
+        # Имя каталога шаблонов должно быть ровно "<версия>.stable" — движок ищет
+        # его по точному совпадению и иначе сообщает, что шаблоны не установлены.
+        rm -rf "$templates_dir"
+        mkdir -p "$(dirname "$templates_dir")"
+        mv /tmp/templates/templates "$templates_dir"
+
+    # Отдельным шагом, а не переменной из установки: при попадании в кэш шаг
+    # установки пропускается целиком, а путь к движку нужен всё равно.
+    - name: Найти движок
+      id: godot
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          # Обычный .exe отсоединяется от консоли и не печатает ни строчки —
+          # в CI это выглядит как молчаливый провал, поэтому зовём _console.
+          bin="$(find ~/godot-bin -name '*_console.exe' | head -1)"
+          if [ -z "$bin" ]; then
+            bin="$(find ~/godot-bin -name 'Godot*.exe' | head -1)"
+          fi
+        else
+          bin=~/godot-bin/godot
+        fi
+        if [ ! -x "$bin" ]; then
+          echo "::error::Не найден исполняемый файл Godot в ~/godot-bin"
+          exit 1
+        fi
+        "$bin" --version
+        echo "bin=${bin}" >> "$GITHUB_OUTPUT"
+
+    # Холодный импорт — самая дорогая часть прогона: движку нужно перемолоть
+    # ~680 ресурсов. Ключ завязан на содержимое ассетов, а restore-keys даёт
+    # частичное попадание, после которого переимпортируется только изменённое.
+    - name: Кэш импортированных ресурсов
+      uses: actions/cache@v6
+      with:
+        path: .godot
+        key: >-
+          godot-import-${{ inputs.godot-version }}-${{ runner.os }}-${{
+          hashFiles('project.godot', 'assets/**', 'addons/**', 'data/**', 'src/**', 'icon.svg') }}
+        restore-keys: |
+          godot-import-${{ inputs.godot-version }}-${{ runner.os }}-
+
+    # Многопоточный импорт намертво виснет на раннере: главный поток крутит
+    # опрос группы задач WorkerThreadPool, которая не завершается, и раз в
+    # секунду печатает один и тот же элемент. Ловилось и на windows-latest, и на
+    # ubuntu-latest, всегда ровно на 22% — на `scratch_002.ogg`, но сам файл
+    # исправен (на Linux и Windows он импортируется за миллисекунды, локально
+    # холодный импорт всех 679 ассетов проходит за 9 секунд). Это просто тот
+    # индекс, на котором застыл счётчик завершённых задач. Параллелить тут
+    # нечего: однопоточный импорт всего проекта стоит секунды.
+    - name: Отключить многопоточный импорт
+      shell: bash
+      run: |
+        set -euo pipefail
+        # ConfigFile сливает одноимённые секции, поэтому дописанная в конец
+        # вторая [editor] безопасна и не зависит от того, есть ли ключ в
+        # исходном project.godot. Правка живёт только на раннере.
+        # Проверка на уже дописанное: action вызывается дважды за джоб (по разу
+        # на платформу), а второй такой блок был бы просто мусором в файле.
+        if ! grep -q '^import/use_multiple_threads=' project.godot; then
+          printf '\n[editor]\n\nimport/use_multiple_threads=false\n' >> project.godot
+        fi
+
+    - name: Импорт ресурсов
+      shell: bash
+      env:
+        GODOT: ${{ steps.godot.outputs.bin }}
+        # Холодный импорт ~680 ресурсов укладывается в минуты; всё, что дольше,
+        # — это зависание, и лучше упасть с внятным сообщением, чем выбирать
+        # таймаут джоба или ждать, пока прогон отменят руками.
+        IMPORT_TIMEOUT: "600"
+      run: |
+        set -euo pipefail
+
+        run_import() {
+          # --foreground, иначе timeout не пробрасывает сигнал в неинтерактивной
+          # сессии и Godot остаётся висеть как orphan-процесс.
+          timeout --foreground "$IMPORT_TIMEOUT" "$GODOT" --headless --import
+        }
+
+        # Первый проход генерирует .uid-файлы, на которые ссылаются сцены,
+        # поэтому часть зависимостей резолвится только со второго. При попадании
+        # в кэш оба прохода отрабатывают за секунды.
+        set +e
+        run_import
+        set -e
+
+        set +e
+        run_import
+        code=$?
+        set -e
+        if [ "$code" -eq 124 ]; then
+          echo "::error::Импорт не уложился в ${IMPORT_TIMEOUT}s — движок завис. Смотри «Грабли» в docs/astral-genesis/how-to/Релизы и сборка.md"
+          exit 1
+        fi
+        exit "$code"
+
+    - name: Экспорт
+      id: export
+      shell: bash
+      env:
+        GODOT: ${{ steps.godot.outputs.bin }}
+        PLATFORM: ${{ inputs.platform }}
+        LABEL: ${{ inputs.label }}
+      run: |
+        set -euo pipefail
+
+        # $GITHUB_WORKSPACE на Windows приходит с обратными слешами, а нам нужен
+        # абсолютный путь, переживающий cd внутри bash.
+        root="$PWD"
+
+        case "$PLATFORM" in
+          windows) preset="Windows Desktop"; binary="AstralGenesis.exe" ;;
+          linux)   preset="Linux";           binary="AstralGenesis.x86_64" ;;
+          *) echo "::error::Неизвестная платформа '${PLATFORM}'"; exit 1 ;;
+        esac
+
+        mkdir -p "build/${PLATFORM}" dist
+        "$GODOT" --headless --export-release "$preset" "${root}/build/${PLATFORM}/${binary}"
+
+        # Godot умеет завершиться с нулевым кодом, ничего не записав (например,
+        # если пресет не нашёлся) — проверяем результат явно.
+        if [ ! -s "build/${PLATFORM}/${binary}" ]; then
+          echo "::error::Экспорт не создал ${binary}"
+          exit 1
+        fi
+
+        archive="dist/astral-genesis-${LABEL}-${PLATFORM}-x86_64.zip"
+        cd "build/${PLATFORM}"
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          7z a -tzip -bso0 "${root}/${archive}" ./*
+        else
+          chmod +x "$binary"
+          zip -qr "${root}/${archive}" .
+        fi
+        cd "$root"
+
+        echo "archive=${archive}" >> "$GITHUB_OUTPUT"
+        ls -lh "$archive"

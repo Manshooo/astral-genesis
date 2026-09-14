@@ -11,8 +11,15 @@
 ## Реагируем на добавление/снятие C_Highlighted через сигналы мира — тем же
 ## паттерном, что и crosshair.gd. C_Highlighted навешивается ТОЛЬКО на интерактивы
 ## (тела для захвата — на слое enemies, без C_Interactable, сюда не попадают).
+##
+## Скрипт — на ПОДЛОЖКЕ (PanelContainer), а не на самом Label: подложка нужна
+## ровно тогда, когда есть что на ней показать, иначе на экране висела бы пустая
+## плашка. show()/hide() self прячут подложку целиком вместе с текстом — тот же
+## приём, что у hud_message.gd и hud_abilities.gd.
 class_name UI_HudPrompt
-extends Label
+extends PanelContainer
+
+@onready var _label: Label = $Margin/Prompt
 
 ## Интерактив, на который сейчас смотрим (null — подсказка скрыта). Держим ссылку,
 ## чтобы пересобрать текст при смене раскладки, не дожидаясь нового наведения.
@@ -82,12 +89,12 @@ func _render() -> void:
 	# Механизм, до которого бестелесному не дотянуться: объясняем ПРИЧИНУ и не
 	# предлагаем клавишу — нажатие всё равно не пройдёт (см. S_InteractInput).
 	if _shown.requires_body and not _player_embodied():
-		text = "%s: %s" % [NEEDS_BODY, _shown.prompt_text]
+		_label.text = "%s: %s" % [NEEDS_BODY, _shown.prompt_text]
 		show()
 		return
 
 	var key := SettingsManager.action_display_name(_shown.action_name) if _shown.show_key_hint else ""
-	text = "[%s] %s" % [key, _shown.prompt_text] if key != "" else _shown.prompt_text
+	_label.text = "[%s] %s" % [key, _shown.prompt_text] if key != "" else _shown.prompt_text
 	show()
 
 

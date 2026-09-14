@@ -6,9 +6,14 @@
 ## Критерии подбора:
 ##   1. Вместимость (жёстко): preset.slot_count >= node.connections.size().
 ##   2. Теги (жёстко): node.tags ⊆ preset.tags.
-##   3. Специфичность (мягко): среди кандидатов — с минимумом лишних тегов,
-##      затем взвешенный рандом. Не даёт «богатым» пресетам (напр. с порталом)
-##      протекать в узлы, которым это не нужно.
+##   3. Специфичность (мягко): среди кандидатов — с минимумом лишних тегов.
+##      Не даёт «богатым» пресетам (напр. с порталом) протекать в узлы, которым
+##      это не нужно.
+##   4. Впритык по дверям (мягко): взвешенный рандом внутри группы из шага 3
+##      смещён в пользу пресетов с МИНИМАЛЬНЫМ избытком слотов над нужным числом
+##      рёбер (EXCESS_SLOT_DECAY) — иначе комната на 4 двери, где реально
+##      используются 2, а остальные заварены, выбиралась бы так же часто, как
+##      комната впритык на 2.
 ## @tool — иначе в редакторе ресурс грузится ПЛЕЙСХОЛДЕРОМ и его методы позвать
 ## нельзя («Attempt to call a method on a placeholder instance»). Док «Генератор»
 ## зовёт select_preset/explain_selection/validate прямо из редактора.
@@ -33,6 +38,16 @@ const REASON_SPECIFICITY := "специфичность"
 const REASON_CANDIDATE := "дошёл до весов"
 const REASON_SELECTED := "выбран"
 const REASON_FALLBACK := "fallback"
+
+## Насколько урезается вес пресета за каждый ЛИШНИЙ дверной слот сверх нужного
+## узлу числа рёбер (preset.slot_count - needed). Вес домножается на эту дробь
+## В СТЕПЕНИ избытка — один лишний слот делает пресет на порядок менее
+## вероятным, два лишних — почти невероятным. Число можно свободно крутить:
+## ближе к 0 — избыточные комнаты почти не выбираются, ближе к 1.0 — подбор
+## безразличен к размеру (как было до этой правки). Подобрано так, чтобы при
+## конкуренции «впритык» vs «на 1 больше» с равными author-весами впритык
+## выпадал с вероятностью ~85-90%, как и просили в задаче на завареные двери.
+const EXCESS_SLOT_DECAY := 0.15
 
 
 ## Возвращает подходящий пресет для узла или fallback/null. rng должен быть тем
@@ -97,7 +112,7 @@ func _select(node: RS_LevelNode, rng: RandomNumberGenerator, reasons: Variant) -
 		else:
 			_note(reasons, p, REASON_SPECIFICITY)
 
-	var chosen := _weighted_pick(best, rng)
+	var chosen := _weighted_pick(best, rng, needed)
 	_note(reasons, chosen, REASON_SELECTED)
 	return chosen
 
@@ -122,19 +137,29 @@ func _tags_cover(preset_tags: Array, node_tags: Array) -> bool:
 	return true
 
 
-func _weighted_pick(pool: Array, rng: RandomNumberGenerator) -> RS_RoomPreset:
+## [param needed] — число рёбер узла: если >= 0, вес каждого пресета
+## домножается на EXCESS_SLOT_DECAY в степени избытка его slot_count над
+## needed (см. константу), смещая бросок в пользу пресетов впритык по дверям.
+## -1 отключает смещение (author-вес как есть) — используется, если понадобится
+## взвешенный пик вне контекста подбора по узлу.
+func _weighted_pick(pool: Array, rng: RandomNumberGenerator, needed: int = -1) -> RS_RoomPreset:
+	var effective: Array[float] = []
 	var total := 0.0
-	for p in pool:
-		total += maxf(p.weight, 0.0)
+	for p: RS_RoomPreset in pool:
+		var w := maxf(p.weight, 0.0)
+		if needed >= 0:
+			w *= pow(EXCESS_SLOT_DECAY, maxi(p.slot_count - needed, 0))
+		effective.append(w)
+		total += w
 	if total <= 0.0:  # все веса нулевые — равновероятно
 		return pool[rng.randi_range(0, pool.size() - 1)]
 
 	var roll := rng.randf() * total
 	var acc := 0.0
-	for p in pool:
-		acc += maxf(p.weight, 0.0)
+	for i in pool.size():
+		acc += effective[i]
 		if roll <= acc:
-			return p
+			return pool[i]
 	return pool[pool.size() - 1]
 
 
