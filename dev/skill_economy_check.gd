@@ -118,7 +118,7 @@ func _run(world: World) -> void:
 	var expected_ids: Array[StringName] = [
 		&"body_snatch", &"capture_precision", &"lifespan", &"decay_capacity",
 		&"graceful_exit", &"overflow_control", &"last_breath",
-		&"steady_legs", &"spring_step", &"resilient_flesh",
+		&"steady_legs", &"spring_step", &"resilient_flesh", &"second_wind",
 	]
 	for id in expected_ids:
 		_check("навык объявлен в дереве: %s" % id, tree.get_definition(id) != null, "get_definition вернул null")

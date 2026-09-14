@@ -208,8 +208,24 @@ requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_body_health")])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
+[sub_resource type="Resource" id="Resource_mod_sprint"]
+script = ExtResource("4_stmod")
+stat = &"sprint_multiplier"
+per_rank = 0.15
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_second_wind"]
+script = ExtResource("2_ign7e")
+id = &"second_wind"
+display_name = "Второе дыхание"
+description = "Увеличивает скорость бега в захваченном теле"
+branch = &"embodiment"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_sprint")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
 [resource]
 script = ExtResource("1_r03fv")
-skills = Array[ExtResource("2_ign7e")]([SubResource("Resource_11kxi"), SubResource("Resource_capture_precision"), SubResource("Resource_o3xjp"), SubResource("Resource_decay_capacity"), SubResource("Resource_graceful_exit"), SubResource("Resource_overflow_control"), SubResource("Resource_last_breath"), SubResource("Resource_steady_legs"), SubResource("Resource_spring_step"), SubResource("Resource_resilient_flesh")])
+skills = Array[ExtResource("2_ign7e")]([SubResource("Resource_11kxi"), SubResource("Resource_capture_precision"), SubResource("Resource_o3xjp"), SubResource("Resource_decay_capacity"), SubResource("Resource_graceful_exit"), SubResource("Resource_overflow_control"), SubResource("Resource_last_breath"), SubResource("Resource_steady_legs"), SubResource("Resource_spring_step"), SubResource("Resource_resilient_flesh"), SubResource("Resource_second_wind")])
 branches = Array[ExtResource("5_branch")]([SubResource("Resource_branch_possession"), SubResource("Resource_branch_survival"), SubResource("Resource_branch_embodiment")])
 metadata/_custom_type_script = "uid://1b4pm2xpbsvc"
