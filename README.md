@@ -22,4 +22,4 @@ GDExtension [godot-byprod](https://github.com/Manshooo/godot-byprod) (MIT); са
 
 ### Авторы
 - Янислав "Manshoo" Пичугин - Game Design, Programming, Tech Art, Visual Effects.
-- Тая "Garm(i)Gen" Пичугина - Game Design, Sound Design, Sound Effects and all other sound things. Немного Tech Art.
+- Тая "garm(i)gen" Пичугина - Game Design, Sound Design, Sound Effects and all other sound things. Немного Tech Art. Game-Writer, Lore Master
