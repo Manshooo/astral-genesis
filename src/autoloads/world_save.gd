@@ -8,6 +8,13 @@ extends Node
 ## save.run_seed() (см. RunManager.enter_complex), поэтому сейв — это несколько
 ## чисел, а не дамп мира.
 
+## Прогресс забега ушёл на диск. Слушает HUD, чтобы показать «Сохранено»:
+## запись проходит между кадрами и без отклика игрок не знает, что точка
+## поставлена. Сигнал именно у сейва, а не у RunManager: точку ставят из
+## нескольких мест (смена комнаты, автосохранение по времени, смена воплощения,
+## кнопка в паузе), а факт записи один.
+signal progress_saved
+
 const SAVE_PATH := "user://world_save.tres"
 
 var save: RS_WorldSave
@@ -44,6 +51,11 @@ func record_death() -> void:
 ## разбирает на числа RunManager._checkpoint.
 ## [param lifespan_left] отрицательное = БФЖ без C_Lifespan (не сохраняем).
 ## [param body_scene_path] пустая строка = БФЖ развоплощён, HP тогда не значимы.
+## [param persist] false — обновить состояние В ПАМЯТИ, не трогая диск. Так
+## входят в забег (RunManager._enter_node без came_from): писать там нечего —
+## состояние входа выводится из сида и death_count, и на диске уже лежит ровно
+## оно, — но текущий узел обязан попасть в visited_node_ids, иначе комната, в
+## которой игрок стоит, не считается посещённой ни картой, ни статистикой.
 func record_progress(
 	node_id: StringName,
 	lifespan_left: float = -1.0,
@@ -52,6 +64,7 @@ func record_progress(
 	body_health_max: float = 0.0,
 	body_lifespan_left: float = 0.0,
 	body_lifespan_max: float = 0.0,
+	persist: bool = true,
 ) -> void:
 	save.run_in_progress = true
 	save.current_node_id = node_id
@@ -63,6 +76,19 @@ func record_progress(
 	save.body_health_max = body_health_max
 	save.body_lifespan_remaining = body_lifespan_left
 	save.body_lifespan_max = body_lifespan_max
+	if not persist:
+		return
+	_save()
+	progress_saved.emit()
+
+
+## Итоги ЗАВЕРШЁННОГО забега. Лежат отдельно от прогресса и переживают
+## `clear_run()`: забега больше нет, а его сводка — уже часть прохождения. Без
+## записи на диск итоги жили бы только в памяти, и закрытая на экране итогов игра
+## теряла бы их вместе с процессом — а на них встанет доска истории забегов в
+## хабе.
+func record_run_summary(stats: RS_RunStats) -> void:
+	save.last_run = stats
 	_save()
 
 

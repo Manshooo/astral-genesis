@@ -51,12 +51,12 @@ func _run(world: World) -> void:
 	# --- 1. Чтение характеристик из сцены -----------------------------------
 	# Ожидание намеренно ЯВНОЕ, а не пересчитанное из той же сцены: считать её
 	# тем же способом, что и E_Body._wearable(), значило бы сверять функцию с
-	# собой. Пять надеваемых в e_body.tscn — C_Health, C_BodyDecay, C_Walk,
-	# C_Jump, C_Footsteps (C_BodySnatchable надеваемой не считается).
+	# собой. Шесть надеваемых в e_body.tscn — C_Health, C_BodyDecay, C_Walk,
+	# C_Jump, C_Sprint, C_Footsteps (C_BodySnatchable надеваемой не считается).
 	# Число двигать вместе со сценой: тело обзавелось характеристикой — правь
 	# здесь, и это осознанный шаг, а не помеха.
 	var from_scene := E_Body.traits_of_scene(BODY_SCENE.resource_path)
-	_check("из сцены прочитано 5 характеристик", from_scene.size() == 5, str(from_scene.size()))
+	_check("из сцены прочитано 6 характеристик", from_scene.size() == 6, str(from_scene.size()))
 
 	# --- 2. Захват ----------------------------------------------------------
 	var soul := _make_soul()
