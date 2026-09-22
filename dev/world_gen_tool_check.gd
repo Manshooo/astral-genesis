@@ -56,9 +56,55 @@ func _ready() -> void:
 	_check_inline_preset_editor()
 	_check_room_outline(library, host)
 	_check_restore_state()
+	_check_corridors(library, host)
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
+
+
+## Коридорный путь во вкладке: оверлей «Коридоры» рисует ветку на каждую ветку
+## плана и молчит на прежнем графе; «Геометрия» не пытается инстанцировать
+## сцену ветки (её нет); клик по тайлу выделяет ветку, по комнате — комнату.
+## Ломается тихо: пустой оверлей и клик мимо ошибок не бросают.
+func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
+	var config := (load("res://data/world_gen_config.tres") as RS_WorldGenConfig).duplicate() as RS_WorldGenConfig
+	config.corridors = true
+	var graph := RS_LevelGraph.new().generate_run(0, library, config)
+	var layer_nodes := graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH)
+	var plan := RS_LayerPlan.build(layer_nodes, config)
+	host.show_layer(LayerView.new(graph, layer_nodes, plan))
+
+	var branches: Array[RS_LevelNode] = []
+	var rooms := 0
+	for node_data in layer_nodes:
+		if node_data.role == RS_LevelNode.Role.CORRIDOR:
+			branches.append(node_data)
+		else:
+			rooms += 1
+	_check("коридоры: оверлей рисует каждую ветку слоя",
+		host.overlay(&"corridors").branch_count() == branches.size(),
+		"%d из %d" % [host.overlay(&"corridors").branch_count(), branches.size()])
+	_check("коридоры: «Геометрия» ставит только комнаты",
+		host.overlay(&"rooms")._rooms.size() == rooms, "%d из %d" % [host.overlay(&"rooms")._rooms.size(), rooms])
+
+	var branch := branches[0]
+	var tile := Vector3i.ZERO
+	for cell: Vector3i in plan.corridor_tiles:
+		if plan.node_by_cell[cell] == branch.id:
+			tile = cell
+			break
+	var above := plan.cell_position(Vector2i(tile.x, tile.z), tile.y) + Vector3(0.0, 50.0, 0.0)
+	_check("коридоры: клик по тайлу выделяет его ветку",
+		Picker.pick(above, Vector3.DOWN, layer_nodes, plan) == branch.id, str(tile))
+	var room_id := graph.entry_node_id
+	var over_room: Vector3 = plan.positions[room_id] + Vector3(0.0, 50.0, 0.0)
+	_check("коридоры: клик по комнате выделяет комнату, а не огибающий её коридор",
+		Picker.pick(over_room, Vector3.DOWN, layer_nodes, plan) == room_id, "")
+
+	var legacy := RS_LevelGraph.new().generate_run(0, library)
+	var legacy_nodes := legacy.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH)
+	host.show_layer(LayerView.new(legacy, legacy_nodes, RS_LayerPlan.build(legacy_nodes)))
+	_check("коридоры: на прежнем графе оверлей пуст", host.overlay(&"corridors").branch_count() == 0, "")
 
 
 ## RoomsOverlay.set_selected: material_overlay ставится РОВНО на геометрию

@@ -84,6 +84,14 @@ var _graph: RS_LevelGraph
 var _library: RS_RoomPresetLibrary
 var _loaded := false
 
+## Ручки генерации (data/world_gen_config.tres) — те же, что у игры, но флаг
+## коридорного пути решает галочка «Коридоры», а не ресурс: смотреть на трассы
+## надо уже сейчас, а в игре флаг выключен, пока тайлы не собираются (этап 4
+## карточки коридоров). Копия, чтобы галочка не правила ресурс проекта.
+const WORLD_GEN_CONFIG_PATH := "res://data/world_gen_config.tres"
+var _corridors_check: CheckBox
+var _config: RS_WorldGenConfig
+
 
 func _init() -> void:
 	name = TAB_TITLE
@@ -160,6 +168,14 @@ func _build_toolbar() -> Control:
 	_depth_option.select(_depth_option.get_item_index(RS_LevelGraph.HOME_DEPTH))
 	_depth_option.item_selected.connect(_on_depth_selected)
 	row.add_child(_depth_option)
+
+	_corridors_check = CheckBox.new()
+	_corridors_check.text = "Коридоры"
+	_corridors_check.tooltip_text = (
+		"Генерировать коридорным путём: комнаты на ветках коридора, трассы по клеткам кита"
+	)
+	_corridors_check.toggled.connect(_on_corridors_toggled)
+	row.add_child(_corridors_check)
 
 	row.add_child(VSeparator.new())
 	row.add_child(_build_visibility_menu())
@@ -358,6 +374,9 @@ func _restore_state() -> void:
 	_seed_spin.value = EditorState.read(SETTINGS_SECTION, "seed", 0)
 	# button_pressed сам зовёт _on_seeds_toggled, панель встаёт вместе с кнопкой.
 	_seeds_toggle.button_pressed = EditorState.read(SETTINGS_SECTION, "seeds_panel", false)
+	# Без сигнала: _loaded уже истинно, и toggled собрал бы граф лишний раз —
+	# генерация всё равно идёт ниже, в конце восстановления.
+	_corridors_check.set_pressed_no_signal(EditorState.read(SETTINGS_SECTION, "corridors", false))
 
 	var depth: int = EditorState.read(SETTINGS_SECTION, "depth", RS_LevelGraph.HOME_DEPTH)
 	var depth_idx := _depth_option.get_item_index(depth)
@@ -395,7 +414,8 @@ func _rebuild_graph() -> void:
 		_set_status("⚠ Не удалось загрузить " + Library.LIBRARY_PATH)
 		return
 	var run_seed := int(_seed_spin.value)
-	_graph = RS_LevelGraph.new().generate_run(run_seed, _library)
+	_config = _world_gen_config()
+	_graph = RS_LevelGraph.new().generate_run(run_seed, _library, _config)
 	_rebuild_layer()
 	_set_status("Сид %d, узлов в графе: %d" % [run_seed, _graph.nodes.size()])
 	EditorState.write(SETTINGS_SECTION, "seed", run_seed)
@@ -425,8 +445,24 @@ func _rebuild_layer() -> void:
 func _layer_view(depth: int) -> LayerView:
 	var layer_nodes := _graph.get_nodes_by_depth(depth)
 	return LayerView.new(
-		_graph, layer_nodes, RS_LayerPlan.build(layer_nodes), _preset_labels_for(layer_nodes)
+		_graph, layer_nodes, RS_LayerPlan.build(layer_nodes, _config), _preset_labels_for(layer_nodes)
 	)
+
+
+## Копия ручек проекта с флагом коридоров из галочки. null — ресурса нет, тогда
+## прежний путь генерации, как и в игре.
+func _world_gen_config() -> RS_WorldGenConfig:
+	if not ResourceLoader.exists(WORLD_GEN_CONFIG_PATH):
+		return null
+	var config := (load(WORLD_GEN_CONFIG_PATH) as RS_WorldGenConfig).duplicate() as RS_WorldGenConfig
+	config.corridors = _corridors_check.button_pressed
+	return config
+
+
+func _on_corridors_toggled(pressed: bool) -> void:
+	EditorState.write(SETTINGS_SECTION, "corridors", pressed)
+	if _loaded:
+		_rebuild_graph()
 
 
 ## node_id -> имя пресета, для оверлея «Подписи». Тот же поиск, что

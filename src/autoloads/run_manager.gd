@@ -105,6 +105,10 @@ var _rooms: Dictionary[StringName, SpawnedRoom] = {}
 ## детерминирован от графа — значит считается один раз за забег. Карта комплекса
 ## спрашивает планы слоёв, в которых игрок ещё не был.
 var _plans: Dictionary[int, RS_LayerPlan] = {}
+## Снимок ручек, по которым построен current_graph (см. _run_gen_config). Нужен
+## и раскладке: шаг решётки комнат — тоже ручка, и план обязан строиться по тем
+## же числам, что и граф.
+var _gen_config: RS_WorldGenConfig
 
 
 ## Точка входа в забег: генерирует комплекс и ставит игрока в стартовый узел.
@@ -128,8 +132,9 @@ func enter_complex(run_seed: int = -1) -> void:
 	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
 	# затем входной слой — _enter_node → _place_player_in_room поставит её на место.
 	_spawn_player()
+	_gen_config = _run_gen_config()
 	current_graph = RS_LevelGraph.new().generate_run(
-		run_seed, GameConfig.config.room_preset_library, _run_gen_config()
+		run_seed, GameConfig.config.room_preset_library, _gen_config
 	)
 	complex_entered.emit(current_graph)
 	_restore_player_progress()
@@ -516,7 +521,7 @@ func _spawn_layer(depth: int) -> void:
 func plan_for_depth(depth: int) -> RS_LayerPlan:
 	if _plans.has(depth):
 		return _plans[depth]
-	var plan := RS_LayerPlan.build(current_graph.get_nodes_by_depth(depth))
+	var plan := RS_LayerPlan.build(current_graph.get_nodes_by_depth(depth), _gen_config)
 	_plans[depth] = plan
 	return plan
 
