@@ -32,6 +32,7 @@
 [ext_resource type="Script" uid="uid://q0edrod0xky3" path="res://src/systems/gameplay/s_outline_mask.gd" id="23_outline"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
 [ext_resource type="Script" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -95,6 +96,10 @@ group = &"gameplay"
 
 [node name="S_VoidFall" type="Node" parent="World/Systems/gameplay" unique_id=1979994351]
 script = ExtResource("24_voidfall")
+group = &"gameplay"
+
+[node name="S_RoomPresence" type="Node" parent="World/Systems/gameplay" unique_id=1979994352]
+script = ExtResource("26_presence")
 group = &"gameplay"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

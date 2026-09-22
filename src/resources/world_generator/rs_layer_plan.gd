@@ -25,6 +25,11 @@ const ROOM_SPACING := 60.0
 ## Разнос этажей ОДНОГО слоя по высоте. Комната ~6 м высотой — 20 м даёт
 ## гарантированный зазор и делает раскладку читаемой в отладке.
 const FLOOR_SPACING := 20.0
+## На сколько ниже пола этажа точка ещё считается этим этажом (доля
+## FLOOR_SPACING). Без запаса игрок, у которого origin чуть ниже пола (посадка
+## капсулы, ступенька), на границе округления уезжал бы этажом ниже; сверху
+## запаса хватает на всю высоту комнаты, включая полёт души под потолком.
+const FLOOR_TOLERANCE := 0.25
 
 ## Геометрия комнат (где север, куда смещается клетка) живёт в RS_RoomLayout —
 ## одно правило на раскладку, на раздачу рёбер по дверям и на проверку сцен.
@@ -41,6 +46,10 @@ var cells: Dictionary[StringName, Vector2i] = {}
 ## (межэтажные, межслойные, не влезшие в сетку) раздаются по остаточному
 ## принципу при спавне — см. RunManager._bind_doors.
 var direction_by_edge: Dictionary[StringName, Dictionary] = {}
+## Клетка (x, этаж, z) -> node_id. Обратная к cells, но с этажом: сетки этажей
+## независимы, и одна и та же (x, z) на разных этажах — разные комнаты. На ней
+## держится node_at, а через него — «в каком узле стоит игрок».
+var node_by_cell: Dictionary[Vector3i, StringName] = {}
 
 
 ## Строит план слоя. Этажи одного слоя разносятся по высоте: связь между ними
@@ -61,6 +70,24 @@ static func build(layer_nodes: Array[RS_LevelNode]) -> RS_LayerPlan:
 		floor_nodes.sort_custom(func(a, b): return a.index_in_layer < b.index_in_layer)
 		plan._plan_floor(floor_nodes, floor_index)
 	return plan
+
+
+## Узел, в чьей клетке лежит мировая точка, или "" — точка вне раскладки
+## (межэтажная пустота, провал под мир).
+##
+## Считается по клетке сетки, а не по коллайдерам или Area3D: как позиции
+## комнат выводятся из плана, так из него же выводится и «где я» — без физики, в
+## headless и для незагруженных слоёв. Клетка шире комнаты, поэтому всё, что
+## между комнатами (сейчас пустота, дальше коридорные клетки со своими узлами),
+## принадлежит ближайшей клетке, а не «никому».
+func node_at(world_position: Vector3) -> StringName:
+	var floor_index := floori(world_position.y / FLOOR_SPACING + FLOOR_TOLERANCE)
+	var cell := Vector3i(
+		roundi(world_position.x / ROOM_SPACING),
+		floor_index,
+		roundi(world_position.z / ROOM_SPACING),
+	)
+	return node_by_cell.get(cell, &"")
 
 
 func direction_for(node_id: StringName, target_id: StringName) -> StringName:
@@ -137,6 +164,7 @@ func _plan_floor(floor_nodes: Array, floor_index: int) -> void:
 	for node_id: StringName in floor_cells:
 		var cell := floor_cells[node_id]
 		cells[node_id] = cell
+		node_by_cell[Vector3i(cell.x, floor_index, cell.y)] = node_id
 		positions[node_id] = Vector3(
 			cell.x * ROOM_SPACING, floor_index * FLOOR_SPACING, cell.y * ROOM_SPACING
 		)

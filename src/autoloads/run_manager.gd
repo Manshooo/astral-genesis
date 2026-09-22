@@ -3,9 +3,12 @@ extends Node
 ## Управляет одним "забегом": граф уровня + загруженный СЛОЙ.
 ##
 ## Гранула стриминга — СЛОЙ (все узлы одной depth разом в дереве сцены), а не
-## отдельная комната. Переход внутри слоя = телепорт игрока в уже стоящую
+## отдельная комната. Переход внутри слоя = перестановка игрока в уже стоящую
 ## комнату (ничего не грузится и не сносится); переход по вертикальному
 ## коннектору = деспавн всего слоя и спавн нового.
+##
+## Текущий узел внутри слоя меняется не дверью, а присутствием: в чьей клетке
+## плана стоит игрок, тот узел и текущий (note_presence, S_RoomPresence).
 ##
 ## Коридоров между комнатами нет: связь чисто логическая (двери ↔ рёбра графа),
 ## поэтому комнаты слоя просто расставляются по детерминированной сетке —
@@ -16,7 +19,7 @@ extends Node
 ## (target_node_id + locked_by) вместе с подсказкой. Лишние слоты запечатываются
 ## (_seal_door) — не выключаются, а объясняют игроку, что прохода нет.
 ##
-## Прогресс забега: смена комнаты — контрольная точка (WorldSave.record_progress),
+## Прогресс забега: смена узла — контрольная точка (WorldSave.record_progress),
 ## вход в забег стартует с сохранённого узла, если забег не завершён.
 
 signal complex_entered(graph: RS_LevelGraph)
@@ -381,11 +384,47 @@ func _end_run() -> void:
 
 
 ## Переход в другой узел графа (вызывается A_TravelThroughDoor).
+##
+## Внутри слоя дверь только ПЕРЕСТАВЛЯЕТ игрока, а текущим узлом комната
+## становится по факту присутствия (note_presence). Разведено заранее, под
+## коридоры: там дверь просто открывается, игрок идёт ногами, и «где я» обязано
+## меняться по шагам, а не по нажатию. Пока между комнатами пустота, перестановка
+## остаётся, но узел, контрольная точка и room_changed уже живут на присутствии —
+## с приходом коридоров из этой функции уйдёт одна перестановка.
+##
+## Смена глубины — по-прежнему целиком здесь: слой надо снести и заспавнить, и
+## игрока некуда поставить, пока новой комнаты нет в дереве.
 func travel_to(node_id: StringName) -> void:
-	if current_graph == null or current_graph.get_node_data(node_id) == null:
+	var node_data := current_graph.get_node_data(node_id) if current_graph else null
+	if node_data == null:
 		push_warning("RunManager: некорректный переход в '%s'" % node_id)
 		return
-	_enter_node(node_id, current_node_id)
+	if node_data.depth != current_depth:
+		_enter_node(node_id, current_node_id)
+		return
+	var room: SpawnedRoom = _rooms.get(node_id)
+	if room == null:
+		push_error("RunManager: комната узла '%s' не заспавнилась" % node_id)
+		return
+	_place_player_in_room(room, current_node_id)
+
+
+## Игрок стоит в точке [param world_position] — если это клетка другого узла
+## загруженного слоя, он и становится текущим. Зовётся каждый кадр
+## (S_RoomPresence), поэтому пустые случаи отсекаются первыми.
+##
+## Точка вне раскладки (пустота, провал под мир) узел не меняет: «нигде» —
+## не узел, и контрольная точка в нём вернула бы игрока в никуда. Во время
+## смерти точки не ставятся вовсе — см. save_progress про _ending.
+func note_presence(world_position: Vector3) -> void:
+	if current_graph == null or current_depth == NO_DEPTH or _ending:
+		return
+	var node_id := plan_for_depth(current_depth).node_at(world_position)
+	if node_id == &"" or node_id == current_node_id or not _rooms.has(node_id):
+		return
+	current_node_id = node_id
+	_checkpoint(node_id)
+	room_changed.emit(node_id)
 
 
 ## Делает [param node_id] текущим узлом: догружает его слой, если игрок сменил
