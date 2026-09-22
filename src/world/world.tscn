@@ -33,6 +33,7 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
 [ext_resource type="Script" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
+[ext_resource type="Script" path="res://src/systems/physics/s_door_open.gd" id="27_dooropen"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -158,6 +159,10 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 script = ExtResource("14_bsnatch")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
+[node name="S_DoorOpen" type="Node" parent="World/Systems/physics" unique_id=2051314059]
+script = ExtResource("27_dooropen")
+group = &"physics"
 
 [node name="O_OutlineVisual" type="Node" parent="World/Systems" unique_id=229755935]
 script = ExtResource("13_a20vb")

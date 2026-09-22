@@ -598,6 +598,7 @@ func _place_unique_rooms(
 			reserved[node.id] = unique
 			node.room_scene_path = unique.preset.scene.resource_path
 			node.room_type = unique.preset.room_type
+			node.door_teleports = unique.door_teleports
 			if unique.entry:
 				entry_node_id = node.id
 			if unique.exit:

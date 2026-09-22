@@ -52,3 +52,6 @@ extends Resource
 ## (см. RunManager._run_gen_config), и правка ресурса идёт в силу со следующего
 ## забега, а не посреди начатого. Пусто = старый путь генерации.
 @export var world_gen: RS_WorldGenConfig
+## Куски коридора (data/corridor_kit.tres): чем RunManager застраивает тайлы
+## коридорной раскладки.
+@export var corridor_kit: RS_CorridorKit

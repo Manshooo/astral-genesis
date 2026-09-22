@@ -34,6 +34,11 @@ extends Resource
 @export var entry: bool = false
 ## Отсюда игрок сбегает (exit_node_ids, тег level_exit).
 @export var exit: bool = false
+## Двери комнаты не открываются, а ПЕРЕСТАВЛЯЮТ игрока в коридор перед ними —
+## когда за дверью в арте нет проёма и открывать нечего. Временный флаг хаба:
+## проём в hub.glb будет переделан (решено 22.09), после этого флаг снимается
+## строкой данных, код не трогается.
+@export var door_teleports: bool = false
 
 
 func covers_depth(depth: int) -> bool:

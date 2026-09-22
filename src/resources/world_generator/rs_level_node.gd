@@ -44,6 +44,9 @@ enum Role { ROOM, CORRIDOR }
 ## уходить то, что реально стоит.
 @export var room_type: StringName = &""
 @export var connections: Array[RS_LevelConnection] = []
+## Двери узла переставляют игрока, а не открываются — копия
+## RS_UniqueRoom.door_teleports (хаб, пока в его арте нет проёма).
+@export var door_teleports: bool = false
 
 
 func has_tag(tag: StringName) -> bool:

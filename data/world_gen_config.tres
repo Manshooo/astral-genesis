@@ -11,6 +11,7 @@ preset = ExtResource("3_hub")
 depth_min = 3
 depth_max = 3
 entry = true
+door_teleports = true
 
 [sub_resource type="Resource" id="Resource_exit"]
 script = ExtResource("2_unique")
