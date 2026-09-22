@@ -67,19 +67,19 @@ alignment = 1
 
 [node name="New Game" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=351258722]
 layout_mode = 2
-text = "Новая игра"
+text = "NEW_GAME"
 
 [node name="Load" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1814265144]
 layout_mode = 2
-text = "Загрузить"
+text = "LOAD_GAME"
 
 [node name="Settings" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1574883533]
 layout_mode = 2
-text = "Настройки"
+text = "SETTINGS"
 
 [node name="Exit" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=772514705]
 layout_mode = 2
-text = "Выйти"
+text = "EXIT"
 
 [connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/New Game" to="." method="_on_new_game_pressed"]
 [connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/Load" to="." method="_on_load_pressed"]

@@ -3,9 +3,9 @@
 [ext_resource type="Script" uid="uid://crscukie12pyp" path="res://src/ui/settings_menu/settings_menu.gd" id="2_sett"]
 [ext_resource type="Script" uid="uid://dg1gkitvqvfdf" path="res://src/ui/settings/slider_setting.gd" id="3_kktd5"]
 [ext_resource type="Script" uid="uid://d25wxvtt5nxci" path="res://src/ui/settings/keybinds_setting.gd" id="4_keybd"]
-[ext_resource type="Script" path="res://src/ui/settings/checkbox_setting.gd" id="5_chkbx"]
-[ext_resource type="Script" path="res://src/ui/settings/graphics_preset_setting.gd" id="6_presetui"]
-[ext_resource type="Script" path="res://src/ui/settings/aa_mode_setting.gd" id="7_aaui"]
+[ext_resource type="Script" uid="uid://uabmrt53w3bw" path="res://src/ui/settings/checkbox_setting.gd" id="5_chkbx"]
+[ext_resource type="Script" uid="uid://v0npcki5eawl" path="res://src/ui/settings/graphics_preset_setting.gd" id="6_presetui"]
+[ext_resource type="Script" uid="uid://epnj025or1mr" path="res://src/ui/settings/aa_mode_setting.gd" id="7_aaui"]
 
 [node name="SettingsMenu" type="Control" unique_id=11110001]
 layout_mode = 3
@@ -55,44 +55,47 @@ horizontal_alignment = 1
 [node name="Tabs" type="TabContainer" parent="Panel/MarginContainer/VBox" unique_id=11110100]
 layout_mode = 2
 size_flags_vertical = 3
+current_tab = 1
 
-[node name="Графика" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110110]
+[node name="SETTINGS_GRAPHICS" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110110]
+visible = false
 layout_mode = 2
 horizontal_scroll_mode = 0
+metadata/_tab_index = 0
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика" unique_id=11110111]
+[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS" unique_id=11110111]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="Preset" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="Preset" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=1443232515]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Preset"]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Preset" unique_id=1304537559]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Пресет"
-autowrap_mode = 0
+translation_context = &"settings_menu"
+text = "PRESET"
 
-[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Preset"]
+[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Preset" unique_id=1950980678]
 layout_mode = 2
 size_flags_horizontal = 3
 script = ExtResource("6_presetui")
 setting_key = "graphics_preset_id"
 
-[node name="PresetSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="PresetSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=1466582035]
 layout_mode = 2
 
-[node name="RenderScale" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="RenderScale" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=591304905]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/RenderScale" unique_id=475133916]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Масштаб разрешения"
-autowrap_mode = 0
+translation_context = &"settings_menu"
+text = "RENDER_SCALE"
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/RenderScale" unique_id=1275167287]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -105,37 +108,36 @@ setting_key = "render_scale"
 display_format = "%.2f"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/RenderScale" unique_id=2070731488]
 custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
 text = "1.00"
 horizontal_alignment = 2
-autowrap_mode = 0
 
-[node name="Shadows" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="Shadows" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=2128604997]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Shadows"]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Shadows" unique_id=1648051330]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Тени"
-autowrap_mode = 0
+translation_context = &"settings_menu"
+text = "SHADOWS"
 
-[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Shadows"]
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Shadows" unique_id=759221417]
 layout_mode = 2
 script = ExtResource("5_chkbx")
 setting_key = "shadows_enabled"
 
-[node name="ShadowAtlas" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="ShadowAtlas" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=1586025828]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/ShadowAtlas" unique_id=2114743495]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Разрешение теней"
-autowrap_mode = 0
+translation_context = &"settings_menu"
+text = "SHADOWS_ATLAS"
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/ShadowAtlas" unique_id=510425908]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -149,55 +151,54 @@ setting_key = "shadow_atlas_size"
 display_format = "%d"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/ShadowAtlas" unique_id=910215893]
 custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
 text = "2048"
 horizontal_alignment = 2
-autowrap_mode = 0
 
-[node name="AA" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="AA" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=995042733]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/AA"]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/AA" unique_id=242290080]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Сглаживание"
-autowrap_mode = 0
+translation_context = &"settings_menu"
+text = "AA"
 
-[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/AA"]
+[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/AA" unique_id=1570235486]
 layout_mode = 2
 size_flags_horizontal = 3
 script = ExtResource("7_aaui")
 setting_key = "aa_mode"
 
-[node name="FOVSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="FOVSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=1224453137]
 layout_mode = 2
 
-[node name="Vsync" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="Vsync" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=1648032680]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Vsync"]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Vsync" unique_id=1758074124]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Vsync"
-autowrap_mode = 0
+translation_context = &"settings_menu"
+text = "VSYNC"
 
-[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Vsync"]
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Vsync" unique_id=1503306825]
 layout_mode = 2
 script = ExtResource("5_chkbx")
 setting_key = "vsync_enabled"
 
-[node name="FOV" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox" unique_id=11110040]
+[node name="FOV" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=11110040]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/FOV" unique_id=11110041]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/FOV" unique_id=11110041]
 layout_mode = 2
 size_flags_horizontal = 3
+translation_context = &"settings_menu"
 text = "FOV"
-autowrap_mode = 0
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/FOV" unique_id=11110042]
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/FOV" unique_id=11110042]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -208,24 +209,22 @@ script = ExtResource("3_kktd5")
 setting_key = "fov"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/FOV" unique_id=11110043]
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/FOV" unique_id=11110043]
 custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
 text = "90"
 horizontal_alignment = 2
-autowrap_mode = 0
 
-[node name="Max FPS" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox" unique_id=1474224488]
+[node name="Max FPS" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox" unique_id=1474224488]
 layout_mode = 2
 tooltip_text = "Если установлено значение 0, то ограничения не будет"
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Max FPS" unique_id=148233911]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Max FPS" unique_id=148233911]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Max FPS"
-autowrap_mode = 0
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Max FPS" unique_id=758032795]
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Max FPS" unique_id=758032795]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -240,37 +239,35 @@ setting_key = "max_fps"
 display_format = "%d"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Max FPS" unique_id=539927681]
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_GRAPHICS/VBox/Max FPS" unique_id=539927681]
 custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
 text = "60"
 horizontal_alignment = 2
-autowrap_mode = 0
 
-[node name="Аудио" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110120]
-visible = false
+[node name="SETTINGS_AUDIO" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110120]
 layout_mode = 2
 horizontal_scroll_mode = 0
+metadata/_tab_index = 1
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Аудио" unique_id=11110121]
+[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_AUDIO" unique_id=11110121]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="Volume" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox" unique_id=11110080]
+[node name="Volume" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_AUDIO/VBox" unique_id=11110080]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox/Volume" unique_id=11110081]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_AUDIO/VBox/Volume" unique_id=11110081]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Общая громкость"
-autowrap_mode = 0
+translation_context = &"settings_menu"
+text = "MASTER_VOLUME"
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox/Volume" unique_id=11110082]
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_AUDIO/VBox/Volume" unique_id=11110082]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-max_value = 100.0
 value = 100.0
 rounded = true
 tick_count = 5
@@ -282,33 +279,32 @@ display_multiplier = 100.0
 display_format = "%d%%"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox/Volume" unique_id=11110083]
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_AUDIO/VBox/Volume" unique_id=11110083]
 custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
-autowrap_mode = 0
 
-[node name="Управление" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110130]
+[node name="SETTINGS_CONTROLS" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110130]
 visible = false
 layout_mode = 2
 horizontal_scroll_mode = 0
+metadata/_tab_index = 2
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Управление" unique_id=11110131]
+[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_CONTROLS" unique_id=11110131]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="Sensitivity" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox" unique_id=11110010]
+[node name="Sensitivity" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_CONTROLS/VBox" unique_id=11110010]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox/Sensitivity" unique_id=11110011]
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_CONTROLS/VBox/Sensitivity" unique_id=11110011]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Чувствительность"
-autowrap_mode = 0
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox/Sensitivity" unique_id=11110012]
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_CONTROLS/VBox/Sensitivity" unique_id=11110012]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -321,17 +317,16 @@ setting_key = "mouse_sensitivity"
 display_multiplier = 1000.0
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox/Sensitivity" unique_id=11110013]
+[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_CONTROLS/VBox/Sensitivity" unique_id=11110013]
 custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
 text = "2.0"
 horizontal_alignment = 2
-autowrap_mode = 0
 
-[node name="Separator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox" unique_id=11110132]
+[node name="Separator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_CONTROLS/VBox" unique_id=11110132]
 layout_mode = 2
 
-[node name="Keybinds" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox" unique_id=11110071]
+[node name="Keybinds" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/SETTINGS_CONTROLS/VBox" unique_id=11110071]
 layout_mode = 2
 theme_override_constants/separation = 4
 script = ExtResource("4_keybd")
@@ -343,18 +338,18 @@ theme_override_constants/separation = 8
 [node name="Back" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110061]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Отмена"
+text = "MENU_CANCEL"
 
 [node name="Reset" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110062]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Сброс"
+text = "MENU_RESET"
 
 [node name="Apply" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110063]
 layout_mode = 2
 size_flags_horizontal = 3
 disabled = true
-text = "Применить"
+text = "MENU_APPLY"
 flat = true
 
 [connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Back" to="." method="_on_back_pressed"]

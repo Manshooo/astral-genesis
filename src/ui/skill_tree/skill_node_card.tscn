@@ -173,7 +173,7 @@ theme_override_constants/separation = 6
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-text = "Название навыка"
+text = "SKILL_NAME_ID"
 autowrap_mode = 3
 clip_text = true
 
@@ -200,7 +200,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_pip")
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "1 очко"
+text = "SKILL_COST_ID"
 horizontal_alignment = 2
 
 [node name="Glow" type="Panel" parent="." unique_id=1902884377]
@@ -217,7 +217,5 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_glow")
 
 [node name="Effects" type="AnimationPlayer" parent="." unique_id=1044318827]
 unique_name_in_owner = true
-libraries = {
-&"": SubResource("AnimationLibrary_card")
-}
 callback_mode_method = 1
+libraries/ = SubResource("AnimationLibrary_card")

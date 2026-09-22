@@ -12,13 +12,16 @@ config_version=5
 
 config/name="Astral Genesis"
 config/description="Пост-апокалиптический roguelike-dungeon-crawler."
-config/version="0.5.0"
+config/version="0.6.0"
 config/tags=PackedStringArray("dungeon_crawler", "first_person", "roguelike")
 run/main_scene="uid://cnoq0anpv63fs"
 config/use_custom_user_dir=true
 config/features=PackedStringArray("4.7", "Forward Plus")
 run/max_fps=60
+boot_splash/stretch_mode=0
+boot_splash/image="uid://074x3puupfnm"
 config/icon="uid://074x3puupfnm"
+boot_splash/minimum_display_time=100
 
 [autoload]
 
@@ -123,6 +126,8 @@ leave_body={
 [internationalization]
 
 locale/translations=PackedStringArray("res://assets/locale/ui.en.translation", "res://assets/locale/ui.ru.translation")
+locale/translations_pot_files=PackedStringArray("res://src/ui/death_screen/death_screen.tscn", "res://src/ui/hud/hud.tscn", "res://src/ui/main_menu/main_menu.tscn", "res://src/ui/pause_menu/pause_menu.tscn", "res://src/ui/settings_menu/settings_menu.tscn", "res://src/ui/skill_tree/skill_tree_ui.tscn")
+locale/translation_add_builtin_strings_to_pot=true
 locale/fallback="ru"
 
 [layer_names]

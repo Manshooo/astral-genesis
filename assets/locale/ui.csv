@@ -15,3 +15,16 @@ BODY_CORPSE,Труп,Corpse
 BODY_WALKER,Ходок,Walker
 BODY_CRAWLER,Ползун,Crawler
 BODY_HOUND,Гончая,Hound
+EXIT,Выход,Exit
+SETTINGS,Настройки,Settings
+LOAD_GAME,Загрузить,Load
+NEW_GAME,Новая игра,New game
+ABILITY_MOVE,Передвижение,Move
+ABILITY_JUMP,Прыжок,Jump
+ABILITY_SPRINT,Бег,Sprint
+ACTION_ID,для каждого действия свой перевод же должен быть,
+ACTION_ID_REPORT,для каждого действия свой перевод же должен быть,
+LIFESPAN,Распад,
+BODY_LIFE,Запас тела,
+HEALTH,Здоровье,Health
+LIFESPAN_VALUE,{value}с,{value}s

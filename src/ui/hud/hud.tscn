@@ -8,8 +8,8 @@
 [ext_resource type="Script" uid="uid://01ionly7qqo5" path="res://src/ui/hud/hud_map.gd" id="6_map"]
 [ext_resource type="Script" uid="uid://ek66xvjkfy67" path="res://src/ui/hud/vital_bar.gd" id="7_bar"]
 [ext_resource type="Script" uid="uid://dh6qrlpmpgil0" path="res://src/ui/hud/hud_abilities.gd" id="8_abilities"]
-[ext_resource type="Script" path="res://src/ui/hud/hud_save_indicator.gd" id="9_save"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
+[ext_resource type="Script" uid="uid://b5i70w0s71k4j" path="res://src/ui/hud/hud_save_indicator.gd" id="9_save"]
+[ext_resource type="Texture2D" uid="uid://bfb8uqtkwjrfq" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -70,6 +70,7 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Prompt" type="Label" parent="Hud/PromptPanel/Margin" unique_id=283857693]
 layout_mode = 2
+text = "ACTION_ID"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -97,6 +98,7 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Message" type="Label" parent="Hud/MessagePanel/Margin" unique_id=1544852345]
 layout_mode = 2
+text = "ACTION_REPORT"
 horizontal_alignment = 1
 
 [node name="AbilitiesPanel" type="PanelContainer" parent="Hud" unique_id=1572142544]
@@ -118,21 +120,21 @@ theme_override_constants/separation = 2
 
 [node name="MoveLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000102]
 layout_mode = 2
-text = "Ход"
+text = "ABILITY_MOVE"
 
 [node name="HSeparator" type="HSeparator" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=2002045983]
 layout_mode = 2
 
 [node name="JumpLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000103]
 layout_mode = 2
-text = "[Space] Прыжок"
+text = "ABILITY_JUMP"
 
 [node name="HSeparator2" type="HSeparator" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=2002045984]
 layout_mode = 2
 
 [node name="SprintLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000105]
 layout_mode = 2
-text = "[Shift] Бег"
+text = "ABILITY_SPRINT"
 
 [node name="MapPanel" type="PanelContainer" parent="Hud" unique_id=1336408021]
 layout_mode = 1
@@ -188,7 +190,7 @@ theme_type_variation = &"VitalBarPlate"
 
 [node name="Label" type="Label" parent="Hud/Vitals/LifespanRow/LifespanBar/LabelPlate" unique_id=1736447510]
 layout_mode = 2
-text = "Распад"
+text = "LIFESPAN"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -201,7 +203,7 @@ theme_type_variation = &"VitalBarPlate"
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "60 с"
+text = "LIFESPAN_VALUE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -234,7 +236,7 @@ theme_type_variation = &"VitalBarPlate"
 
 [node name="Label" type="Label" parent="Hud/Vitals/BodyLifeRow/BodyLifeBar/LabelPlate" unique_id=700000003]
 layout_mode = 2
-text = "Запас тела"
+text = "BODY_LIFE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -246,7 +248,7 @@ theme_type_variation = &"VitalBarPlate"
 [node name="BodyLifeValue" type="Label" parent="Hud/Vitals/BodyLifeRow/PanelContainer2" unique_id=700000006]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
-text = "0 с"
+text = "BODY_LIFE_VALUE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -278,7 +280,7 @@ theme_type_variation = &"VitalBarPlate"
 
 [node name="Label" type="Label" parent="Hud/Vitals/HealthRow/HealthBar/LabelPlate" unique_id=434799375]
 layout_mode = 2
-text = "Тело"
+text = "HEALTH"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -290,11 +292,11 @@ theme_type_variation = &"VitalBarPlate"
 [node name="HealthValue" type="Label" parent="Hud/Vitals/HealthRow/PanelContainer2" unique_id=162285448]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
-text = "100"
+text = "HEALTH_VALUE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SavePanel" type="PanelContainer" parent="Hud"]
+[node name="SavePanel" type="PanelContainer" parent="Hud" unique_id=1635100810]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -310,14 +312,14 @@ grow_vertical = 0
 mouse_filter = 2
 script = ExtResource("9_save")
 
-[node name="Margin" type="MarginContainer" parent="Hud/SavePanel"]
+[node name="Margin" type="MarginContainer" parent="Hud/SavePanel" unique_id=1909845119]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="Icon" type="TextureRect" parent="Hud/SavePanel/Margin"]
+[node name="Icon" type="TextureRect" parent="Hud/SavePanel/Margin" unique_id=2145593245]
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 texture = ExtResource("10_save_icon")
