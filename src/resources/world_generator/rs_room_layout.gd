@@ -157,7 +157,29 @@ static func half_extent_of_scene(scene_path: String) -> float:
 	return extent
 
 
-## Сбрасывает оба кэша «сцена → …». Живут всю сессию редактора, поэтому без
+## Кэш «путь сцены → число дверей». Как и стороны, зависит только от сцены.
+static var _door_count_by_scene: Dictionary[String, int] = {}
+
+
+## Сколько дверей (сущностей с C_DoorSlot) в сцене комнаты. В коридорной
+## генерации это и есть степень комнаты: каждая дверь получает ребро в ветку
+## коридора, поэтому считать надо фактические двери сцены, а не заявленный
+## RS_RoomPreset.slot_count — рассинхрон дал бы ребро без двери или дверь без
+## ребра. Не стороны: две двери на одной стене — всё равно две двери.
+static func door_count_of_scene(scene_path: String) -> int:
+	if _door_count_by_scene.has(scene_path):
+		return _door_count_by_scene[scene_path]
+
+	var count := 0
+	if scene_path != "" and ResourceLoader.exists(scene_path):
+		var room := (load(scene_path) as PackedScene).instantiate()
+		count = door_entities(room).size()
+		room.free()
+	_door_count_by_scene[scene_path] = count
+	return count
+
+
+## Сбрасывает все кэши «сцена → …». Живут всю сессию редактора, поэтому без
 ## явного сброса дизайнер поправит дверь в сцене комнаты, нажмёт «Пересобрать»
 ## во вкладке «Генератор мира» — и увидит СТАРУЮ раскладку до перезапуска
 ## редактора. Зовётся из вкладки на пересборку, рантайму не нужен вовсе:
@@ -165,3 +187,4 @@ static func half_extent_of_scene(scene_path: String) -> float:
 static func clear_scene_cache() -> void:
 	_directions_by_scene.clear()
 	_half_extent_by_scene.clear()
+	_door_count_by_scene.clear()

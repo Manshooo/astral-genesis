@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="RS_WorldGenConfig" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/resources/world_generator/rs_world_gen_config.gd" id="1_config"]
+[ext_resource type="Script" path="res://src/resources/world_generator/rs_unique_room.gd" id="2_unique"]
+[ext_resource type="Resource" path="res://src/levels/hub/hub.tres" id="3_hub"]
+[ext_resource type="Resource" path="res://src/levels/procedural/rooms/exit/exit_room.tres" id="4_exit"]
+
+[sub_resource type="Resource" id="Resource_hub"]
+script = ExtResource("2_unique")
+preset = ExtResource("3_hub")
+depth_min = 3
+depth_max = 3
+entry = true
+
+[sub_resource type="Resource" id="Resource_exit"]
+script = ExtResource("2_unique")
+preset = ExtResource("4_exit")
+count = 2
+exit = true
+
+[resource]
+script = ExtResource("1_config")
+unique_rooms = Array[ExtResource("2_unique")]([SubResource("Resource_hub"), SubResource("Resource_exit")])

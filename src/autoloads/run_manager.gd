@@ -128,10 +128,32 @@ func enter_complex(run_seed: int = -1) -> void:
 	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
 	# затем входной слой — _enter_node → _place_player_in_room поставит её на место.
 	_spawn_player()
-	current_graph = RS_LevelGraph.new().generate_run(run_seed, GameConfig.config.room_preset_library)
+	current_graph = RS_LevelGraph.new().generate_run(
+		run_seed, GameConfig.config.room_preset_library, _run_gen_config()
+	)
 	complex_entered.emit(current_graph)
 	_restore_player_progress()
 	_enter_node(_start_node_id())
+
+
+## Ручки генерации ЭТОГО забега. Начатый забег продолжается по снимку из сейва,
+## новый снимает текущий конфиг и кладёт снимок в сейв — на диск он уйдёт с
+## первой же контрольной точкой, вместе с run_in_progress, так что забег без
+## единой точки на диске и снимка не оставит, и начнётся заново по свежим ручкам.
+##
+## Сюда же лягут улучшения Архитектора: снимок — это база ПЛЮС его модификаторы
+## на момент старта, а не голый data/world_gen_config.tres.
+func _run_gen_config() -> RS_WorldGenConfig:
+	var saved := WorldSave.save
+	if saved.run_in_progress and saved.gen_config != null:
+		return saved.gen_config
+	var base := GameConfig.config.world_gen
+	if base == null:
+		return null
+	# Мелкая копия намеренно: записи уникальных комнат — данные, их не правят,
+	# а глубокая копия утащила бы в сейв ещё и пресеты со сценами.
+	saved.gen_config = base.duplicate() as RS_WorldGenConfig
+	return saved.gen_config
 
 
 ## Узел, с которого начинается сессия: сохранённый (продолжение забега) или
@@ -470,6 +492,11 @@ func _spawn_layer(depth: int) -> void:
 
 	var plan := plan_for_depth(depth)
 	for node_data in layer_nodes:
+		# У коридора нет сцены: он собирается из тайлов по трассе, а сборки пока
+		# нет (этап 4 карточки коридоров). Флаг corridors до неё выключен; если
+		# его включили руками — комнаты встанут, коридоров не будет.
+		if node_data.role == RS_LevelNode.Role.CORRIDOR:
+			continue
 		var entity := _instantiate_room(node_data)
 		if entity == null:
 			continue

@@ -48,3 +48,7 @@ extends Resource
 ## Пусто = все узлы получают placeholder-комнату (поведение до появления
 ## библиотеки). Назначается в инспекторе на data/game_config.tres.
 @export var room_preset_library: RS_RoomPresetLibrary
+## Ручки генерации (data/world_gen_config.tres). Базовые: забег берёт СНИМОК
+## (см. RunManager._run_gen_config), и правка ресурса идёт в силу со следующего
+## забега, а не посреди начатого. Пусто = старый путь генерации.
+@export var world_gen: RS_WorldGenConfig

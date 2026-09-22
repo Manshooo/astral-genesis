@@ -85,6 +85,80 @@ const REASON_FALLBACK := "fallback"
 const EXCESS_SLOT_DECAY := 0.15
 
 
+## Причина отсева в коридорном подборе: портал комнаты не совпал с нуждой узла.
+const REASON_PORTAL := "портал"
+## Причина отсева в коридорном подборе: пресет занят уникальной комнатой.
+const REASON_UNIQUE := "уникальная"
+## Тег, которым пресет объявляет портал, а узел — нужду в нём. Единственный
+## структурный тег, который коридорный подбор сверяет: floor_hub и level_exit
+## там смысла не имеют (межэтажный переход — порталом, выход — уникальная
+## комната), и сверять их значило бы тащить в новый путь специфичность, ради
+## обхода которой они и заводились.
+const PORTAL_TAG := &"vertical_hub"
+const IGNORED_IN_CORRIDORS: Array[StringName] = [&"floor_hub", &"level_exit"]
+
+
+## Подбор комнаты для коридорной генерации — «сначала комната, потом рёбра»
+## (карточка «Рефакторинг генератора мира»): у узла ещё нет ни одного ребра,
+## степень выведется из выбранной сцены. Поэтому здесь нет ни вместимости, ни
+## смещения «впритык по дверям» (EXCESS_SLOT_DECAY при нуле рёбер задавил бы всё,
+## кроме однодверных комнат), ни специфичности — она существует только потому,
+## что в tags сидит структура.
+##
+## Жёстко: портал ровно тогда, когда он узлу нужен. Лишний портал в комнате —
+## мёртвый портал посреди пола («Портал мёртв»), недостающий — оборванный
+## вертикальный переход. Прочие теги узла — подмножество тегов пресета, как и
+## раньше. Мягко: тип помещения и авторские веса.
+##
+## [param excluded] — пресеты уникальных комнат: выход, стоящий в пуле, иначе
+## выпадал бы обычным узлам вторым и третьим финишем.
+func select_for_corridor_room(
+	node: RS_LevelNode,
+	rng: RandomNumberGenerator,
+	excluded: Array[RS_RoomPreset] = [],
+	reasons: Variant = null,
+) -> RS_RoomPreset:
+	var needs_portal := node.has_tag(PORTAL_TAG)
+	var candidates: Array[RS_RoomPreset] = []
+	for p: RS_RoomPreset in presets:
+		if p == null:
+			continue
+		if p.scene == null or RS_RoomLayout.door_count_of_scene(p.scene.resource_path) == 0:
+			_note(reasons, p, REASON_NO_SCENE)
+		elif excluded.has(p):
+			_note(reasons, p, REASON_UNIQUE)
+		elif p.tags.has(PORTAL_TAG) != needs_portal:
+			_note(reasons, p, REASON_PORTAL)
+		elif not _tags_cover(p.tags, _corridor_requirements(node)):
+			_note(reasons, p, REASON_TAGS)
+		else:
+			candidates.append(p)
+			_note(reasons, p, REASON_CANDIDATE)
+
+	if candidates.is_empty():
+		if reasons == null:
+			push_warning(
+				"RS_RoomPresetLibrary: нет комнаты для узла '%s' (портал=%s, теги=%s) — fallback"
+				% [node.id, needs_portal, str(node.tags)]
+			)
+		_note(reasons, fallback, REASON_FALLBACK)
+		return fallback
+
+	var chosen := _weighted_pick(_prefer_room_type(candidates, node.room_type, reasons), rng)
+	_note(reasons, chosen, REASON_SELECTED)
+	return chosen
+
+
+## Теги узла, которые коридорный подбор требует от пресета: всё, кроме
+## структурных, которые он сверяет сам (портал) или не сверяет вовсе.
+func _corridor_requirements(node: RS_LevelNode) -> Array[StringName]:
+	var required: Array[StringName] = []
+	for tag in node.tags:
+		if tag != PORTAL_TAG and not IGNORED_IN_CORRIDORS.has(tag):
+			required.append(tag)
+	return required
+
+
 ## Возвращает подходящий пресет для узла или fallback/null. rng должен быть тем
 ## же, что и во всей генерации, — иначе подстановка перестанет быть
 ## детерминированной по сиду.
