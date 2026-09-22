@@ -24,6 +24,25 @@ const KEY_LAYER := "godot_collision_layer"
 const KEY_MASK := "godot_collision_mask"
 const KEY_MASS := "godot_mass"
 const KEY_PRIORITY := "godot_collision_priority"
+const KEY_BONE := "godot_bone"
+const KEY_JOINT := "godot_joint_type"
+
+const PHYSICAL_BONE := "PhysicalBone3D"
+
+const JOINT_TYPE := {
+	"NONE": PhysicalBone3D.JOINT_TYPE_NONE,
+	"PIN": PhysicalBone3D.JOINT_TYPE_PIN,
+	"CONE": PhysicalBone3D.JOINT_TYPE_CONE,
+	"HINGE": PhysicalBone3D.JOINT_TYPE_HINGE,
+	"SLIDER": PhysicalBone3D.JOINT_TYPE_SLIDER,
+	"6DOF": PhysicalBone3D.JOINT_TYPE_6DOF,
+}
+
+## Marker left on a node the ragdoll pass has already consumed. The ordinary
+## shape pass must skip it: it would find no body above it, and wrap it in a
+## StaticBody3D of its own. A meta rather than an array of nodes, because the
+## retired proxies are freed and a freed entry in an array is a trap.
+const CLAIMED := "_gp_claimed"
 
 const PRIMITIVES := {
 	"BoxShape3D": true,
@@ -34,12 +53,20 @@ const PRIMITIVES := {
 
 
 func _post_import(scene: Node) -> Object:
+	# Ragdoll bones first: they do not replace the node they are tagged on, they
+	# move to the skeleton, and the ordinary passes must not see them.
+	var bones := _build_physical_bones(scene)
 	var bodies := _build_bodies(scene)
 	var shapes := _build_shapes(scene)
-	if bodies > 0 or shapes > 0:
+	# The marker is scaffolding, not data: left behind it would show up as node
+	# metadata in the inspector of every ragdoll asset.
+	for node in _flatten(scene):
+		if node.has_meta(CLAIMED):
+			node.remove_meta(CLAIMED)
+	if bodies > 0 or shapes > 0 or bones > 0:
 		_reown(scene, scene)
-		print("[godot_pipeline] %s: %d body(ies), %d shape(s)" % [
-			get_source_file().get_file(), bodies, shapes])
+		print("[godot_pipeline] %s: %d body(ies), %d shape(s), %d ragdoll bone(s)" % [
+			get_source_file().get_file(), bodies, shapes, bones])
 	return scene
 
 
@@ -89,8 +116,107 @@ func _configure_body(body: CollisionObject3D, extras: Dictionary) -> void:
 		body.collision_mask = int(extras[KEY_MASK])
 	if extras.has(KEY_PRIORITY):
 		body.collision_priority = float(extras[KEY_PRIORITY])
-	if body is RigidBody3D and extras.has(KEY_MASS):
-		(body as RigidBody3D).mass = float(extras[KEY_MASS])
+	if extras.has(KEY_MASS):
+		# PhysicalBone3D carries a mass of its own and is NOT a RigidBody3D, so
+		# the two cases have to be spelled out separately.
+		if body is RigidBody3D:
+			(body as RigidBody3D).mass = float(extras[KEY_MASS])
+		elif body is PhysicalBone3D:
+			(body as PhysicalBone3D).mass = float(extras[KEY_MASS])
+
+
+# -- ragdoll bones ----------------------------------------------------------
+
+func _find_skeleton(node: Node) -> Skeleton3D:
+	if node is Skeleton3D:
+		return node as Skeleton3D
+	for child in node.get_children():
+		var found := _find_skeleton(child)
+		if found != null:
+			return found
+	return null
+
+
+## The simulator is what actually drives PhysicalBone3D since Godot 4.4, and it
+## has to be a direct child of the skeleton.
+func _ensure_simulator(skeleton: Skeleton3D) -> PhysicalBoneSimulator3D:
+	for child in skeleton.get_children():
+		if child is PhysicalBoneSimulator3D:
+			return child as PhysicalBoneSimulator3D
+	var simulator := PhysicalBoneSimulator3D.new()
+	simulator.name = "PhysicalBoneSimulator3D"
+	skeleton.add_child(simulator)
+	return simulator
+
+
+## Bone name taken from the import itself: an object parented to a bone in
+## Blender arrives as a child of a BoneAttachment3D, which already knows it.
+func _bone_from_attachment(node: Node) -> String:
+	var current := node.get_parent()
+	while current != null:
+		if current is BoneAttachment3D:
+			return (current as BoneAttachment3D).bone_name
+		current = current.get_parent()
+	return ""
+
+
+func _build_physical_bones(scene: Node) -> int:
+	var count := 0
+	for node in _flatten(scene):
+		var extras := _extras(node)
+		if String(extras.get(KEY_BODY, "")) != PHYSICAL_BONE:
+			continue
+		var node3d := node as Node3D
+		if node3d == null:
+			continue
+
+		var bone := String(extras.get(KEY_BONE, ""))
+		if bone.is_empty():
+			bone = _bone_from_attachment(node3d)
+		if bone.is_empty():
+			push_warning("[godot_pipeline] '%s' is tagged PhysicalBone3D but names no bone; "
+				% node.name + "parent it to a bone in Blender or fill the Bone field")
+			continue
+
+		var skeleton := _find_skeleton(scene)
+		if skeleton == null:
+			push_warning("[godot_pipeline] '%s' wants bone '%s' but the scene has no Skeleton3D"
+				% [node.name, bone])
+			continue
+		if skeleton.find_bone(bone) < 0:
+			push_warning("[godot_pipeline] skeleton '%s' has no bone '%s' (wanted by '%s')"
+				% [skeleton.name, bone, node.name])
+			continue
+
+		var simulator := _ensure_simulator(skeleton)
+		var physical := PhysicalBone3D.new()
+		# Godot's own physical-skeleton builder names the node after the bone,
+		# and editor tooling leans on that.
+		physical.name = bone
+		physical.joint_type = JOINT_TYPE.get(String(extras.get(KEY_JOINT, "NONE")),
+			PhysicalBone3D.JOINT_TYPE_NONE)
+		_configure_body(physical, extras)
+		simulator.add_child(physical)
+		# bone_name only resolves to a bone id once the node can see a skeleton
+		# above it, so it has to be assigned after the reparent, not before.
+		physical.bone_name = bone
+		# The simulator sits at identity under the skeleton, so skeleton space
+		# and simulator space are the same thing. The scale is deliberately left
+		# out of the body and handed to the shape instead: a scaled physics body
+		# is exactly what Godot warns about.
+		var full := _transform_relative(node3d, skeleton)
+		physical.transform = Transform3D(full.basis.orthonormalized(), full.origin)
+
+		if extras.has(KEY_SHAPE):
+			var local := physical.transform.affine_inverse() * full
+			var collision := _make_collision_shape(node3d, extras, local)
+			if collision != null:
+				_retire_proxy(node3d, extras)
+				physical.add_child(collision)
+		if is_instance_valid(node):
+			node.set_meta(CLAIMED, true)
+		count += 1
+	return count
 
 
 func _build_bodies(scene: Node) -> int:
@@ -99,6 +225,8 @@ func _build_bodies(scene: Node) -> int:
 		var extras := _extras(node)
 		if not extras.has(KEY_BODY):
 			continue
+		if String(extras[KEY_BODY]) == PHYSICAL_BONE:
+			continue                                   # handled by the ragdoll pass
 		var node3d := node as Node3D
 		if node3d == null:
 			continue
@@ -152,18 +280,22 @@ func _wrap_in_static_body(node: Node3D) -> CollisionObject3D:
 
 # -- shapes -----------------------------------------------------------------
 
-## Transform of `node` expressed in `body`'s local space.
+## Transform of `node` in `ancestor`'s local space.
 ##
 ## Node3D.global_transform is unusable here: during import the scene is a
-## detached node tree, so the transform is accumulated by hand instead.
-func _transform_between(node: Node3D, body: CollisionObject3D) -> Transform3D:
-	var stop := body.get_parent()
+## detached node tree, so the chain is accumulated by hand instead.
+func _transform_relative(node: Node3D, ancestor: Node) -> Transform3D:
 	var xform := Transform3D.IDENTITY
 	var current: Node3D = node
-	while current != null and current != stop:
+	while current != null and current != ancestor:
 		xform = current.transform * xform
 		current = current.get_parent() as Node3D
-	return body.transform.affine_inverse() * xform
+	return xform
+
+
+## Transform of `node` expressed in `body`'s local space.
+func _transform_between(node: Node3D, body: CollisionObject3D) -> Transform3D:
+	return body.transform.affine_inverse() * _transform_relative(node, body.get_parent())
 
 
 func _primitive_shape(type_name: String, size: Vector3) -> Shape3D:
@@ -190,8 +322,12 @@ func _primitive_shape(type_name: String, size: Vector3) -> Shape3D:
 	return null
 
 
+## `xform` is the node's transform in the owning body's local space. It is
+## passed in rather than derived from the body, because a ragdoll bone's body
+## does not sit anywhere on the node's own chain of parents — walking up from
+## the node would never reach it.
 func _make_collision_shape(node: Node3D, extras: Dictionary,
-		body: CollisionObject3D) -> CollisionShape3D:
+		xform: Transform3D) -> CollisionShape3D:
 	var type_name := String(extras[KEY_SHAPE])
 	var mesh_instance := node as MeshInstance3D
 	var mesh: Mesh = mesh_instance.mesh if mesh_instance != null else null
@@ -200,7 +336,6 @@ func _make_collision_shape(node: Node3D, extras: Dictionary,
 			% [node.name, type_name])
 		return null
 
-	var xform := _transform_between(node, body)
 	var shape: Shape3D = null
 	var placement := xform
 
@@ -238,12 +373,27 @@ func _make_collision_shape(node: Node3D, extras: Dictionary,
 	return collision
 
 
+## Retire the proxy *before* its shape is added. Adding the shape first would
+## put two siblings with the same name under the body, and Godot would silently
+## rename the shape to something like @CollisionShape3D@19799 — a name that
+## changes on every reimport and breaks any NodePath.
+func _retire_proxy(node: Node, extras: Dictionary) -> void:
+	if bool(extras.get(KEY_VISUAL, false)):
+		return                                     # the node keeps its mesh
+	var parent := node.get_parent()
+	if parent != null:
+		parent.remove_child(node)
+	node.free()
+
+
 func _build_shapes(scene: Node) -> int:
 	var count := 0
 	for node in _flatten(scene):
 		var extras := _extras(node)
 		if not extras.has(KEY_SHAPE):
 			continue
+		if node.has_meta(CLAIMED):
+			continue                               # already a ragdoll bone's shape
 		var node3d := node as Node3D
 		if node3d == null:
 			continue
@@ -254,20 +404,11 @@ func _build_shapes(scene: Node) -> int:
 			if body == null:
 				continue
 
-		var collision := _make_collision_shape(node3d, extras, body)
+		var collision := _make_collision_shape(node3d, extras, _transform_between(node3d, body))
 		if collision == null:
 			continue
 
-		# Retire the proxy *before* adding the shape. Adding it first would put
-		# two siblings with the same name under the body, and Godot would
-		# silently rename the shape to something like @CollisionShape3D@19799 -
-		# a name that changes on every reimport and breaks any NodePath.
-		if not bool(extras.get(KEY_VISUAL, false)):
-			var parent := node.get_parent()
-			if parent != null:
-				parent.remove_child(node)
-			node.free()
-
+		_retire_proxy(node, extras)
 		body.add_child(collision)
 		count += 1
 	return count

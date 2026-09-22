@@ -13,7 +13,7 @@ dest_files=["res://.godot/imported/SM_Door.glb-42ac254baaf063e7602b39ec8346035c.
 
 [params]
 
-nodes/root_type=""
+nodes/root_type="StaticBody3D"
 nodes/root_name=""
 nodes/root_script=null
 mesh_library/use_node_names_as_mesh_names=false
