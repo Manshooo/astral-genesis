@@ -15,7 +15,7 @@ const SEEDS := 30
 const CONFIG_PATH := "res://data/world_gen_config.tres"
 ## Сколько ассертов обязано отработать до сторожевого: SCRIPT ERROR внутри блока
 ## обрывает только блок, и без сверки числа сломанная раскладка выглядит зелёной.
-const EXPECTED_ASSERTS := 12
+const EXPECTED_ASSERTS := 10
 
 var _ok := 0
 var _fail := 0
@@ -24,7 +24,6 @@ var _fail := 0
 func _ready() -> void:
 	var library: RS_RoomPresetLibrary = GameConfig.config.room_preset_library
 	var config := (load(CONFIG_PATH) as RS_WorldGenConfig).duplicate() as RS_WorldGenConfig
-	config.corridors = true
 
 	var problems := {
 		"все трассы проложены": [],
@@ -57,7 +56,6 @@ func _ready() -> void:
 	print("  тайлов: %d на %d этажей (%.1f на этаж) — %s" % [tiles, floors, float(tiles) / floors, pieces])
 
 	_check_determinism(library, config)
-	_check_legacy(library)
 
 	var ran := _ok + _fail
 	_check("все блоки дошли до конца", ran == EXPECTED_ASSERTS,
@@ -216,16 +214,6 @@ func _check_determinism(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig
 				diverged.append(s)
 	_check("один граф — одна раскладка", diverged.is_empty(), str(diverged))
 
-	var graph := RS_LevelGraph.new().generate_run(0, library, config)
-	var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(RS_LevelGraph.DEPTHS[0]), config)
-	_check("коридорный план на клетке кита", plan.cell_size == RS_LayerPlan.CELL_SIZE, str(plan.cell_size))
-
-
-func _check_legacy(library: RS_RoomPresetLibrary) -> void:
-	var graph := RS_LevelGraph.new().generate_run(0, library)
-	var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH))
-	_check("прежний граф раскладывается по-прежнему: шаг 60 м, без тайлов",
-		plan.cell_size == RS_LayerPlan.ROOM_SPACING and plan.corridor_tiles.is_empty(), "")
 
 
 func _floor_count(layer: Array[RS_LevelNode]) -> int:

@@ -32,7 +32,7 @@ func rebuild(view: LayerView) -> void:
 	clear()
 	if view.plan == null or view.plan.corridor_tiles.is_empty():
 		return
-	var half := view.plan.cell_size * 0.5
+	var half := RS_LayerPlan.CELL_SIZE * 0.5
 	for cell: Vector3i in view.plan.corridor_tiles:
 		var branch: StringName = view.plan.node_by_cell.get(cell, &"")
 		var center := view.plan.cell_position(Vector2i(cell.x, cell.z), cell.y) + Vector3(0.0, SLAB_LIFT, 0.0)

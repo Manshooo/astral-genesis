@@ -8,9 +8,10 @@ extends Node
 ## появления коридоров, где между нажатием и входом идёт путь ногами.
 ##
 ## Две части: правило клетки на самом плане (RS_LayerPlan.node_at) по 10 сидам,
-## без мира, и сквозной прогон настоящего RunManager с S_RoomPresence — дверь
-## внутри слоя переставляет игрока, но узел не трогает, узел меняет следующий
-## такт системы.
+## без мира, и сквозной прогон настоящего RunManager с S_RoomPresence — игрок
+## шагает из хаба на тайл его ветки коридора, и узел меняет следующий такт
+## системы, а не сам шаг. Что дверь в коридор открывается на месте и никого не
+## переносит, сверяет dev/corridor_spawn_check.
 ##
 ## Запускать: godot --headless dev/room_presence_check.tscn
 
@@ -112,24 +113,25 @@ func _check_run() -> void:
 		RunManager.current_node_id == entry and _room_changes.is_empty(), str(_room_changes))
 
 	var neighbour := _same_layer_neighbour(entry)
-	_check("у входного узла есть сосед на том же слое", neighbour != &"", "")
+	_check("у входного узла есть ветка коридора на том же слое", neighbour != &"", "")
 	if neighbour == &"":
 		return
 
+	# Шаг из хаба на тайл его ветки — то, что делает игрок за открытой дверью.
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
-	RunManager.travel_to(neighbour)
-	_check("дверь внутри слоя узел НЕ меняет", RunManager.current_node_id == entry,
-		"текущий '%s'" % RunManager.current_node_id)
-	_check("но игрок уже стоит в клетке соседа",
+	_player().global_position = plan.positions[neighbour] + Vector3(0.0, 0.5, 0.0)
+	_check("сам шаг узел НЕ меняет — его меняет такт присутствия",
+		RunManager.current_node_id == entry, "текущий '%s'" % RunManager.current_node_id)
+	_check("и игрок стоит в клетке ветки",
 		plan.node_at(_player().global_position) == neighbour,
 		"клетка игрока '%s'" % plan.node_at(_player().global_position))
 
 	_tick()
-	_check("следующий такт делает соседа текущим", RunManager.current_node_id == neighbour,
+	_check("следующий такт делает ветку текущей", RunManager.current_node_id == neighbour,
 		"текущий '%s'" % RunManager.current_node_id)
-	_check("room_changed ровно один раз и про соседа", _room_changes == [neighbour],
+	_check("room_changed ровно один раз и про ветку", _room_changes == [neighbour],
 		str(_room_changes))
-	_check("сосед записан в сейв как текущий и посещённый",
+	_check("ветка записана в сейв как текущая и посещённая",
 		WorldSave.save.current_node_id == neighbour
 			and WorldSave.save.visited_node_ids.has(neighbour), "")
 
@@ -165,7 +167,7 @@ func _same_layer_neighbour(node_id: StringName) -> StringName:
 	var node := RunManager.current_graph.get_node_data(node_id)
 	for conn: RS_LevelConnection in node.connections:
 		var target := RunManager.current_graph.get_node_data(conn.target_node_id)
-		if target and target.depth == node.depth:
+		if target and target.role == RS_LevelNode.Role.CORRIDOR:
 			return target.id
 	return &""
 

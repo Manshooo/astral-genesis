@@ -26,7 +26,7 @@ const GEOMETRY_MASK := 1
 ## Куда дотягивается отчёт о заходе за грань клетки: до грани и на полметра за
 ## неё — то, что стоит в тамбуре тайла.
 const INTRUSION_PROBE := 9.0
-const EXPECTED_ASSERTS := 14
+const EXPECTED_ASSERTS := 17
 
 var _ok := 0
 var _fail := 0
@@ -52,9 +52,7 @@ func _ready() -> void:
 	doors.group = "physics"
 	world.add_system(doors)
 
-	var config := _base_config.duplicate() as RS_WorldGenConfig
-	config.corridors = true
-	GameConfig.config.world_gen = config
+	GameConfig.config.world_gen = _base_config.duplicate() as RS_WorldGenConfig
 	var fresh := RS_WorldSave.new()
 	fresh.world_seed = RUN_SEED
 	WorldSave.save = fresh
@@ -68,6 +66,7 @@ func _ready() -> void:
 	_check_doors_bound()
 	_check_open_door()
 	_check_hub_door()
+	await _check_minimap()
 	await _check_reload_in_corridor()
 
 	RunManager._end_run()
@@ -85,7 +84,7 @@ func _ready() -> void:
 
 func _check_tiles() -> void:
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
-	_check("граф забега коридорный", RunManager.current_graph.corridor_mode, "")
+	_check("у слоя есть тайлы коридора", not RunManager._corridor_tiles.is_empty(), "")
 	var spawned := 0
 	var wrong: Array[String] = []
 	var kit := GameConfig.config.corridor_kit
@@ -251,17 +250,49 @@ func _check_hub_door() -> void:
 		RunManager.current_node_id == portal.target_node_id, RunManager.current_node_id)
 
 
+## Мини-карта в коридоре (стоим в ветке хаба после _check_hub_door): ветка видна
+## целиком как текущая, хаб — как посещённый, комнаты ветки — как соседи, а
+## маркер игрока внутри карты. Спрашивается build_view — пикселей headless не
+## рисует, а ломается карта тихо: ветка, не попавшая в «известные», просто не
+## нарисуется, маркер за краем просто не виден.
+func _check_minimap() -> void:
+	var map := UI_HudMap.new()
+	map.size = Vector2(240.0, 240.0)
+	add_child(map)
+	await get_tree().process_frame
+	var view := map.build_view()
+	var branch := RunManager.current_node_id
+	var hub := RunManager.current_graph.entry_node_id
+	var branch_ids: Array = view.get("branches", []).map(func(n: RS_LevelNode) -> StringName: return n.id)
+	var room_ids: Array = view.get("rooms", []).map(func(n: RS_LevelNode) -> StringName: return n.id)
+	_check("карта: текущая ветка и хаб известны", branch_ids.has(branch) and room_ids.has(hub),
+		"ветки %s, комнаты %s" % [branch_ids, room_ids])
+	var neighbours_known := true
+	for conn: RS_LevelConnection in RunManager.current_graph.get_node_data(branch).connections:
+		var target := RunManager.current_graph.get_node_data(conn.target_node_id)
+		if target.role == RS_LevelNode.Role.ROOM:
+			neighbours_known = neighbours_known and room_ids.has(target.id)
+	_check("карта: комнаты на ветке известны как соседи", neighbours_known, str(room_ids))
+	var marker := map.world_to_screen(_player().global_position)
+	_check("карта: маркер игрока внутри карты", Rect2(Vector2.ZERO, map.size).has_point(marker), str(marker))
+	map.queue_free()
+
+
 ## Сейв в коридоре: загрузка ставит игрока на тайл той же ветки, а комплекс
-## строится по снимку ручек забега — с коридорами, даже если база их выключит.
+## строится по снимку ручек забега — тем же, даже если база с тех пор поменялась
+## (улучшение Архитектора посреди забега).
 func _check_reload_in_corridor() -> void:
 	var branch := RunManager.current_node_id
-	GameConfig.config.world_gen = _base_config  # база без коридоров
+	var nodes_before := RunManager.current_graph.nodes.size()
+	var changed := _base_config.duplicate() as RS_WorldGenConfig
+	changed.rooms_per_floor = _base_config.rooms_per_floor + 3
+	GameConfig.config.world_gen = changed
 	RunManager.enter_complex(RUN_SEED)
 	await get_tree().physics_frame
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
-	_check("загрузка в коридоре: тот же коридорный комплекс по снимку",
-		RunManager.current_graph.corridor_mode and RunManager.current_node_id == branch,
-		"узел '%s'" % RunManager.current_node_id)
+	_check("загрузка в коридоре: тот же комплекс по снимку, а не по новой базе",
+		RunManager.current_graph.nodes.size() == nodes_before and RunManager.current_node_id == branch,
+		"узлов %d из %d, узел '%s'" % [RunManager.current_graph.nodes.size(), nodes_before, RunManager.current_node_id])
 	_check("и игрок стоит на тайле своей ветки", plan.node_at(_player().global_position) == branch, "")
 
 

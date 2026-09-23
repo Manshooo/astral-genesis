@@ -1,8 +1,7 @@
 ## res://src/resources/world_generator/rs_layer_plan.gd
-## План раскладки одного слоя: где физически стоит каждая комната и какое ребро
-## графа ушло в какую дверь. Комнаты этажа вкладываются в 2D-сетку обходом графа —
-## сосед ставится ровно в ту клетку, куда смотрит связывающая их дверь. Иначе
-## дверь «на север» уводила бы в комнату, стоящую совсем в другой стороне.
+## План раскладки одного слоя: где физически стоит каждая комната, как идут
+## тайлы веток коридора и какая дверь комнаты смотрит в какую ветку. Считает его
+## RS_CorridorPlanner — комнаты на решётке, коридоры трассируются между ними.
 ##
 ## Живёт ОТДЕЛЬНО от RunManager по той же причине, по которой отдельно живёт
 ## RS_RoomLayout: правило «куда встанет комната» обязано быть ОДНО на рантайм и на
@@ -17,304 +16,89 @@
 class_name RS_LayerPlan
 extends RefCounted
 
-## Шаг сетки между соседними комнатами одного этажа (по X). Комната ~22 м в
-## поперечнике (полотна дверей торчат до ±11), берём с запасом — комнаты не
-## должны соприкасаться даже коллайдерами, иначе луч взаимодействия или капсула
-## игрока могут зацепить соседнюю.
-const ROOM_SPACING := 60.0
-## Разнос этажей ОДНОГО слоя по высоте. Комната ~6 м высотой — 20 м даёт
-## гарантированный зазор и делает раскладку читаемой в отладке.
+## Клетка раскладки — шаг кита. Число задано артом, а не выбрано здесь: и
+## комнаты (A/B/C, Архитектор), и тайлы SM_corridor_A_* — квадраты 18 м с
+## проёмом 2.8 м по центру грани на ±9 м, поэтому комнаты и коридоры встают на
+## ОДНУ сетку, и соседние клетки стыкуются проём в проём без переходников.
+const CELL_SIZE := 18.0
+## Разнос этажей ОДНОГО слоя по высоте. Комната до ~14.5 м высотой (комната
+## Архитектора) — 20 м даёт гарантированный зазор.
 const FLOOR_SPACING := 20.0
 ## На сколько ниже пола этажа точка ещё считается этим этажом (доля
 ## FLOOR_SPACING). Без запаса игрок, у которого origin чуть ниже пола (посадка
 ## капсулы, ступенька), на границе округления уезжал бы этажом ниже; сверху
 ## запаса хватает на всю высоту комнаты, включая полёт души под потолком.
 const FLOOR_TOLERANCE := 0.25
-
-## Клетка коридорной раскладки — шаг кита. Число задано артом, а не выбрано
-## здесь: и комнаты (A/B/C, Архитектор), и тайлы SM_corridor_A_* — квадраты 18 м
-## с проёмом 2.8 м по центру грани на ±9 м, поэтому комнаты и коридоры встают на
-## ОДНУ сетку, и соседние клетки стыкуются проём в проём без переходников.
-const CELL_SIZE := 18.0
+## Шаг решётки комнат по умолчанию, если ручки не переданы (см.
+## RS_WorldGenConfig.room_lattice_step).
+const DEFAULT_LATTICE_STEP := 3
 
 ## Бит стороны в маске проёмов коридорного тайла. Порядок — как у OFFSETS.
 const SIDE_BITS := {&"north": 1, &"east": 2, &"south": 4, &"west": 8}
 
-## Геометрия комнат (где север, куда смещается клетка) живёт в RS_RoomLayout —
-## одно правило на раскладку, на раздачу рёбер по дверям и на проверку сцен.
-const DIRECTION_OFFSETS := RS_RoomLayout.OFFSETS
-const OPPOSITE_DIRECTION := RS_RoomLayout.OPPOSITE
-
-## Шаг клетки ЭТОГО плана в метрах: ROOM_SPACING у прежней раскладки (комната на
-## клетку, между ними пустота), CELL_SIZE у коридорной (комнаты и тайлы на одной
-## сетке). Из него node_at переводит метры в клетки.
-var cell_size: float = ROOM_SPACING
 ## node_id -> мировая позиция комнаты. У ветки коридора — позиция её первого
 ## тайла: у неё нет одной точки, а инструментам нужна хоть какая-то.
 var positions: Dictionary[StringName, Vector3] = {}
 ## node_id -> клетка сетки этажа. То же самое, что positions, но без масштаба
 ## и высоты: ровно то, что рисует карта.
 var cells: Dictionary[StringName, Vector2i] = {}
-## node_id -> { target_node_id: сторона }. Только рёбра, которым нашлась дверь
-## В НУЖНУЮ СТОРОНУ: сосед физически стоит за этой дверью. Остальные рёбра
-## (межэтажные, межслойные, не влезшие в сетку) раздаются по остаточному
-## принципу при спавне — см. RunManager._bind_doors.
-var direction_by_edge: Dictionary[StringName, Dictionary] = {}
-## Клетка (x, этаж, z) -> node_id. Обратная к cells, но с этажом: сетки этажей
-## независимы, и одна и та же (x, z) на разных этажах — разные комнаты. На ней
+## Клетка (x, этаж, z) -> node_id — и комнат, и тайлов коридора. Сетки этажей
+## независимы, и одна и та же (x, z) на разных этажах — разные узлы. На ней
 ## держится node_at, а через него — «в каком узле стоит игрок».
 var node_by_cell: Dictionary[Vector3i, StringName] = {}
-
-## Коридорная раскладка: клетка тайла (x, этаж, z) -> маска проёмов (SIDE_BITS).
-## Чья это ветка — в node_by_cell. По маске сборка выбирает кусок кита: два
-## противоположных проёма — прямой, два соседних — поворот, три — Т, четыре —
-## крест. Проём ставится и к соседнему тайлу своей ветки, и к двери комнаты, и на
-## стык с родительской веткой.
+## Клетка тайла (x, этаж, z) -> маска проёмов (SIDE_BITS). Чья это ветка — в
+## node_by_cell. По маске сборка выбирает кусок кита: два противоположных проёма —
+## прямой, два соседних — поворот, три — Т, четыре — крест. Проём ставится и к
+## соседнему тайлу своей ветки, и к двери комнаты, и на стык с родительской
+## веткой.
 var corridor_tiles: Dictionary[Vector3i, int] = {}
-## Коридорная раскладка: комната -> { сторона двери: ветка }. Ключ — сторона, а
-## не сосед: две двери комнаты законно ведут в одну и ту же ветку, и по id
-## соседа их не различить (RS_LevelGraph._hang_floor_on_corridors).
+## Комната -> { сторона двери: ветка }. Ключ — сторона, а не сосед: две двери
+## комнаты законно ведут в одну и ту же ветку, и по id соседа их не различить
+## (RS_LevelGraph._hang_floor_on_corridors).
 var door_sides: Dictionary[StringName, Dictionary] = {}
 ## Сколько трасс не удалось проложить — ветка заперта чужими коридорами и
 ## комнатами. Раскладка при этом не падает; ноль сверяет проверка.
 var routing_failures: Array[String] = []
 
 
-## Строит план слоя. Этажи одного слоя разносятся по высоте: связь между ними
-## идёт через floor_hub-рёбра, у которых нет направления в плоскости этажа.
-##
-## Слой с узлами-коридорами (RS_LevelGraph.corridor_mode) раскладывается иначе —
-## RS_CorridorPlanner: комнаты на решётке, коридоры трассируются между ними.
-## Признак берётся из самих узлов, а не из флага конфига: план обязан
-## следовать графу, по которому построен, а не тому, что сейчас в настройках.
-## [param config] — только ради шага решётки; null = шаг по умолчанию.
+## Строит план слоя. Этажи одного слоя разносятся по высоте и раскладываются
+## независимо: связь между ними — только порталы, у которых нет направления в
+## плоскости этажа. [param config] — только ради шага решётки.
 static func build(layer_nodes: Array[RS_LevelNode], config: RS_WorldGenConfig = null) -> RS_LayerPlan:
 	var plan := RS_LayerPlan.new()
 	var by_floor: Dictionary[int, Array] = {}
-	var has_corridors := false
 	for node_data in layer_nodes:
 		if not by_floor.has(node_data.floor_index):
 			by_floor[node_data.floor_index] = []
 		by_floor[node_data.floor_index].append(node_data)
-		has_corridors = has_corridors or node_data.role == RS_LevelNode.Role.CORRIDOR
 
-	if has_corridors:
-		plan.cell_size = CELL_SIZE
-	var step := config.room_lattice_step if config else 3
+	var step := config.room_lattice_step if config else DEFAULT_LATTICE_STEP
 	for floor_index: int in by_floor:
 		var floor_nodes: Array = by_floor[floor_index]
-		# Порядок обхода фиксируем по index_in_layer: раскладка обязана совпадать
-		# от запуска к запуску при одном сиде — иначе сохранённая комната окажется
-		# в другом месте.
+		# Порядок фиксируем по index_in_layer: раскладка обязана совпадать от
+		# запуска к запуску при одном сиде — иначе сохранённая комната окажется в
+		# другом месте.
 		floor_nodes.sort_custom(func(a, b): return a.index_in_layer < b.index_in_layer)
-		if has_corridors:
-			RS_CorridorPlanner.plan_floor(plan, floor_nodes, floor_index, step)
-		else:
-			plan._plan_floor(floor_nodes, floor_index)
+		RS_CorridorPlanner.plan_floor(plan, floor_nodes, floor_index, step)
 	return plan
 
 
-## Мировая позиция центра клетки этого плана.
+## Мировая позиция центра клетки.
 func cell_position(cell: Vector2i, floor_index: int) -> Vector3:
-	return Vector3(cell.x * cell_size, floor_index * FLOOR_SPACING, cell.y * cell_size)
+	return Vector3(cell.x * CELL_SIZE, floor_index * FLOOR_SPACING, cell.y * CELL_SIZE)
 
 
 ## Узел, в чьей клетке лежит мировая точка, или "" — точка вне раскладки
-## (межэтажная пустота, провал под мир).
+## (межэтажная пустота, провал под мир, пустая клетка между коридорами).
 ##
 ## Считается по клетке сетки, а не по коллайдерам или Area3D: как позиции
 ## комнат выводятся из плана, так из него же выводится и «где я» — без физики, в
-## headless и для незагруженных слоёв. Клетка шире комнаты, поэтому всё, что
-## между комнатами (сейчас пустота, дальше коридорные клетки со своими узлами),
-## принадлежит ближайшей клетке, а не «никому».
+## headless и для незагруженных слоёв.
 func node_at(world_position: Vector3) -> StringName:
 	var floor_index := floori(world_position.y / FLOOR_SPACING + FLOOR_TOLERANCE)
 	var cell := Vector3i(
-		roundi(world_position.x / cell_size),
+		roundi(world_position.x / CELL_SIZE),
 		floor_index,
-		roundi(world_position.z / cell_size),
+		roundi(world_position.z / CELL_SIZE),
 	)
 	return node_by_cell.get(cell, &"")
-
-
-func direction_for(node_id: StringName, target_id: StringName) -> StringName:
-	return direction_by_edge.get(node_id, {}).get(target_id, &"")
-
-
-func is_direction_taken(node_id: StringName, direction: StringName) -> bool:
-	return direction_by_edge.get(node_id, {}).values().has(direction)
-
-
-func link(a: StringName, a_direction: StringName, b: StringName) -> void:
-	if not direction_by_edge.has(a):
-		direction_by_edge[a] = {}
-	if not direction_by_edge.has(b):
-		direction_by_edge[b] = {}
-	direction_by_edge[a][b] = a_direction
-	direction_by_edge[b][a] = OPPOSITE_DIRECTION[a_direction]
-
-
-## Раскладывает один этаж. Клетки копятся в локальном floor_cells, а не сразу в
-## cells: сетка у каждого этажа своя (этажи разнесены по высоте), и занятость
-## клеток считается в пределах этажа, а не всего слоя.
-func _plan_floor(floor_nodes: Array, floor_index: int) -> void:
-	var dirs := {}  # node_id -> Array[StringName] сторон, с которых у комнаты есть дверь
-	var on_floor := {}  # node_id -> RS_LevelNode, для быстрой проверки «сосед на этаже»
-	for node_data: RS_LevelNode in floor_nodes:
-		on_floor[node_data.id] = node_data
-		dirs[node_data.id] = RS_RoomLayout.door_directions_of_scene(node_data.room_scene_path)
-
-	var floor_cells: Dictionary[StringName, Vector2i] = {}
-	var taken: Dictionary[Vector2i, StringName] = {}
-	_place_at(floor_nodes[0].id, Vector2i.ZERO, floor_cells, taken)
-
-	# 1. Обход в ширину: соседа ставим в клетку той двери, что к нему ведёт.
-	var queue: Array[StringName] = [floor_nodes[0].id]
-	while not queue.is_empty():
-		var current_id: StringName = queue.pop_front()
-		for conn: RS_LevelConnection in _by_room_freedom(on_floor[current_id].connections, dirs):
-			var target_id := conn.target_node_id
-			if not on_floor.has(target_id) or floor_cells.has(target_id):
-				continue
-			var direction := _pick_direction(current_id, target_id, floor_cells, taken, dirs)
-			if direction == &"":
-				continue  # ни одной подходящей свободной стороны — разместим ниже
-			var cell: Vector2i = floor_cells[current_id] + DIRECTION_OFFSETS[direction]
-			_place_at(target_id, cell, floor_cells, taken)
-			link(current_id, direction, target_id)
-			queue.append(target_id)
-
-	# 2. Не разместившиеся (нет подходящих дверей, другой компонент связности):
-	#    ставим рядом с любым уже размещённым соседом, иначе — в запасной ряд.
-	for node_data: RS_LevelNode in floor_nodes:
-		if floor_cells.has(node_data.id):
-			continue
-		var cell := _fallback_cell(node_data, floor_cells, taken, dirs)
-		_place_at(node_data.id, cell, floor_cells, taken)
-
-	# 3. Доп. рёбра (циклы) между уже размещёнными: если клетки оказались смежными
-	#    и двери с обеих сторон свободны — тоже свяжем по направлению.
-	for node_data: RS_LevelNode in floor_nodes:
-		for conn: RS_LevelConnection in node_data.connections:
-			var target_id := conn.target_node_id
-			if not on_floor.has(target_id):
-				continue
-			if direction_for(node_data.id, target_id) != &"":
-				continue
-			var direction := _direction_between(floor_cells[node_data.id], floor_cells[target_id])
-			if direction == &"" or not _direction_available(node_data.id, direction, dirs):
-				continue
-			if not _direction_available(target_id, OPPOSITE_DIRECTION[direction], dirs):
-				continue
-			link(node_data.id, direction, target_id)
-
-	for node_id: StringName in floor_cells:
-		var cell := floor_cells[node_id]
-		cells[node_id] = cell
-		node_by_cell[Vector3i(cell.x, floor_index, cell.y)] = node_id
-		positions[node_id] = Vector3(
-			cell.x * ROOM_SPACING, floor_index * FLOOR_SPACING, cell.y * ROOM_SPACING
-		)
-
-
-## Рёбра в порядке «сначала самые зажатые соседи»: комнату с одной дверью
-## (lab_room, vertical_hub_1) надо ставить, пока нужная сторона ещё свободна —
-## иначе ей достанется случайное место, а её единственная дверь будет вести
-## куда-то вбок. Тай-брейк по id — раскладка обязана быть детерминированной.
-func _by_room_freedom(connections: Array[RS_LevelConnection], dirs: Dictionary) -> Array:
-	var sorted := connections.duplicate()
-	sorted.sort_custom(
-		func(a: RS_LevelConnection, b: RS_LevelConnection) -> bool:
-			var a_doors: int = (dirs.get(a.target_node_id, []) as Array).size()
-			var b_doors: int = (dirs.get(b.target_node_id, []) as Array).size()
-			if a_doors != b_doors:
-				return a_doors < b_doors
-			return String(a.target_node_id) < String(b.target_node_id)
-	)
-	return sorted
-
-
-func _place_at(
-	node_id: StringName,
-	cell: Vector2i,
-	floor_cells: Dictionary[StringName, Vector2i],
-	taken: Dictionary[Vector2i, StringName],
-) -> void:
-	floor_cells[node_id] = cell
-	taken[cell] = node_id
-
-
-## Сторона, с которой можно поставить соседа: у нас есть такая дверь и она ещё
-## свободна, у соседа есть встречная, и клетка за ней не занята. Порядок перебора
-## — из DIRECTION_OFFSETS, то есть детерминированный.
-func _pick_direction(
-	current_id: StringName,
-	target_id: StringName,
-	floor_cells: Dictionary[StringName, Vector2i],
-	taken: Dictionary[Vector2i, StringName],
-	dirs: Dictionary,
-) -> StringName:
-	for direction: StringName in DIRECTION_OFFSETS:
-		if not _direction_available(current_id, direction, dirs):
-			continue
-		if not _direction_available(target_id, OPPOSITE_DIRECTION[direction], dirs):
-			continue
-		if taken.has(floor_cells[current_id] + DIRECTION_OFFSETS[direction]):
-			continue
-		return direction
-	return &""
-
-
-## Есть ли у комнаты дверь с этой стороны и не отдана ли она уже другому ребру.
-func _direction_available(node_id: StringName, direction: StringName, dirs: Dictionary) -> bool:
-	var available: Array = dirs.get(node_id, [])
-	return available.has(direction) and not is_direction_taken(node_id, direction)
-
-
-## Направление от клетки [param from] к [param to], если они смежные. Иначе "".
-func _direction_between(from: Vector2i, to: Vector2i) -> StringName:
-	for direction: StringName in DIRECTION_OFFSETS:
-		if from + DIRECTION_OFFSETS[direction] == to:
-			return direction
-	return &""
-
-
-## Клетка для комнаты, которой не нашлось направления на первом проходе: встаём
-## вплотную к уже размещённому соседу, предпочитая сторону, куда у нас САМИХ
-## смотрит свободная дверь. Идеальной пары (двери с обеих сторон) тут уже быть не
-## может — её забрал бы _pick_direction, — но хотя бы наша дверь будет вести к
-## соседу. Совсем некуда — уходим в запасной ряд под сеткой.
-func _fallback_cell(
-	node_data: RS_LevelNode,
-	floor_cells: Dictionary[StringName, Vector2i],
-	taken: Dictionary[Vector2i, StringName],
-	dirs: Dictionary,
-) -> Vector2i:
-	var best := Vector2i.MAX
-	var best_score := -1
-	for conn: RS_LevelConnection in node_data.connections:
-		if not floor_cells.has(conn.target_node_id):
-			continue
-		for direction: StringName in DIRECTION_OFFSETS:
-			var cell: Vector2i = floor_cells[conn.target_node_id] + DIRECTION_OFFSETS[direction]
-			if taken.has(cell):
-				continue
-			# Мы встаём в direction ОТ соседа, значит сосед для нас — со встречной.
-			var score := 0
-			if _direction_available(node_data.id, OPPOSITE_DIRECTION[direction], dirs):
-				score += 1
-			if _direction_available(conn.target_node_id, direction, dirs):
-				score += 1
-			if score > best_score:
-				best_score = score
-				best = cell
-	if best_score >= 0:
-		return best
-
-	var overflow_row := 2
-	for cell: Vector2i in taken:
-		overflow_row = maxi(overflow_row, cell.y + 2)
-	var column := 0
-	while taken.has(Vector2i(column, overflow_row)):
-		column += 1
-	return Vector2i(column, overflow_row)

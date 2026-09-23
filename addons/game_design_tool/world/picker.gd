@@ -1,7 +1,7 @@
 ## res://addons/game_design_tool/world/picker.gd
 ## Аналитический пикинг по AABB комнаты — без единого физического коллайдера.
 ## Позиция берётся из RS_LayerPlan (та же раскладка, что и у игры), габарит —
-## из RS_RoomLayout.half_extent_of_scene (тот же кэш, которым меряется карта).
+## из RS_RoomLayout.half_extent_of_scene.
 ##
 ## Физический рейкаст сюда сознательно не пошёл: в редакторском SubViewport
 ## живое физическое пространство не гарантировано (Jolt на отдельном потоке, а
@@ -66,7 +66,7 @@ static func _aabbs_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[AABB
 	if node_data.role != RS_LevelNode.Role.CORRIDOR:
 		return [_aabb_of(node_data, plan)]
 	var boxes: Array[AABB] = []
-	var half := plan.cell_size * 0.5
+	var half := RS_LayerPlan.CELL_SIZE * 0.5
 	for cell: Vector3i in plan.corridor_tiles:
 		if plan.node_by_cell.get(cell, &"") != node_data.id:
 			continue

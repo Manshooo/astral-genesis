@@ -68,7 +68,6 @@ func _ready() -> void:
 		{"key": KEY_F6, "label": "слой ниже", "call": _travel_down},
 		{"key": KEY_F7, "label": "слой выше", "call": _travel_up},
 		{"key": KEY_F8, "label": "сбросить дерево", "call": _reset_skills},
-		{"key": KEY_F9, "label": "коридоры вкл/выкл (новый забег)", "call": _toggle_corridors},
 	]
 	_build_rows()
 
@@ -112,13 +111,11 @@ func _status_text() -> String:
 	var depth := "—"
 	if RunManager.current_depth != RunManager.NO_DEPTH:
 		depth = str(RunManager.current_depth)
-	var corridors := RunManager.current_graph != null and RunManager.current_graph.corridor_mode
-	return "слой %s · узел %s\nочки %d · бессмертие %s · коридоры %s" % [
+	return "слой %s · узел %s\nочки %d · бессмертие %s" % [
 		depth,
 		RunManager.current_node_id if RunManager.current_node_id != &"" else "—",
 		SkillManager.save.skill_points,
 		"вкл" if _immortal else "выкл",
-		"вкл" if corridors else "выкл",
 	]
 
 
@@ -148,24 +145,6 @@ func _toggle_immortal() -> void:
 func _reset_skills() -> void:
 	SkillManager.reset()
 	_say("дерево обнулено")
-
-
-## Коридорный путь генерации до того, как он включён в данных (карточка
-## «Процедурные коридоры между комнатами»: флаг ждёт карты). Флаг меняется В
-## ПАМЯТИ базового конфига — на диск ресурс не пишется, — и забег тут же
-## начинается заново: начатый идёт по своему снимку ручек (RS_WorldSave.
-## gen_config) и флага иначе не заметил бы. Прогресс забега сносится только в
-## памяти; на диск новый забег уйдёт с первой контрольной точкой.
-func _toggle_corridors() -> void:
-	var config := GameConfig.config.world_gen
-	if config == null:
-		_say("нет конфига генерации")
-		return
-	config.corridors = not config.corridors
-	if RunManager.current_graph != null:
-		WorldSave.save.clear_run()
-		RunManager.enter_complex()
-	_say("коридоры %s — новый забег" % ("вкл" if config.corridors else "выкл"))
 
 
 func _travel_down() -> void:

@@ -1,14 +1,13 @@
 extends Node
-## Проверка коридорного пути генерации (этап 2 карточки «Процедурные коридоры
-## между комнатами»): граф, в котором комнаты висят на ветках коридора, а рёбер у
-## комнаты ровно столько, сколько дверей в её сцене.
+## Проверка графа забега (карточка «Процедурные коридоры между комнатами»):
+## комнаты висят на ветках коридора, а рёбер у комнаты ровно столько, сколько
+## дверей в её сцене.
 ##
 ## Всё здесь ломается тихо. Ребро без двери и дверь без ребра не бросают ошибок —
 ## первое делает соседа недостижимым, второе возвращает заваренные двери, от
 ## которых этот путь и уходит. Портал в комнате без вертикального ребра — мёртвый
 ## портал посреди пола, вертикальное ребро без портала — оборванный переход.
-## Запертые наглухо переходы между слоями — непроходимый забег. И отдельно:
-## старый путь обязан остаться байт в байт прежним, на нём держатся сейвы.
+## Запертые наглухо переходы между слоями — непроходимый забег.
 ##
 ## Запускать: godot --headless dev/corridor_graph_check.tscn
 
@@ -18,7 +17,7 @@ const CONFIG_PATH := "res://data/world_gen_config.tres"
 ## комнаты нет. Сцена важна только числом дверей.
 const STAND_IN_PRESET := "res://src/levels/procedural/rooms/lab/lab_room.tres"
 ## Сколько ассертов обязано отработать до сторожевого (см. _ready).
-const EXPECTED_ASSERTS := 23
+const EXPECTED_ASSERTS := 21
 
 var _ok := 0
 var _fail := 0
@@ -32,10 +31,9 @@ func _ready() -> void:
 
 	_check_config(base)
 	var config := base.duplicate() as RS_WorldGenConfig
-	config.corridors = true
 	_check_invariants(config)
 	_check_determinism(config)
-	_check_legacy_untouched(base)
+	_check_home_depth(config)
 	_check_unique_chance(config)
 	_check_snapshot()
 
@@ -176,27 +174,17 @@ func _check_determinism(config: RS_WorldGenConfig) -> void:
 			diverged.append(s)
 	_check("один сид — один комплекс", diverged.is_empty(), str(diverged))
 
+
+
+## HOME_DEPTH — глубина хаба для инструментов и отладки, а хаб ставит конфиг.
+## Разойдутся — вкладка «Генератор мира» по умолчанию откроет не тот слой, и
+## заметит это только глаз.
+func _check_home_depth(config: RS_WorldGenConfig) -> void:
 	var graph := RS_LevelGraph.new().generate_run(0, _library, config)
-	_check("граф помечен коридорным", graph.corridor_mode, "")
-
-
-func _check_legacy_untouched(base: RS_WorldGenConfig) -> void:
-	var off := base.duplicate() as RS_WorldGenConfig
-	off.corridors = false
-	var diverged: Array[int] = []
-	for s in 10:
-		var without := RS_LevelGraph.new().generate_run(s, _library)
-		var with_flag_off := RS_LevelGraph.new().generate_run(s, _library, off)
-		if _signature(without) != _signature(with_flag_off) or with_flag_off.corridor_mode:
-			diverged.append(s)
-	_check("с выключенным флагом — прежний путь, тот же граф", diverged.is_empty(), str(diverged))
-
-	var legacy := RS_LevelGraph.new().generate_run(0, _library)
-	var corridors := 0
-	for node: RS_LevelNode in legacy.nodes.values():
-		if node.role == RS_LevelNode.Role.CORRIDOR:
-			corridors += 1
-	_check("прежний путь коридоров не заводит", corridors == 0, "коридоров %d" % corridors)
+	var entry := graph.get_node_data(graph.entry_node_id)
+	_check("HOME_DEPTH совпадает с глубиной хаба из конфига",
+		entry != null and entry.depth == RS_LevelGraph.HOME_DEPTH,
+		"хаб на L%d, HOME_DEPTH=%d" % [entry.depth if entry else -1, RS_LevelGraph.HOME_DEPTH])
 
 
 ## Уникальная комната «как Архитектор»: шанс 0 — её нет нигде, в том числе
