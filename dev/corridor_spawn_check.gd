@@ -64,7 +64,7 @@ func _ready() -> void:
 	_check_tiles()
 	await _check_geometry()
 	_check_doors_bound()
-	_check_open_door()
+	await _check_open_door()
 	_check_hub_door()
 	await _check_minimap()
 	await _check_reload_in_corridor()
@@ -218,6 +218,9 @@ func _check_open_door() -> void:
 		_check("есть дверь в коридор для проверки", false, "")
 		return
 
+	var space := get_viewport().world_3d.direct_space_state
+	var blocked_before := not _doorway_ray(space, door).is_empty()
+
 	var player := _player()
 	var before := player.global_position
 	var node_before := RunManager.current_node_id
@@ -229,10 +232,21 @@ func _check_open_door() -> void:
 
 	for i in 12:
 		ECS.process(0.1, "physics")
-	var visual := door.get_node(^"Visual") as Node3D
+	# Тело с sync_to_physics переносится шагом физики — даём ему шаг.
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	# Лучом, а не по высоте узла: прежняя проверка смотрела на Visual и зеленела,
+	# пока меш уезжал вверх, а коллизия полотна оставалась в проёме.
 	var lift := (door.get_component(C_DoorOpen) as C_DoorOpen).lift
-	_check("полотно поднялось целиком", is_equal_approx(visual.position.y, lift),
-		"y=%.2f из %.2f" % [visual.position.y, lift])
+	var leaves := S_DoorOpen.leaves_of(door)
+	var lifted := not leaves.is_empty()
+	for leaf in leaves:
+		lifted = lifted and leaf.global_position.y >= (door as Node as Node3D).global_position.y + lift - 0.05
+	var hit := _doorway_ray(space, door)
+	_check("полотно поднялось вместе с коллизией: проём свободен",
+		blocked_before and lifted and hit.is_empty(),
+		"до открытия луч упирался: %s, полотно наверху: %s, упор после: %s" % [
+			blocked_before, lifted, hit.collider.name if not hit.is_empty() else "нет"])
 
 
 ## Хаб (door_teleports): проёма за его дверью нет, и дверь ставит игрока на
@@ -302,6 +316,15 @@ func _check_reload_in_corridor() -> void:
 
 
 # ---------------------------------------------------------------------------
+
+
+## Луч сквозь проём двери на высоте груди, поперёк полотна — во что упрётся
+## идущий через дверь.
+func _doorway_ray(space: PhysicsDirectSpaceState3D, door: Node) -> Dictionary:
+	var body := door as Node3D
+	var normal := body.global_transform.basis.z.normalized()
+	var center := body.global_position + Vector3(0.0, PROBE_HEIGHT, 0.0)
+	return _ray(space, center - normal * 1.5, center + normal * 1.5)
 
 
 func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3, mask: int = GEOMETRY_MASK) -> Dictionary:
