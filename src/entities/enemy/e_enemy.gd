@@ -6,9 +6,10 @@
 ##
 ## Корень — CharacterBody3D, а не StaticBody3D, как у E_Body: враг ходит, и
 ## только CharacterBody3D слушает C_Velocity через move_and_slide()
-## (S_Movement). Слой коллизии — moving_colliders, а не enemies: последний
-## сканирует луч захвата (S_SnatchTargetDetector), и живой враг там был бы
-## лишней преградой перед настоящими целями захвата.
+## (S_Movement). Слой коллизии — enemies, как у тел. Луч захвата
+## (S_SnatchTargetDetector) проходит врага насквозь, поэтому тот не заслоняет
+## настоящие цели у себя за спиной. Маска и почему враг упирается в игрока, а
+## игрок во врага нет — docs «Конвенции проекта», §2.
 @tool
 class_name E_Enemy
 extends Entity

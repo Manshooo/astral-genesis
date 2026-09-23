@@ -40,6 +40,8 @@ radius = 0.25
 height = 0.5
 
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=254995031]
+collision_layer = 2
+collision_mask = 49
 script = ExtResource("1_yrckd")
 component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing")])
 
