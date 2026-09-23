@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene format=3 uid="uid://b4cva1a074lgw"]
 
 [ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_room"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_component"]
@@ -23,19 +23,20 @@ script = ExtResource("7_slot")
 slot_id = &"south"
 metadata/_custom_type_script = "uid://dv1d7jb1mo3fv"
 
-[node name="ArchitectRoom" type="Node3D"]
+[node name="ArchitectRoom" type="Node3D" unique_id=1734177839]
 script = ExtResource("1_room")
 component_resources = Array[ExtResource("2_component")]([SubResource("Resource_level_node")])
 
-[node name="Visual" parent="." instance=ExtResource("4_mesh")]
+[node name="Visual" parent="." unique_id=671208388 instance=ExtResource("4_mesh")]
 
-[node name="Doors" type="Node3D" parent="."]
+[node name="Doors" type="Node3D" parent="." unique_id=291850249]
 
-[node name="Door" parent="Doors" instance=ExtResource("5_door")]
+[node name="Door" parent="Doors" unique_id=385504796 instance=ExtResource("5_door")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 8)
 component_resources = Array[ExtResource("2_component")]([SubResource("Resource_door_prompt"), SubResource("Resource_slot_south")])
 
-[node name="SpawnPoint" type="Node3D" parent="."]
+[node name="SpawnPoint" type="Node3D" parent="." unique_id=1488466474]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 5.5)
 
-[node name="Architect" parent="." instance=ExtResource("8_architect")]
+[node name="Architect" parent="." unique_id=352931902 instance=ExtResource("8_architect")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1130934, 0)
