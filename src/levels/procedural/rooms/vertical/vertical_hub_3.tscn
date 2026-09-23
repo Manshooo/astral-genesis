@@ -35,6 +35,7 @@ script = ExtResource("1_b7vy5")
 component_resources = Array[ExtResource("2_pdoc4")]([SubResource("Resource_da6hf")])
 
 [node name="Visual" parent="." unique_id=1316407927 instance=ExtResource("4_b7vy5")]
+
 [node name="Doors" type="Node3D" parent="." unique_id=2094803442]
 
 [node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_grwat")]
