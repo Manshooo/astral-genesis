@@ -1,0 +1,28 @@
+schema_version = "1.0.0"
+
+id = "godot_pipeline"
+version = "1.3.0"
+name = "Godot Pipeline"
+tagline = "Per-collection glTF asset delivery pipeline for Godot 4"
+maintainer = "Yanislav Pichugin <yanislavpic@gmail.com>"
+type = "add-on"
+
+website = "https://github.com/"
+
+tags = ["Pipeline", "Import-Export", "Object"]
+
+blender_version_min = "4.2.0"
+
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+[permissions]
+files = "Write glTF assets and .import files into the Godot project"
+
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "/.git/",
+  "/*.zip",
+]

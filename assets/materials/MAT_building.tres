@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dajpdmo30j0th"]
+
+[ext_resource type="Texture2D" uid="uid://xj1isyf1fsw2" path="res://assets/textures/Gradient Pallete.png" id="1_ias5q"]
+
+[resource]
+resource_name = "MAT_building"
+albedo_texture = ExtResource("1_ias5q")
+metallic = 1.0
+roughness = 0.9

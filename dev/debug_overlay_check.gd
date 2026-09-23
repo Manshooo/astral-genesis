@@ -158,9 +158,9 @@ func _check_keys(overlay: CanvasLayer) -> void:
 	# числом в проверке: поменяется соглашение — ассерт скажет об этом здесь.
 	_check(
 		"«слой ниже» ведёт вглубь комплекса",
-		RS_LevelGraph.SURFACE_DEPTH < RS_LevelGraph.HOME_DEPTH and overlay.STEP_DOWN > 0,
-		"поверхность %d, дом %d, шаг вниз %d"
-		% [RS_LevelGraph.SURFACE_DEPTH, RS_LevelGraph.HOME_DEPTH, overlay.STEP_DOWN]
+		RS_LevelGraph.DEPTHS[-1] < RS_LevelGraph.DEPTHS[0] and overlay.STEP_DOWN > 0,
+		"поверхность %d, самый глубокий %d, шаг вниз %d"
+		% [RS_LevelGraph.DEPTHS[-1], RS_LevelGraph.DEPTHS[0], overlay.STEP_DOWN]
 	)
 
 

@@ -14,6 +14,12 @@ const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 
+## Биты слоёв физики (project.godot [layer_names]).
+const STATIC_LAYER := 1 << 0
+const PLAYER_LAYER := 1 << 1
+const ENEMIES_LAYER := 1 << 2
+const MOVING_LAYER := 1 << 4
+
 var _ok := 0
 var _fail := 0
 
@@ -78,6 +84,8 @@ func _run(world: World) -> void:
 		ECS.world.query.with_all([C_PlayerInput]).execute_one() == player,
 		""
 	)
+
+	await _check_layers(world, player, enemy)
 
 	# --- 1. Бестелесная душа врага не интересует, даже вплотную -------------
 	# Цель ищется по C_Embodied + C_Health — у свежей души их нет, и дистанция
@@ -175,6 +183,67 @@ func _run(world: World) -> void:
 		player.has_component(C_Flight),
 		""
 	)
+
+
+## Слои коллизий игрока и врага (см. [[Конвенции проекта]], §2). Всё здесь
+## ломается молча: игрок на static_colliders — стена для всякой маски «по
+## геометрии», враг на moving_colliders — подвижная геометрия для всех, кому нужны
+## двери, а маска без permeable пропускает врага сквозь решётки.
+func _check_layers(world: World, player: E_Player, enemy: E_Enemy) -> void:
+	var player_body := player as Node as CharacterBody3D
+	var enemy_body := enemy as Node as CharacterBody3D
+	_check(
+		"игрок на слое player — не на static_colliders, где он был бы стеной",
+		player_body.collision_layer == PLAYER_LAYER,
+		"layer=%d" % player_body.collision_layer
+	)
+	_check(
+		"враг на слое enemies — не на moving_colliders, слое подвижной геометрии",
+		enemy_body.collision_layer == ENEMIES_LAYER,
+		"layer=%d" % enemy_body.collision_layer
+	)
+	var enemy_solid := STATIC_LAYER | PLAYER_LAYER | MOVING_LAYER | C_Phasing.PERMEABLE_BIT
+	_check(
+		"враг упирается в стены, в игрока, в подвижную и в проницаемую геометрию",
+		enemy_body.collision_mask & enemy_solid == enemy_solid,
+		"mask=%d" % enemy_body.collision_mask
+	)
+	# Проницаемый бит у игрока ведёт S_Phasing (призрак — без него, во плоти — с
+	# ним), здесь он не сверяется. А тела-цели захвата на слое enemies игроку не
+	# преграда: у тела-рэгдолла корневая капсула стоит там, где труп стоял до
+	# падения, и была бы невидимым столбом посреди комнаты.
+	_check(
+		"игрок упирается в стены и в подвижную геометрию, но не в слой enemies",
+		(
+			player_body.collision_mask & (STATIC_LAYER | MOVING_LAYER) == STATIC_LAYER | MOVING_LAYER
+			and player_body.collision_mask & ENEMIES_LAYER == 0
+		),
+		"mask=%d" % player_body.collision_mask
+	)
+
+	# Враг на слое enemies попадает под луч захвата — и обязан не заслонять тело
+	# у себя за спиной: ради этого он раньше и жил на чужом слое.
+	var cam := player.camera
+	var forward := -cam.global_transform.basis.z
+	var enemy_node := enemy as Node as Node3D
+	var enemy_home := enemy_node.global_position
+	enemy_node.global_position = cam.global_position + forward * 1.5 - Vector3.UP * 0.9
+	var shielded := (load(WALKER_SCENE) as PackedScene).instantiate() as Entity
+	(shielded as Node as Node3D).position = cam.global_position + forward * 3.0 - Vector3.UP * 0.9
+	world.add_entity(shielded)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var detector := S_SnatchTargetDetector.new()
+	var seen: Entity = detector._raycast_body(cam, 5.0)
+	detector.free()
+	_check(
+		"тело за спиной врага остаётся в прицеле захвата — луч проходит врага насквозь",
+		seen == shielded,
+		"в прицеле %s" % (seen.name if seen else "ничего")
+	)
+	world.remove_entity(shielded)
+	enemy_node.global_position = enemy_home
+	await get_tree().physics_frame
 
 
 func _xz_distance(a: Node3D, b: Node3D) -> float:

@@ -15,6 +15,12 @@ extends System
 ## которому раньше стрелял сам S_BodySnatch.
 const ENEMIES_MASK := 1 << 2
 
+## Сколько не-целей на слое enemies луч готов пройти насквозь, прежде чем
+## сдаться. Живых врагов в прицеле больше двух-трёх подряд не бывает; предел —
+## чтобы ошибка в данных (скажем, тысяча коллайдеров без C_BodySnatchable) не
+## превратила один каст за кадр в тысячу.
+const MAX_PIERCED := 8
+
 var _current_target: Entity = null
 
 
@@ -56,15 +62,28 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 
 ## Луч из камеры вперёд (−Z) по маске enemies. Возвращает захватываемую Entity
 ## или null.
+##
+## На слое enemies стоят не только тела, но и живые враги (E_Enemy), а захватить
+## врага нельзя — у него нет C_BodySnatchable. Такой хит луч проходит насквозь
+## и ищет дальше: иначе враг заслонял бы собой настоящие цели у себя за спиной.
+## Раньше ради этого враг жил на moving_colliders — слое подвижной ГЕОМЕТРИИ, где
+## его видела бы как стену всякая маска, которой нужны двери и платформы.
 func _raycast_body(cam: Camera3D, capture_range: float) -> Entity:
 	var from := cam.global_position
 	var to := from - cam.global_transform.basis.z * capture_range
 	var space := cam.get_world_3d().direct_space_state
 	var params := PhysicsRayQueryParameters3D.create(from, to, ENEMIES_MASK)
-	var hit := space.intersect_ray(params)
-	if hit.is_empty():
-		return null
-	return _resolve_snatchable(hit.collider)
+	var skip: Array[RID] = []
+	for _i in MAX_PIERCED:
+		var hit := space.intersect_ray(params)
+		if hit.is_empty():
+			return null
+		var target := _resolve_snatchable(hit.collider)
+		if target != null:
+			return target
+		skip.append(hit.rid)
+		params.exclude = skip
+	return null
 
 
 ## Поднимается от коллайдера вверх по дереву до Entity с C_BodySnatchable

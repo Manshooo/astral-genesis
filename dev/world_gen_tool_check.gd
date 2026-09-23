@@ -56,9 +56,72 @@ func _ready() -> void:
 	_check_inline_preset_editor()
 	_check_room_outline(library, host)
 	_check_restore_state()
+	_check_corridors(library, host)
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
+
+
+## Коридоры во вкладке: оверлей «Коридоры» рисует ветку на каждую ветку плана;
+## «Геометрия» ставит по куску кита на каждый тайл (сцены у ветки нет — есть
+## кит), выделенная ветка обводится всеми тайлами; клик по тайлу выделяет
+## ветку, по комнате — комнату. Ломается тихо: пустой оверлей, тайлы прошлой
+## сборки поверх новых и клик мимо ошибок не бросают.
+func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
+	var config := load("res://data/world_gen_config.tres") as RS_WorldGenConfig
+	var graph := RS_LevelGraph.new().generate_run(0, library, config)
+	var layer_nodes := graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH)
+	var plan := RS_LayerPlan.build(layer_nodes, config)
+	var view := LayerView.new(graph, layer_nodes, plan)
+	view.kit = load("res://data/corridor_kit.tres") as RS_CorridorKit
+	# Дважды: вторая сборка обязана заменить тайлы первой, а не лечь поверх.
+	host.show_layer(view)
+	host.show_layer(view)
+
+	var branches: Array[RS_LevelNode] = []
+	var rooms := 0
+	for node_data in layer_nodes:
+		if node_data.role == RS_LevelNode.Role.CORRIDOR:
+			branches.append(node_data)
+		else:
+			rooms += 1
+	_check("коридоры: оверлей рисует каждую ветку слоя",
+		host.overlay(&"corridors").branch_count() == branches.size(),
+		"%d из %d" % [host.overlay(&"corridors").branch_count(), branches.size()])
+	var geometry := host.overlay(&"rooms")
+	var tiles := plan.corridor_tiles.size()
+	_check("коридоры: «Геометрия» ставит комнаты и по куску кита на тайл, без остатков прошлой сборки",
+		geometry._rooms.size() == rooms and geometry.tile_count() == tiles
+			and geometry.get_child_count() == rooms + tiles,
+		"комнат %d из %d, тайлов %d из %d, детей %d" % [
+			geometry._rooms.size(), rooms, geometry.tile_count(), tiles, geometry.get_child_count()])
+
+	var branch := branches[0]
+	geometry.set_selected(branch.id)
+	var outlined: bool = not geometry._tiles.get(branch.id, []).is_empty()
+	for tile_node: Node in geometry._tiles.get(branch.id, []):
+		for mesh: GeometryInstance3D in tile_node.find_children("*", "GeometryInstance3D", true, false):
+			outlined = outlined and mesh.material_overlay != null
+	geometry.set_selected(&"")
+	var cleared := true
+	for tile_node: Node in geometry._tiles.get(branch.id, []):
+		for mesh: GeometryInstance3D in tile_node.find_children("*", "GeometryInstance3D", true, false):
+			cleared = cleared and mesh.material_overlay == null
+	_check("коридоры: выделенная ветка обводится всеми тайлами и снимается при сбросе",
+		outlined and cleared, "обведена %s, снята %s" % [outlined, cleared])
+
+	var tile := Vector3i.ZERO
+	for cell: Vector3i in plan.corridor_tiles:
+		if plan.node_by_cell[cell] == branch.id:
+			tile = cell
+			break
+	var above := plan.cell_position(Vector2i(tile.x, tile.z), tile.y) + Vector3(0.0, 50.0, 0.0)
+	_check("коридоры: клик по тайлу выделяет его ветку",
+		Picker.pick(above, Vector3.DOWN, layer_nodes, plan) == branch.id, str(tile))
+	var room_id := graph.entry_node_id
+	var over_room: Vector3 = plan.positions[room_id] + Vector3(0.0, 50.0, 0.0)
+	_check("коридоры: клик по комнате выделяет комнату, а не огибающий её коридор",
+		Picker.pick(over_room, Vector3.DOWN, layer_nodes, plan) == room_id, "")
 
 
 ## RoomsOverlay.set_selected: material_overlay ставится РОВНО на геометрию
@@ -277,10 +340,15 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 		host.show_layer(LayerView.new(graph, layer_nodes, plan))
 		var rooms := host.overlay(&"rooms")
 		var graph_overlay := host.overlay(&"graph")
+		# Комнаты — только узлы-комнаты: у ветки коридора сцены нет, её рисует
+		# оверлей «Коридоры».
+		var room_nodes := layer_nodes.filter(
+			func(n: RS_LevelNode) -> bool: return n.role == RS_LevelNode.Role.ROOM
+		).size()
 		_check(
-			"%s: комнат построено по числу узлов" % label,
-			rooms.get_child_count() == layer_nodes.size(),
-			"%d комнат, %d узлов" % [rooms.get_child_count(), layer_nodes.size()]
+			"%s: комнат построено по числу комнат" % label,
+			rooms.get_child_count() == room_nodes,
+			"%d комнат, %d узлов-комнат" % [rooms.get_child_count(), room_nodes]
 		)
 		_check(
 			"%s: сфер графа построено по числу узлов" % label,
@@ -321,8 +389,8 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 		_check("%s: луч мимо слоя не пикает ничего" % label, far_pick == &"", "нашёл %s" % far_pick)
 
 	# --- 3. Хаб — ровно один узел на весь граф (сам домашний, entry_node_id),
-	# и это всегда гарантированный тупик (degree=1, см.
-	# RS_LevelGraph._generate_floor dead_end_index). Прямой регресс-щит на риск
+	# и это всегда тупик (degree=1): у сцены хаба одна дверь, а рёбер в коридоры
+	# у комнаты ровно столько, сколько дверей. Прямой регресс-щит на риск
 	# добавления hub.tres как пресета (RS_RoomPresetLibrary.hub): протеки он в
 	# пул автоподбора (.presets) — молча достался бы и другим узлам-тупикам по
 	# всему графу, ни одна из проверок пикинга/оверлеев этого не поймала бы.

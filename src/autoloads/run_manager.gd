@@ -2,21 +2,22 @@
 extends Node
 ## Управляет одним "забегом": граф уровня + загруженный СЛОЙ.
 ##
-## Гранула стриминга — СЛОЙ (все узлы одной depth разом в дереве сцены), а не
-## отдельная комната. Переход внутри слоя = телепорт игрока в уже стоящую
-## комнату (ничего не грузится и не сносится); переход по вертикальному
-## коннектору = деспавн всего слоя и спавн нового.
+## Гранула стриминга — СЛОЙ (все узлы одной depth разом в дереве сцены: комнаты
+## и тайлы веток коридора), а не отдельная комната. Внутри этажа игрок ходит
+## ногами — комнаты подвешены к веткам коридора (RS_LayerPlan); между этажами слоя
+## переставляет портал; переход на другую глубину = деспавн всего слоя и спавн
+## нового.
 ##
-## Коридоров между комнатами нет: связь чисто логическая (двери ↔ рёбра графа),
-## поэтому комнаты слоя просто расставляются по детерминированной сетке —
-## см. RS_LayerPlan.
+## Текущий узел внутри слоя меняется не дверью, а присутствием: в чьей клетке
+## плана стоит игрок, тот узел и текущий (note_presence, S_RoomPresence).
 ##
-## Двери и переходы: у дверей комнаты компонент C_DoorSlot, при спавне RunManager
-## сопоставляет рёбра узла слотам и штампует на каждую дверь C_DoorPortal
-## (target_node_id + locked_by) вместе с подсказкой. Лишние слоты запечатываются
-## (_seal_door) — не выключаются, а объясняют игроку, что прохода нет.
+## Двери и переходы: у дверей комнаты компонент C_DoorSlot; при спавне каждая
+## дверь получает C_DoorPortal на ветку, которую план поставил на её сторону, а
+## порталы — вертикальные рёбра узла. Дверь в коридор открывается на месте
+## (use_door). Лишние порталы запечатываются (_seal_door) — не выключаются, а
+## объясняют игроку, что прохода нет.
 ##
-## Прогресс забега: смена комнаты — контрольная точка (WorldSave.record_progress),
+## Прогресс забега: смена узла — контрольная точка (WorldSave.record_progress),
 ## вход в забег стартует с сохранённого узла, если забег не завершён.
 
 signal complex_entered(graph: RS_LevelGraph)
@@ -49,6 +50,8 @@ const NO_DEPTH := -1
 const DOOR_PROMPT_OPEN := "Пройти"
 const DOOR_PROMPT_LOCKED := "Заперто"
 const DOOR_PROMPT_SEALED := "Прохода нет"
+## Дверь в коридор: она не переносит, а открывается (коридорная раскладка).
+const DOOR_PROMPT_UNSEAL := "Открыть"
 
 ## Подсказки на вертикальных порталах. Вверх/вниз считаем по глубине цели, а не
 ## по знаку depth_delta: у слоёв номер РАСТЁТ вглубь, и знак читается наоборот.
@@ -102,6 +105,18 @@ var _rooms: Dictionary[StringName, SpawnedRoom] = {}
 ## детерминирован от графа — значит считается один раз за забег. Карта комплекса
 ## спрашивает планы слоёв, в которых игрок ещё не был.
 var _plans: Dictionary[int, RS_LayerPlan] = {}
+## Снимок ручек, по которым построен current_graph (см. _run_gen_config). Нужен
+## и раскладке: шаг решётки комнат — тоже ручка, и план обязан строиться по тем
+## же числам, что и граф.
+var _gen_config: RS_WorldGenConfig
+## Ветка коридора -> собранные тайлы текущего слоя. Не сущности ECS, а голая
+## геометрия со светом: у тайла нет ни компонентов, ни поведения, и мир ради него
+## регистрировать незачем. Держим ради сноса слоя и ради «заспавнен ли узел» —
+## присутствие игрока в коридоре меняет текущий узел так же, как в комнате.
+var _corridor_tiles: Dictionary[StringName, Array] = {}
+## Общий родитель тайлов под ECS.world: уходит вместе со сценой мира, как и
+## комнаты, поэтому ссылка может оказаться битой — см. _corridor_parent.
+var _corridor_root: Node3D
 
 
 ## Точка входа в забег: генерирует комплекс и ставит игрока в стартовый узел.
@@ -125,10 +140,42 @@ func enter_complex(run_seed: int = -1) -> void:
 	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
 	# затем входной слой — _enter_node → _place_player_in_room поставит её на место.
 	_spawn_player()
-	current_graph = RS_LevelGraph.new().generate_run(run_seed, GameConfig.config.room_preset_library)
+	_gen_config = _run_gen_config()
+	current_graph = RS_LevelGraph.new().generate_run(
+		run_seed, GameConfig.config.room_preset_library, _gen_config
+	)
 	complex_entered.emit(current_graph)
 	_restore_player_progress()
 	_enter_node(_start_node_id())
+
+
+## Ручки генерации ЭТОГО забега. Начатый забег продолжается по снимку из сейва,
+## новый снимает текущий конфиг и кладёт снимок в сейв — на диск он уйдёт с
+## первой же контрольной точкой, вместе с run_in_progress, так что забег без
+## единой точки на диске и снимка не оставит, и начнётся заново по свежим ручкам.
+##
+## Сюда же лягут улучшения Архитектора: снимок — это база ПЛЮС его модификаторы
+## на момент старта, а не голый data/world_gen_config.tres.
+func _run_gen_config() -> RS_WorldGenConfig:
+	var saved := WorldSave.save
+	if saved.run_in_progress and saved.gen_config != null:
+		return saved.gen_config
+	if saved.run_in_progress:
+		# Забег начат до коридоров: снимка у него нет, а комплекс, по которому он
+		# шёл, больше не строится. Решено сбрасывать его на вход (22.09): узлы
+		# нового графа названы так же (L3_F0_room_0…), и старые посещённые и
+		# съеденные тела молча легли бы на чужие комнаты. Запас и тело остаются —
+		# их восстановит _restore_player_progress.
+		saved.current_node_id = &""
+		saved.visited_node_ids.clear()
+		saved.consumed_body_ids.clear()
+	var base := GameConfig.config.world_gen
+	if base == null:
+		return null
+	# Мелкая копия намеренно: записи уникальных комнат — данные, их не правят,
+	# а глубокая копия утащила бы в сейв ещё и пресеты со сценами.
+	saved.gen_config = base.duplicate() as RS_WorldGenConfig
+	return saved.gen_config
 
 
 ## Узел, с которого начинается сессия: сохранённый (продолжение забега) или
@@ -138,7 +185,9 @@ func _start_node_id() -> StringName:
 	var saved := WorldSave.save
 	if saved.run_in_progress and current_graph.get_node_data(saved.current_node_id) != null:
 		return saved.current_node_id
-	if saved.run_in_progress:
+	# Пустой узел — не рассинхрон, а сброс забега без снимка ручек (см.
+	# _run_gen_config): предупреждать не о чем.
+	if saved.run_in_progress and saved.current_node_id != &"":
 		push_warning(
 			"RunManager: сохранённый узел '%s' отсутствует в графе — старт с входного"
 			% saved.current_node_id
@@ -380,12 +429,107 @@ func _end_run() -> void:
 	current_node_id = &""
 
 
-## Переход в другой узел графа (вызывается A_TravelThroughDoor).
+## Переход в другой узел графа по порталу (через use_door) и для отладочного
+## телепорта по слоям.
+##
+## Внутри слоя — это портал между этажами: он только ПЕРЕСТАВЛЯЕТ игрока к порталу
+## обратно, а текущим узлом комната станет по факту присутствия (note_presence),
+## как и после прохода по коридору. Дверь в коридор сюда не доходит вовсе — её
+## открывает use_door.
+##
+## Смена глубины — по-прежнему целиком здесь: слой надо снести и заспавнить, и
+## игрока некуда поставить, пока новой комнаты нет в дереве.
 func travel_to(node_id: StringName) -> void:
-	if current_graph == null or current_graph.get_node_data(node_id) == null:
+	var node_data := current_graph.get_node_data(node_id) if current_graph else null
+	if node_data == null:
 		push_warning("RunManager: некорректный переход в '%s'" % node_id)
 		return
-	_enter_node(node_id, current_node_id)
+	if node_data.depth != current_depth:
+		_enter_node(node_id, current_node_id)
+		return
+	var room: SpawnedRoom = _rooms.get(node_id)
+	if room == null:
+		push_error("RunManager: комната узла '%s' не заспавнилась" % node_id)
+		return
+	_place_player_in_room(room, current_node_id)
+
+
+## Игрок воспользовался дверью (A_TravelThroughDoor) — она ведёт в [param target].
+##
+## В коридорной раскладке дверь в коридор своего этажа никуда не переносит: она
+## ОТКРЫВАЕТСЯ, и дальше игрок идёт ногами, а текущий узел сменит присутствие.
+## Исключение — комната без проёма за дверью (RS_LevelNode.door_teleports, хаб до
+## переделки арта): открывать там нечего, и игрока переставляют на тайл перед
+## дверью. Порталы идут через travel_to.
+func use_door(door: Entity, target: StringName) -> void:
+	var target_data := current_graph.get_node_data(target) if current_graph else null
+	var in_place := (
+		target_data != null
+		and target_data.role == RS_LevelNode.Role.CORRIDOR
+		and target_data.depth == current_depth
+	)
+	if not in_place:
+		travel_to(target)
+		return
+	var room := _room_of_door(door)
+	if room != null and current_graph.get_node_data(room.node_id).door_teleports:
+		_place_player_in_front_of(door, room)
+		return
+	_open_door(door)
+
+
+## Открывает дверь: полотно поднимает S_DoorOpen, а интеракция гаснет — открытую
+## дверь больше незачем подсвечивать, и подсказка в проходе мешала бы. Зовётся из
+## действия двери, то есть уже вне прохода ECS (interact() идёт через
+## call_deferred), поэтому компонент добавляется напрямую.
+func _open_door(door: Entity) -> void:
+	if door.has_component(C_DoorOpen):
+		return
+	door.add_component(C_DoorOpen.new())
+	var inter := door.get_component(C_Interactable) as C_Interactable
+	if inter:
+		inter.enabled = false
+
+
+## Ставит игрока на тайл коридора за дверью [param door] — для комнат, у которых
+## проёма за дверью нет (door_teleports). Поворот не трогаем, как и везде при
+## перестановке.
+func _place_player_in_front_of(door: Entity, room: SpawnedRoom) -> void:
+	var player := _get_player()
+	if player == null:
+		return
+	var plan := plan_for_depth(current_depth)
+	var node_data := current_graph.get_node_data(room.node_id)
+	var side := _direction_of_door(door as Node as Node3D, room.entity)
+	var cell: Vector2i = plan.cells.get(room.node_id, Vector2i.ZERO) + DIRECTION_OFFSETS.get(side, Vector2i.ZERO)
+	(player as Node as Node3D).global_position = (
+		plan.cell_position(cell, node_data.floor_index) + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
+	)
+
+
+func _room_of_door(door: Entity) -> SpawnedRoom:
+	for room: SpawnedRoom in _rooms.values():
+		if room.doors.has(door):
+			return room
+	return null
+
+
+## Игрок стоит в точке [param world_position] — если это клетка другого узла
+## загруженного слоя, он и становится текущим. Зовётся каждый кадр
+## (S_RoomPresence), поэтому пустые случаи отсекаются первыми.
+##
+## Точка вне раскладки (пустота, провал под мир) узел не меняет: «нигде» —
+## не узел, и контрольная точка в нём вернула бы игрока в никуда. Во время
+## смерти точки не ставятся вовсе — см. save_progress про _ending.
+func note_presence(world_position: Vector3) -> void:
+	if current_graph == null or current_depth == NO_DEPTH or _ending:
+		return
+	var node_id := plan_for_depth(current_depth).node_at(world_position)
+	if node_id == &"" or node_id == current_node_id or not _is_spawned(node_id):
+		return
+	current_node_id = node_id
+	_checkpoint(node_id)
+	room_changed.emit(node_id)
 
 
 ## Делает [param node_id] текущим узлом: догружает его слой, если игрок сменил
@@ -404,8 +548,8 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 		_spawn_layer(node_data.depth)
 
 	var room: SpawnedRoom = _rooms.get(node_id)
-	if room == null:
-		push_error("RunManager: комната узла '%s' не заспавнилась" % node_id)
+	if room == null and not _corridor_tiles.has(node_id):
+		push_error("RunManager: узел '%s' не заспавнился" % node_id)
 		return
 
 	current_node_id = node_id
@@ -418,7 +562,30 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 	# в которой игрок стоит, обязана попасть в visited_node_ids (см. persist).
 	_checkpoint(node_id, came_from != &"")
 	room_changed.emit(node_id)
-	_place_player_in_room(room, came_from)
+	if room:
+		_place_player_in_room(room, came_from)
+	else:
+		_place_player_in_corridor(node_id)
+
+
+func _is_spawned(node_id: StringName) -> bool:
+	return _rooms.has(node_id) or _corridor_tiles.has(node_id)
+
+
+## Высота над полом тайла, на которую ставится игрок: капсула не должна
+## родиться в полу, а с полуметра она просто сядет.
+const TILE_ARRIVAL_HEIGHT := 0.5
+
+
+## Загрузка сейва, сделанного в коридоре: у ветки нет ни SpawnPoint, ни двери
+## «обратно», и игрок встаёт на её первый тайл.
+func _place_player_in_corridor(node_id: StringName) -> void:
+	var player := _get_player()
+	var tiles: Array = _corridor_tiles.get(node_id, [])
+	if player == null or tiles.is_empty():
+		return
+	var tile := tiles[0] as Node3D
+	(player as Node as Node3D).global_position = tile.global_position + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
 
 
 ## Спавнит ВСЕ комнаты слоя [param depth] разом. Предполагает, что предыдущий
@@ -431,6 +598,10 @@ func _spawn_layer(depth: int) -> void:
 
 	var plan := plan_for_depth(depth)
 	for node_data in layer_nodes:
+		# У коридора нет сцены: он собирается из тайлов кита по трассе плана.
+		if node_data.role == RS_LevelNode.Role.CORRIDOR:
+			_spawn_corridor(node_data, plan)
+			continue
 		var entity := _instantiate_room(node_data)
 		if entity == null:
 			continue
@@ -450,9 +621,46 @@ func _spawn_layer(depth: int) -> void:
 func plan_for_depth(depth: int) -> RS_LayerPlan:
 	if _plans.has(depth):
 		return _plans[depth]
-	var plan := RS_LayerPlan.build(current_graph.get_nodes_by_depth(depth))
+	var plan := RS_LayerPlan.build(current_graph.get_nodes_by_depth(depth), _gen_config)
 	_plans[depth] = plan
 	return plan
+
+
+## Застраивает ветку коридора кусками кита: на каждый её тайл плана — кусок
+## под маску проёмов, повёрнутый на нужную четверть оборота. Нет куска под
+## маску (торец) — тайл пропускается с ошибкой: раскладка таких не выдаёт, и
+## если выдала, это надо видеть, а не залатывать молча.
+func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
+	var kit := GameConfig.config.corridor_kit
+	if kit == null:
+		push_error("RunManager: нет набора кусков коридора (GameConfig.corridor_kit)")
+		return
+	var parent := _corridor_parent()
+	var tiles: Array[Node3D] = []
+	for cell: Vector3i in plan.corridor_tiles:
+		if plan.node_by_cell.get(cell, &"") != node_data.id:
+			continue
+		var tile := kit.instantiate(plan.corridor_tiles[cell])
+		if tile == null:
+			push_error("RunManager: нет куска кита под маску %d (тайл %s)" % [plan.corridor_tiles[cell], cell])
+			continue
+		# Позиция ДО входа в дерево — как и у комнат (_spawn_room): иначе
+		# коллизия тайла успеет зарегистрироваться в начале координат.
+		tile.position = plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
+		parent.add_child(tile)
+		tiles.append(tile)
+	_corridor_tiles[node_data.id] = tiles
+
+
+## Родитель тайлов — под миром ECS, чтобы уходить вместе со сценой мира. Ссылка
+## переживает смену сцены (RunManager — автолоад) и бывает битой: тогда заводим
+## заново.
+func _corridor_parent() -> Node3D:
+	if not is_instance_valid(_corridor_root) or not _corridor_root.is_inside_tree():
+		_corridor_root = Node3D.new()
+		_corridor_root.name = "Corridors"
+		ECS.world.add_child(_corridor_root)
+	return _corridor_root
 
 
 ## Инстанцирует сцену комнаты, НЕ добавляя её в мир. null — путь сцены невалиден.
@@ -494,8 +702,8 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 # ---------------------------------------------------------------------------
 
 
-## Куда смещается клетка за дверью — нужно _closest_free_door, чтобы выбрать
-## дверь, смотрящую В СТОРОНУ соседа. Сама раскладка живёт в RS_LayerPlan.
+## Куда смещается клетка за дверью — нужно, чтобы найти тайл коридора перед
+## дверью (_place_player_in_front_of). Сама раскладка живёт в RS_LayerPlan.
 const DIRECTION_OFFSETS := RS_RoomLayout.OFFSETS
 
 
@@ -518,6 +726,14 @@ func _despawn_layer() -> void:
 		if is_instance_valid(room.entity):
 			ECS.world.remove_entity(room.entity)
 	_rooms.clear()
+	# free(), не queue_free(): все слои раскладываются от одной клетки (0, 0), и
+	# тайлы старого слоя, дожившие до конца кадра, стояли бы коллизией внутри
+	# только что заспавненного нового.
+	for tiles: Array in _corridor_tiles.values():
+		for tile in tiles:
+			if is_instance_valid(tile):
+				(tile as Node).free()
+	_corridor_tiles.clear()
 	if current_depth != NO_DEPTH:
 		current_depth = NO_DEPTH
 		layer_changed.emit(NO_DEPTH)
@@ -579,167 +795,83 @@ func _body_id(node_id: StringName, room: Entity, body: Node) -> StringName:
 
 
 ## Штампует C_DoorPortal на двери комнаты (подмножество room.children с
-## C_DoorSlot) по рёбрам узла. Сами двери уже зарегистрированы в мире
-## _register_room_children — здесь только биндинг рёбер к слотам.
-##
-## Сначала раздаём рёбра, которым план назначил СТОРОНУ: за такой дверью сосед
-## реально стоит (см. RS_LayerPlan). Что осталось — межэтажные, межслойные и не
-## влезшие в сетку рёбра — раздаём по остаточному принципу в детерминированном
-## порядке слотов. Лишние двери запечатываются.
+## C_DoorSlot): за каждой дверью — ветка, которую план поставил на её сторону
+## (RS_LayerPlan.door_sides). По сторонам, а не по рёбрам: две двери комнаты
+## законно ведут в одну ветку, и по id соседа их не различить. Остаточного
+## принципа здесь нет — рёбер в коридоры у комнаты ровно столько, сколько дверей;
+## дверь без ветки значит, что план и сцена разошлись, и её честнее заварить с
+## предупреждением, чем увести не туда. Сами двери уже зарегистрированы в мире
+## _register_room_children — здесь только привязка.
 func _bind_doors(room: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[Entity]:
 	var doors: Array[Entity] = []
 	for e in room.children:
 		if e.has_component(C_DoorSlot):
 			doors.append(e)
+	_bind_portals(room, node_data)
 
-	# Вертикальные рёбра (смена глубины) забирают ПОРТАЛЫ — ради этого они в
-	# комнате и стоят. Оставшиеся вертикальные рёбра (порталов меньше, чем таких
-	# рёбер) падают дальше в общий котёл и достаются двери.
-	var connections := _bind_portals(room, node_data)
-	if doors.is_empty():
-		if not connections.is_empty():
-			push_warning(
-				"RunManager: у узла '%s' не осталось дверей под %d рёбер"
-				% [node_data.id, connections.size()]
-			)
-		return doors
-
-	# Детерминированный порядок независимо от раскладки нод в дереве.
-	# Через String(): StringName сравнивается по внутреннему указателю, не лексикографически.
-	doors.sort_custom(func(a, b): return String(_slot_id_of(a)) < String(_slot_id_of(b)))
-
-	# Стороны считаем той же геометрией, что и при раскладке слоя, — иначе дверь
-	# и план разъедутся (см. _direction_of_door).
-	var door_by_direction: Dictionary[StringName, Entity] = {}
+	var sides: Dictionary = plan.door_sides.get(node_data.id, {})
 	for door in doors:
-		var direction := _direction_of_door(door as Node as Node3D, room.entity)
-		if direction != &"" and not door_by_direction.has(direction):
-			door_by_direction[direction] = door
-
-	var bound: Dictionary[Entity, bool] = {}
-	var pending: Array[RS_LevelConnection] = []
-	for conn: RS_LevelConnection in connections:
-		var direction := plan.direction_for(node_data.id, conn.target_node_id)
-		var door: Entity = door_by_direction.get(direction)
-		if door != null and not bound.has(door):
-			_stamp_portal(door, conn)
-			bound[door] = true
-		else:
-			pending.append(conn)
-
-	# Остатки (межэтажные, межслойные и не влезшие в сетку рёбра) раздаём не как
-	# попало: если целевая комната всё же есть в этом слое, берём дверь, которая
-	# смотрит в её сторону ближе всего. Точного совпадения тут может не быть —
-	# у пресета просто нет двери с нужной стены.
-	while not pending.is_empty():
-		var conn: RS_LevelConnection = pending.pop_front()
-		var door := _closest_free_door(doors, bound, door_by_direction, node_data, conn, plan)
-		if door == null:
-			pending.push_front(conn)  # свободных дверей не осталось
-			break
-		_stamp_portal(door, conn)
-		bound[door] = true
-
-	for door in doors:
-		if not bound.has(door):
-			_seal_door(door)  # рёбер меньше, чем проёмов — лишние запечатываем
-
-	if not pending.is_empty():
-		push_warning(
-			"RunManager: у узла '%s' рёбер (%d) больше, чем дверей (%d) — часть недостижима"
-			% [node_data.id, node_data.connections.size(), doors.size()]
-		)
+		var side := _direction_of_door(door as Node as Node3D, room.entity)
+		var target: StringName = sides.get(side, &"")
+		if target == &"":
+			push_warning("RunManager: у двери '%s' узла '%s' нет ветки за стороной %s" % [door.name, node_data.id, side])
+			_seal_door(door)
+			continue
+		var portal := C_DoorPortal.new()
+		portal.target_node_id = target
+		door.add_component(portal)
+		_set_door_prompt(door, DOOR_PROMPT_OPEN if node_data.door_teleports else DOOR_PROMPT_UNSEAL)
 	return doors
 
 
-## Раздаёт ВЕРТИКАЛЬНЫЕ рёбра (те, что меняют глубину) порталам комнаты и
-## возвращает рёбра, оставшиеся дверям. Портал без ребра «глушится» так же, как
-## лишняя дверь: остаётся интерактивным, но объясняет, что никуда не ведёт.
+## Раздаёт ВЕРТИКАЛЬНЫЕ рёбра порталам комнаты — и между слоями, и между этажами
+## слоя: ходить по коридорам можно только в плоскости этажа. Портал без ребра
+## «глушится» так же, как лишняя дверь: остаётся интерактивным, но объясняет, что
+## никуда не ведёт.
 ##
-## Почему порталы, а не двери: узлы-коннекторы (`vertical_hub`) для того и несут
-## сцену с порталом, чтобы спуск/подъём между слоями выглядел спуском, а не ещё
-## одной дверью в стене. Вертикальный переход — ТОЛЬКО порталом: раньше узел мог
-## получить два вертикальных ребра при одном портале в комнате, и лишнее ребро
-## утекало сюда, в `rest`, — на карте такая дверь выглядела соседней комнатой
-## этажа, хотя вела на другой слой. RS_LevelGraph (_split_vertical_hub_pool)
-## теперь гарантирует не больше одного вертикального ребра на узел, так что
-## веткой `is_vertical and free_portals.is_empty()` ниже попадать в `rest`
-## вертикальное ребро в норме не должно — это осталось только страховкой
-## (напр. для генерации без библиотеки пресетов, где портала в сцене нет вовсе).
-func _bind_portals(room: SpawnedRoom, node_data: RS_LevelNode) -> Array[RS_LevelConnection]:
+## Портал в комнате ровно один, и генератор гарантирует не больше одного
+## вертикального ребра на узел (RS_LevelGraph._free_for_portal): лишнему ребру
+## здесь некуда деться, и оно было бы молча потеряно — поэтому предупреждение.
+func _bind_portals(room: SpawnedRoom, node_data: RS_LevelNode) -> void:
 	var portals: Array[Entity] = []
 	for e in room.children:
 		if e is E_VerticalPortal:
 			portals.append(e)
 	room.portals = portals
-	if portals.is_empty():
-		return node_data.connections.duplicate()
 
 	# Порядок фиксируем по имени узла: раздача рёбер обязана быть детерминированной.
 	portals.sort_custom(func(a, b): return String(a.name) < String(b.name))
 
-	var rest: Array[RS_LevelConnection] = []
 	var free_portals := portals.duplicate()
 	for conn: RS_LevelConnection in node_data.connections:
 		var target := current_graph.get_node_data(conn.target_node_id)
-		var is_vertical := target != null and target.depth != node_data.depth
-		if is_vertical and not free_portals.is_empty():
-			var portal: Entity = free_portals.pop_front()
-			_stamp_portal(portal, conn)
-			_set_door_prompt(portal, _portal_prompt(node_data, target, conn))
-		else:
-			rest.append(conn)
+		var is_vertical := target != null and (
+			target.depth != node_data.depth or target.floor_index != node_data.floor_index
+		)
+		if not is_vertical:
+			continue
+		if free_portals.is_empty():
+			push_warning("RunManager: у узла '%s' нет портала под ребро в '%s'" % [node_data.id, conn.target_node_id])
+			continue
+		var portal: Entity = free_portals.pop_front()
+		_stamp_portal(portal, conn)
+		_set_door_prompt(portal, _portal_prompt(node_data, target, conn))
 
 	for portal in free_portals:
 		_seal_door(portal)
 		_set_door_prompt(portal, PORTAL_PROMPT_DEAD, false)
-	return rest
 
 
-## Куда ведёт портал — вверх (к поверхности, depth меньше) или вниз.
+## Куда ведёт портал — вверх (к поверхности, depth меньше; выше по этажу) или вниз.
 func _portal_prompt(
 	node_data: RS_LevelNode, target: RS_LevelNode, conn: RS_LevelConnection
 ) -> String:
 	if conn.locked_by != &"":
 		return PORTAL_PROMPT_LOCKED
+	if target.depth == node_data.depth:
+		# Между этажами слоя: этажи разнесены вверх по номеру (RS_LayerPlan).
+		return PORTAL_PROMPT_UP if target.floor_index > node_data.floor_index else PORTAL_PROMPT_DOWN
 	return PORTAL_PROMPT_UP if target.depth < node_data.depth else PORTAL_PROMPT_DOWN
-
-
-## Свободная дверь, смотрящая в сторону цели ребра. Если позиции цели в этом
-## слое нет (другая глубина) — просто первая свободная в порядке slot_id.
-func _closest_free_door(
-	doors: Array[Entity],
-	bound: Dictionary[Entity, bool],
-	door_by_direction: Dictionary[StringName, Entity],
-	node_data: RS_LevelNode,
-	conn: RS_LevelConnection,
-	plan: RS_LayerPlan,
-) -> Entity:
-	var here: Vector3 = plan.positions.get(node_data.id, Vector3.ZERO)
-	var there = plan.positions.get(conn.target_node_id)
-	if there != null:
-		var delta: Vector3 = (there as Vector3) - here
-		var to_target := Vector2(delta.x, delta.z)
-		if to_target.length_squared() > 0.0:
-			to_target = to_target.normalized()
-			var best: Entity = null
-			var best_score := -INF
-			for direction: StringName in door_by_direction:
-				var door: Entity = door_by_direction[direction]
-				if bound.has(door):
-					continue
-				var offset: Vector2i = DIRECTION_OFFSETS[direction]
-				var score := Vector2(offset.x, offset.y).dot(to_target)
-				if score > best_score:
-					best_score = score
-					best = door
-			if best:
-				return best
-
-	for door in doors:
-		if not bound.has(door):
-			return door
-	return null
 
 
 func _stamp_portal(door: Entity, conn: RS_LevelConnection) -> void:
@@ -769,11 +901,6 @@ func _set_door_prompt(door: Entity, prompt: String, show_key_hint: bool = true) 
 		return
 	inter.prompt_text = prompt
 	inter.show_key_hint = show_key_hint
-
-
-func _slot_id_of(door: Entity) -> StringName:
-	var slot := door.get_component(C_DoorSlot) as C_DoorSlot
-	return slot.slot_id if slot else &""
 
 
 func _get_player() -> E_Player:

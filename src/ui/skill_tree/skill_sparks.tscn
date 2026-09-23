@@ -34,9 +34,9 @@ color = Color(1, 1, 0, 1)
 [node name="SkillSparks" type="GPUParticles2D" unique_id=1519809641]
 z_index = 10
 emitting = false
-local_coords = true
 amount = 24
 lifetime = 0.33
 one_shot = true
 explosiveness = 1.0
+local_coords = true
 process_material = SubResource("ParticleProcessMaterial_3owqy")
