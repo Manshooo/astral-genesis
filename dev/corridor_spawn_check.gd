@@ -127,12 +127,17 @@ func _check_geometry() -> void:
 				continue
 			# Пол по обе стороны грани клетки: щель на стыке — провал под мир.
 			var neighbour := Vector3i(cell.x + offset.x, cell.y, cell.z + offset.y)
-			if plan.node_by_cell.get(neighbour, &"") == hub:
+			var neighbour_id: StringName = plan.node_by_cell.get(neighbour, &"")
+			if neighbour_id == hub:
 				continue
 			for along: float in [8.6, 9.4]:
 				var foot := center + dir * along
 				if _ray(space, foot + Vector3(0.0, 1.0, 0.0), foot + Vector3(0.0, -1.0, 0.0)).is_empty():
-					gaps.append("%s %s +%.1f" % [cell, side, along])
+					# Сцена соседа в выводе: щель почти всегда — меш комнаты без
+					# коллизии, и искать её по клетке пришлось бы руками.
+					var node := RunManager.current_graph.get_node_data(neighbour_id)
+					var scene := node.room_scene_path.get_file() if node and node.room_scene_path else "коридор"
+					gaps.append("%s %s +%.1f %s" % [cell, side, along, scene])
 	_check("проёмы и стены тайлов совпадают с маской — по коллизии", walls_wrong.is_empty(),
 		", ".join(walls_wrong.slice(0, 4)))
 	_check("на стыках тайлов и комнат под ногами пол", gaps.is_empty(), ", ".join(gaps.slice(0, 4)))
