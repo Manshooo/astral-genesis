@@ -1,0 +1,34 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" uid="uid://ebxavm5qyxcf" path="res://src/entities/interactable/e_interactable_object.gd" id="1_entity"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_component"]
+[ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_action"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_interactable"]
+[ext_resource type="Script" path="res://src/entities/architect/a_architect_encounter.gd" id="5_encounter"]
+[ext_resource type="PackedScene" uid="uid://dd68t78x8udsl" path="res://assets/props/interactive/SM_architect_artifact/SM_architect_artifact.glb" id="6_mesh"]
+
+[sub_resource type="Resource" id="Resource_interactable"]
+script = ExtResource("4_interactable")
+prompt_text = "ARCHITECT_PROMPT"
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="Resource_encounter"]
+script = ExtResource("5_encounter")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interact"]
+size = Vector3(3.4, 6, 3.4)
+
+[node name="Architect" type="Node3D"]
+script = ExtResource("1_entity")
+actions = Array[ExtResource("3_action")]([SubResource("Resource_encounter")])
+component_resources = Array[ExtResource("2_component")]([SubResource("Resource_interactable")])
+
+[node name="Visual" parent="." instance=ExtResource("6_mesh")]
+
+[node name="InteractBody" type="StaticBody3D" parent="."]
+collision_layer = 8
+collision_mask = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+shape = SubResource("BoxShape3D_interact")

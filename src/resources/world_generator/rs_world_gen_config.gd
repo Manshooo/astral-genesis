@@ -66,6 +66,8 @@ func validate() -> Array[String]:
 			continue
 		if unique.depth_min > unique.depth_max:
 			problems.append("уникальная комната «%s»: глубины перепутаны" % unique.preset.display_name)
+		elif unique.allowed_depths().is_empty():
+			problems.append("уникальная комната «%s»: все глубины вычеркнуты" % unique.preset.display_name)
 		if unique.entry:
 			entries += 1
 			if unique.count != 1 or unique.chance < 1.0:

@@ -194,7 +194,7 @@ func _create_node(def: RS_SkillDefinition) -> UI_SkillNode:
 	# В дерево сцены — ДО setup(): начинку карточки держат @onready-ссылки, а они
 	# поднимаются только на входе в дерево.
 	_canvas.add_child(card)
-	card.setup(def, _tree_data.branch_color(def.branch))
+	card.setup(def, _tree_data.branch_color(def.branch), _tree_data)
 	card.size = node_size
 	card.pivot_offset = node_size * 0.5
 	card.position = _cell_to_pixel(_layout.cells.get(def.id, Vector2i.ZERO))
@@ -218,14 +218,15 @@ func _requirement_hint(def: RS_SkillDefinition) -> String:
 		match req.type:
 			RS_SkillRequirement.Type.SKILL_RANK:
 				var target := _tree_data.get_definition(req.target_skill)
+				# tr() — имена вклеиваются в строку, и перевод подписи их не достанет.
 				var target_name := (
-					target.display_name if target != null else String(req.target_skill)
+					tr(target.display_name) if target != null else String(req.target_skill)
 				)
 				parts.append("«%s» ранга %d" % [target_name, req.min_value])
 			RS_SkillRequirement.Type.BRANCH_TOTAL_RANKS:
 				parts.append(
 					"%d рангов в ветке «%s»"
-					% [req.min_value, _tree_data.branch_display_name(req.target_branch)]
+					% [req.min_value, tr(_tree_data.branch_display_name(req.target_branch))]
 				)
 	return ", ".join(parts)
 

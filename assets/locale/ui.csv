@@ -15,3 +15,11 @@ BODY_CORPSE,Труп,Corpse
 BODY_WALKER,Ходок,Walker
 BODY_CRAWLER,Ползун,Crawler
 BODY_HOUND,Гончая,Hound
+ARCHITECT_PROMPT,Архитектор,Architect
+ARCHITECT_POINTS,Эссенция: %d,Essence: %d
+ARCHITECT_ESSENCE_ONE,эссенция,essence
+ARCHITECT_ESSENCE_FEW,эссенции,essence
+ARCHITECT_ESSENCE_MANY,эссенций,essence
+ARCHITECT_BRANCH_KNOWLEDGE,Знание,Knowledge
+ARCHITECT_MAP,Карта комплекса,Complex map
+ARCHITECT_MAP_DESC,"Архитектор делится планом комплекса. Каждый ранг открывает следующий уровень карты: посещённое на слое, весь слой, все слои, содержимое комнат.","The Architect shares the plan of the complex. Each rank opens the next map level: visited rooms of the layer, the whole layer, all layers, room contents."

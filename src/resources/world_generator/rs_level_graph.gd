@@ -190,7 +190,13 @@ func _place_unique_rooms(
 		presets.append(unique.preset)
 		for c in unique.count:
 			var roll := rng.randf()
-			var depth := rng.randi_range(unique.depth_min, unique.depth_max)
+			# Индекс, а не глубина из отрезка: так вычеркнутая глубина не
+			# перекашивает шансы соседних. При одной допустимой глубине (хаб,
+			# выход) бросок тот же randi_range(a, a), что и до списка вычеркнутых,
+			# — прежние сиды дают прежний комплекс.
+			var depths := unique.allowed_depths()
+			var depth_index := rng.randi_range(0, maxi(depths.size() - 1, 0))
+			var depth: int = depths[depth_index] if not depths.is_empty() else unique.depth_min
 			var pool: Array[RS_LevelNode] = []
 			for floor_rooms: Array in floors_by_depth.get(depth, []):
 				for node: RS_LevelNode in floor_rooms:

@@ -86,15 +86,19 @@ func _on_settings_changed(_settings: RS_Settings) -> void:
 
 
 func _render() -> void:
+	# tr() вручную: подсказка вклеивается в строку с клавишей, и перевод подписи
+	# склеенное уже не узнает. Старые подсказки — готовые строки, не ключи, и
+	# проходят через tr() как есть.
+	var prompt := tr(_shown.prompt_text)
 	# Механизм, до которого бестелесному не дотянуться: объясняем ПРИЧИНУ и не
 	# предлагаем клавишу — нажатие всё равно не пройдёт (см. S_InteractInput).
 	if _shown.requires_body and not _player_embodied():
-		_label.text = "%s: %s" % [NEEDS_BODY, _shown.prompt_text]
+		_label.text = "%s: %s" % [NEEDS_BODY, prompt]
 		show()
 		return
 
 	var key := SettingsManager.action_display_name(_shown.action_name) if _shown.show_key_hint else ""
-	_label.text = "[%s] %s" % [key, _shown.prompt_text] if key != "" else _shown.prompt_text
+	_label.text = "[%s] %s" % [key, prompt] if key != "" else prompt
 	show()
 
 

@@ -22,6 +22,10 @@ extends Resource
 ## комплексе не закреплено.
 @export var depth_min: int = 0
 @export var depth_max: int = 0
+## Глубины внутри отрезка, на которые комната не встаёт. Архитектор ищется на
+## любом слое, кроме слоя хаба: найденный в двух шагах от старта, он перестал бы
+## быть находкой. Список, а не второй отрезок: дырка бывает посередине.
+@export var excluded_depths: Array[int] = []
 ## Сколько таких комнат в забеге (выходов, например, два).
 @export_range(1, 8) var count: int = 1
 ## Шанс, что комната вообще окажется в забеге. Бросок тратит rng ВСЕГДА, при
@@ -42,4 +46,14 @@ extends Resource
 
 
 func covers_depth(depth: int) -> bool:
-	return depth >= depth_min and depth <= depth_max
+	return depth >= depth_min and depth <= depth_max and not excluded_depths.has(depth)
+
+
+## Глубины, из которых разыгрывается слой, по возрастанию. Пусто — отрезок
+## целиком вычеркнут (это ловит RS_WorldGenConfig.validate).
+func allowed_depths() -> Array[int]:
+	var result: Array[int] = []
+	for depth in range(depth_min, depth_max + 1):
+		if not excluded_depths.has(depth):
+			result.append(depth)
+	return result
