@@ -640,15 +640,13 @@ func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 	for cell: Vector3i in plan.corridor_tiles:
 		if plan.node_by_cell.get(cell, &"") != node_data.id:
 			continue
-		var piece := kit.piece_for(plan.corridor_tiles[cell])
-		if piece.is_empty():
+		var tile := kit.instantiate(plan.corridor_tiles[cell])
+		if tile == null:
 			push_error("RunManager: нет куска кита под маску %d (тайл %s)" % [plan.corridor_tiles[cell], cell])
 			continue
-		var tile := (piece["scene"] as PackedScene).instantiate() as Node3D
-		# Позиция и поворот ДО входа в дерево — как и у комнат (_spawn_room):
-		# иначе коллизия тайла успеет зарегистрироваться в начале координат.
+		# Позиция ДО входа в дерево — как и у комнат (_spawn_room): иначе
+		# коллизия тайла успеет зарегистрироваться в начале координат.
 		tile.position = plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
-		tile.rotation.y = piece["turns"] * PI * 0.5
 		parent.add_child(tile)
 		tiles.append(tile)
 	_corridor_tiles[node_data.id] = tiles

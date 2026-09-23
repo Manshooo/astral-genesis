@@ -63,15 +63,20 @@ func _ready() -> void:
 
 
 ## Коридоры во вкладке: оверлей «Коридоры» рисует ветку на каждую ветку плана;
-## «Геометрия» не пытается инстанцировать сцену ветки (её нет); клик по тайлу
-## выделяет ветку, по комнате — комнату. Ломается тихо: пустой оверлей и клик
-## мимо ошибок не бросают.
+## «Геометрия» ставит по куску кита на каждый тайл (сцены у ветки нет — есть
+## кит), выделенная ветка обводится всеми тайлами; клик по тайлу выделяет
+## ветку, по комнате — комнату. Ломается тихо: пустой оверлей, тайлы прошлой
+## сборки поверх новых и клик мимо ошибок не бросают.
 func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
 	var config := load("res://data/world_gen_config.tres") as RS_WorldGenConfig
 	var graph := RS_LevelGraph.new().generate_run(0, library, config)
 	var layer_nodes := graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH)
 	var plan := RS_LayerPlan.build(layer_nodes, config)
-	host.show_layer(LayerView.new(graph, layer_nodes, plan))
+	var view := LayerView.new(graph, layer_nodes, plan)
+	view.kit = load("res://data/corridor_kit.tres") as RS_CorridorKit
+	# Дважды: вторая сборка обязана заменить тайлы первой, а не лечь поверх.
+	host.show_layer(view)
+	host.show_layer(view)
 
 	var branches: Array[RS_LevelNode] = []
 	var rooms := 0
@@ -83,10 +88,28 @@ func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void
 	_check("коридоры: оверлей рисует каждую ветку слоя",
 		host.overlay(&"corridors").branch_count() == branches.size(),
 		"%d из %d" % [host.overlay(&"corridors").branch_count(), branches.size()])
-	_check("коридоры: «Геометрия» ставит только комнаты",
-		host.overlay(&"rooms")._rooms.size() == rooms, "%d из %d" % [host.overlay(&"rooms")._rooms.size(), rooms])
+	var geometry := host.overlay(&"rooms")
+	var tiles := plan.corridor_tiles.size()
+	_check("коридоры: «Геометрия» ставит комнаты и по куску кита на тайл, без остатков прошлой сборки",
+		geometry._rooms.size() == rooms and geometry.tile_count() == tiles
+			and geometry.get_child_count() == rooms + tiles,
+		"комнат %d из %d, тайлов %d из %d, детей %d" % [
+			geometry._rooms.size(), rooms, geometry.tile_count(), tiles, geometry.get_child_count()])
 
 	var branch := branches[0]
+	geometry.set_selected(branch.id)
+	var outlined: bool = not geometry._tiles.get(branch.id, []).is_empty()
+	for tile_node: Node in geometry._tiles.get(branch.id, []):
+		for mesh: GeometryInstance3D in tile_node.find_children("*", "GeometryInstance3D", true, false):
+			outlined = outlined and mesh.material_overlay != null
+	geometry.set_selected(&"")
+	var cleared := true
+	for tile_node: Node in geometry._tiles.get(branch.id, []):
+		for mesh: GeometryInstance3D in tile_node.find_children("*", "GeometryInstance3D", true, false):
+			cleared = cleared and mesh.material_overlay == null
+	_check("коридоры: выделенная ветка обводится всеми тайлами и снимается при сбросе",
+		outlined and cleared, "обведена %s, снята %s" % [outlined, cleared])
+
 	var tile := Vector3i.ZERO
 	for cell: Vector3i in plan.corridor_tiles:
 		if plan.node_by_cell[cell] == branch.id:

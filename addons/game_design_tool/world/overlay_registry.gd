@@ -27,7 +27,7 @@ const OVERLAYS := [
 	{
 		"id": &"rooms",
 		"title": "Геометрия",
-		"tooltip": "Показать геометрию комнат",
+		"tooltip": "Показать геометрию комнат и коридоров — те же сцены и куски кита, что в игре",
 		"default_visible": true,
 		"script": preload("res://addons/game_design_tool/world/overlays/rooms_overlay.gd"),
 	},
@@ -48,7 +48,7 @@ const OVERLAYS := [
 	{
 		"id": &"corridors",
 		"title": "Коридоры",
-		"tooltip": "Показать трассы веток коридора (только коридорный путь генерации)",
+		"tooltip": "Показать план коридоров: трасса веток по клеткам и проёмы тайлов",
 		"default_visible": true,
 		"script": preload("res://addons/game_design_tool/world/overlays/corridors_overlay.gd"),
 	},

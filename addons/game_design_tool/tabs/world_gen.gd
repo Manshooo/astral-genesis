@@ -89,6 +89,9 @@ var _loaded := false
 ## «Пересобрать», без перезапуска редактора.
 const WORLD_GEN_CONFIG_PATH := "res://data/world_gen_config.tres"
 var _config: RS_WorldGenConfig
+## Кит коридоров для предпросмотра — тот же ресурс, что GameConfig.corridor_kit у
+## игры (автолоад GameConfig в редакторе не работает, поэтому путём).
+const CORRIDOR_KIT_PATH := "res://data/corridor_kit.tres"
 
 
 func _init() -> void:
@@ -432,9 +435,12 @@ func _rebuild_layer() -> void:
 ## раскладка (та же RS_LayerPlan, что у игры) и подписи пресетов.
 func _layer_view(depth: int) -> LayerView:
 	var layer_nodes := _graph.get_nodes_by_depth(depth)
-	return LayerView.new(
+	var view := LayerView.new(
 		_graph, layer_nodes, RS_LayerPlan.build(layer_nodes, _config), _preset_labels_for(layer_nodes)
 	)
+	if ResourceLoader.exists(CORRIDOR_KIT_PATH):
+		view.kit = load(CORRIDOR_KIT_PATH) as RS_CorridorKit
+	return view
 
 
 ## Ручки проекта. null — ресурса нет, тогда генератор возьмёт свои по умолчанию.
