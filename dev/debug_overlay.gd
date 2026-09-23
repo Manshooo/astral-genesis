@@ -1,8 +1,9 @@
 # res://dev/debug_overlay.gd
 ## Отладочный оверлей: горячие клавиши, чтобы смотреть механику, не проходя ради
-## неё забег. Экран навыков открывается где угодно и с любым числом очков, слой
-## меняется телепортом, в уникальную комнату (хаб, выход, Архитектор) — из меню
-## отладки (dev/debug_menu.gd), распад БФЖ выключается.
+## неё забег. Экран навыков открывается где угодно, слой меняется телепортом,
+## распад БФЖ выключается; очки навыков, эссенция Архитектора и перенос в
+## уникальную комнату (хаб, выход, Архитектор) — из меню отладки
+## (dev/debug_menu.gd).
 ##
 ## Повод: чтобы взглянуть на правку в дереве навыков, надо было запустить игру,
 ## бегать пару минут ради очков и только потом открыть экран. Цена взгляда была
@@ -31,6 +32,11 @@ extends CanvasLayer
 ## всё разом, теряешь ровно то, ради чего дерево и смотрят, — серый предпросмотр
 ## и появление новой ветки.
 const POINTS_PER_PRESS := 10
+## Эссенция — по одной, как её даёт встреча с Архитектором
+## (RS_GameConfig.architect_essence_reward). Дерево Архитектора крошечное и
+## дешёвое (карта — 1/1/2/2), и пачка перепрыгивала бы уровни карты, которые как
+## раз и смотрят по одному.
+const ESSENCE_PER_PRESS := 1
 
 ## Глубина РАСТЁТ вниз (RS_LevelGraph: поверхность — 0, дом — 3), поэтому «ниже»
 ## это +1. Знак тут легко перепутать, и перепутанный он не падает, а увозит на
@@ -57,6 +63,11 @@ const MENU_SCENE := preload("res://dev/debug_menu.tscn")
 ## не инициализатором поля: Callable на собственный метод до готовности узла
 ## взять неоткуда.
 var _actions: Array[Dictionary] = []
+## Начисления валюты — кнопками раздела «Прокачка» в меню отладки, а не
+## клавишами. Жмут их пачкой, пока копят на нужный ранг, а клавиш в ряду F уже
+## не хватает (см. MENU_KEY). Меню строит кнопку на каждую запись и шлёт её
+## номер обратно — подпись берётся отсюда же, как в шпаргалке.
+var _grants: Array[Dictionary] = []
 
 var _immortal := false
 ## Открытое меню отладки; повторная клавиша второе не открывает.
@@ -71,16 +82,20 @@ func _ready() -> void:
 	# F5 в ряду пропущен: он занят встроенным действием ui_filedialog_refresh, а
 	# чит, совпавший с действием InputMap, срабатывал бы вместе с ним. Дырку
 	# держит ассерт в debug_overlay_check — заполнить её «для красоты» не выйдет
-	# молча.
+	# молча. F2 свободна: очки уехали в меню, а остальные клавиши не сдвинуты,
+	# чтобы не переучивать руки.
 	_actions = [
 		{"key": KEY_F1, "label": "свернуть панель", "call": _toggle_panel},
-		{"key": KEY_F2, "label": "очки навыков +%d" % POINTS_PER_PRESS, "call": _add_points},
 		{"key": KEY_F3, "label": "дерево навыков", "call": _open_skill_tree},
 		{"key": KEY_F4, "label": "бессмертие", "call": _toggle_immortal},
 		{"key": KEY_F6, "label": "слой ниже", "call": _travel_down},
 		{"key": KEY_F7, "label": "слой выше", "call": _travel_up},
 		{"key": KEY_F8, "label": "сбросить дерево", "call": _reset_skills},
 		{"key": MENU_KEY, "label": "меню отладки", "call": _open_menu},
+	]
+	_grants = [
+		{"title": "Очки навыков +%d" % POINTS_PER_PRESS, "call": _add_points},
+		{"title": "Эссенция Архитектора +%d" % ESSENCE_PER_PRESS, "call": _add_essence},
 	]
 	_build_rows()
 
@@ -126,10 +141,11 @@ func _status_text() -> String:
 	var depth := "—"
 	if RunManager.current_depth != RunManager.NO_DEPTH:
 		depth = str(RunManager.current_depth)
-	return "слой %s · узел %s\nочки %d · бессмертие %s\nсид мира %d · смертей %d" % [
+	return "слой %s · узел %s\nочки %d · эссенция %d · бессмертие %s\nсид мира %d · смертей %d" % [
 		depth,
 		RunManager.current_node_id if RunManager.current_node_id != &"" else "—",
 		SkillManager.save.skill_points,
+		ArchitectManager.save.skill_points,
 		"вкл" if _immortal else "выкл",
 		WorldSave.save.world_seed,
 		WorldSave.save.death_count,
@@ -167,6 +183,13 @@ func _add_points() -> void:
 	_say("+%d очков" % POINTS_PER_PRESS)
 
 
+## Эссенция идёт тем же add_skill_points, что и очки, но у ArchitectManager:
+## валюта у обоих деревьев лежит в одном поле их СВОЕГО сейва.
+func _add_essence() -> void:
+	ArchitectManager.add_skill_points(ESSENCE_PER_PRESS)
+	_say("+%d эссенции" % ESSENCE_PER_PRESS)
+
+
 ## Дерево открывается напрямую через UIManager, минуя терминал в хабе: смысл
 ## оверлея в том, чтобы смотреть экран там, где стоишь.
 func _open_skill_tree() -> void:
@@ -180,8 +203,18 @@ func _open_menu() -> void:
 		return
 	_menu = MENU_SCENE.instantiate()
 	UIManager.push_blocking_screen(_menu)
-	_menu.setup(unique_rooms())
+	var titles: Array[String] = []
+	for grant in _grants:
+		titles.append(grant["title"])
+	_menu.setup(unique_rooms(), titles)
 	_menu.travel_requested.connect(_on_menu_travel)
+	_menu.grant_requested.connect(_on_menu_grant)
+
+
+## Начисление меню не закрывает, в отличие от переноса: копят пачкой, а итог
+## виден сразу — строкой оверлея поверх меню и счётчиком на панели.
+func _on_menu_grant(index: int) -> void:
+	_grants[index]["call"].call()
 
 
 ## Меню закрывается ДО переноса: закрытие возвращает захват курсора и снимает

@@ -44,6 +44,24 @@ extends Resource
 ## строкой данных, код не трогается.
 @export var door_teleports: bool = false
 
+@export_group("Карта")
+## Как комната называется на экране карты (четвёртый уровень) — ключ перевода.
+## Отдельно от display_name пресета: тот говорит о сцене («Комната выхода») и
+## виден в инструментах, а карте нужна роль в забеге («Выход»), да ещё такая,
+## чтобы первые буквы у разных уникальных комнат не совпадали — пока нет
+## иконок, заглушка значка рисуется именно ими. Пусто — берётся display_name.
+@export var map_name: String = ""
+## Значок на карте. Пусто — заглушка из первой буквы map_name.
+@export var map_icon: Texture2D
+
+
+## Имя для карты: map_name или, если его нет, имя пресета. Ключ перевода
+## проходит через tr() как есть, готовая строка — тоже (tr() вернёт её же).
+func map_label() -> String:
+	if map_name != "":
+		return map_name
+	return preset.display_name if preset else ""
+
 
 func covers_depth(depth: int) -> bool:
 	return depth >= depth_min and depth <= depth_max and not excluded_depths.has(depth)

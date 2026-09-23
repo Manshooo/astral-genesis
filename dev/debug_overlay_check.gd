@@ -13,8 +13,9 @@ extends Node
 ## каким идёт живое нажатие. Позвав метод чита напрямую, она бы не заметила
 ## самого частого промаха — клавиши, до которой таблица не доводит.
 ##
-## SkillManager.save на время проверки подменяется и возвращается на месте:
-## начисление очков ПИШЕТ в user://, и прогон не должен трогать прогресс игрока.
+## Сейвы SkillManager и ArchitectManager на время проверки подменяются и
+## возвращаются на место: начисление очков и эссенции ПИШЕТ в user://, и прогон
+## не должен трогать прогресс игрока.
 
 const OVERLAY_SCENE := preload("res://dev/debug_overlay.tscn")
 ## Тот же путь, по которому оверлей ищет мир. Литерал здесь намеренный: проверка
@@ -25,17 +26,23 @@ const OVERLAY_PATH := "res://dev/debug_overlay.tscn"
 var _ok := 0
 var _fail := 0
 var _original_save: PlayerSkillSave
+var _original_architect_save: PlayerSkillSave
 
 
 func _ready() -> void:
 	_original_save = SkillManager.save
 	SkillManager.save = _original_save.duplicate()
 	SkillManager.save.ranks = _original_save.ranks.duplicate()
+	_original_architect_save = ArchitectManager.save
+	ArchitectManager.save = _original_architect_save.duplicate()
+	ArchitectManager.save.ranks = _original_architect_save.ranks.duplicate()
 
 	await _run()
 
 	SkillManager.save = _original_save
 	SkillManager._save()
+	ArchitectManager.save = _original_architect_save
+	ArchitectManager._save()
 
 	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
 	get_tree().quit(1 if _fail > 0 else 0)
@@ -59,7 +66,7 @@ func _run() -> void:
 	_check_keys(overlay)
 	await _check_unique_rooms(overlay)
 	await _check_immortality(overlay, world)
-	_check_points(overlay)
+	_check_grants(overlay)
 
 	overlay.queue_free()
 	world.queue_free()
@@ -312,14 +319,57 @@ func _check_immortality(overlay: CanvasLayer, world: World) -> void:
 	world.remove_entity(ghost)
 
 
-func _check_points(overlay: CanvasLayer) -> void:
-	var before: int = SkillManager.save.skill_points
-	_press(overlay, KEY_F2)
+## Очки и эссенция — кнопками раздела «Прокачка» меню отладки. Кнопки жмутся
+## сигналом pressed, то есть тем же путём, что клик: через сигнал меню и таблицу
+## начислений оверлея, а не вызовом чита напрямую.
+func _check_grants(overlay: CanvasLayer) -> void:
+	_press(overlay, overlay.MENU_KEY)
+	var menu: Control = overlay._menu
+	if not is_instance_valid(menu):
+		_check("меню отладки открылось для «Прокачки»", false, "меню нет")
+		return
+
+	var buttons: Array[Button] = []
+	var texts: Array[String] = []
+	for button: Button in menu.get_node("%Grants").get_children():
+		if button.visible:
+			buttons.append(button)
+			texts.append(button.text)
+	var titles: Array[String] = []
+	for grant in overlay._grants:
+		titles.append(grant["title"])
 	_check(
-		"клавиша очков начисляет ровно столько, сколько обещает подпись",
-		SkillManager.save.skill_points == before + overlay.POINTS_PER_PRESS,
-		"было %d, стало %d" % [before, SkillManager.save.skill_points]
+		"в «Прокачке» по кнопке на каждое начисление, подписи из таблицы оверлея",
+		titles.size() == 2 and texts == titles,
+		"кнопки %s, таблица %s" % [texts, titles]
 	)
+	if buttons.size() != 2:
+		UIManager.close_top()
+		return
+
+	var points_before: int = SkillManager.save.skill_points
+	var essence_before: int = ArchitectManager.save.skill_points
+	buttons[0].pressed.emit()
+	_check(
+		"кнопка очков начисляет ровно столько, сколько обещает подпись, и только очки",
+		SkillManager.save.skill_points == points_before + overlay.POINTS_PER_PRESS
+			and ArchitectManager.save.skill_points == essence_before,
+		"очки %d → %d, эссенция %d → %d"
+		% [points_before, SkillManager.save.skill_points, essence_before, ArchitectManager.save.skill_points]
+	)
+	buttons[1].pressed.emit()
+	buttons[1].pressed.emit()
+	# Эссенция — валюта ДРУГОГО дерева: легла не туда — экран Архитектора пуст,
+	# а очки навыков молча растут.
+	_check(
+		"кнопка эссенции начисляет эссенцию Архитектору, а не очки навыков",
+		ArchitectManager.save.skill_points == essence_before + overlay.ESSENCE_PER_PRESS * 2
+			and SkillManager.save.skill_points == points_before + overlay.POINTS_PER_PRESS,
+		"эссенция %d → %d" % [essence_before, ArchitectManager.save.skill_points]
+	)
+	_check("начисление меню не закрывает — копят пачкой",
+		is_instance_valid(menu) and menu.is_inside_tree(), "")
+	UIManager.close_top()
 
 
 # --- Вспомогательное ---------------------------------------------------------

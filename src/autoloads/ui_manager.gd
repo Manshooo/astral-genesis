@@ -6,6 +6,7 @@ extends Node
 
 const PAUSE_MENU_SCENE = preload("res://src/ui/pause_menu/pause_menu.tscn")
 const SKILL_TREE_SCENE = preload("res://src/ui/skill_tree/skill_tree_ui.tscn")
+const COMPLEX_MAP_SCENE = preload("res://src/ui/map/complex_map_screen.tscn")
 
 ## Включайте явно из игровой сцены — влияет только на автооткрытие паузы по Esc
 ## и на то, нужно ли возвращать курсор в захват, когда стек опустеет.
@@ -21,6 +22,9 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("map") and not event.is_echo():
+		_toggle_complex_map()
+		return
 	if not event.is_action_pressed("pause_game") or event.is_echo():
 		return
 	if not _stack.is_empty():
@@ -144,9 +148,69 @@ func _set_player_input_blocked(blocked: bool) -> void:
 			var inp := player.get_component(C_PlayerInput) as C_PlayerInput
 			if inp:
 				inp.mouse_delta = Vector2.ZERO
-				inp.move_direction = Vector3.ZERO 
+				inp.move_direction = Vector3.ZERO
 	else:
 		player.remove_component(C_UIBlocked)
+
+
+# ---------------------------------------------------------------------------
+# Карта комплекса
+# ---------------------------------------------------------------------------
+
+
+## Та же клавиша и закрывает: к карте возвращаются по нескольку раз, сверяясь
+## с ней на ходу. Поверх чужого экрана не открывается — легла бы на меню паузы
+## и закрылась бы по Esc раньше него.
+func _toggle_complex_map() -> void:
+	if not _stack.is_empty():
+		if _stack.back().screen is UI_ComplexMap:
+			close_top()
+			get_viewport().set_input_as_handled()
+		return
+	if enabled:
+		open_complex_map()
+		get_viewport().set_input_as_handled()
+
+
+## Открывает карту комплекса — с клавиши или с терминала в хабе
+## (A_OpenComplexMap). Сколько на ней видно, решает улучшение у Архитектора; без
+## него экрана нет, и игрок получает строку о том, что связи нет, а не молчащую
+## клавишу.
+##
+## На паузе, а не блокирующим экраном, как дерево навыков: карту изучают, стоя
+## на месте, и распад, тикающий под ней, превращал бы планирование в спешку.
+func open_complex_map() -> void:
+	for entry in _stack:
+		if entry.screen is UI_ComplexMap:
+			return
+	if RunManager.current_graph == null:
+		return
+	var level := ArchitectManager.map_level()
+	if level <= MapKnowledge.LEVEL_NONE:
+		_notify_player(tr("MAP_NO_LINK"))
+		return
+	var screen: UI_ComplexMap = COMPLEX_MAP_SCENE.instantiate()
+	push_screen(screen, true)
+	screen.setup(
+		RunManager.current_graph, level, RunManager.current_node_id,
+		WorldSave.save.visited_node_ids, RunManager.plan_for_depth
+	)
+
+
+## Строка поверх HUD — C_ScreenMessage на игроке. Компонент пересоздаётся, а не
+## правится: прямая запись в поля миру не сигналится, и HUD не увидел бы нового
+## текста. Структурная правка здесь законна — и клавиша, и касание терминала
+## приходят вне прохода систем (_unhandled_input; interact() зовётся через
+## call_deferred из S_InteractInput).
+func _notify_player(text: String) -> void:
+	var player := _get_player_entity()
+	if player == null:
+		return
+	if player.has_component(C_ScreenMessage):
+		player.remove_component(C_ScreenMessage)
+	var message := C_ScreenMessage.new()
+	message.text = text
+	player.add_component(message)
 
 
 # ---------------------------------------------------------------------------
