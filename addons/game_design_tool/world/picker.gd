@@ -1,7 +1,7 @@
 ## res://addons/game_design_tool/world/picker.gd
 ## Аналитический пикинг по AABB комнаты — без единого физического коллайдера.
 ## Позиция берётся из RS_LayerPlan (та же раскладка, что и у игры), габарит —
-## из RS_RoomLayout.half_extent_of_scene (тот же кэш, которым меряется карта).
+## из RS_RoomLayout.half_extent_of_scene.
 ##
 ## Физический рейкаст сюда сознательно не пошёл: в редакторском SubViewport
 ## живое физическое пространство не гарантировано (Jolt на отдельном потоке, а
@@ -32,7 +32,11 @@ static func room_aabb(
 ) -> AABB:
 	for node_data: RS_LevelNode in layer_nodes:
 		if node_data.id == node_id:
-			return _aabb_of(node_data, plan)
+			var boxes := _aabbs_of(node_data, plan)
+			var merged: AABB = boxes[0] if not boxes.is_empty() else AABB()
+			for box: AABB in boxes:
+				merged = merged.merge(box)
+			return merged
 	return AABB()
 
 
@@ -44,15 +48,34 @@ static func pick(
 	var best_id: StringName = &""
 	var best_distance := INF
 	for node_data: RS_LevelNode in layer_nodes:
-		var aabb := _aabb_of(node_data, plan)
-		var hit = aabb.intersects_ray(ray_origin, ray_dir)
-		if hit == null:
-			continue
-		var distance: float = (hit as Vector3).distance_to(ray_origin)
-		if distance < best_distance:
-			best_distance = distance
-			best_id = node_data.id
+		for aabb: AABB in _aabbs_of(node_data, plan):
+			var hit = aabb.intersects_ray(ray_origin, ray_dir)
+			if hit == null:
+				continue
+			var distance: float = (hit as Vector3).distance_to(ray_origin)
+			if distance < best_distance:
+				best_distance = distance
+				best_id = node_data.id
 	return best_id
+
+
+## Коробки узла: у комнаты — одна, у ветки коридора — по коробке на тайл. Одна
+## общая коробка ветки накрыла бы комнаты, которые трасса огибает, и клик по
+## комнате доставался бы коридору.
+static func _aabbs_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[AABB]:
+	if node_data.role != RS_LevelNode.Role.CORRIDOR:
+		return [_aabb_of(node_data, plan)]
+	var boxes: Array[AABB] = []
+	var half := RS_LayerPlan.CELL_SIZE * 0.5
+	for cell: Vector3i in plan.corridor_tiles:
+		if plan.node_by_cell.get(cell, &"") != node_data.id:
+			continue
+		var pos := plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
+		boxes.append(AABB(
+			Vector3(pos.x - half, pos.y - AABB_BELOW, pos.z - half),
+			Vector3(half * 2.0, AABB_BELOW + AABB_ABOVE, half * 2.0)
+		))
+	return boxes
 
 
 static func _aabb_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> AABB:

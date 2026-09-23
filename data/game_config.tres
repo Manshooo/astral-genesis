@@ -2,9 +2,13 @@
 
 [ext_resource type="Script" uid="uid://cgku22fjosvnp" path="res://src/resources/rs_game_config.gd" id="1_pwh6o"]
 [ext_resource type="Resource" uid="uid://dae1owxxtyib1" path="res://data/room_preset_library.tres" id="2_lib"]
+[ext_resource type="Resource" path="res://data/world_gen_config.tres" id="3_worldgen"]
+[ext_resource type="Resource" path="res://data/corridor_kit.tres" id="4_kit"]
 
 [resource]
 script = ExtResource("1_pwh6o")
 gravity = 12.0
 room_preset_library = ExtResource("2_lib")
+world_gen = ExtResource("3_worldgen")
+corridor_kit = ExtResource("4_kit")
 metadata/_custom_type_script = "uid://cgku22fjosvnp"

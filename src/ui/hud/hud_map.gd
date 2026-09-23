@@ -1,29 +1,33 @@
 # res://src/ui/hud/hud_map.gd
 ## Мини-карта в HUD: этаж, на котором сейчас игрок.
 ##
-## Показывает СКРОМНО и намеренно: комнаты, где игрок был, плюс те, о
-## существовании которых он знает — потому что видел ведущую туда дверь. Всё
-## остальное не рисуется. Полная карта комплекса — это уже прокачка от
-## «Архитектора», отдельный экран на паузе (см. Карта комплекса).
+## Показывает СКРОМНО и намеренно: комнаты и ветки коридора, где игрок был, плюс
+## те, о существовании которых он знает — потому что видел ведущую туда дверь.
+## Ветка коридора видна ЦЕЛИКОМ, как только известна: это тот же «сосед», что и
+## комната, и дробить её на пройденные тайлы значило бы хранить их в сейве ради
+## подробности, которую правильнее отдать улучшениям «Архитектора». Всё остальное
+## не рисуется. Полная карта комплекса — отдельный экран на паузе (см. Карта
+## комплекса).
 ##
 ## Геометрию берёт из RunManager.plan_for_depth(): тот же план, по которому
-## комнаты расставлены в мире, поэтому «север на карте» и «север в игре» — одно
-## и то же. План считается без спавна, так что рисовать можно любой слой.
+## комнаты и тайлы коридоров расставлены в мире, поэтому «север на карте» и
+## «север в игре» — одно и то же. План считается без спавна, так что рисовать
+## можно любой слой.
 class_name UI_HudMap
 extends Control
 
 @export_group("Комнаты")
-## Доля клетки, которую занимает комната. Остальное — промежуток под связи.
-@export_range(0.1, 1.0) var room_fill: float = 0.62
+## Доля клетки, которую занимает комната. Клетка и есть комната (18 м, стык кита
+## по грани), зазор нужен, только чтобы соседние комнаты не слипались в пятно.
+@export_range(0.1, 1.0) var room_fill: float = 0.82
 @export var color_current: Color = Color(1, 0.85, 0.4, 0.95)
 @export var color_visited: Color = Color(0.65, 0.75, 0.85, 0.7)
 ## Комната, о которой известно, но где игрок не был, — только контур.
 @export var color_known: Color = Color(0.65, 0.75, 0.85, 0.35)
 
-@export_group("Связи")
-@export var color_link: Color = Color(0.6, 0.7, 0.8, 0.5)
-@export var color_link_locked: Color = Color(0.9, 0.5, 0.35, 0.7)
-@export var link_width: float = 2.0
+@export_group("Коридоры")
+## Ширина полосы коридора в долях клетки — сечение кита (6 м внутри) к 18 м.
+@export_range(0.05, 0.6) var corridor_width: float = 0.34
 
 @export_group("Маркер игрока")
 ## Размер маркера в долях клетки: вместе с картой он и масштабируется.
@@ -39,12 +43,18 @@ extends Control
 
 ## Насколько игрок должен сдвинуться (метры) или повернуться, чтобы карта
 ## перерисовалась. Перерисовывать вектор каждый кадр незачем: клетка карты — это
-## 60 м мира, и шаг в полметра на ней не виден.
+## 18 м мира, и шаг в полметра на ней едва виден.
 const REDRAW_MOVE := 0.3
 const REDRAW_TURN := 0.02  # ~1° по косинусу между направлениями
 
 var _last_position := Vector3.INF
 var _last_forward := Vector2.ZERO
+## Вписывание: сколько пикселей в клетке и где на экране нулевая клетка. Считается
+## в _fit один раз на отрисовку и держится полями — им пользуются и комнаты, и
+## коридоры, и маркер.
+var _step := 0.0
+var _origin := Vector2.ZERO
+var _min_cell := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -81,38 +91,56 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	var view := build_view()
+	if view.is_empty():
+		return
+	var plan: RS_LayerPlan = view["plan"]
+	var here: StringName = view["here"]
+	_draw_corridors(view["branches"], plan, view["floor"], here)
+	_draw_rooms(view["rooms"], plan, here)
+	_draw_player()
+
+
+## Что и где рисовать — отдельно от рисования, чтобы проверка могла спросить
+## карту без пикселей: известные комнаты и ветки ТЕКУЩЕГО этажа, план и вписывание
+## показанных клеток в контрол. Пусто — рисовать нечего.
+##
+## Только свой этаж: этажи слоя разнесены по высоте и в одной плоскости соседями
+## не являются — рисовать их вперемешку значит врать про геометрию.
+func build_view() -> Dictionary:
 	var graph := RunManager.current_graph
 	var here := RunManager.current_node_id
 	if graph == null or here == &"":
-		return
+		return {}
 	var current := graph.get_node_data(here)
 	if current == null:
-		return
+		return {}
 
 	var plan := RunManager.plan_for_depth(current.depth)
-	# Только СВОЙ этаж: этажи слоя разнесены по высоте и в одной плоскости
-	# соседями не являются — рисовать их вперемешку значит врать про геометрию.
 	var floor_nodes: Array[RS_LevelNode] = []
 	for node_data in graph.get_nodes_by_depth(current.depth):
-		if node_data.floor_index == current.floor_index and plan.cells.has(node_data.id):
+		if node_data.floor_index == current.floor_index:
 			floor_nodes.append(node_data)
-	if floor_nodes.is_empty():
-		return
 
-	var known := _known_nodes(floor_nodes)
-	if known.is_empty():
-		return
+	var rooms: Array[RS_LevelNode] = []
+	var branches: Array[RS_LevelNode] = []
+	var cells: Array[Vector2i] = []
+	for node_data in _known_nodes(floor_nodes):
+		if node_data.role == RS_LevelNode.Role.CORRIDOR:
+			branches.append(node_data)
+			cells.append_array(_tiles_of(plan, node_data.id, current.floor_index))
+		elif plan.cells.has(node_data.id):
+			rooms.append(node_data)
+			cells.append(plan.cells[node_data.id])
+	if cells.is_empty():
+		return {}
 
-	var to_screen := _projector(known, plan)
-	# Шаг сетки нужен и комнатам, и маркеру — считаем один раз.
-	var step := _step_of(plan, known, to_screen)
-	_draw_links(floor_nodes, known, plan, to_screen)
-	_draw_rooms(known, plan, to_screen, here, step)
-	_draw_player(current, plan, to_screen, step)
+	_fit(cells)
+	return {"plan": plan, "here": here, "floor": current.floor_index, "rooms": rooms, "branches": branches}
 
 
-## Комнаты, которые игрок вправе видеть: посещённые плюс соседи посещённых —
-## про соседа он знает, потому что видел дверь, ведущую туда.
+## Комнаты и ветки, которые игрок вправе видеть: посещённые плюс соседи
+## посещённых — про соседа он знает, потому что видел дверь, ведущую туда.
 func _known_nodes(floor_nodes: Array[RS_LevelNode]) -> Array[RS_LevelNode]:
 	var visited := WorldSave.save.visited_node_ids
 	var known: Array[RS_LevelNode] = []
@@ -127,65 +155,76 @@ func _known_nodes(floor_nodes: Array[RS_LevelNode]) -> Array[RS_LevelNode]:
 	return known
 
 
-## Замыкание «клетка → точка на экране»: вписывает показанные клетки в контрол,
-## сохраняя пропорции, чтобы карта не растягивалась в кисель.
-func _projector(known: Array[RS_LevelNode], plan) -> Callable:
-	var min_cell := Vector2i(9999, 9999)
-	var max_cell := Vector2i(-9999, -9999)
-	for node_data in known:
-		var cell: Vector2i = plan.cells[node_data.id]
+## Вписывает показанные клетки в контрол, сохраняя пропорции, чтобы карта не
+## растягивалась в кисель.
+func _fit(cells: Array[Vector2i]) -> void:
+	var min_cell := Vector2i(cells[0])
+	var max_cell := Vector2i(cells[0])
+	for cell in cells:
 		min_cell = Vector2i(mini(min_cell.x, cell.x), mini(min_cell.y, cell.y))
 		max_cell = Vector2i(maxi(max_cell.x, cell.x), maxi(max_cell.y, cell.y))
-
 	var span := Vector2(max_cell - min_cell) + Vector2.ONE
 	var area := size - Vector2(padding, padding) * 2.0
-	var step: float = minf(area.x / span.x, area.y / span.y)
+	_step = minf(area.x / span.x, area.y / span.y)
 	# Центрируем: остаток площади делим поровну по краям.
-	var origin := Vector2(padding, padding) + (area - span * step) * 0.5
-
-	return func(cell: Vector2i) -> Vector2:
-		return origin + (Vector2(cell - min_cell) + Vector2(0.5, 0.5)) * step
+	_origin = Vector2(padding, padding) + (area - span * _step) * 0.5
+	_min_cell = Vector2(min_cell)
 
 
-func _draw_links(
-	floor_nodes: Array[RS_LevelNode], known: Array[RS_LevelNode], plan, to_screen: Callable
-) -> void:
-	var shown := {}
-	for node_data in known:
-		shown[node_data.id] = true
-
-	var drawn := {}  # чтобы двустороннее ребро не рисовалось дважды
-	for node_data in floor_nodes:
-		if not shown.has(node_data.id):
-			continue
-		for conn: RS_LevelConnection in node_data.connections:
-			if not shown.has(conn.target_node_id):
-				continue
-			var key := (
-				"%s|%s" % [node_data.id, conn.target_node_id]
-				if String(node_data.id) < String(conn.target_node_id)
-				else "%s|%s" % [conn.target_node_id, node_data.id]
-			)
-			if drawn.has(key):
-				continue
-			drawn[key] = true
-			draw_line(
-				to_screen.call(plan.cells[node_data.id]),
-				to_screen.call(plan.cells[conn.target_node_id]),
-				color_link_locked if conn.locked_by != &"" else color_link,
-				link_width
-			)
+## Точка на экране для клетки — дробной: маркер игрока живёт между клетками.
+## Центр клетки (x, z) — это (x, z) + 0.5 шага от угла вписанной области.
+func to_screen(cell: Vector2) -> Vector2:
+	return _origin + (cell - _min_cell + Vector2(0.5, 0.5)) * _step
 
 
-func _draw_rooms(
-	known: Array[RS_LevelNode], plan, to_screen: Callable, here: StringName, step: float
+## Точка на экране для мировой позиции: клетка кита — шаг плана, поэтому метры
+## просто делятся на него.
+func world_to_screen(world_position: Vector3) -> Vector2:
+	return to_screen(Vector2(world_position.x, world_position.z) / RS_LayerPlan.CELL_SIZE)
+
+
+func _tiles_of(plan: RS_LayerPlan, branch: StringName, floor_index: int) -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	for cell: Vector3i in plan.corridor_tiles:
+		if cell.y == floor_index and plan.node_by_cell.get(cell, &"") == branch:
+			tiles.append(Vector2i(cell.x, cell.z))
+	return tiles
+
+
+## Ветка — полосой по трассе: квадрат в центре тайла и рукав к каждому открытому
+## проёму, как рисует оверлей «Коридоры» в «Генераторе мира». Рукав к двери
+## комнаты упирается в её прямоугольник, поэтому дверь на карте видна как место,
+## где коридор входит в комнату.
+func _draw_corridors(
+	branches: Array[RS_LevelNode], plan: RS_LayerPlan, floor_index: int, here: StringName
 ) -> void:
 	var visited := WorldSave.save.visited_node_ids
-	# Сторона комнаты — доля шага сетки.
-	var room := Vector2(step, step) * room_fill
+	var width := _step * corridor_width
+	for branch in branches:
+		var color := color_current if branch.id == here else (
+			color_visited if visited.has(branch.id) else color_known
+		)
+		for cell in _tiles_of(plan, branch.id, floor_index):
+			var center := to_screen(Vector2(cell))
+			draw_rect(Rect2(center - Vector2(width, width) * 0.5, Vector2(width, width)), color, true)
+			var mask: int = plan.corridor_tiles[Vector3i(cell.x, floor_index, cell.y)]
+			for side: StringName in RS_LayerPlan.SIDE_BITS:
+				if mask & RS_LayerPlan.SIDE_BITS[side] == 0:
+					continue
+				var offset := Vector2(RS_RoomLayout.OFFSETS[side])
+				var arm_end := center + offset * _step * 0.5
+				var arm := Rect2(center, Vector2.ZERO).expand(arm_end)
+				draw_rect(arm.grow_individual(
+					width * 0.5 if offset.x == 0 else 0.0, width * 0.5 if offset.y == 0 else 0.0,
+					width * 0.5 if offset.x == 0 else 0.0, width * 0.5 if offset.y == 0 else 0.0
+				), color, true)
 
-	for node_data in known:
-		var center: Vector2 = to_screen.call(plan.cells[node_data.id])
+
+func _draw_rooms(rooms: Array[RS_LevelNode], plan: RS_LayerPlan, here: StringName) -> void:
+	var visited := WorldSave.save.visited_node_ids
+	var room := Vector2(_step, _step) * room_fill
+	for node_data in rooms:
+		var center := to_screen(Vector2(plan.cells[node_data.id]))
 		var rect := Rect2(center - room * 0.5, room)
 		if node_data.id == here:
 			draw_rect(rect, color_current, true)
@@ -196,35 +235,19 @@ func _draw_rooms(
 			draw_rect(rect, color_known, false, 1.5)
 
 
-## Маркер игрока: где он ВНУТРИ комнаты и куда смотрит. Подсветки одной лишь
-## комнаты мало — на карте из комнат и дверей вопрос обычно звучит «в какую дверь
-## я сейчас упёрся», а на него отвечает именно направление взгляда.
-##
-## Смещение внутри комнаты мерим ГАБАРИТОМ комнаты, а не шагом сетки. Величины
-## разные: между центрами комнат RS_LayerPlan.ROOM_SPACING = 60 м, а сама комната
-## около 20 м. По шагу сетки игрок, упёршийся в северную дверь, рисовался бы у
-## середины клетки — и маркер не отвечал бы на тот единственный вопрос, ради
-## которого он есть. Габарит считает RS_RoomLayout по положению дверей.
-##
-## Начало координат комнаты — её центр, а to_screen возвращает центр клетки,
-## поэтому смещение просто складывается. limit_length держит маркер внутри своей
-## комнаты: развоплощённый БФЖ пролезает сквозь решётки, и заезжать на соседнюю
-## клетку маркер не должен.
-func _draw_player(current: RS_LevelNode, plan, to_screen: Callable, step: float) -> void:
+## Маркер игрока: где он и куда смотрит. Позиция — прямо из мира через шаг
+## клетки: комнаты и коридоры лежат на одной сетке, и игрок законно бывает
+## между ними (в тамбуре, на стыке), так что зажимать маркер в своей комнате,
+## как в прежней раскладке, больше нечем и незачем.
+func _draw_player() -> void:
 	var player := _player_node()
-	var here := current.id
-	if player == null or not plan.positions.has(here) or not plan.cells.has(here):
+	if player == null:
 		return
-
-	var center: Vector2 = to_screen.call(plan.cells[here])
-	var extent := RS_RoomLayout.half_extent_of_scene(current.room_scene_path)
-	if extent > 0.0:
-		var offset: Vector3 = player.global_position - plan.positions[here]
-		center += Vector2(offset.x, offset.z).limit_length(extent) / extent * step * room_fill * 0.5
+	var center := world_to_screen(player.global_position)
 
 	var forward := _forward_of(player)
 	var side := Vector2(-forward.y, forward.x)
-	var radius := step * marker_size
+	var radius := _step * marker_size
 	var points := PackedVector2Array(
 		[
 			center + forward * radius,
@@ -259,20 +282,3 @@ func _player_node() -> Node3D:
 	if ECS.world == null:
 		return null
 	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as Node as Node3D
-
-
-## Длина шага сетки в экранных пикселях. Берём разницу между двумя соседними по
-## оси клетками; если показана всего одна комната — опираемся на размер контрола.
-func _step_of(plan, known: Array[RS_LevelNode], to_screen: Callable) -> float:
-	if known.size() > 1:
-		var first: Vector2i = plan.cells[known[0].id]
-		for node_data in known:
-			var cell: Vector2i = plan.cells[node_data.id]
-			if cell != first:
-				var delta: Vector2 = to_screen.call(cell) - to_screen.call(first)
-				var cells := Vector2(cell - first).abs()
-				if cells.x > 0.0:
-					return absf(delta.x) / cells.x
-				if cells.y > 0.0:
-					return absf(delta.y) / cells.y
-	return minf(size.x, size.y) - padding * 2.0

@@ -84,6 +84,12 @@ var _graph: RS_LevelGraph
 var _library: RS_RoomPresetLibrary
 var _loaded := false
 
+## Ручки генерации — те же, что у игры (data/world_gen_config.tres). Читаются на
+## каждую пересборку: правку ручек в инспекторе хочется видеть по кнопке
+## «Пересобрать», без перезапуска редактора.
+const WORLD_GEN_CONFIG_PATH := "res://data/world_gen_config.tres"
+var _config: RS_WorldGenConfig
+
 
 func _init() -> void:
 	name = TAB_TITLE
@@ -160,6 +166,7 @@ func _build_toolbar() -> Control:
 	_depth_option.select(_depth_option.get_item_index(RS_LevelGraph.HOME_DEPTH))
 	_depth_option.item_selected.connect(_on_depth_selected)
 	row.add_child(_depth_option)
+
 
 	row.add_child(VSeparator.new())
 	row.add_child(_build_visibility_menu())
@@ -395,7 +402,8 @@ func _rebuild_graph() -> void:
 		_set_status("⚠ Не удалось загрузить " + Library.LIBRARY_PATH)
 		return
 	var run_seed := int(_seed_spin.value)
-	_graph = RS_LevelGraph.new().generate_run(run_seed, _library)
+	_config = _world_gen_config()
+	_graph = RS_LevelGraph.new().generate_run(run_seed, _library, _config)
 	_rebuild_layer()
 	_set_status("Сид %d, узлов в графе: %d" % [run_seed, _graph.nodes.size()])
 	EditorState.write(SETTINGS_SECTION, "seed", run_seed)
@@ -425,8 +433,15 @@ func _rebuild_layer() -> void:
 func _layer_view(depth: int) -> LayerView:
 	var layer_nodes := _graph.get_nodes_by_depth(depth)
 	return LayerView.new(
-		_graph, layer_nodes, RS_LayerPlan.build(layer_nodes), _preset_labels_for(layer_nodes)
+		_graph, layer_nodes, RS_LayerPlan.build(layer_nodes, _config), _preset_labels_for(layer_nodes)
 	)
+
+
+## Ручки проекта. null — ресурса нет, тогда генератор возьмёт свои по умолчанию.
+func _world_gen_config() -> RS_WorldGenConfig:
+	if not ResourceLoader.exists(WORLD_GEN_CONFIG_PATH):
+		return null
+	return ResourceLoader.load(WORLD_GEN_CONFIG_PATH, "", ResourceLoader.CACHE_MODE_REPLACE) as RS_WorldGenConfig
 
 
 ## node_id -> имя пресета, для оверлея «Подписи». Тот же поиск, что
@@ -590,7 +605,10 @@ func _save_editing_preset() -> void:
 ## Гоняет генератор по N сидам и показывает, что реально выпало и почему остальные
 ## пресеты отсеялись. Выбор берём из настоящего прогона (room_scene_path), причины
 ## отсева — из RS_RoomPresetLibrary.explain_selection: жёсткие фильтры
-## (вместимость/теги/специфичность) от rng не зависят, поэтому цифры честные.
+## (портал/теги) от rng не зависят, поэтому цифры честные. Уникальные комнаты
+## (хаб, выход) в отсеве не участвуют — их ставит конфиг, а не подбор, — и
+## считаются только в «Что выпало». Заодно — сколько тайлов коридора уходит на
+## этаж и каких кусков кита: это цена раскладки в арте.
 ##
 ## Прогон НЕ трогает ни _graph, ни вьюпорт: он строит свои графы и выбрасывает
 ## их. Иначе кнопка «Прогнать» незаметно подменяла бы слой под камерой на
@@ -601,23 +619,45 @@ func _on_preview_pressed() -> void:
 	if _library == null:
 		return
 	var seeds := int(_seeds_spin.value)
+	var config := _world_gen_config()
+	var excluded: Array[RS_RoomPreset] = []
+	if config:
+		for unique: RS_UniqueRoom in config.unique_rooms:
+			if unique and unique.preset:
+				excluded.append(unique.preset)
 	var picks := {}  # label -> сколько раз реально выбран
 	var reasons := {}  # label -> { причина: сколько раз }
-	var degrees := {}  # число рёбер -> сколько узлов
+	var degrees := {}  # дверей у комнаты -> сколько комнат
+	var pieces := {}  # кусок кита -> сколько тайлов
 	var nodes_total := 0
+	var floors_total := 0
+	var failures := 0
 
 	for s in seeds:
-		var graph := RS_LevelGraph.new().generate_run(s, _library)
+		var graph := RS_LevelGraph.new().generate_run(s, _library, config)
+		for depth: int in RS_LevelGraph.DEPTHS:
+			var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
+			failures += plan.routing_failures.size()
+			var floors := {}
+			for cell: Vector3i in plan.corridor_tiles:
+				floors[cell.y] = true
+				var piece := _piece_name(plan.corridor_tiles[cell])
+				pieces[piece] = pieces.get(piece, 0) + 1
+			floors_total += floors.size()
 		var rng := RandomNumberGenerator.new()
 		rng.seed = s
 		for node: RS_LevelNode in graph.nodes.values():
+			if node.role == RS_LevelNode.Role.CORRIDOR:
+				continue
 			nodes_total += 1
-			var degree: int = node.connections.size()
+			var degree: int = RS_RoomLayout.door_count_of_scene(node.room_scene_path)
 			degrees[degree] = degrees.get(degree, 0) + 1
 			var picked := _label_for_scene(node.room_scene_path)
 			picks[picked] = picks.get(picked, 0) + 1
+			if excluded.any(func(p: RS_RoomPreset) -> bool: return p.scene and p.scene.resource_path == node.room_scene_path):
+				continue
 
-			var explained: Dictionary = _library.explain_selection(node, rng)["reasons"]
+			var explained: Dictionary = _library.explain_selection(node, rng, excluded)["reasons"]
 			for label: String in explained:
 				# Победителя броска у explain свой (у него отдельный rng), поэтому
 				# «выбран» сливаем с «дошёл до весов»: таблица отсева говорит только
@@ -631,13 +671,49 @@ func _on_preview_pressed() -> void:
 				reasons[label][reason] = reasons[label].get(reason, 0) + 1
 
 	_seeds_report.text = _preview_report(seeds, nodes_total, picks, reasons, degrees)
-	_set_status("Прогнано сидов: %d, узлов: %d" % [seeds, nodes_total])
+	_seeds_report.text += _corridor_report(floors_total, pieces, failures)
+	_set_status("Прогнано сидов: %d, комнат: %d" % [seeds, nodes_total])
+
+
+## Коридоры по всем прогнанным этажам: сколько тайлов на этаж и каких кусков.
+## Отказов трассы быть не должно (dev/corridor_layout_check), но если правка ручек
+## их вернула, увидеть это надо здесь, а не в забеге.
+func _corridor_report(floors_total: int, pieces: Dictionary, failures: int) -> String:
+	var tiles := 0
+	for piece: String in pieces:
+		tiles += pieces[piece]
+	var out := "\n[b]Коридоры[/b]: %d тайлов на %d этажей (%.1f на этаж)" % [
+		tiles, floors_total, float(tiles) / maxi(floors_total, 1)
+	]
+	if failures > 0:
+		out += " — [color=#e0624b]отказов трассы: %d[/color]" % failures
+	out += "\n[code]"
+	for piece: String in ["прямой", "поворот", "Т", "крест", "торец"]:
+		if pieces.has(piece):
+			out += "%-10s %5d  %4.1f%%\n" % [piece, pieces[piece], 100.0 * pieces[piece] / maxi(tiles, 1)]
+	out += "[/code]"
+	return out
+
+
+func _piece_name(mask: int) -> String:
+	var bits := 0
+	for bit in [1, 2, 4, 8]:
+		if mask & bit:
+			bits += 1
+	match bits:
+		1:
+			return "торец"
+		2:
+			return "прямой" if mask == 5 or mask == 10 else "поворот"
+		3:
+			return "Т"
+	return "крест"
 
 
 func _preview_report(
 	seeds: int, nodes_total: int, picks: Dictionary, reasons: Dictionary, degrees: Dictionary
 ) -> String:
-	var out := "[b]Прогон %d сидов, %d узлов[/b]\n" % [seeds, nodes_total]
+	var out := "[b]Прогон %d сидов, %d комнат[/b]\n" % [seeds, nodes_total]
 
 	out += "\n[b]Что выпало[/b]\n[code]"
 	var picked_labels := picks.keys()
@@ -659,23 +735,24 @@ func _preview_report(
 		out += "%-24s %s\n" % [label, ", ".join(parts)]
 	out += "[/code]"
 
-	out += "\n[b]Степени узлов (сколько рёбер = сколько дверей нужно)[/b]\n[code]"
+	out += "\n[b]Двери комнат (сколько дверей = сколько рёбер в коридоры)[/b]\n[code]"
 	var degree_keys := degrees.keys()
 	degree_keys.sort()
 	for degree: int in degree_keys:
-		out += "рёбер %d: %5d узлов\n" % [degree, degrees[degree]]
+		out += "дверей %d: %5d комнат\n" % [degree, degrees[degree]]
 	out += "[/code]"
 
 	out += (
-		"\n[i]Порядок отбора: вместимость (slot_count ≥ рёбер) → теги "
-		+ "(node.tags ⊆ preset.tags) → специфичность (минимум лишних тегов) → "
-		+ "тип помещения → вес. "
+		"\n[i]Порядок отбора: портал (есть ровно тогда, когда узлу нужен переход) → "
+		+ "теги (node.tags ⊆ preset.tags) → тип помещения → вес. "
 		+ "Тип — ПРЕДПОЧТЕНИЕ, а не фильтр: если в группе нет ни одного пресета "
 		+ "загаданного узлу типа, группа идёт дальше целиком. "
 		+ "Вес применяется ПОСЛЕДНИМ: если конкуренты отсеялись раньше, правка веса "
-		+ "не изменит ничего — сначала смотри на «вместимость» и «теги». "
+		+ "не изменит ничего — сначала смотри на «портал» и «теги». "
+		+ "Дверей у комнаты ровно столько, сколько рёбер в коридоры: смесь комнат "
+		+ "по числу дверей задают веса пресетов. "
 		+ "«Дошёл до весов» — сколько раз пресет участвовал в броске; сколько раз он "
-		+ "его выиграл, смотри в «Что выпало». Слоты, вес и теги правятся во вкладке "
+		+ "его выиграл, смотри в «Что выпало». Вес и теги правятся во вкладке "
 		+ "«Редактор пресетов» или в панели узла справа.[/i]"
 	)
 	return out

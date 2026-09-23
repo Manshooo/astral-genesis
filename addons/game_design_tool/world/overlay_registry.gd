@@ -45,6 +45,13 @@ const OVERLAYS := [
 		"default_visible": true,
 		"script": preload("res://addons/game_design_tool/world/overlays/labels_overlay.gd"),
 	},
+	{
+		"id": &"corridors",
+		"title": "Коридоры",
+		"tooltip": "Показать трассы веток коридора (только коридорный путь генерации)",
+		"default_visible": true,
+		"script": preload("res://addons/game_design_tool/world/overlays/corridors_overlay.gd"),
+	},
 ]
 
 ## Оставшийся пункт из исходного набора MVP («Единый редактор геймдизайна»,

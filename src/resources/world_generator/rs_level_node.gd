@@ -6,7 +6,15 @@
 class_name RS_LevelNode
 extends Resource
 
+## Роль узла — сценарий, по которому генератор строит ему рёбра (карточка
+## «Рефакторинг генератора мира»): комната получает столько рёбер, сколько
+## дверей в её сцене; коридор — ветка этажа, к которой эти двери подвешены, и
+## сцены у него нет вовсе — он собирается из тайлов по трассе. Остальные роли
+## рефакторинга (холл, лестница) добавляются сюда же.
+enum Role { ROOM, CORRIDOR }
+
 @export var id: StringName = &""
+@export var role: Role = Role.ROOM
 ## L4 (самый глубокий) ... L0 (поверхность). Домашний слой игрока — L3.
 @export var depth: int = 3
 ## Этаж ВНУТРИ слоя (0-indexed). В SceneTree одновременно существует весь
@@ -36,6 +44,9 @@ extends Resource
 ## уходить то, что реально стоит.
 @export var room_type: StringName = &""
 @export var connections: Array[RS_LevelConnection] = []
+## Двери узла переставляют игрока, а не открываются — копия
+## RS_UniqueRoom.door_teleports (хаб, пока в его арте нет проёма).
+@export var door_teleports: bool = false
 
 
 func has_tag(tag: StringName) -> bool:
