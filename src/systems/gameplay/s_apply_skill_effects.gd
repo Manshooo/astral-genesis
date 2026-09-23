@@ -45,10 +45,5 @@ func each(_event, entity: Entity, _payload = null) -> void:
 
 	var flat := {}
 	var mult := {}
-	for definition in SkillManager.SKILL_TREE.skills:
-		var rank := SkillManager.get_rank(definition.id)
-		if rank <= 0:
-			continue
-		RS_StatModifier.fold(definition.modifiers, rank, flat, mult)
-
+	SkillManager.fold_modifiers(flat, mult)
 	mods.set_source(SOURCE, flat, mult)

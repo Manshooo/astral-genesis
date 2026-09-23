@@ -57,6 +57,7 @@ func _run() -> void:
 
 	_check_cheatsheet(overlay)
 	_check_keys(overlay)
+	await _check_unique_rooms(overlay)
 	await _check_immortality(overlay, world)
 	_check_points(overlay)
 
@@ -143,6 +144,12 @@ func _check_keys(overlay: CanvasLayer) -> void:
 		for event in InputMap.action_get_events(action_name):
 			if not event is InputEventKey:
 				continue
+			# Действие с модификатором (у встроенного ui_swap_input_direction это
+			# Ctrl+`) на голую клавишу не срабатывает: движок требует, чтобы его
+			# модификаторы были зажаты. Читы жмутся без модификаторов — это не
+			# пересечение.
+			if (event as InputEventKey).get_modifiers_mask() != 0:
+				continue
 			for cheat in overlay._actions:
 				var key: int = cheat["key"]
 				if event.keycode == key or event.physical_keycode == key:
@@ -162,6 +169,97 @@ func _check_keys(overlay: CanvasLayer) -> void:
 		"поверхность %d, самый глубокий %d, шаг вниз %d"
 		% [RS_LevelGraph.DEPTHS[-1], RS_LevelGraph.DEPTHS[0], overlay.STEP_DOWN]
 	)
+
+
+## Перенос в уникальные комнаты из меню отладки. Кнопки строятся из конфига
+## генерации, а цель ищется по сцене узла графа — и промах в любом из двух мест
+## молча оставляет «Комнату Архитектора» без Архитектора.
+func _check_unique_rooms(overlay: CanvasLayer) -> void:
+	var config := GameConfig.config.world_gen
+	var uniques: Array[RS_UniqueRoom] = []
+	for unique: RS_UniqueRoom in config.unique_rooms:
+		if unique != null and unique.preset != null and unique.preset.scene != null:
+			uniques.append(unique)
+
+	# Меню открывается клавишей через стек UIManager — оттуда курсор и Esc.
+	_press(overlay, overlay.MENU_KEY)
+	var menu: Control = overlay._menu
+	_check(
+		"клавиша меню открывает меню отладки поверх игры с курсором",
+		is_instance_valid(menu) and menu.is_inside_tree() and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+		"меню %s, курсор %d" % [is_instance_valid(menu), Input.mouse_mode]
+	)
+	if not is_instance_valid(menu):
+		return
+
+	var buttons: Array[String] = []
+	for button: Button in menu.get_node("%Rooms").get_children():
+		if button.visible:
+			buttons.append(button.text)
+	var titles: Array[String] = []
+	for unique in uniques:
+		titles.append(unique.preset.display_name)
+	_check(
+		"в разделе «Телепорт» по кнопке на каждую уникальную комнату конфига",
+		not titles.is_empty() and buttons == titles,
+		"кнопки %s, комнаты %s" % [buttons, titles]
+	)
+
+	_press(overlay, overlay.MENU_KEY)
+	var menus := get_tree().root.find_children("*", "Control", false, false).filter(
+		func(node: Node) -> bool: return node.scene_file_path == "res://dev/debug_menu.tscn"
+	)
+	_check("повторная клавиша второго меню не открывает", menus.size() == 1, "меню: %d" % menus.size())
+
+	# Кнопка без забега: меню закрывается, а перенос говорит, что забега нет.
+	RunManager.current_graph = null
+	var room_button: Button = menu.get_node("%Rooms").get_child(0)
+	room_button.pressed.emit()
+	await get_tree().process_frame
+	var report: Label = overlay.get_node("%Report")
+	_check(
+		"кнопка закрывает меню и без забега говорит, что забег не запущен",
+		not is_instance_valid(menu) and report.text == "забег не запущен",
+		"меню открыто: %s, сообщение «%s»" % [is_instance_valid(menu), report.text]
+	)
+
+	# Ищется по той же строке, что пишет генератор (RS_LevelGraph._place_unique_rooms):
+	# разойдись они — перенос не найдёт комнату, которая в комплексе есть.
+	var lost: Array[String] = []
+	for run_seed in [1, 7, 42, 1234, 99991]:
+		var generated := RS_LevelGraph.new().generate_run(
+			run_seed, GameConfig.config.room_preset_library, config
+		)
+		for unique in uniques:
+			if unique.chance < 1.0:
+				continue
+			var path := unique.preset.scene.resource_path
+			if overlay.next_room(generated, path, &"") == null:
+				lost.append("%s на сиде %d" % [unique.preset.display_name, run_seed])
+	_check("перенос находит каждую уникальную комнату на пяти сидах", lost.is_empty(), ", ".join(lost))
+
+	# Повторное нажатие ведёт в следующую комнату той же сцены, а не в ту же:
+	# выходов в забеге бывает несколько.
+	var graph := RS_LevelGraph.new()
+	for pair in [[&"a", "x.tscn"], [&"b", "y.tscn"], [&"c", "x.tscn"]]:
+		var node := RS_LevelNode.new()
+		node.id = pair[0]
+		node.room_scene_path = pair[1]
+		graph.nodes[node.id] = node
+	var first: RS_LevelNode = overlay.next_room(graph, "x.tscn", &"")
+	var second: RS_LevelNode = overlay.next_room(graph, "x.tscn", &"a")
+	var wrapped: RS_LevelNode = overlay.next_room(graph, "x.tscn", &"c")
+	_check(
+		"повторный перенос идёт по кругу по комнатам той же сцены",
+		first.id == &"a" and second.id == &"c" and wrapped.id == &"a",
+		"%s → %s → %s" % [first.id, second.id, wrapped.id]
+	)
+	_check(
+		"комнаты, которой в графе нет, перенос не выдумывает",
+		overlay.next_room(graph, "z.tscn", &"") == null,
+		""
+	)
+
 
 
 # --- 3. Читы делают то, что написано -----------------------------------------

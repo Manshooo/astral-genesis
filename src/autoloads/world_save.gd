@@ -103,6 +103,18 @@ func mark_body_consumed(body_id: StringName) -> void:
 	_save()
 
 
+## Забрать разовую награду узла. Возвращает false, если её уже забрали в этом
+## забеге. Пишет на диск сразу, до самой награды: валюта Архитектора ложится в
+## свой сейв немедленно, и отметка, дожидающаяся контрольной точки, дала бы
+## после выхода в меню вторую награду за ту же встречу.
+func claim_node_reward(node_id: StringName) -> bool:
+	if node_id == &"" or save.rewarded_node_ids.has(node_id):
+		return false
+	save.rewarded_node_ids.append(node_id)
+	_save()
+	return true
+
+
 ## Забег закончился штатно (побег на поверхность) — прохождение остаётся, но
 ## продолжать нечего. Для смерти есть record_death: там ещё и death_count++.
 func clear_run() -> void:

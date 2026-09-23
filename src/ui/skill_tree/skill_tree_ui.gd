@@ -41,7 +41,7 @@ func _on_skill_unlocked(id: StringName, _new_rank: int) -> void:
 
 
 func _refresh_points() -> void:
-	points_label.text = "Очки: %d" % _skill_manager.save.skill_points
+	points_label.text = _tree_data.points_text(_skill_manager.save.skill_points)
 
 
 func _on_close_pressed() -> void:

@@ -72,13 +72,17 @@ var accent: Color = RS_SkillBranch.DEFAULT_COLOR
 var previewed: bool = false
 
 var _rank: int = 0
+## Дерево, которому принадлежит навык, — ради названия валюты в цене. null —
+## очки, как у дерева навыков.
+var _tree: RS_SkillTree
 
 
 ## Зовётся графом ПОСЛЕ добавления карточки в дерево сцены: до этого @onready
 ## ссылки на начинку ещё не подняты.
-func setup(def: RS_SkillDefinition, accent_color: Color) -> void:
+func setup(def: RS_SkillDefinition, accent_color: Color, tree: RS_SkillTree = null) -> void:
 	definition = def
 	accent = accent_color
+	_tree = tree
 	name = "Node_" + String(def.id)
 
 	_title.text = def.display_name
@@ -261,9 +265,12 @@ func refresh(
 ## (gui/timers/tooltip_delay_sec) — свой таймер на 300 мс заведён отдельной
 ## задачей версии; здесь важно лишь то, что подсказка висит на ВСЕЙ карточке.
 func _tooltip_for(rank: int, requirement_hint: String) -> String:
-	var lines := PackedStringArray([definition.display_name])
+	# tr() здесь, а не на подписи: строка собирается из кусков, и движок, сам
+	# переводящий текст Label, склеенное целиком уже не узнает. Строка, не
+	# являющаяся ключом, проходит через tr() как есть.
+	var lines := PackedStringArray([tr(definition.display_name)])
 	if not definition.description.is_empty():
-		lines.append(definition.description)
+		lines.append(tr(definition.description))
 	if previewed:
 		# Ради этой строки предпросмотр и заведён: карточка обязана объяснить,
 		# что именно откроет доступ, иначе серый узел — просто дразнилка.
@@ -290,14 +297,9 @@ func _paint_pips() -> void:
 		pip.modulate = accent if i < _rank else empty
 
 
-## «1 очко / 2 очка / 5 очков» — стоимость показывается игроку, а не логу.
+## «1 очко / 2 очка / 5 очков» — стоимость показывается игроку, а не логу. Слово
+## валюты — из дерева: у Архитектора это эссенция.
 func _points_text(amount: int) -> String:
-	var tail := amount % 100
-	if tail >= 11 and tail <= 14:
-		return "%d очков" % amount
-	match amount % 10:
-		1:
-			return "%d очко" % amount
-		2, 3, 4:
-			return "%d очка" % amount
-	return "%d очков" % amount
+	if _tree != null:
+		return _tree.cost_text(amount)
+	return RS_SkillTree.format_cost(amount, RS_SkillTree.DEFAULT_CURRENCY_FORMS)

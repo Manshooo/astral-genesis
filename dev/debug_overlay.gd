@@ -1,7 +1,8 @@
 # res://dev/debug_overlay.gd
 ## Отладочный оверлей: горячие клавиши, чтобы смотреть механику, не проходя ради
 ## неё забег. Экран навыков открывается где угодно и с любым числом очков, слой
-## меняется телепортом, распад БФЖ выключается.
+## меняется телепортом, в уникальную комнату (хаб, выход, Архитектор) — из меню
+## отладки (dev/debug_menu.gd), распад БФЖ выключается.
 ##
 ## Повод: чтобы взглянуть на правку в дереве навыков, надо было запустить игру,
 ## бегать пару минут ради очков и только потом открыть экран. Цена взгляда была
@@ -37,6 +38,15 @@ const POINTS_PER_PRESS := 10
 const STEP_DOWN := 1
 const STEP_UP := -1
 
+## Меню отладки — вне ряда F-клавиш: F9–F12 при запуске из редактора забирает
+## его отладчик (см. dev/debug_menu.gd). Клавиша под Esc — привычное место
+## отладочной консоли; на русской раскладке это «ё», поэтому сверяется и
+## физическая клавиша (см. _unhandled_key_input).
+const MENU_KEY := KEY_QUOTELEFT
+## preload здесь законен: меню лежит в dev/ рядом с оверлеем и уходит из экспорта
+## вместе с ним — «нет одного без другого» не бывает.
+const MENU_SCENE := preload("res://dev/debug_menu.tscn")
+
 @onready var _panel: PanelContainer = %Panel
 @onready var _keys: VBoxContainer = %Keys
 @onready var _status: Label = %Status
@@ -49,6 +59,8 @@ const STEP_UP := -1
 var _actions: Array[Dictionary] = []
 
 var _immortal := false
+## Открытое меню отладки; повторная клавиша второе не открывает.
+var _menu: Control
 
 
 func _ready() -> void:
@@ -68,6 +80,7 @@ func _ready() -> void:
 		{"key": KEY_F6, "label": "слой ниже", "call": _travel_down},
 		{"key": KEY_F7, "label": "слой выше", "call": _travel_up},
 		{"key": KEY_F8, "label": "сбросить дерево", "call": _reset_skills},
+		{"key": MENU_KEY, "label": "меню отладки", "call": _open_menu},
 	]
 	_build_rows()
 
@@ -88,7 +101,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
 		return
 	for action in _actions:
-		if event.keycode != action["key"]:
+		if event.keycode != action["key"] and event.physical_keycode != action["key"]:
 			continue
 		action["call"].call()
 		get_viewport().set_input_as_handled()
@@ -107,16 +120,39 @@ func _build_rows() -> void:
 		row.get_node("Action").text = _actions[i]["label"]
 
 
+## Сид — чтобы раскладку, на которой что-то нашлось или сломалось, можно было
+## назвать и воспроизвести.
 func _status_text() -> String:
 	var depth := "—"
 	if RunManager.current_depth != RunManager.NO_DEPTH:
 		depth = str(RunManager.current_depth)
-	return "слой %s · узел %s\nочки %d · бессмертие %s" % [
+	return "слой %s · узел %s\nочки %d · бессмертие %s\nсид мира %d · смертей %d" % [
 		depth,
 		RunManager.current_node_id if RunManager.current_node_id != &"" else "—",
 		SkillManager.save.skill_points,
 		"вкл" if _immortal else "выкл",
+		WorldSave.save.world_seed,
+		WorldSave.save.death_count,
 	]
+
+
+## Уникальные комнаты конфига генерации — хаб, выход, Архитектор: кнопка меню на
+## каждую, подпись из пресета. Из данных, а не списком здесь: новая уникальная
+## комната попадает в меню без правки оверлея.
+##
+## Конфиг — базовый, а не снимок забега: меню открывается и без забега. Разойтись
+## они могут лишь у забега, начатого до правки конфига, — тогда перенос честно
+## скажет, что такой комнаты в комплексе нет.
+func unique_rooms() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var config := GameConfig.config.world_gen
+	if config == null:
+		return result
+	for unique: RS_UniqueRoom in config.unique_rooms:
+		if unique == null or unique.preset == null or unique.preset.scene == null:
+			continue
+		result.append({"title": unique.preset.display_name, "scene_path": unique.preset.scene.resource_path})
+	return result
 
 
 # --- Сами читы ---------------------------------------------------------------
@@ -135,6 +171,25 @@ func _add_points() -> void:
 ## оверлея в том, чтобы смотреть экран там, где стоишь.
 func _open_skill_tree() -> void:
 	UIManager.open_skill_tree(SkillManager, SkillManager.SKILL_TREE)
+
+
+## Экран в стеке UIManager с блоком ввода — как дерево навыков: курсор, Esc и
+## возврат управления приходят оттуда, а не пишутся здесь второй раз.
+func _open_menu() -> void:
+	if is_instance_valid(_menu):
+		return
+	_menu = MENU_SCENE.instantiate()
+	UIManager.push_blocking_screen(_menu)
+	_menu.setup(unique_rooms())
+	_menu.travel_requested.connect(_on_menu_travel)
+
+
+## Меню закрывается ДО переноса: закрытие возвращает захват курсора и снимает
+## блок ввода, а перенос в другой слой пересобирает мир — пусть он застанет
+## игрока уже с управлением.
+func _on_menu_travel(scene_path: String, title: String) -> void:
+	UIManager.close_top()
+	_travel_to_room(scene_path, title)
 
 
 func _toggle_immortal() -> void:
@@ -171,6 +226,36 @@ func _travel(step: int) -> void:
 
 	RunManager.travel_to(nodes[0].id)
 	_say("слой %d" % target_depth)
+
+
+## Перенос в комнату по её сцене — тем же RunManager.travel_to, что и смена слоя.
+func _travel_to_room(scene_path: String, title: String) -> void:
+	if RunManager.current_graph == null:
+		_say("забег не запущен")
+		return
+	var target := next_room(RunManager.current_graph, scene_path, RunManager.current_node_id)
+	if target == null:
+		_say("%s: в этом комплексе нет" % title)
+		return
+	RunManager.travel_to(target.id)
+	_say("%s · слой %d" % [title, target.depth])
+
+
+## Следующая после [param current_id] комната со сценой [param scene_path], по
+## кругу. Комнат с одной сценой бывает несколько (выходов, например), и повторное
+## нажатие обязано вести в следующую, а не в ту же самую. null — такой нет.
+static func next_room(graph: RS_LevelGraph, scene_path: String, current_id: StringName) -> RS_LevelNode:
+	var rooms: Array[RS_LevelNode] = []
+	for node_data: RS_LevelNode in graph.nodes.values():
+		if node_data.room_scene_path == scene_path:
+			rooms.append(node_data)
+	if rooms.is_empty():
+		return null
+	var at := -1
+	for i in rooms.size():
+		if rooms[i].id == current_id:
+			at = i
+	return rooms[(at + 1) % rooms.size()]
 
 
 ## Бессмертие держится ПОДЛИВАНИЕМ обоих карманов каждый кадр, а не снятием

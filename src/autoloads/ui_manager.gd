@@ -122,11 +122,16 @@ func open_skill_tree(skill_manager, tree_data: RS_SkillTree) -> void:
 			return
 
 	var skill_ui: SkillTreeUI = SKILL_TREE_SCENE.instantiate()
-
-	_set_player_input_blocked(true)
-	
-	push_screen(skill_ui, false, null, func(): _set_player_input_blocked(false))
+	push_blocking_screen(skill_ui)
 	skill_ui.setup(skill_manager, tree_data)
+
+
+## Экран поверх идущей игры, пока открыт который ригом не управляют: курсор нужен
+## экрану, и движение мыши не должно заодно крутить камеру. Паузы нет — мир живёт,
+## как и при дереве навыков. Блок снимается колбэком закрытия, то есть и по Esc.
+func push_blocking_screen(screen: Control) -> void:
+	_set_player_input_blocked(true)
+	push_screen(screen, false, null, func(): _set_player_input_blocked(false))
 
 
 func _set_player_input_blocked(blocked: bool) -> void:

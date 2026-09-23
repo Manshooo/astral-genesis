@@ -85,9 +85,7 @@ static func of(entity: Entity, stat: StringName, base: float) -> float:
 
 
 func value(stat: StringName, base: float) -> float:
-	var flat: float = _flat.get(stat, 0.0)
-	var mult: float = _mult.get(stat, 1.0)
-	return (base + flat) * mult
+	return RS_StatModifier.resolve(stat, base, _flat, _mult)
 
 
 ## Заменить вклад одного источника целиком. Словари приходят уже свёрнутыми по
