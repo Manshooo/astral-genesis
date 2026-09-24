@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка «текущий узел меняется присутствием, а не дверью» — первого шага к
 ## коридорам (карточка «Процедурные коридоры между комнатами», §3).
 ##
@@ -18,8 +18,6 @@ extends Node
 const SEEDS := 10
 const RUN_SEED := 424242
 
-var _ok := 0
-var _fail := 0
 var _room_changes: Array[StringName] = []
 
 ## Настоящий сейв разработчика: прогон ставит контрольные точки, то есть пишет
@@ -38,8 +36,7 @@ func _ready() -> void:
 	await _check_run()
 	_restore_save()
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # ---------------------------------------------------------------------------
@@ -87,12 +84,8 @@ func _check_plan_rule() -> void:
 
 
 func _check_run() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
-	var presence := S_RoomPresence.new()
-	presence.group = "gameplay"
-	world.add_system(presence)
+	var world := _new_world()
+	_add_systems(world, "gameplay", [S_RoomPresence.new()])
 
 	# Свежий сейв без начатого забега: иначе вход пошёл бы с узла разработчика.
 	var fresh := RS_WorldSave.new()
@@ -203,12 +196,3 @@ func _restore_save() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(WorldSave.SAVE_PATH))
 	_check("сейв разработчика возвращён на место",
 		FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH) == _save_backup, "")
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

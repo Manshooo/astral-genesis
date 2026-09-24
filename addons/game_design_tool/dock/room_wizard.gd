@@ -47,8 +47,8 @@ const FIELD_LABELS := {
 ## первом же сохранении. Незнакомое поле получает широкий диапазон: показать
 ## значение как есть безопаснее, чем подрезать его под чужую шкалу.
 const FIELD_RANGES := {
-	"slot_count": {"min": 0.0, "max": 12.0, "step": 1.0},
-	"weight": {"min": 0.0, "max": 10.0, "step": 0.1},
+	"slot_count": Library.SLOT_RANGE,
+	"weight": Library.WEIGHT_RANGE,
 }
 const DEFAULT_INT_RANGE := {"min": -99999.0, "max": 99999.0, "step": 1.0}
 const DEFAULT_FLOAT_RANGE := {"min": -99999.0, "max": 99999.0, "step": 0.01}

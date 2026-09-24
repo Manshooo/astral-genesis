@@ -1,6 +1,9 @@
-# meta-description: Components are  data containers and contain no functionality.
+# meta-description: Компонент GECS — только данные; поведение принадлежит системам.
+# ЗАЧЕМ этот компонент: <причина в одну-две фразы>.
+#
+# Если он нужен лишь как пропуск в выборку системы — проверь, не несёт ли его уже
+# другая сущность: маркер на двух видах сущностей ломает execute_one() тихо (см.
+# шапку C_PlayerInput). Стат из C_StatModifiers.ALL механика читает через
+# C_StatModifiers.of(), а не прямо из поля компонента.
 class_name _CLASS_
 extends Component
-
-# Remember components only hold data to operate on and mutate
-# They don't provide functionality outside of data operations on itself

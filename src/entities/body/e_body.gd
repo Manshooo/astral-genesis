@@ -211,9 +211,28 @@ static func name_key_of_scene(path: String) -> StringName:
 	return key
 
 
+## Носится ли компонент телом — ЕДИНСТВЕННОЕ определение этого правила (см.
+## traits_of про C_Health). Им надевают (S_BodySnatch), снимают (O_ExpelFromBody)
+## и читают тело из сцены; раньше то же условие было переписано в трёх файлах, и
+## симметрия захвата с выходом держалась на том, что никто не забудет править все.
+static func is_wearable(component: Object) -> bool:
+	return component is C_BodyTrait or component is C_Health
+
+
+## Характеристики тела, надетые на [param entity] прямо сейчас, — оригиналы, а не
+## копии: их снимают по типу. Список собирается заранее, отдельным проходом:
+## снятие правит тот самый словарь components, по которому пришлось бы идти.
+static func worn_by(entity: Entity) -> Array[Component]:
+	var found: Array[Component] = []
+	for component in entity.components.values():
+		if is_wearable(component):
+			found.append(component as Component)
+	return found
+
+
 static func _wearable(source: Array) -> Array[Component]:
 	var out: Array[Component] = []
 	for component in source:
-		if component is C_BodyTrait or component is C_Health:
+		if is_wearable(component):
 			out.append(component.duplicate() as Component)
 	return out

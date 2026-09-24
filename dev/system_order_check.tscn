@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dsysorder0chk"]
+
+[ext_resource type="Script" path="res://dev/system_order_check.gd" id="1_check"]
+
+[node name="SystemOrderCheck" type="Node"]
+script = ExtResource("1_check")

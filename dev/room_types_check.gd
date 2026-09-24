@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка ВТОРОЙ оси подбора комнат — типа помещения (`RS_RoomTypeCatalog`,
 ## `RS_RoomPreset.room_type`, `RS_LevelNode.room_type`).
 ## Запуск: godot --headless dev/room_types_check.tscn
@@ -20,15 +20,10 @@ const PROBE_SCENE := "res://src/levels/procedural/rooms/default/default_room.tsc
 
 const SEED_COUNT := 10
 
-var _ok := 0
-var _fail := 0
-
 
 func _ready() -> void:
 	_run()
-
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -202,6 +197,24 @@ func _check_selection() -> void:
 		"пресет своего типа проиграл безликому из-за лишнего тега",
 	)
 
+	# Портальных комнат нет вовсе — портальный узел уходит в fallback, а тот
+	# фильтров не проходит и портала не несёт. Это уже не мягкая деградация, а
+	# оборванный переход, поэтому validate() обязан назвать дыру заранее, до
+	# забега, а не оставить её push_error'у посреди генерации.
+	var no_portals := _make_library([_make_preset("Безликая", &"", [])])
+	var explained := no_portals.explain_selection(_make_node(&"", [&"vertical_hub"]), rng)
+	_check(
+		"без портальных комнат портальный узел уходит в fallback",
+		explained["preset"] == no_portals.fallback,
+		str(explained["reasons"]),
+	)
+	var problems := no_portals.validate()
+	_check(
+		"validate() называет отсутствие портальных пресетов",
+		problems.any(func(p: String) -> bool: return p.contains("vertical_hub")),
+		"; ".join(problems),
+	)
+
 
 # ---------------------------------------------------------------------------
 # 4. Настоящая генерация
@@ -335,12 +348,3 @@ func _make_node(room_type: StringName, tags: Array[StringName]) -> RS_LevelNode:
 	node.tags = tags
 	node.connections.append(RS_LevelConnection.new())
 	return node
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

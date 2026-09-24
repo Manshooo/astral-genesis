@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка сборки коридоров в игре (этап 4 карточки «Процедурные коридоры между
 ## комнатами»): настоящий RunManager, коридорный граф, тайлы кита в мире.
 ##
@@ -26,10 +26,7 @@ const GEOMETRY_MASK := 1
 ## Куда дотягивается отчёт о заходе за грань клетки: до грани и на полметра за
 ## неё — то, что стоит в тамбуре тайла.
 const INTRUSION_PROBE := 9.0
-const EXPECTED_ASSERTS := 17
 
-var _ok := 0
-var _fail := 0
 var _save_backup := PackedByteArray()
 var _had_save := false
 var _save_object: RS_WorldSave
@@ -42,15 +39,9 @@ func _ready() -> void:
 	_save_object = WorldSave.save
 	_base_config = GameConfig.config.world_gen
 
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
-	var presence := S_RoomPresence.new()
-	presence.group = "gameplay"
-	world.add_system(presence)
-	var doors := S_DoorOpen.new()
-	doors.group = "physics"
-	world.add_system(doors)
+	var world := _new_world()
+	_add_systems(world, "gameplay", [S_RoomPresence.new()])
+	_add_systems(world, "physics", [S_DoorOpen.new()])
 
 	GameConfig.config.world_gen = _base_config.duplicate() as RS_WorldGenConfig
 	var fresh := RS_WorldSave.new()
@@ -72,11 +63,7 @@ func _ready() -> void:
 	RunManager._end_run()
 	_restore()
 
-	var ran := _ok + _fail
-	_check("все блоки дошли до конца", ran == EXPECTED_ASSERTS,
-		"ассертов %d из %d — какой-то блок упал на ошибке скрипта" % [ran, EXPECTED_ASSERTS])
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # ---------------------------------------------------------------------------
@@ -84,12 +71,12 @@ func _ready() -> void:
 
 func _check_tiles() -> void:
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
-	_check("у слоя есть тайлы коридора", not RunManager._corridor_tiles.is_empty(), "")
+	_check("у слоя есть тайлы коридора", not RunManager.layer.corridor_tiles.is_empty(), "")
 	var spawned := 0
 	var wrong: Array[String] = []
 	var kit := GameConfig.config.corridor_kit
-	for branch: StringName in RunManager._corridor_tiles:
-		for tile: Node3D in RunManager._corridor_tiles[branch]:
+	for branch: StringName in RunManager.layer.corridor_tiles:
+		for tile: Node3D in RunManager.layer.corridor_tiles[branch]:
 			spawned += 1
 			var cell := _cell_of(tile.global_position)
 			var base := _base_mask(kit, tile.scene_file_path)
@@ -173,8 +160,8 @@ func _check_doors_bound() -> void:
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
 	var wrong: Array[String] = []
 	var floor_portals_wrong: Array[String] = []
-	for id: StringName in RunManager._rooms:
-		var room = RunManager._rooms[id]
+	for id: StringName in RunManager.layer.rooms:
+		var room = RunManager.layer.rooms[id]
 		var sides: Dictionary = plan.door_sides.get(id, {})
 		for door: Entity in room.doors:
 			var side := RS_RoomLayout.door_direction(door as Node as Node3D, room.entity)
@@ -203,10 +190,10 @@ func _check_doors_bound() -> void:
 func _check_open_door() -> void:
 	var door: Entity = null
 	var target: StringName = &""
-	for id: StringName in RunManager._rooms:
+	for id: StringName in RunManager.layer.rooms:
 		if RunManager.current_graph.get_node_data(id).door_teleports:
 			continue
-		for candidate in RunManager._rooms[id].doors:
+		for candidate in RunManager.layer.rooms[id].doors:
 			var portal := (candidate as Entity).get_component(C_DoorPortal) as C_DoorPortal
 			if portal and portal.target_node_id != &"":
 				door = candidate
@@ -253,7 +240,7 @@ func _check_open_door() -> void:
 ## тайл перед собой — дальше узел меняет присутствие.
 func _check_hub_door() -> void:
 	var hub := RunManager.current_graph.entry_node_id
-	var room = RunManager._rooms.get(hub)
+	var room = RunManager.layer.rooms.get(hub)
 	var door: Entity = room.doors[0] if room and not room.doors.is_empty() else null
 	var portal := door.get_component(C_DoorPortal) as C_DoorPortal if door else null
 	if portal == null:
@@ -366,12 +353,3 @@ func _restore() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(WorldSave.SAVE_PATH))
 	_check("сейв разработчика возвращён на место",
 		FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH) == _save_backup, "")
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

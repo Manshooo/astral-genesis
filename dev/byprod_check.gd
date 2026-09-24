@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка подключения аудиодвижка byProd (GDExtension `addons/byprod`).
 ## Запуск: godot --headless dev/byprod_check.tscn
 ##
@@ -40,15 +40,10 @@ const WALK_EVENT := "event:/sfx/walk"
 ## Float-параметр этого события — темп ходьбы, им S_Footsteps правит петлю.
 const WALK_TEMPO_PARAMETER := "Param1"
 
-var _ok := 0
-var _fail := 0
-
 
 func _ready() -> void:
 	await _run()
-
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -312,12 +307,3 @@ func _survives_update(manager) -> bool:
 	manager.set_listener_transform(Vector3.ZERO, Vector3.FORWARD, Vector3.UP)
 	manager.update()
 	return true
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

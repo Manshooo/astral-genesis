@@ -57,15 +57,4 @@ func _swallow(entities: Array[Entity], _components: Array, _delta: float) -> voi
 		inp.jump_pressed = false
 
 		if entity.has_component(C_Embodied):
-			_notify(entity, "Этому телу нечем прыгать")
-
-
-## Короткая строка поверх HUD. Через буфер и remove+add — как S_BodySnatch._notify:
-## прямая запись в поля C_ScreenMessage сигналов миру не шлёт, и HUD не увидел бы
-## новый текст.
-func _notify(entity: Entity, text: String) -> void:
-	if entity.has_component(C_ScreenMessage):
-		cmd.remove_component(entity, C_ScreenMessage)
-	var message := C_ScreenMessage.new()
-	message.text = text
-	cmd.add_component(entity, message)
+			C_ScreenMessage.show_on(entity, "Этому телу нечем прыгать", cmd)

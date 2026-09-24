@@ -92,7 +92,7 @@ func _render() -> void:
 	var prompt := tr(_shown.prompt_text)
 	# Механизм, до которого бестелесному не дотянуться: объясняем ПРИЧИНУ и не
 	# предлагаем клавишу — нажатие всё равно не пройдёт (см. S_InteractInput).
-	if _shown.requires_body and not _player_embodied():
+	if _shown.requires_body and not E_Player.is_embodied():
 		_label.text = "%s: %s" % [NEEDS_BODY, prompt]
 		show()
 		return
@@ -100,10 +100,3 @@ func _render() -> void:
 	var key := SettingsManager.action_display_name(_shown.action_name) if _shown.show_key_hint else ""
 	_label.text = "[%s] %s" % [key, prompt] if key != "" else prompt
 	show()
-
-
-func _player_embodied() -> bool:
-	if ECS.world == null:
-		return false
-	var player := ECS.world.query.with_all([C_PlayerInput]).execute_one()
-	return player != null and player.has_component(C_Embodied)

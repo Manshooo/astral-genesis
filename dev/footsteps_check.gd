@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка отмеривания шагов (`S_Footsteps`/`C_Footsteps`).
 ## Запуск: godot --headless dev/footsteps_check.tscn
 ##
@@ -20,11 +20,6 @@ const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 ## её каждый кадр выставляет S_Walk в игре.
 const DRIVE_SPEED := 4.0
 
-var _ok := 0
-var _fail := 0
-
-## Сколько ещё физкадров прогнать. Считает _physics_process, ставит _physics().
-var _pending_ticks := 0
 var _driven: C_Velocity = null
 var _drive_speed := 0.0
 
@@ -33,24 +28,16 @@ var _requests: Array[String] = []
 
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	for system in [S_Gravity.new(), S_Movement.new()]:
-		system.group = "physics"
-		world.add_system(system)
-
-	var footsteps := S_Footsteps.new()
-	footsteps.group = "gameplay"
-	world.add_system(footsteps)
+	_add_systems(world, "physics", [S_Gravity.new(), S_Movement.new()])
+	_add_systems(world, "gameplay", [S_Footsteps.new()])
 
 	AudioManager.event_requested.connect(_on_event_requested)
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _on_event_requested(event_path: String, _position: Vector3) -> void:
@@ -197,13 +184,9 @@ func _run(world: World) -> void:
 	)
 
 
-## Гоняет мир из НАСТОЯЩЕГО _physics_process, как main.gd в игре: move_and_slide()
-## вне физкадра Jolt считает недостоверно.
-func _physics_process(delta: float) -> void:
-	if _pending_ticks <= 0:
-		return
-	_pending_ticks -= 1
-
+## move_and_slide() вне физкадра Jolt считает недостоверно, поэтому скорость
+## тоже выставляется здесь же, до вызова группы "physics".
+func _on_physics_tick(delta: float) -> void:
 	if _driven:
 		# Небольшая тяга вниз вместе с горизонталью — иначе move_and_slide() не
 		# считает тело «на полу» при чисто горизонтальном движении.
@@ -213,13 +196,6 @@ func _physics_process(delta: float) -> void:
 	# Шаги живут в "gameplay" — тикаем той же дельтой, что и физику: прогон не
 	# привязан к реальному времени, и «секунда» здесь это ровно 60 таких тиков.
 	ECS.process(delta, "gameplay")
-
-
-func _physics(frames: int) -> void:
-	_pending_ticks = frames
-	while _pending_ticks > 0:
-		await get_tree().physics_frame
-	await get_tree().physics_frame  # последнему тику дать долететь
 
 
 ## Плоский пол — верх ровно на y=0.
@@ -232,12 +208,3 @@ func _floor(at: Vector3) -> StaticBody3D:
 	shape.shape = box
 	node.add_child(shape)
 	return node
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

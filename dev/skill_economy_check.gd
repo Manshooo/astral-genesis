@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка экономики очков навыка (карточка Задачи/Карточки/Скиллы.md):
 ## RunManager._max_depth_reached — монотонный трекер, «Чистый выход»
 ## (O_ExpelFromBody, порог 50% выжатости тела) и целостность data/skill_tree.tres
@@ -20,16 +20,12 @@ extends Node
 
 const BODY_DECAY_MAX := 60.0
 
-var _ok := 0
-var _fail := 0
 var _original_skill_save: PlayerSkillSave
 var _original_max_depth: int
 
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
 	_original_skill_save = SkillManager.save
 	_original_max_depth = RunManager._max_depth_reached
@@ -40,8 +36,7 @@ func _ready() -> void:
 	SkillManager._save()
 	RunManager._max_depth_reached = _original_max_depth
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -150,6 +145,40 @@ func _run(world: World) -> void:
 		"skill_points=%d" % SkillManager.save.skill_points
 	)
 
+	# --- 6. Данные деревьев сходятся ------------------------------------------
+	# Всё ниже ломается не при загрузке, а в момент клика игрока (ранг без цены)
+	# или не ломается вовсе, а тихо запирает навык навсегда (ссылка в никуда,
+	# цикл требований). Оба настоящих дерева обязаны быть чистыми, а сломанное —
+	# называть каждую из четырёх дыр.
+	for tree_path: String in ["res://data/skill_tree.tres", "res://data/architect_tree.tres"]:
+		var problems := (load(tree_path) as RS_SkillTree).validate()
+		_check("дерево %s без расхождений" % tree_path.get_file(), problems.is_empty(), "; ".join(problems))
+
+	var broken := RS_SkillTree.new()
+	var pricey := _skill(&"pricey", &"loop")
+	pricey.max_rank = 4  # цен по умолчанию три
+	broken.skills = [pricey, _skill(&"loop", &"pricey"), _skill(&"dangling", &"nowhere"), _skill(&"dangling", &"")]
+	var found := "; ".join(broken.validate())
+	_check("validate(): ранг без цены", found.contains("max_rank=4"), found)
+	_check("validate(): навык объявлен дважды", found.contains("«dangling» объявлен дважды"), found)
+	_check("validate(): требование в никуда", found.contains("«nowhere»"), found)
+	_check("validate(): цикл требований", found.contains("цикл"), found)
+	_check(
+		"ранг без цены не продаётся, а не роняет покупку",
+		pricey.cost_for_next_rank(3) == -1,
+		str(pricey.cost_for_next_rank(3))
+	)
+
+
+func _skill(id: StringName, needs: StringName) -> RS_SkillDefinition:
+	var skill := RS_SkillDefinition.new()
+	skill.id = id
+	if needs != &"":
+		var requirement := RS_SkillRequirement.new()
+		requirement.target_skill = needs
+		skill.requires = [requirement]
+	return skill
+
 
 ## Надеть на душу тело с заданным остатком кармана распада (maximum фиксирован
 ## BODY_DECAY_MAX, модификаторов на BODY_DECAY нет — эффективный максимум
@@ -171,12 +200,3 @@ func _make_soul() -> Entity:
 	soul.name = "Soul"
 	soul.component_resources = [C_PlayerInput.new(), C_Lifespan.new(), C_StatModifiers.new()]
 	return soul
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

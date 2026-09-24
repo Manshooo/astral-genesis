@@ -7,7 +7,7 @@
 # крестиком тело с C_BodySnatchable в пределах capture_range, и держит на нём
 # C_SnatchTargeted. Прицел по этой метке превращается в крестик, а S_BodySnatch
 # берёт из неё готовую цель вместо собственного луча — один каст на кадр и один
-# источник правды о том, «во что мы celим».
+# источник правды о том, «во что мы целим».
 class_name S_SnatchTargetDetector
 extends System
 
@@ -31,8 +31,10 @@ func query() -> QueryBuilder:
 ## Строго ДО S_BodySnatch: тот читает нашу метку, а не кастует луч сам.
 ## Буфер команд применяется сразу после process() каждой системы
 ## (FlushMode.PER_SYSTEM), так что к моменту захвата метка уже проставлена.
+## И ПОСЛЕ S_Movement — по той же причине, что у S_InteractionDetector: луч
+## идёт от камеры, и целиться надо из точки, где тело стоит после этого тика.
 func deps() -> Dictionary[int, Array]:
-	return {Runs.Before: [S_BodySnatch]}
+	return {Runs.Before: [S_BodySnatch], Runs.After: [S_Movement]}
 
 
 func process(entities: Array[Entity], _components: Array, _delta: float) -> void:

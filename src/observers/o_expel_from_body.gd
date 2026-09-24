@@ -50,15 +50,10 @@ static func expel(soul: Entity, voluntary: bool) -> void:
 
 	_settle_lifespan(soul, voluntary)
 
-	# Снимаем ВСЕ характеристики тела, не перечисляя их: что надел захват
-	# (C_BodyTrait + C_Health), то и снимается — симметрия с S_BodySnatch._embody
-	# держится сама, а не поддерживается вручную в двух списках.
-	# Собираем список заранее: remove_component правит тот самый словарь.
-	var worn: Array = []
-	for component in soul.components.values():
-		if component is C_BodyTrait or component is C_Health:
-			worn.append(component)
-	for component in worn:
+	# Снимаем ВСЕ характеристики тела, не перечисляя их: что надел захват, то и
+	# снимается — тем же правилом E_Body.is_wearable, каким S_BodySnatch надевает,
+	# так что симметрия держится сама, а не поддерживается вручную в двух списках.
+	for component in E_Body.worn_by(soul):
 		soul.remove_component(component)
 
 	if soul.has_component(C_Dead):

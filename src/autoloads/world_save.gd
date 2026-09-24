@@ -123,22 +123,15 @@ func clear_run() -> void:
 
 
 func _save() -> void:
-	var err := ResourceSaver.save(save, SAVE_PATH)
-	if err != OK:
-		push_error("WorldSave: не удалось сохранить прогресс, код ошибки %d" % err)
-		return
-	has_save_file = true
+	if UserResourceFile.write(save, SAVE_PATH, "WorldSave"):
+		has_save_file = true
 
 
 func _load() -> RS_WorldSave:
-	if ResourceLoader.exists(SAVE_PATH):
-		# CACHE_MODE_IGNORE: без него повторная загрузка вернёт закэшированный
-		# ресурс с прошлого запуска редактора вместо содержимого файла.
-		var loaded := ResourceLoader.load(SAVE_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as RS_WorldSave
-		if loaded:
-			has_save_file = true
-			return loaded
-		push_warning("WorldSave: файл повреждён, начинаю новое прохождение")
+	var loaded := UserResourceFile.read(SAVE_PATH, RS_WorldSave, "WorldSave") as RS_WorldSave
+	if loaded:
+		has_save_file = true
+		return loaded
 	var fresh := RS_WorldSave.new()
 	fresh.world_seed = randi()
 	return fresh

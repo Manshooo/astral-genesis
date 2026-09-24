@@ -25,6 +25,7 @@ extends VBoxContainer
 
 const Ui := preload("res://addons/game_design_tool/shared/ui.gd")
 const Library := preload("res://addons/game_design_tool/shared/library.gd")
+const Undo := preload("res://addons/game_design_tool/shared/undo.gd")
 const TagCloud := preload("res://addons/game_design_tool/shared/tag_cloud.gd")
 const ViewportHost := preload("res://addons/game_design_tool/world/viewport_host.gd")
 const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
@@ -79,6 +80,10 @@ var _new_tag_edit: LineEdit
 ## _selected_node_data().preset, чтобы обработчики полей не искали его заново
 ## на каждое изменение спинбокса.
 var _editing_preset: RS_RoomPreset
+## Поля пресета на момент последней записи — «было» для истории редактора.
+## Облако тегов меняет массив тегов НА МЕСТЕ, и к моменту сигнала в пресете уже
+## лежит «стало»; снимок до правки есть только здесь.
+var _preset_snapshot := {}
 
 var _graph: RS_LevelGraph
 var _library: RS_RoomPresetLibrary
@@ -266,9 +271,7 @@ func _build_preset_section() -> Control:
 	var slot_row := HBoxContainer.new()
 	slot_row.add_child(Ui.label("Слоты:"))
 	_slot_spin = SpinBox.new()
-	_slot_spin.min_value = 0
-	_slot_spin.max_value = 12
-	_slot_spin.step = 1
+	Library.configure_spin(_slot_spin, Library.SLOT_RANGE)
 	_slot_spin.value_changed.connect(_on_slot_changed)
 	slot_row.add_child(_slot_spin)
 	_preset_section.add_child(slot_row)
@@ -276,9 +279,7 @@ func _build_preset_section() -> Control:
 	var weight_row := HBoxContainer.new()
 	weight_row.add_child(Ui.label("Вес:"))
 	_weight_spin = SpinBox.new()
-	_weight_spin.min_value = 0.0
-	_weight_spin.max_value = 10.0
-	_weight_spin.step = 0.1
+	Library.configure_spin(_weight_spin, Library.WEIGHT_RANGE)
 	_weight_spin.value_changed.connect(_on_weight_changed)
 	weight_row.add_child(_weight_spin)
 	_preset_section.add_child(weight_row)
@@ -571,20 +572,29 @@ func _fill_preset_section() -> void:
 	_tag_cloud.set_vocabulary(_library)
 	_tag_cloud.show_for(_editing_preset)
 	_filling_preset_section = false
+	_preset_snapshot = _snapshot_of(_editing_preset)
+
+
+static func _snapshot_of(preset: RS_RoomPreset) -> Dictionary:
+	return {
+		"slot_count": preset.slot_count,
+		"weight": preset.weight,
+		"tags": preset.tags.duplicate(),
+	}
 
 
 func _on_slot_changed(value: float) -> void:
 	if _filling_preset_section or _editing_preset == null:
 		return
 	_editing_preset.slot_count = int(value)
-	_save_editing_preset()
+	_save_editing_preset(true)
 
 
 func _on_weight_changed(value: float) -> void:
 	if _filling_preset_section or _editing_preset == null:
 		return
 	_editing_preset.weight = value
-	_save_editing_preset()
+	_save_editing_preset(true)
 
 
 func _on_add_tag_pressed() -> void:
@@ -596,14 +606,43 @@ func _on_add_tag_pressed() -> void:
 
 ## Зовётся и облаком тегов через preset_changed — заполнение секции его тоже
 ## трогает (show_for), поэтому флаг проверяем здесь, а не только в спинбоксах.
-func _save_editing_preset() -> void:
+##
+## Правка уходит в историю редактора как «снимок → текущее»: Ctrl+Z откатывает и
+## поле, и файл. [param merge] — для спинбоксов, чтобы тики одного перетаскивания
+## стали одним шагом, а не сотней.
+func _save_editing_preset(merge := false) -> void:
 	if _filling_preset_section or _editing_preset == null:
 		return
-	var err := Library.save_preset(_editing_preset)
+	var now := _snapshot_of(_editing_preset)
+	var changes := {}
+	for property: String in now:
+		if now[property] != _preset_snapshot.get(property):
+			changes[property] = [_preset_snapshot.get(property), now[property]]
+	if changes.is_empty():
+		return
+	var err := Undo.commit(
+		"Пресет в «Генераторе мира»", _editing_preset, changes,
+		_after_preset_edit.bind(_editing_preset), merge
+	)
+	_preset_snapshot = now
 	if err != OK:
 		_set_status("⚠ Не удалось сохранить (код %d)" % err)
 		return
 	_set_status("Сохранено: " + _editing_preset.resource_path.get_file())
+
+
+## После правки и после отката: форма показывает то, что в пресете сейчас.
+## Отложенно: правка приходит изнутри сигнала чекбокса облака тегов, а
+## перерисовка пересобирает облако — и освободила бы этот чекбокс посреди его же
+## сигнала.
+func _after_preset_edit(preset: RS_RoomPreset) -> void:
+	if preset == _editing_preset:
+		_refill_preset_section.call_deferred(preset)
+
+
+func _refill_preset_section(preset: RS_RoomPreset) -> void:
+	if preset == _editing_preset and not _filling_preset_section:
+		_fill_preset_section()
 #endregion
 
 
@@ -620,6 +659,10 @@ func _save_editing_preset() -> void:
 ## их. Иначе кнопка «Прогнать» незаметно подменяла бы слой под камерой на
 ## последний из просчитанных сидов.
 func _on_preview_pressed() -> void:
+	# Как и «Пересобрать»: дизайнер мог поправить дверь в сцене, а прогон считает
+	# двери и стороны через кэш сцен RS_RoomLayout — без сброса таблицы «Двери
+	# комнат» и кусков кита посчитались бы по СТАРОЙ геометрии.
+	RS_RoomLayout.clear_scene_cache()
 	if _library == null:
 		_rebuild_graph()
 	if _library == null:

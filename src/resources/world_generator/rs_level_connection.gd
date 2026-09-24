@@ -1,6 +1,6 @@
 ## res://src/resources/world_generator/rs_level_connection.gd
 ## Хранится ассиметрично - на каждом конце связи лежит своя RS_LevelConnection
-## (см. RunManager._link_nodes), поэтому one_way реализуется просто отсутствием
+## (см. RS_LevelGraph._link_nodes), поэтому one_way реализуется просто отсутствием
 ## обратного ребра, а не флагом направления внутри одного объекта.
 @tool  # граф строится в т.ч. из редакторской вкладки «Генератор мира» — см. RS_LevelGraph
 class_name RS_LevelConnection

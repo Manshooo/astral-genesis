@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка модели «возможность = компонент»: что умеет душа сама, что приходит с
 ## телом, что засыпает во плоти и что просыпается обратно.
 ## Запускать: godot --headless dev/abilities_check.tscn
@@ -12,27 +12,20 @@ const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 ## Тело другой высоты — им проверяется пересадка тело→тело.
 const CRAWLER_SCENE := "res://src/entities/body/e_body_crawler.tscn"
 
-var _ok := 0
-var _fail := 0
-
-## Сколько физкадров ещё прогнать. Считает _physics_process, а ставит _physics().
-var _pending_ticks := 0
-
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
 	# Полный набор систем группы "physics", как в world.tscn: проверка про то,
 	# кого какая выборка забирает, и на неполном наборе она проверяла бы пустоту.
-	for system in [
+	_add_systems(world, "physics", [
 		S_BodySnatch.new(), S_Phasing.new(), S_Gravity.new(),
 		S_EnemyAI.new(), S_Sprint.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(),
 		S_Movement.new(),
-	]:
-		system.group = "physics"
-		world.add_system(system)
+	])
+
+	# Опрос ввода — отдельной группой: крутит её только _check_blocked_input.
+	_add_systems(world, "input", [S_PlayerInput.new()])
 
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
@@ -40,9 +33,29 @@ func _ready() -> void:
 	world.add_observer(O_SoulTraits.new())
 
 	await _run(world)
+	_check_blocked_input()
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
+
+
+## Под блокирующим экраном (C_UIBlocked) «ничего не нажато» держит сам источник
+## ввода. Системы движения блок не фильтруют намеренно — выпавшее из S_Walk тело
+## сохранило бы старую скорость, — поэтому зажатое до открытия экрана направление
+## и бег обязаны отпускаться в S_PlayerInput, а не где-то снаружи.
+func _check_blocked_input() -> void:
+	var player := ECS.world.query.with_all([C_PlayerInput]).execute_one()
+	var inp := player.get_component(C_PlayerInput) as C_PlayerInput
+	player.add_component(C_UIBlocked.new())
+	inp.move_direction = Vector3.FORWARD
+	inp.sprint_held = true
+	inp.mouse_delta = Vector2(5.0, 0.0)
+	ECS.process(0.016, "input")
+	_check(
+		"под блокирующим экраном удержание отпущено",
+		inp.move_direction == Vector3.ZERO and not inp.sprint_held and inp.mouse_delta == Vector2.ZERO,
+		"направление %s, бег %s, взгляд %s" % [inp.move_direction, inp.sprint_held, inp.mouse_delta]
+	)
+	player.remove_component(C_UIBlocked)
 
 
 func _run(world: World) -> void:
@@ -553,28 +566,6 @@ func _run(world: World) -> void:
 	)
 
 
-## Гоняет группу "physics" из НАСТОЯЩЕГО _physics_process, как main.gd в игре.
-##
-## Не из корутины по physics_frame: этот сигнал приходит уже ПОСЛЕ шага физики, а
-## Jolt крутится на своём потоке и наружу состояние тел не отдаёт —
-## move_and_slide() оттуда роняет «Body state is inaccessible right now». Тот же
-## запрет, по которому все кастующие лучи системы обязаны жить в группе "physics"
-## (см. [[GECS и правила движка]]).
-func _physics_process(delta: float) -> void:
-	if _pending_ticks <= 0:
-		return
-	_pending_ticks -= 1
-	ECS.process(delta, "physics")
-
-
-## Прогоняет [param frames] физкадров и ждёт, пока они отработают.
-func _physics(frames: int) -> void:
-	_pending_ticks = frames
-	while _pending_ticks > 0:
-		await get_tree().physics_frame
-	await get_tree().physics_frame  # последнему тику дать долететь
-
-
 func _spawn_body(world: World, path: String, at: Vector3) -> Entity:
 	# Entity наследует Node, поэтому до Node3D — через двойной каст, как в
 	# S_BodySnatch._embody.
@@ -583,12 +574,3 @@ func _spawn_body(world: World, path: String, at: Vector3) -> Entity:
 	world.add_entity(body)
 	body.add_component(C_SnatchTargeted.new())
 	return body
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

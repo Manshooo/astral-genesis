@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверяет Room Wizard (addons/game_design_tool/dock/room_wizard.gd) — то,
 ## что молча ломается: рефлексивная форма показывает не те поля, путь
 ## ресурса посчитан неверно, тег не нормализуется. Кнопки «Сохранить»/
@@ -6,9 +6,6 @@ extends Node
 ## проекта, а не то, что можно безопасно гонять на каждом прогоне; их
 ## поведение проверяется живым прогоном в редакторе.
 ## Запуск: godot --headless dev/room_wizard_check.tscn
-
-var _ok := 0
-var _fail := 0
 
 const RoomWizard := preload("res://addons/game_design_tool/dock/room_wizard.gd")
 ## Нормализация тега уехала из дока в общий GDT_Tags — там же её и проверяем,
@@ -35,8 +32,7 @@ func _ready() -> void:
 	_check_hub_scene(wizard)
 
 	wizard.free()
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _check_tagify() -> void:
@@ -150,11 +146,3 @@ func _check_hub_scene(wizard: RoomWizard) -> void:
 	)
 
 	room.free()
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

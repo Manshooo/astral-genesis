@@ -349,13 +349,10 @@ func _draw_player() -> void:
 	draw_polyline(outline, color_player_outline, 1.0)
 
 
-## Игрок как узел сцены. Карты опрашивают мир напрямую — та же схема, что в
-## UI_HudVitals. Через Node: Entity наследует Node, и прямой каст Entity→Node3D
-## анализатор GDScript не пропускает (тот же приём, что в RunManager).
+## Игрок как узел сцены. Через Node: Entity наследует Node, и прямой каст
+## Entity→Node3D анализатор GDScript не пропускает (тот же приём, что в RunManager).
 static func player_node() -> Node3D:
-	if ECS.world == null:
-		return null
-	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as Node as Node3D
+	return E_Player.find() as Node as Node3D
 
 
 ## Куда смотрит игрок, в осях карты. Клетка — это Vector2i(x, z) (RS_RoomLayout),

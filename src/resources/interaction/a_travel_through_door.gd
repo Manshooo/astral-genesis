@@ -24,7 +24,7 @@ func execute(entity: Entity, _interactor: Node = null) -> void:
 		return
 
 	# Пустая цель = выход «заглушён»: у узла интерактивов больше, чем рёбер графа
-	# (см. RunManager._seal_door). Проём/портал настоящий, но за ним ничего нет.
+	# (см. LayerStreamer._seal_door). Проём/портал настоящий, но за ним ничего нет.
 	if portal.target_node_id == &"":
 		_notify(_sealed_message())
 		return
@@ -57,17 +57,7 @@ func _key_name(key: StringName) -> String:
 	return KEY_NAMES.get(key, str(key))
 
 
-## Кладёт сообщение на игрока — рисует его hud_message.gd, гасит S_ScreenMessage.
-## add/remove_component здесь безопасны: interact() зовётся из S_InteractInput
-## через call_deferred, то есть уже ВНЕ прохода ECS по сущностям.
-## Пересоздаём компонент, а не правим поля: прямая запись в поля миру не
-## сигналится, и HUD не увидел бы новый текст.
-func _notify(text: String) -> void:
-	var player := ECS.world.query.with_all([C_PlayerInput]).execute_one()
-	if player == null:
-		return
-	if player.has_component(C_ScreenMessage):
-		player.remove_component(C_ScreenMessage)
-	var message := C_ScreenMessage.new()
-	message.text = text
-	player.add_component(message)
+## Строка игроку. Прямая правка, без буфера, законна: interact() зовётся из
+## S_InteractInput через call_deferred, то есть уже ВНЕ прохода ECS.
+func _notify(line: String) -> void:
+	C_ScreenMessage.show_on(E_Player.find(), line)

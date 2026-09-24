@@ -28,7 +28,18 @@ extends Resource
 
 
 ## Сколько стоит следующий ранг. -1 если уже максимум.
+##
+## max_rank и cost_per_rank — два независимых поля инспектора, и поднять первое,
+## не дописав второе, легко. Раньше это роняло покупку выходом за границы
+## массива в момент клика; теперь ранг без цены просто не продаётся, а
+## RS_SkillTree.validate() называет навык заранее.
 func cost_for_next_rank(current_rank: int) -> int:
 	if current_rank >= max_rank:
+		return -1
+	if current_rank >= cost_per_rank.size():
+		push_error(
+			"RS_SkillDefinition '%s': max_rank=%d, а цен в cost_per_rank %d — ранг %d не продаётся"
+			% [id, max_rank, cost_per_rank.size(), current_rank + 1]
+		)
 		return -1
 	return cost_per_rank[current_rank]

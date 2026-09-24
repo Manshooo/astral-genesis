@@ -2,17 +2,11 @@
 
 [ext_resource type="Script" uid="uid://cctjgttgw45u1" path="res://src/levels/procedural/rooms/vertical/vertical_hub_1.gd" id="1_b7vy5"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_pdoc4"]
-[ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_5a3xj"]
 [ext_resource type="PackedScene" uid="uid://bamiagm4slk7m" path="res://assets/levels/SM_room_B_3/SM_room_B_3.glb" id="4_b7vy5"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_grwat"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_uysqc"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_f738j"]
 [ext_resource type="PackedScene" uid="uid://cptqi40u604fy" path="res://src/entities/vertical_portal/e_vertical_portal.tscn" id="8_ryc4f"]
-
-[sub_resource type="Resource" id="Resource_da6hf"]
-script = ExtResource("3_5a3xj")
-node_id = &"vertical_hub_3"
-metadata/_custom_type_script = "uid://0747vic3c1i4"
 
 [sub_resource type="Resource" id="Resource_8ssbo"]
 script = ExtResource("6_uysqc")
@@ -32,7 +26,6 @@ slot_id = &"east"
 
 [node name="VerticalHub2" type="Node3D" unique_id=1402548300]
 script = ExtResource("1_b7vy5")
-component_resources = Array[ExtResource("2_pdoc4")]([SubResource("Resource_da6hf")])
 
 [node name="Visual" parent="." unique_id=1316407927 instance=ExtResource("4_b7vy5")]
 

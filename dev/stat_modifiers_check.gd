@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка паттерна «база + модификаторы» (C_StatModifiers / RS_StatModifier):
 ## свёртка, независимость от порядка, идемпотентность источника, снятие эффекта
 ## и то, что реальные точки чтения действительно ходят через слой.
@@ -9,25 +9,16 @@ extends Node
 
 const BODY_SCENE := preload("res://src/entities/body/e_body.tscn")
 
-var _ok := 0
-var _fail := 0
-
-
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	var snatch := S_BodySnatch.new()
-	snatch.group = "physics"
-	world.add_system(snatch)
+	_add_systems(world, "physics", [S_BodySnatch.new()])
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_ApplySkillEffects.new())
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -199,12 +190,3 @@ func _make_soul() -> Entity:
 		C_PlayerInput.new(), C_BodySnatch.new(), C_Lifespan.new(), C_StatModifiers.new()
 	]
 	return soul
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

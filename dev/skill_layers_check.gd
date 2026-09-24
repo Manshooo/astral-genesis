@@ -1,4 +1,4 @@
-extends Control
+extends "res://dev/check_harness.gd"
 ## Проверка фоновых слоёв графа навыков — дорожек-категорий и связей-требований
 ## (карточка Задачи/Карточки/Skill Tree.md): подложка ветки накрывает свои
 ## карточки и не лезет на чужие, подпись берётся из данных ветки, ребро есть
@@ -16,8 +16,6 @@ extends Control
 
 const GRAPH_SCENE := preload("res://src/ui/skill_tree/skill_graph_view.tscn")
 
-var _ok := 0
-var _fail := 0
 var _original_save: PlayerSkillSave
 var _original_tree: RS_SkillTree
 
@@ -31,8 +29,7 @@ func _ready() -> void:
 	SkillManager.save = _original_save
 	SkillManager.SKILL_TREE = _original_tree
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -228,12 +225,3 @@ func _tree_with_empty_branch() -> RS_SkillTree:
 	var branches: Array[RS_SkillBranch] = [alpha, beta]
 	tree.branches = branches
 	return tree
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  ПРОВАЛ %s  (%s)" % [what, detail])

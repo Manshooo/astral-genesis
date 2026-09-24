@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка обводки силуэтом (`O_OutlineVisual` + `S_OutlineMask`).
 ## Запуск: godot --headless dev/outline_mask_check.tscn
 ##
@@ -18,22 +18,16 @@ const OUTLINE_BIT := O_OutlineVisual.OUTLINE_LAYER
 ## Куда ставится тестовый объект: прямо перед камерой, в нескольких метрах.
 const TARGET_POS := Vector3(0.0, 0.0, -3.0)
 
-var _ok := 0
-var _fail := 0
-
 var _camera: Camera3D
 
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
 	world.add_observer(O_OutlineVisual.new())
 
 	var mask_system := S_OutlineMask.new()
-	mask_system.group = "gameplay"
-	world.add_system(mask_system)
+	_add_systems(world, "gameplay", [mask_system])
 
 	# Камера игрока: система ищет её через get_viewport().get_camera_3d(), то
 	# есть ровно так же, как в игре — чья это камера, ей знать незачем.
@@ -43,8 +37,7 @@ func _ready() -> void:
 
 	await _run(world, mask_system)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World, mask_system: S_OutlineMask) -> void:
@@ -301,12 +294,3 @@ func _layers_of(meshes: Array[GeometryInstance3D]) -> String:
 	for mesh in meshes:
 		parts.append(str(mesh.layers))
 	return ", ".join(parts)
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

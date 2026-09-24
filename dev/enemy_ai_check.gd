@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка простого поведения врага (S_EnemyAI): вне радиуса аггро стоит, в
 ## радиусе — реально идёт (тот самый CharacterBody3D, а не StaticBody3D, как у
 ## E_Body — иначе S_Walk/S_Movement его не двигают), в упор бьёт с кулдауном
@@ -20,30 +20,17 @@ const PLAYER_LAYER := 1 << 1
 const ENEMIES_LAYER := 1 << 2
 const MOVING_LAYER := 1 << 4
 
-var _ok := 0
-var _fail := 0
-
-## Сколько ещё физкадров прогнать. Считает _physics_process, ставит _physics().
-var _pending_ticks := 0
-
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
 	# Полный набор систем группы "physics", как в world.tscn: захват нужен,
 	# чтобы у игрока появился C_Health (враг реагирует только на воплощённого).
-	for system in [
+	_add_systems(world, "physics", [
 		S_BodySnatch.new(), S_Phasing.new(), S_Gravity.new(),
 		S_EnemyAI.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(), S_Movement.new(),
-	]:
-		system.group = "physics"
-		world.add_system(system)
-
-	var health_sys := S_Health.new()
-	health_sys.group = "gameplay"
-	world.add_system(health_sys)
+	])
+	_add_systems(world, "gameplay", [S_Health.new()])
 
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
@@ -52,8 +39,7 @@ func _ready() -> void:
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -261,30 +247,9 @@ func _spawn_body(world: World, path: String, at: Vector3) -> Entity:
 	return body
 
 
-## Гоняет физику из НАСТОЯЩЕГО _physics_process, как main.gd в игре, и тем же
-## тактом дёргает группу "gameplay" — S_Health в ней должен успеть отработать
-## до следующей проверки, а на реальный кадровый _process в headless-прогоне
-## полагаться нельзя.
-func _physics_process(delta: float) -> void:
-	if _pending_ticks <= 0:
-		return
-	_pending_ticks -= 1
+## Тем же тактом дёргает группу "gameplay" — S_Health в ней должен успеть
+## отработать до следующей проверки, а на реальный кадровый _process в
+## headless-прогоне полагаться нельзя.
+func _on_physics_tick(delta: float) -> void:
 	ECS.process(delta, "physics")
 	ECS.process(delta, "gameplay")
-
-
-## Прогоняет [param frames] физкадров и ждёт, пока они отработают.
-func _physics(frames: int) -> void:
-	_pending_ticks = frames
-	while _pending_ticks > 0:
-		await get_tree().physics_frame
-	await get_tree().physics_frame  # последнему тику дать долететь
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

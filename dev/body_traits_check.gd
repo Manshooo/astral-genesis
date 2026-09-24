@@ -1,31 +1,21 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## ВРЕМЕННАЯ проверка модели характеристик тела (C_BodyTrait): захват переносит
 ## всё, что тело объявило, развоплощение снимает, карман распада живёт отдельным
 ## компонентом. Запускать: godot --headless dev/body_traits_check.tscn
 
 const BODY_SCENE := preload("res://src/entities/body/e_body.tscn")
 
-var _ok := 0
-var _fail := 0
-
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	var snatch := S_BodySnatch.new()
-	snatch.group = "physics"
-	world.add_system(snatch)
-	var lifespan := S_Lifespan.new()
-	lifespan.group = "gameplay"
-	world.add_system(lifespan)
+	_add_systems(world, "physics", [S_BodySnatch.new()])
+	_add_systems(world, "gameplay", [S_Lifespan.new()])
 	world.add_observer(O_ExpelFromBody.new())
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -119,6 +109,24 @@ func _run(world: World) -> void:
 		"сгорело %.2f" % burned
 	)
 
+	# --- 5а. Темп утечки не опускается ниже обычного -------------------------
+	# Перк, загнавший множитель утечки в ноль, давал бы бессмертие (излишек не
+	# убывает), в минус — растущий запас. Снизу темп держит единица: излишек
+	# сгорает хотя бы как обычное время.
+	soul.add_component(C_StatModifiers.new())
+	(soul.get_component(C_StatModifiers) as C_StatModifiers).set_source(
+		&"check", {}, {C_StatModifiers.OVERFLOW_LEAK: 0.0}
+	)
+	before = life.current
+	ECS.process(0.5, "gameplay")
+	burned = before - life.current
+	_check(
+		"обнулённый темп утечки не останавливает излишек",
+		is_equal_approx(burned, 0.5),
+		"сгорело %.2f" % burned
+	)
+	soul.remove_component(C_StatModifiers)
+
 	# --- 6. Гибель тела: остаётся доля -------------------------------------
 	var body2 := BODY_SCENE.instantiate()
 	world.add_entity(body2)
@@ -126,6 +134,38 @@ func _run(world: World) -> void:
 	bs.capture_requested = true
 	ECS.process(0.016, "physics")
 	_check("повторный захват", soul.get_component(C_Embodied) != null, "")
+
+	# --- 6а. Кадр смертельного удара -----------------------------------------
+	# Удар проходит в "physics", а смерть объявит S_Health только в "gameplay".
+	# В это окно захват снял бы смертельный C_Health вместе с трейтами, а выход
+	# успел бы раньше выброса по смерти — оба обошли бы штраф за гибель.
+	var worn := soul.get_component(C_Health) as C_Health
+	worn.current = 0.0
+	var body3 := BODY_SCENE.instantiate()
+	world.add_entity(body3)
+	body3.add_component(C_SnatchTargeted.new())
+	var life_at_death := life.current
+	bs.capture_requested = true
+	bs.leave_requested = true
+	ECS.process(0.016, "physics")
+	await get_tree().process_frame  # дать отложенному выходу шанс сработать
+	_check(
+		"добитое тело не пересаживает в новое",
+		soul.get_component(C_Health) == worn and body3.has_component(C_BodySnatchable),
+		"C_Health подменён или тело поглощено"
+	)
+	_check(
+		"добитое тело не отпускает добровольно",
+		soul.get_component(C_Embodied) != null and is_equal_approx(life.current, life_at_death),
+		"запас %.2f → %.2f" % [life_at_death, life.current]
+	)
+	_check(
+		"оба нажатия погашены, а не отложены",
+		not bs.capture_requested and not bs.leave_requested,
+		"capture=%s leave=%s" % [bs.capture_requested, bs.leave_requested]
+	)
+	world.remove_entity(body3)
+	worn.current = worn.maximum
 
 	O_ExpelFromBody.expel(soul, false)
 	_check(
@@ -152,12 +192,3 @@ func _make_soul() -> Entity:
 	soul.name = "Soul"
 	soul.component_resources = [C_PlayerInput.new(), C_BodySnatch.new(), C_Lifespan.new()]
 	return soul
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

@@ -27,6 +27,75 @@ const DEFAULT_CURRENCY_FORMS: Array[String] = ["очко", "очка", "очко
 @export var currency_forms: Array[String] = []
 
 
+## Проверка данных дерева: всё, что ломается тихо или в момент клика игрока.
+## Зовётся из dev-проверок и инструментов, не в горячем пути. Пусто — всё сходится.
+##   - цена на каждый ранг: иначе ранг выше последней цены не продаётся;
+##   - уникальные id: get_definition вернул бы первый, второй стал бы недостижим;
+##   - требования ссылаются на существующие навык/ветку: иначе навык не откроется
+##     никогда, и экран не скажет почему;
+##   - требования навыков без циклов: цикл тоже не падает, а делает все его
+##     навыки навсегда закрытыми.
+func validate() -> Array[String]:
+	var problems: Array[String] = []
+	var ids := {}
+	for skill in skills:
+		if skill == null:
+			problems.append("null-навык в списке")
+			continue
+		if ids.has(skill.id):
+			problems.append("навык «%s» объявлен дважды" % skill.id)
+		ids[skill.id] = skill
+		if skill.cost_per_rank.size() < skill.max_rank:
+			problems.append(
+				"«%s»: max_rank=%d, а цен в cost_per_rank %d"
+				% [skill.id, skill.max_rank, skill.cost_per_rank.size()]
+			)
+
+	for skill in skills:
+		if skill == null:
+			continue
+		for req in skill.requires:
+			if req == null:
+				problems.append("«%s»: null-требование" % skill.id)
+			elif req.type == RS_SkillRequirement.Type.SKILL_RANK and not ids.has(req.target_skill):
+				problems.append("«%s» требует несуществующий навык «%s»" % [skill.id, req.target_skill])
+			elif req.type == RS_SkillRequirement.Type.BRANCH_TOTAL_RANKS and get_branch(req.target_branch) == null:
+				problems.append("«%s» требует несуществующую ветку «%s»" % [skill.id, req.target_branch])
+
+	for skill_id: StringName in _cyclic_skills(ids):
+		problems.append("«%s» замкнут в цикл требований — не откроется никогда" % skill_id)
+	return problems
+
+
+## Навыки, лежащие на цикле требований SKILL_RANK (обход в глубину с тремя цветами).
+func _cyclic_skills(ids: Dictionary) -> Array[StringName]:
+	var state := {}  # id -> 1 (в обходе) / 2 (готов)
+	var cyclic: Array[StringName] = []
+	for skill_id: StringName in ids:
+		_visit(skill_id, ids, state, [], cyclic)
+	return cyclic
+
+
+func _visit(
+	skill_id: StringName, ids: Dictionary, state: Dictionary, path: Array, cyclic: Array[StringName]
+) -> void:
+	if state.get(skill_id, 0) == 2:
+		return
+	if state.get(skill_id, 0) == 1:
+		for on_cycle: StringName in path.slice(path.find(skill_id)):
+			if not cyclic.has(on_cycle):
+				cyclic.append(on_cycle)
+		return
+	state[skill_id] = 1
+	path.append(skill_id)
+	var skill: RS_SkillDefinition = ids[skill_id]
+	for req in skill.requires:
+		if req and req.type == RS_SkillRequirement.Type.SKILL_RANK and ids.has(req.target_skill):
+			_visit(req.target_skill, ids, state, path, cyclic)
+	path.pop_back()
+	state[skill_id] = 2
+
+
 func get_definition(id: StringName) -> RS_SkillDefinition:
 	for skill in skills:
 		if skill.id == id:

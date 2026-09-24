@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## ШАБЛОН headless-проверки. Скопировать в dev/<область>_check.gd, создать рядом
 ## сцену <область>_check.tscn с этим скриптом на корневом Node и запускать:
 ##   godot --headless dev/<область>_check.tscn
@@ -7,27 +7,23 @@ extends Node
 ##
 ## Здесь описать, ЧТО проверяется и ПОЧЕМУ этот инвариант стоит проверки:
 ## тест оправдан, когда нарушение тихое — не падает, а молча меняет поведение.
-
-var _ok := 0
-var _fail := 0
+##
+## Счёт ассертов, итог, код выхода и сторож SCRIPT ERROR даёт общая обвязка
+## (dev/check_harness.gd) — своих _check()/quit() не заводить.
 
 
 func _ready() -> void:
 	# Мир поднимается вручную: world.tscn не грузится, берём только то, что нужно
-	# проверке. Группа у системы задаётся явно — по ней же её тикает ECS.process.
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	# проверке. _add_systems сортирует группу по deps(), как игра, — порядок в
+	# списке ничего не значит.
+	var world := _new_world()
 
-	# var sys := S_Что_Проверяем.new()
-	# sys.group = "gameplay"
-	# world.add_system(sys)
+	# _add_systems(world, "gameplay", [S_Что_Проверяем.new()])
 	# world.add_observer(O_Что_Проверяем.new())
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(_world: World) -> void:
@@ -41,15 +37,9 @@ func _run(_world: World) -> void:
 	# и «одна секунда» это буквально ECS.process(1.0, ...).
 	# ECS.process(1.0, "gameplay")
 
+	# Физика (move_and_slide, лучи) — только из настоящего физкадра:
+	# await _physics(10)  # переопределите _on_physics_tick, если тику нужно больше
+
 	# После call_deferred (развоплощение, переход через дверь — правило v9)
 	# обязателен пропуск кадра, иначе увидим состояние ДО операции:
 	# await get_tree().process_frame
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

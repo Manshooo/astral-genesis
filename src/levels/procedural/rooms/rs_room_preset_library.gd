@@ -129,11 +129,24 @@ func _select(
 			_note(reasons, p, REASON_CANDIDATE)
 
 	if candidates.is_empty():
+		# Fallback фильтров не проходит — это запасной выход, а не кандидат. С
+		# тегами он может разойтись без последствий, с порталом — нет: портальный
+		# узел без портала в сцене оставляет переход оборванным (сосед по ребру
+		# получит портал сюда, а обратного не будет), лишний портал — мёртвый
+		# посреди пола. Такое уже не деградация, а сломанный забег, поэтому ошибка,
+		# а не предупреждение; validate() ловит это заранее.
+		var fallback_portal := fallback != null and fallback.tags.has(PORTAL_TAG)
 		if reasons == null:
-			push_warning(
-				"RS_RoomPresetLibrary: нет комнаты для узла '%s' (портал=%s, теги=%s) — fallback"
-				% [node.id, needs_portal, str(node.tags)]
-			)
+			if fallback_portal != needs_portal:
+				push_error(
+					"RS_RoomPresetLibrary: нет комнаты для узла '%s' (портал=%s, теги=%s), а fallback «%s» %s портала — переход оборвётся"
+					% [node.id, needs_portal, str(node.tags), _fallback_label(), "без" if needs_portal else "с лишним"]
+				)
+			else:
+				push_warning(
+					"RS_RoomPresetLibrary: нет комнаты для узла '%s' (портал=%s, теги=%s) — fallback"
+					% [node.id, needs_portal, str(node.tags)]
+				)
 		_note(reasons, fallback, REASON_FALLBACK)
 		return fallback
 
@@ -182,6 +195,10 @@ func _note(reasons: Variant, preset: RS_RoomPreset, reason: String) -> void:
 	(reasons as Dictionary)[_preset_label(preset)] = reason
 
 
+func _fallback_label() -> String:
+	return _preset_label(fallback) if fallback else "null"
+
+
 func _preset_label(preset: RS_RoomPreset) -> String:
 	if preset.display_name != "":
 		return preset.display_name
@@ -199,22 +216,12 @@ func _tags_cover(preset_tags: Array, node_tags: Array) -> bool:
 ## Взвешенный бросок по авторским весам. Все веса нулевые — равновероятно:
 ## пресет с весом 0 всё ещё кандидат, если больше некому.
 func _weighted_pick(pool: Array, rng: RandomNumberGenerator) -> RS_RoomPreset:
-	var effective: Array[float] = []
-	var total := 0.0
+	var weights: Array[float] = []
 	for p: RS_RoomPreset in pool:
-		var w := maxf(p.weight, 0.0)
-		effective.append(w)
-		total += w
-	if total <= 0.0:  # все веса нулевые — равновероятно
+		weights.append(p.weight)
+	if WeightedPick.total(weights) <= 0.0:  # все веса нулевые — равновероятно
 		return pool[rng.randi_range(0, pool.size() - 1)]
-
-	var roll := rng.randf() * total
-	var acc := 0.0
-	for i in pool.size():
-		acc += effective[i]
-		if roll <= acc:
-			return pool[i]
-	return pool[pool.size() - 1]
+	return pool[WeightedPick.index(weights, rng.randf())]
 
 
 ## Отладочная проверка сцен пресетов: сверяет заявленный slot_count с фактическим
@@ -226,11 +233,32 @@ func validate() -> Array[String]:
 	var problems: Array[String] = []
 	if type_catalog:
 		problems.append_array(type_catalog.validate())
+	var has_portal := false
+	var has_plain := false
 	for p in presets:
 		if p == null:
 			problems.append("null-пресет в списке")
 			continue
 		problems.append_array(validate_preset(p))
+		if p.tags.has(PORTAL_TAG):
+			has_portal = true
+		else:
+			has_plain = true
+
+	# Портальные и обычные узлы есть в каждом забеге, и оба вида обязан кто-то
+	# закрыть: иначе всё уходит в fallback, который фильтры не проходит (см.
+	# _select) и у которого портал есть только одним способом из двух.
+	if not has_portal:
+		problems.append("нет ни одного пресета с тегом «%s» — переходы между этажами и слоями оборвутся" % PORTAL_TAG)
+	if not has_plain:
+		problems.append("нет ни одного пресета без портала — обычные узлы получат мёртвые порталы")
+
+	# fallback и hub в автоподбор не ходят, поэтому их сцены не проверил бы никто:
+	# fallback встаёт на узел, когда подбор пуст, hub берут инструменты. Разошедшийся
+	# с дверями сцены slot_count у них тот же тихий обрыв, что у обычного пресета.
+	for extra: RS_RoomPreset in [fallback, hub]:
+		if extra:
+			problems.append_array(validate_preset(extra))
 	return problems
 
 

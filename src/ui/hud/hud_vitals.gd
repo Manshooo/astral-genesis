@@ -22,7 +22,7 @@ extends VBoxContainer
 
 
 func _process(_delta: float) -> void:
-	var player := _get_player()
+	var player := E_Player.find()
 	if player == null:
 		# Игрока ещё/уже нет (загрузка сцены, смерть) — прячем панель целиком.
 		visible = false
@@ -81,9 +81,3 @@ func _update_health(player: Entity) -> void:
 	_health_bar.max_value = hp.effective_maximum(player)
 	_health_bar.value = hp.current
 	_health_value.text = "%.0f" % ceilf(hp.current)
-
-
-func _get_player() -> Entity:
-	if ECS.world == null:
-		return null
-	return ECS.world.query.with_all([C_PlayerInput]).execute_one()

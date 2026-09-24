@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка сводки забега: накопитель (RS_RunStats), каталог показателей,
 ## воронка урона и локализация.
 ##
@@ -15,10 +15,6 @@ const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 const CATALOG_PATH := "res://data/run_stat_catalog.tres"
 const SAVE_ICON_PATH := "res://assets/ui/icons/save.svg"
-
-var _ok := 0
-var _fail := 0
-var _pending_ticks := 0
 
 ## Сколько раз сейв отчитался о записи (WorldSave.progress_saved). Поле, а не
 ## локальная переменная в лямбде: лямбда GDScript захватывает переменную ПО
@@ -37,20 +33,13 @@ func _ready() -> void:
 	_save_backup = FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH)
 	_had_save = not _save_backup.is_empty()
 
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	for system in [
+	_add_systems(world, "physics", [
 		S_BodySnatch.new(), S_Phasing.new(), S_Gravity.new(),
 		S_EnemyAI.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(), S_Movement.new(),
-	]:
-		system.group = "physics"
-		world.add_system(system)
-
-	var health_sys := S_Health.new()
-	health_sys.group = "gameplay"
-	world.add_system(health_sys)
+	])
+	_add_systems(world, "gameplay", [S_Health.new()])
 
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
@@ -68,8 +57,7 @@ func _ready() -> void:
 	await _check_save_indicator()
 	_restore_save()
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +357,32 @@ func _check_autosave() -> void:
 	_saves = 0
 	_check("во время смерти точка не ставится", not RunManager.save_progress() and _saves == 0,
 		"записей: %d" % _saves)
+
+	# То же окно, но извне: затемнение смерти не ставит мир на паузу и не
+	# блокирует ввод. Портал на другой слой пересобрал бы слой и записал на диск
+	# живой забег, дверь выхода засчитала бы побег поверх смерти с двойной
+	# наградой. Настоящий граф — чтобы у перехода было куда идти и без сторожа.
+	var real_graph := RS_LevelGraph.new().generate_run(
+		1, GameConfig.config.room_preset_library, GameConfig.config.world_gen
+	)
+	var elsewhere: RS_LevelNode = null
+	for node: RS_LevelNode in real_graph.nodes.values():
+		if node.depth != RunManager.current_depth:
+			elsewhere = node
+			break
+	RunManager.current_graph = real_graph
+	_saves = 0
+	var finished := [false]
+	var on_finished := func(): finished[0] = true
+	RunManager.run_finished.connect(on_finished)
+	RunManager.travel_to(elsewhere.id)
+	RunManager.finish_run()
+	RunManager.run_finished.disconnect(on_finished)
+	_check("во время смерти портал никуда не ведёт",
+		RunManager.current_node_id == &"проверочный_узел" and _saves == 0,
+		"узел %s, записей: %d" % [RunManager.current_node_id, _saves])
+	_check("во время смерти побег не засчитывается",
+		not finished[0] and RunManager.current_graph == real_graph, "")
 	RunManager._ending = false
 
 	# Автосохранение по времени: до интервала молчит, после — пишет.
@@ -461,25 +475,6 @@ func _spawn_body(world: World, path: String, at: Vector3, targeted: bool = true)
 	return body
 
 
-func _physics_process(delta: float) -> void:
-	if _pending_ticks <= 0:
-		return
-	_pending_ticks -= 1
+func _on_physics_tick(delta: float) -> void:
 	ECS.process(delta, "physics")
 	ECS.process(delta, "gameplay")
-
-
-func _physics(frames: int) -> void:
-	_pending_ticks = frames
-	while _pending_ticks > 0:
-		await get_tree().physics_frame
-	await get_tree().physics_frame
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

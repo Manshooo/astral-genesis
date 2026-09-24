@@ -1,4 +1,4 @@
-# res://src/systems/gameplay/s_apply_skill_effects.gd
+# res://src/observers/o_apply_skill_effects.gd
 # Наблюдатель: переносит дерево перков в модификаторы души.
 #
 # Он ПЕРЕСОБИРАЕТ вклад источника &"skills" целиком по текущей таблице рангов, а

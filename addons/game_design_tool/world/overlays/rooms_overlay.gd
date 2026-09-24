@@ -70,7 +70,7 @@ func _build_tiles(view: LayerView) -> void:
 		var tile := view.kit.instantiate(view.plan.corridor_tiles[cell])
 		if tile == null:
 			continue
-		# Позиция до add_child — как у игры (RunManager._spawn_corridor).
+		# Позиция до add_child — как у игры (LayerStreamer._spawn_corridor).
 		tile.position = view.plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
 		add_child(tile)
 		var branch: StringName = view.plan.node_by_cell.get(cell, &"")

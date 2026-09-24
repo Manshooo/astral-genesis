@@ -1,18 +1,20 @@
-# meta-description: An Observer watches for changes to a specific type of Component on all Entities in the world.
+# meta-description: Наблюдатель GECS — реакция на добавление/снятие компонентов или событие мира.
+# ЗАЧЕМ этот наблюдатель: <причина в одну-две фразы>.
+#
+# Колбэк может прийти посреди прохода системы (событие шлют из process()), поэтому
+# структурные правки здесь — тоже через cmd, а если правка сносит комнату или
+# сцену — через call_deferred (см. O_ExpelFromBody, O_RunEnded).
 class_name _CLASS_
 extends Observer
 
 
-func watch() -> Resource:
-	return Component
+func query() -> QueryBuilder:
+	return q.with_all([]).on_added().on_removed()
 
-# func on_component_added(entity: Entity, component: Resource):
-# 	pass
 
-# func on_component_removed(entity: Entity, component: Resource):
-# 	pass
-
-# func on_component_changed(
-# 	entity: Entity, component: Resource, property: String, new_value: Variant, old_value: Variant
-# ):
-# 	pass
+func each(event: Variant, entity: Entity, _payload: Variant = null) -> void:
+	match event:
+		Observer.Event.ADDED:
+			pass
+		Observer.Event.REMOVED:
+			pass

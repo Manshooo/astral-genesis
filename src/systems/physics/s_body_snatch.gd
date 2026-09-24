@@ -1,4 +1,4 @@
-# res://src/systems/gameplay/s_body_snatch.gd
+# res://src/systems/physics/s_body_snatch.gd
 # Группа: "physics" — рядом с S_SnatchTargetDetector, чья метка нужна ему в том
 # же физкадре.
 # Ядро игры — захват тела. По запросу захвата (действие "snatch_body", по умолчанию
@@ -29,6 +29,19 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 	for soul in entities:
 		var bs := soul.get_component(C_BodySnatch) as C_BodySnatch
 
+		# Надетое тело добито ЭТИМ тиком, но смерть ещё не объявлена: удар проходит
+		# в "physics" (S_EnemyAI → S_Health.deal_damage), а C_Dead и "entity_died"
+		# вешает S_Health.process() из "gameplay" — после всего физпрохода. В это
+		# окно и захват, и выход обошли бы гибель: захват снял бы смертельный
+		# C_Health вместе с остальными трейтами, а отложенный добровольный выход
+		# сработал бы раньше отложенного выброса по смерти и забрал бы остаток
+		# запаса как награду. Гибель обязана победить — оба нажатия гасим, а не
+		# откладываем, чтобы они не выстрелили в следующем теле.
+		if _worn_body_dying(soul):
+			bs.leave_requested = false
+			bs.capture_requested = false
+			continue
+
 		if bs.leave_requested:
 			bs.leave_requested = false
 			# Отложенно: развоплощение снимает компоненты, а мы внутри прохода
@@ -57,7 +70,7 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 	# «сюда это тело не влезет», и тратить на него попытку нечестно.
 	var form := E_Body.form_of(body)
 	if not _fits(soul, body, form):
-		_notify(soul, "Тело здесь не поместится")
+		C_ScreenMessage.show_on(soul, "Тело здесь не поместится", cmd)
 		return
 
 	var chance := C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_CHANCE, bs.capture_success_chance)
@@ -86,7 +99,7 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	# безногого — ровно тот случай, ради которого возможность и сделана
 	# компонентом. Симметрия с O_ExpelFromBody держится сама: снимаем тем же
 	# правилом «C_BodyTrait + C_Health», каким надеваем.
-	for shed in _worn_traits(soul):
+	for shed in E_Body.worn_by(soul):
 		cmd.remove_component(soul, shed.get_script())
 
 	for worn in E_Body.traits_of(body):
@@ -146,7 +159,7 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	#
 	# Поворот не трогаем: yaw живёт на E_Player, pitch — на его камере, и
 	# развернуть игрока в позу трупа так же дезориентирует, как разворот при
-	# входе в дверь (см. RunManager._arrival_point — там ровно то же правило).
+	# входе в дверь (см. PlayerPlacement.arrival_point — там ровно то же правило).
 	var soul_node := soul as Node as Node3D
 	var body_node := body as Node as Node3D
 	if soul_node and body_node:
@@ -187,17 +200,11 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	)
 
 
-## Характеристики тела, надетые на душу прямо сейчас.
-##
-## Собираем список заранее, отдельным проходом: снятие правит тот самый словарь
-## components, по которому мы бы шли (та же осторожность, что в
-## O_ExpelFromBody.expel).
-static func _worn_traits(soul: Entity) -> Array[Component]:
-	var found: Array[Component] = []
-	for component in soul.components.values():
-		if component is C_BodyTrait or component is C_Health:
-			found.append(component as Component)
-	return found
+## Надетое тело уже на нуле, но S_Health ещё не объявил его смерть (см. process).
+## Бестелесная душа C_Health не носит — ей умирать нечем, и захват ей открыт.
+static func _worn_body_dying(soul: Entity) -> bool:
+	var health := soul.get_component(C_Health) as C_Health
+	return health != null and health.current <= 0.0
 
 
 ## На столько приподнимаем проверяемую капсулу над подошвой — см. ниже.
@@ -253,14 +260,3 @@ static func _fits(soul: Entity, body: Entity, form: C_BodyForm) -> bool:
 
 	var space := soul_node.get_world_3d().direct_space_state
 	return space.intersect_shape(params, 1).is_empty()
-
-
-## Короткая строка поверх HUD. Через буфер, потому что мы внутри прохода системы
-## (правило v9); пересоздаём компонент, а не правим поля — прямая запись миру не
-## сигналится, и HUD не увидел бы новый текст (см. A_TravelThroughDoor._notify).
-func _notify(soul: Entity, text: String) -> void:
-	if soul.has_component(C_ScreenMessage):
-		cmd.remove_component(soul, C_ScreenMessage)
-	var message := C_ScreenMessage.new()
-	message.text = text
-	cmd.add_component(soul, message)

@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка коридорной раскладки (этап 3 карточки «Процедурные коридоры между
 ## комнатами»): комнаты на решётке, трассы веток по клеткам кита.
 ##
@@ -13,12 +13,6 @@ extends Node
 
 const SEEDS := 30
 const CONFIG_PATH := "res://data/world_gen_config.tres"
-## Сколько ассертов обязано отработать до сторожевого: SCRIPT ERROR внутри блока
-## обрывает только блок, и без сверки числа сломанная раскладка выглядит зелёной.
-const EXPECTED_ASSERTS := 10
-
-var _ok := 0
-var _fail := 0
 
 
 func _ready() -> void:
@@ -57,11 +51,7 @@ func _ready() -> void:
 
 	_check_determinism(library, config)
 
-	var ran := _ok + _fail
-	_check("все блоки дошли до конца", ran == EXPECTED_ASSERTS,
-		"ассертов %d из %d — какой-то блок упал на ошибке скрипта" % [ran, EXPECTED_ASSERTS])
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _collect(
@@ -241,12 +231,3 @@ func _piece(mask: int) -> String:
 			return "Т"
 		_:
 			return "крест"
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

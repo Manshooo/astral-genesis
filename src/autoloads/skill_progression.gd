@@ -202,18 +202,12 @@ func _requirement_within_one_step(req: RS_SkillRequirement) -> bool:
 
 
 func _save() -> void:
-	var err := ResourceSaver.save(save, _save_path)
-	if err != OK:
-		push_error("%s: не удалось сохранить прогресс, код ошибки %d" % [name, err])
+	UserResourceFile.write(save, _save_path, name)
 
 
 func _load() -> PlayerSkillSave:
-	if ResourceLoader.exists(_save_path):
-		var loaded := ResourceLoader.load(_save_path) as PlayerSkillSave
-		if loaded:
-			return loaded
-		push_warning("%s: файл сохранения повреждён, загружаю дефолтные" % name)
-	return _fresh_save()
+	var loaded := UserResourceFile.read(_save_path, PlayerSkillSave, name) as PlayerSkillSave
+	return loaded if loaded else _fresh_save()
 
 
 ## Чистый сейв из дефолтного ресурса. Словарь рангов копируется ОТДЕЛЬНО:

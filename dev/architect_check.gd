@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка задела под Архитектора (карточка «Артефакт «Архитектор»»): второе
 ## дерево прокачки на общей машинерии, эссенция за встречу, комната Архитектора
 ## как уникальная комната генератора.
@@ -22,11 +22,6 @@ const EXPECTED_DEPTHS: Array[int] = [1, 2, 4]
 const NODE_ID := &"L2_F0_room_3"
 ## Лучи по полу — только статика, как у игрока под ногами.
 const GEOMETRY_MASK := 1
-## Сколько ассертов обязано отработать до сторожевого (см. _ready).
-const EXPECTED_ASSERTS := 27
-
-var _ok := 0
-var _fail := 0
 
 var _world_bytes := PackedByteArray()
 var _world_save: RS_WorldSave
@@ -55,15 +50,7 @@ func _ready() -> void:
 
 	_restore()
 
-	# SCRIPT ERROR внутри блока обрывает только этот блок, а не прогон: итог
-	# печатается, провалов ноль — и сломанное выглядит зелёным (так однажды прошёл
-	# первый прогон corridor_graph_check). Поэтому число ассертов сверяется.
-	var ran := _ok + _fail
-	_check("все блоки дошли до конца", ran == EXPECTED_ASSERTS,
-		"ассертов %d из %d — какой-то блок упал на ошибке скрипта" % [ran, EXPECTED_ASSERTS])
-
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # --- 1. Прокачка ------------------------------------------------------------
@@ -266,6 +253,17 @@ func _check_generation() -> void:
 	var problems := config.validate()
 	_check("вычеркнуть все глубины — конфиг невалиден", not problems.is_empty(), "validate() молчит")
 
+	# А забег с такой записью её не ставит вовсе: раньше она молча вставала на
+	# depth_min — ровно туда, откуда её вычеркнули. Второй Архитектор в графе и
+	# есть этот след.
+	var with_broken := RS_LevelGraph.new().generate_run(1, library, config)
+	var placed := 0
+	for node: RS_LevelNode in with_broken.nodes.values():
+		if node.room_scene_path == ROOM_SCENE:
+			placed += 1
+	_check("запись без допустимых глубин не ставится никуда", placed == 1,
+		"Архитекторов в графе: %d" % placed)
+
 
 # --- 5. Сцена -----------------------------------------------------------------
 
@@ -334,12 +332,3 @@ func _restore() -> void:
 		var file := FileAccess.open(WorldSave.SAVE_PATH, FileAccess.WRITE)
 		file.store_buffer(_world_bytes)
 		file.close()
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверяет тот слой редакторского тула «Генератор мира»
 ## (addons/game_design_tool/world/), который молча ломается: неверный пикинг
 ## или утёкшая геометрия не падают с ошибкой, они просто показывают не то,
@@ -26,9 +26,6 @@ extends Node
 ## реально исполняется — что _restore_state() безопасно откатывается на
 ## дефолты и всё равно строит граф, см. _check_restore_state.
 
-var _ok := 0
-var _fail := 0
-
 const ViewportHost := preload("res://addons/game_design_tool/world/viewport_host.gd")
 const Picker := preload("res://addons/game_design_tool/world/picker.gd")
 const WorldGen := preload("res://addons/game_design_tool/tabs/world_gen.gd")
@@ -44,6 +41,8 @@ const INLINE_EDITOR_SEED := 0
 
 
 func _ready() -> void:
+	# Ассертов тут тысячи (узлы × сиды) — в логе нужны только провалы.
+	_print_passes = false
 	var library := ResourceLoader.load(LIBRARY_PATH) as RS_RoomPresetLibrary
 	_check("библиотека пресетов загружается", library != null, LIBRARY_PATH)
 
@@ -58,8 +57,7 @@ func _ready() -> void:
 	_check_restore_state()
 	_check_corridors(library, host)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 ## Коридоры во вкладке: оверлей «Коридоры» рисует ветку на каждую ветку плана;
@@ -414,11 +412,3 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 	# «Пересобрать») не должен падать и не должен ломать последующие запросы.
 	RS_RoomLayout.clear_scene_cache()
 	_check("seed %d: clear_scene_cache отрабатывает" % seed_value, true, "")
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

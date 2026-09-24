@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка отладочного оверлея (dev/debug_overlay.gd): читы делают то, что
 ## обещает шпаргалка, а сам оверлей не уезжает в собранную игру.
 ## Запускать: godot --headless dev/debug_overlay_check.tscn
@@ -23,8 +23,6 @@ const OVERLAY_SCENE := preload("res://dev/debug_overlay.tscn")
 ## она сверяла бы его с самим собой.
 const OVERLAY_PATH := "res://dev/debug_overlay.tscn"
 
-var _ok := 0
-var _fail := 0
 var _original_save: PlayerSkillSave
 var _original_architect_save: PlayerSkillSave
 
@@ -44,19 +42,14 @@ func _ready() -> void:
 	ArchitectManager.save = _original_architect_save
 	ArchitectManager._save()
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
 	_check_packaging()
 
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
-	var lifespan := S_Lifespan.new()
-	lifespan.group = "gameplay"
-	world.add_system(lifespan)
+	var world := _new_world()
+	_add_systems(world, "gameplay", [S_Lifespan.new()])
 
 	var overlay: CanvasLayer = OVERLAY_SCENE.instantiate()
 	add_child(overlay)
@@ -393,12 +386,3 @@ func _spawn_player(world: World, embodied: bool) -> Entity:
 	if embodied:
 		player.add_component(C_BodyDecay.new())
 	return player
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

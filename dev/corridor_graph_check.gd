@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка графа забега (карточка «Процедурные коридоры между комнатами»):
 ## комнаты висят на ветках коридора, а рёбер у комнаты ровно столько, сколько
 ## дверей в её сцене.
@@ -17,11 +17,7 @@ const CONFIG_PATH := "res://data/world_gen_config.tres"
 ## из конфига: шанс проверяется как механика, и правка его записи (гарантия,
 ## глубины) не должна менять смысл этого ассерта. Сцена важна только числом дверей.
 const STAND_IN_PRESET := "res://src/levels/procedural/rooms/lab/lab_room.tres"
-## Сколько ассертов обязано отработать до сторожевого (см. _ready).
-const EXPECTED_ASSERTS := 21
 
-var _ok := 0
-var _fail := 0
 var _library: RS_RoomPresetLibrary
 var _portal_by_scene: Dictionary[String, bool] = {}
 
@@ -38,15 +34,7 @@ func _ready() -> void:
 	_check_unique_chance(config)
 	_check_snapshot()
 
-	# SCRIPT ERROR внутри блока обрывает только этот блок, а не прогон: итог
-	# печатается, провалов ноль, и сломанная генерация выглядит зелёной. Так и
-	# случилось на первом прогоне — поэтому число ассертов сверяется с ожидаемым.
-	var ran := _ok + _fail
-	_check("все блоки дошли до конца", ran == EXPECTED_ASSERTS,
-		"ассертов %d из %d — какой-то блок упал на ошибке скрипта" % [ran, EXPECTED_ASSERTS])
-
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # ---------------------------------------------------------------------------
@@ -299,12 +287,3 @@ func _signature(graph: RS_LevelGraph) -> String:
 		])
 	lines.append("entry=%s exits=%s" % [graph.entry_node_id, graph.exit_node_ids])
 	return "\n".join(lines)
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

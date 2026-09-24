@@ -65,9 +65,7 @@ func _ready() -> void:
 	settings = _load()  # проходит через сеттер -> сразу применяет эффекты
 
 func save() -> void:
-	var err := ResourceSaver.save(settings, SETTINGS_PATH)
-	if err != OK:
-		push_error("SettingsManager: не удалось сохранить настройки, код ошибки %d" % err)
+	UserResourceFile.write(settings, SETTINGS_PATH, "SettingsManager")
 
 func reset() -> void:
 	settings = DEFAULT_SETTINGS.copy()  # тоже через сеттер
@@ -81,12 +79,8 @@ func preset_by_id(id: StringName) -> RS_GraphicsPreset:
 	return GRAPHICS_PRESETS.by_id(id) if GRAPHICS_PRESETS else null
 
 func _load() -> RS_Settings:
-	if ResourceLoader.exists(SETTINGS_PATH):
-		var loaded := ResourceLoader.load(SETTINGS_PATH) as RS_Settings
-		if loaded:
-			return loaded
-		push_warning("SettingsManager: файл настроек повреждён, загружаю дефолтные")
-	return DEFAULT_SETTINGS.copy()
+	var loaded := UserResourceFile.read(SETTINGS_PATH, RS_Settings, "SettingsManager") as RS_Settings
+	return loaded if loaded else DEFAULT_SETTINGS.copy()
 
 ## Побочные эффекты, которые должны применяться немедленно при смене настроек,
 ## а не только на старте игры.

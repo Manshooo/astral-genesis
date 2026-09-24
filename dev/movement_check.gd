@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка перешагивания порогов (S_Movement.STEP_HEIGHT): CharacterBody3D
 ## обязан закатываться на геометрию ниже STEP_HEIGHT без прыжка (дверные
 ## пороги, кромки ступенек комнатной геометрии — живой прогон нашёл, что без
@@ -17,11 +17,6 @@ extends Node
 const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 const STATIC_COLLIDERS_LAYER := 1
 
-var _ok := 0
-var _fail := 0
-
-## Сколько ещё физкадров прогнать. Считает _physics_process, ставит _physics().
-var _pending_ticks := 0
 ## Кого и куда толкать эти кадры — C_Velocity выставляется НАПРЯМУЮ каждый
 ## физкадр (S_Walk в проверке не участвует), как это делал бы любой мотор.
 var _driven: C_Velocity = null
@@ -34,18 +29,13 @@ var _max_y_seen := -INF
 
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	var movement := S_Movement.new()
-	movement.group = "physics"
-	world.add_system(movement)
+	_add_systems(world, "physics", [S_Movement.new()])
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -102,13 +92,9 @@ func _run(world: World) -> void:
 ## на стыке S_Jump.is_on_floor() и остаточного состояния после S_Movement, и
 ## воспроизвести его можно только всей цепочкой разом.
 func _check_jump_against_wall() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	for system in [S_Gravity.new(), S_Walk.new(), S_Jump.new(), S_Movement.new()]:
-		system.group = "physics"
-		world.add_system(system)
+	_add_systems(world, "physics", [S_Gravity.new(), S_Walk.new(), S_Jump.new(), S_Movement.new()])
 
 	var player := (load("res://src/entities/player/e_player.tscn") as PackedScene).instantiate() as E_Player
 	world.add_entity(player)
@@ -167,13 +153,10 @@ func _walk(body: Entity, dir: Vector3, frames: int) -> float:
 	return _max_y_seen
 
 
-## Гоняет мир из НАСТОЯЩЕГО _physics_process, как main.gd в игре: move_and_slide()
-## недоступен из корутины по physics_frame (Jolt крутится на отдельном потоке,
-## см. [[GECS и правила движка]]).
-func _physics_process(delta: float) -> void:
-	if _pending_ticks <= 0:
-		return
-	_pending_ticks -= 1
+## move_and_slide() недоступен из корутины по physics_frame (Jolt крутится на
+## отдельном потоке, см. [[GECS и правила движка]]), поэтому и толкающая
+## скорость выставляется здесь же, перед проходом группы "physics".
+func _on_physics_tick(delta: float) -> void:
 	if _driven:
 		# Небольшая тяга вниз — иначе move_and_slide() не считает тело «на
 		# полу» при чисто горизонтальном движении, а без этого S_Movement не
@@ -182,13 +165,6 @@ func _physics_process(delta: float) -> void:
 	ECS.process(delta, "physics")
 	if _driven_node:
 		_max_y_seen = maxf(_max_y_seen, _driven_node.global_position.y)
-
-
-func _physics(frames: int) -> void:
-	_pending_ticks = frames
-	while _pending_ticks > 0:
-		await get_tree().physics_frame
-	await get_tree().physics_frame  # последнему тику дать долететь
 
 
 ## Плоский пол под сценой — верх ровно на y=0.
@@ -215,12 +191,3 @@ func _obstacle(at: Vector3, height: float) -> StaticBody3D:
 	shape.shape = box
 	node.add_child(shape)
 	return node
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])
