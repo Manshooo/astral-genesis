@@ -159,7 +159,7 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	#
 	# Поворот не трогаем: yaw живёт на E_Player, pitch — на его камере, и
 	# развернуть игрока в позу трупа так же дезориентирует, как разворот при
-	# входе в дверь (см. RunManager._arrival_point — там ровно то же правило).
+	# входе в дверь (см. PlayerPlacement.arrival_point — там ровно то же правило).
 	var soul_node := soul as Node as Node3D
 	var body_node := body as Node as Node3D
 	if soul_node and body_node:

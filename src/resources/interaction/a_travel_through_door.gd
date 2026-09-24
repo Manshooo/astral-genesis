@@ -24,7 +24,7 @@ func execute(entity: Entity, _interactor: Node = null) -> void:
 		return
 
 	# Пустая цель = выход «заглушён»: у узла интерактивов больше, чем рёбер графа
-	# (см. RunManager._seal_door). Проём/портал настоящий, но за ним ничего нет.
+	# (см. LayerStreamer._seal_door). Проём/портал настоящий, но за ним ничего нет.
 	if portal.target_node_id == &"":
 		_notify(_sealed_message())
 		return

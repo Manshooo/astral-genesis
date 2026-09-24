@@ -285,7 +285,7 @@ func _check_run() -> void:
 
 	# Терминал в хабе.
 	var terminal: E_InteractableObject = null
-	var hub_room = RunManager._rooms.get(RunManager.current_graph.entry_node_id)
+	var hub_room = RunManager.layer.rooms.get(RunManager.current_graph.entry_node_id)
 	if hub_room:
 		for e: Entity in hub_room.children:
 			var obj := e as E_InteractableObject

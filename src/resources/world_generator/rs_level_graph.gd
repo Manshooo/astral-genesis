@@ -47,7 +47,7 @@ func get_node_data(node_id: StringName) -> RS_LevelNode:
 
 ## Все узлы конкретного слоя (across всех его этажей). Это гранула стриминга:
 ## RunManager грузит слой ЦЕЛИКОМ (все комнаты одновременно в дереве сцены) и
-## сносит его только при смене глубины — см. RunManager._spawn_layer.
+## сносит его только при смене глубины — см. LayerStreamer.spawn.
 func get_nodes_by_depth(depth: int) -> Array[RS_LevelNode]:
 	var result: Array[RS_LevelNode] = []
 	for node in nodes.values():
@@ -304,7 +304,7 @@ func _connect_layers_vertically(
 
 ## Комнаты этажа, которым ещё можно дать портал: не уникальные (их сцена задана
 ## и портала в ней может не быть) и без вертикального ребра — портал в комнате
-## ровно один (RunManager._bind_portals).
+## ровно один (LayerStreamer._bind_portals).
 func _free_for_portal(
 	floor_rooms: Array, reserved: Dictionary[StringName, RS_UniqueRoom]
 ) -> Array[RS_LevelNode]:
