@@ -80,7 +80,7 @@ func _on_settings_changed(_settings: RS_Settings) -> void:
 
 
 func _render() -> void:
-	var player := _get_player()
+	var player := E_Player.find()
 	if player == null:
 		hide()
 		return
@@ -127,9 +127,3 @@ func _sync_separators() -> void:
 		if last_visible >= 0:
 			_separators[last_visible].visible = true
 		last_visible = i
-
-
-func _get_player() -> Entity:
-	if ECS.world == null:
-		return null
-	return ECS.world.query.with_all([C_PlayerInput]).execute_one()

@@ -139,7 +139,7 @@ func push_blocking_screen(screen: Control) -> void:
 
 
 func _set_player_input_blocked(blocked: bool) -> void:
-	var player := _get_player_entity()
+	var player := E_Player.find()
 	if player == null:
 		return
 	if blocked:
@@ -198,20 +198,11 @@ func open_complex_map() -> void:
 	)
 
 
-## Строка поверх HUD — C_ScreenMessage на игроке. Компонент пересоздаётся, а не
-## правится: прямая запись в поля миру не сигналится, и HUD не увидел бы нового
-## текста. Структурная правка здесь законна — и клавиша, и касание терминала
-## приходят вне прохода систем (_unhandled_input; interact() зовётся через
-## call_deferred из S_InteractInput).
-func _notify_player(text: String) -> void:
-	var player := _get_player_entity()
-	if player == null:
-		return
-	if player.has_component(C_ScreenMessage):
-		player.remove_component(C_ScreenMessage)
-	var message := C_ScreenMessage.new()
-	message.text = text
-	player.add_component(message)
+## Строка поверх HUD. Прямая правка, без буфера, законна: и клавиша, и касание
+## терминала приходят вне прохода систем (_unhandled_input; interact() зовётся
+## через call_deferred из S_InteractInput).
+func _notify_player(line: String) -> void:
+	C_ScreenMessage.show_on(E_Player.find(), line)
 
 
 # ---------------------------------------------------------------------------
@@ -266,12 +257,3 @@ func _ensure_fade() -> void:
 	# а не ещё один экран в очереди.
 	_fade.z_index = 128
 	get_tree().root.add_child(_fade)
-
-
-func _get_player_entity() -> Entity:
-	# Мира может уже не быть: экран смерти гасит стек, находясь В СВОЕЙ сцене —
-	# игровая к тому моменту выгружена вместе с ECS.world. Отсутствие мира здесь
-	# нормально, on_close дерева навыков просто некому применить.
-	if ECS.world == null:
-		return null
-	return ECS.world.query.with_all([C_PlayerInput]).execute_one()

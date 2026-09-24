@@ -70,7 +70,7 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 	# «сюда это тело не влезет», и тратить на него попытку нечестно.
 	var form := E_Body.form_of(body)
 	if not _fits(soul, body, form):
-		_notify(soul, "Тело здесь не поместится")
+		C_ScreenMessage.show_on(soul, "Тело здесь не поместится", cmd)
 		return
 
 	var chance := C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_CHANCE, bs.capture_success_chance)
@@ -99,7 +99,7 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 	# безногого — ровно тот случай, ради которого возможность и сделана
 	# компонентом. Симметрия с O_ExpelFromBody держится сама: снимаем тем же
 	# правилом «C_BodyTrait + C_Health», каким надеваем.
-	for shed in _worn_traits(soul):
+	for shed in E_Body.worn_by(soul):
 		cmd.remove_component(soul, shed.get_script())
 
 	for worn in E_Body.traits_of(body):
@@ -207,19 +207,6 @@ static func _worn_body_dying(soul: Entity) -> bool:
 	return health != null and health.current <= 0.0
 
 
-## Характеристики тела, надетые на душу прямо сейчас.
-##
-## Собираем список заранее, отдельным проходом: снятие правит тот самый словарь
-## components, по которому мы бы шли (та же осторожность, что в
-## O_ExpelFromBody.expel).
-static func _worn_traits(soul: Entity) -> Array[Component]:
-	var found: Array[Component] = []
-	for component in soul.components.values():
-		if component is C_BodyTrait or component is C_Health:
-			found.append(component as Component)
-	return found
-
-
 ## На столько приподнимаем проверяемую капсулу над подошвой — см. ниже.
 const _FLOOR_CLEARANCE := 0.05
 
@@ -273,14 +260,3 @@ static func _fits(soul: Entity, body: Entity, form: C_BodyForm) -> bool:
 
 	var space := soul_node.get_world_3d().direct_space_state
 	return space.intersect_shape(params, 1).is_empty()
-
-
-## Короткая строка поверх HUD. Через буфер, потому что мы внутри прохода системы
-## (правило v9); пересоздаём компонент, а не правим поля — прямая запись миру не
-## сигналится, и HUD не увидел бы новый текст (см. A_TravelThroughDoor._notify).
-func _notify(soul: Entity, text: String) -> void:
-	if soul.has_component(C_ScreenMessage):
-		cmd.remove_component(soul, C_ScreenMessage)
-	var message := C_ScreenMessage.new()
-	message.text = text
-	cmd.add_component(soul, message)

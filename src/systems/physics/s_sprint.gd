@@ -90,15 +90,4 @@ func _swallow(entities: Array[Entity], _components: Array, _delta: float) -> voi
 		# бежать» содержательная причина отказа, а призраку текст про тело был бы
 		# враньём, тела у него как раз и нет.
 		if entity.has_component(C_Embodied):
-			_notify(entity, "Это тело не умеет бегать")
-
-
-## Короткая строка поверх HUD. Через буфер и remove+add — как S_Jump._notify:
-## прямая запись в поля C_ScreenMessage сигналов миру не шлёт, и HUD не увидел бы
-## новый текст.
-func _notify(entity: Entity, text: String) -> void:
-	if entity.has_component(C_ScreenMessage):
-		cmd.remove_component(entity, C_ScreenMessage)
-	var message := C_ScreenMessage.new()
-	message.text = text
-	cmd.add_component(entity, message)
+			C_ScreenMessage.show_on(entity, "Это тело не умеет бегать", cmd)

@@ -20,12 +20,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		# Механизм требует тела, а БФЖ бестелесен — нажатие просто не проходит.
 		# Почему объект вообще подсвечен и что не так, игрок читает в подсказке
 		# (hud_prompt показывает «Нужно тело»), поэтому тишина тут не молчание.
-		if inter and inter.requires_body and not _player_embodied():
+		if inter and inter.requires_body and not E_Player.is_embodied():
 			return
 		assert(target.has_method("interact"), "Сущность '%s' имеет компонент C_Interactable, но не реализует функцию interact()" % target.name)
 		target.interact.call_deferred()
-
-
-func _player_embodied() -> bool:
-	var player := ECS.world.query.with_all([C_PlayerInput]).execute_one()
-	return player != null and player.has_component(C_Embodied)

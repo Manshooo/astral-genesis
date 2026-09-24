@@ -7,6 +7,24 @@ extends Entity
 @onready var interact_ray: RayCast3D = $Camera3D/InteractRay
 
 
+## Игрок текущего мира или null: мира нет (меню, экран смерти) или игрок ещё не
+## заспавнен. ЕДИНСТВЕННОЕ место, где «игрок» выводится из маркера C_PlayerInput:
+## раньше тот же запрос был переписан в восьми местах, и половина из них не
+## проверяла, есть ли мир вообще. Entity, а не E_Player: в проверках душа бывает
+## голой сущностью с тем же набором компонентов, и каст здесь молча отдал бы null.
+static func find() -> Entity:
+	if ECS.world == null:
+		return null
+	return ECS.world.query.with_all([C_PlayerInput]).execute_one()
+
+
+## Игрок сейчас во плоти. false и тогда, когда игрока нет вовсе: «Нужно тело»
+## спрашивают интерактивы и подсказка, и отсутствие игрока для них — не тело.
+static func is_embodied() -> bool:
+	var player := find()
+	return player != null and player.has_component(C_Embodied)
+
+
 ## Компоненты-идентичность БФЖ, живущие независимо от текущего тела.
 ## Здесь, а не в сцене — чтобы «душа» всегда имела их, и чтобы O_ApplySkillEffects
 ## (запрос C_StatModifiers) матчил игрока.

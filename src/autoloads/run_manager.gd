@@ -918,7 +918,7 @@ func _set_door_prompt(door: Entity, prompt: String, show_key_hint: bool = true) 
 
 
 func _get_player() -> E_Player:
-	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as E_Player
+	return E_Player.find() as E_Player
 
 
 ## Контрольная точка: снимает с БФЖ всё, что не выводится из сида, и отдаёт
