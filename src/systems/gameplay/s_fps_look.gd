@@ -1,4 +1,4 @@
-# res://src/systems/gameplay/s_fpsLook.gd
+# res://src/systems/gameplay/s_fps_look.gd
 # Пример как система читает настройки через SettingsManager — без @export
 class_name S_FPSLook
 extends System

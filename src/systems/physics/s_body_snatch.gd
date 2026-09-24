@@ -1,4 +1,4 @@
-# res://src/systems/gameplay/s_body_snatch.gd
+# res://src/systems/physics/s_body_snatch.gd
 # Группа: "physics" — рядом с S_SnatchTargetDetector, чья метка нужна ему в том
 # же физкадре.
 # Ядро игры — захват тела. По запросу захвата (действие "snatch_body", по умолчанию
