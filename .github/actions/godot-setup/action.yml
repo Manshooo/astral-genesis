@@ -25,7 +25,9 @@ runs:
     # Движок и шаблоны — больше гигабайта на распаковке, качать их каждый прогон
     # незачем: они меняются только вместе с godot-version, она и есть ключ кэша.
     # Без шаблонов — СВОЙ ключ: иначе джоб проверок сохранил бы кэш без шаблонов,
-    # экспорт получил бы попадание, пропустил установку и упал без них.
+    # экспорт получил бы попадание, пропустил установку и упал без них. Оба
+    # суффикса непустые НАМЕРЕННО: в выражениях GitHub пустая строка ложна, и
+    # `x && '' || '-notpl'` давал '-notpl' обоим джобам — ровно та коллизия.
     - name: Кэш движка и шаблонов экспорта
       id: cache
       uses: actions/cache@v6
@@ -33,7 +35,7 @@ runs:
         path: |
           ~/godot-bin
           ${{ runner.os == 'Windows' && '~/AppData/Roaming/Godot/export_templates' || '~/.local/share/godot/export_templates' }}
-        key: godot-${{ inputs.godot-version }}-${{ runner.os }}${{ inputs.templates == 'true' && '' || '-notpl' }}
+        key: godot-${{ inputs.godot-version }}-${{ runner.os }}-${{ inputs.templates == 'true' && 'tpl' || 'notpl' }}
 
     - name: Установить Godot ${{ inputs.godot-version }}
       if: steps.cache.outputs.cache-hit != 'true'
