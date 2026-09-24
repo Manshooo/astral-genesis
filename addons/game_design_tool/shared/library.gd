@@ -20,12 +20,35 @@ const LIBRARY_PATH := "res://data/room_preset_library.tres"
 ## молчать.
 const TAG_CATALOG_PATH := "res://data/room_tag_catalog.tres"
 
+## Границы правки слотов и веса пресета — одни на все инструменты. Их держали
+## порознь вкладка пресетов, «Генератор мира» и Room Wizard (у каждого — ещё и
+## по две копии: ячейка таблицы и спинбокс), и поднять максимум слотов под
+## новую комнату значило бы править шесть мест, заметив расхождение только
+## глазами. RS_RoomPreset своих @export_range не носит, поэтому границы — здесь.
+const SLOT_RANGE := {"min": 0.0, "max": 12.0, "step": 1.0}
+const WEIGHT_RANGE := {"min": 0.0, "max": 10.0, "step": 0.1}
+
 
 ## CACHE_MODE_REPLACE, а не обычная загрузка: инструмент перечитывает библиотеку
 ## после того, как её мог поправить он сам или инспектор, и закэшированный
 ## экземпляр показывал бы состояние до правки.
-static func load_library() -> RS_RoomPresetLibrary:
-	return ResourceLoader.load(LIBRARY_PATH, "", ResourceLoader.CACHE_MODE_REPLACE) as RS_RoomPresetLibrary
+## [param path] — для проверок, которые гоняют инструмент по временной копии,
+## а не по библиотеке проекта.
+static func load_library(path := LIBRARY_PATH) -> RS_RoomPresetLibrary:
+	return ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REPLACE) as RS_RoomPresetLibrary
+
+
+## Спинбокс по границам SLOT_RANGE/WEIGHT_RANGE.
+static func configure_spin(spin: SpinBox, bounds: Dictionary) -> void:
+	spin.min_value = bounds["min"]
+	spin.max_value = bounds["max"]
+	spin.step = bounds["step"]
+
+
+## Ячейка Tree в режиме диапазона по тем же границам.
+static func configure_range_cell(item: TreeItem, column: int, bounds: Dictionary) -> void:
+	item.set_cell_mode(column, TreeItem.CELL_MODE_RANGE)
+	item.set_range_config(column, bounds["min"], bounds["max"], bounds["step"])
 
 
 static func tag_catalog_of(library: RS_RoomPresetLibrary) -> RS_RoomTagCatalog:
