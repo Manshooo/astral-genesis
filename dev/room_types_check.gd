@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка ВТОРОЙ оси подбора комнат — типа помещения (`RS_RoomTypeCatalog`,
 ## `RS_RoomPreset.room_type`, `RS_LevelNode.room_type`).
 ## Запуск: godot --headless dev/room_types_check.tscn
@@ -20,15 +20,10 @@ const PROBE_SCENE := "res://src/levels/procedural/rooms/default/default_room.tsc
 
 const SEED_COUNT := 10
 
-var _ok := 0
-var _fail := 0
-
 
 func _ready() -> void:
 	_run()
-
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -335,12 +330,3 @@ func _make_node(room_type: StringName, tags: Array[StringName]) -> RS_LevelNode:
 	node.tags = tags
 	node.connections.append(RS_LevelConnection.new())
 	return node
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

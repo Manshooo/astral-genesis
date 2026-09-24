@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка вкладочного меню настроек (src/ui/settings_menu).
 ## Запуск: godot --headless dev/settings_menu_check.tscn
 ##
@@ -39,15 +39,10 @@ const EXPECTED_TAB := {
 ## MarginContainer (16 сверху и снизу). Всё, что не влезло, вылезет за панель.
 const PANEL_INNER_HEIGHT := 620.0 - 32.0
 
-var _ok := 0
-var _fail := 0
-
 
 func _ready() -> void:
 	_run()
-
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -230,12 +225,3 @@ func _tab_of(control: Node, tabs: TabContainer) -> String:
 	while node != null and node.get_parent() != tabs:
 		node = node.get_parent()
 	return String(node.name) if node != null else ""
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

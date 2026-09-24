@@ -1,31 +1,21 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## ВРЕМЕННАЯ проверка модели характеристик тела (C_BodyTrait): захват переносит
 ## всё, что тело объявило, развоплощение снимает, карман распада живёт отдельным
 ## компонентом. Запускать: godot --headless dev/body_traits_check.tscn
 
 const BODY_SCENE := preload("res://src/entities/body/e_body.tscn")
 
-var _ok := 0
-var _fail := 0
-
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	var snatch := S_BodySnatch.new()
-	snatch.group = "physics"
-	world.add_system(snatch)
-	var lifespan := S_Lifespan.new()
-	lifespan.group = "gameplay"
-	world.add_system(lifespan)
+	_add_systems(world, "physics", [S_BodySnatch.new()])
+	_add_systems(world, "gameplay", [S_Lifespan.new()])
 	world.add_observer(O_ExpelFromBody.new())
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -152,12 +142,3 @@ func _make_soul() -> Entity:
 	soul.name = "Soul"
 	soul.component_resources = [C_PlayerInput.new(), C_BodySnatch.new(), C_Lifespan.new()]
 	return soul
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

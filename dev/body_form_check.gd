@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка физической формы захваченного тела (C_BodyForm / O_BodyForm):
 ## контракт сцен тел, перенос габарита и уровня глаз на риг, посадка без
 ## проваливания, откат к призрачной форме и отказ, когда тело не помещается.
@@ -13,18 +13,10 @@ const BODY_SCENE := "res://src/entities/body/e_body.tscn"
 ## Тело другой высоты — им проверяется пересадка из тела в тело.
 const CRAWLER_SCENE := "res://src/entities/body/e_body_crawler.tscn"
 
-var _ok := 0
-var _fail := 0
-
-
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	var snatch := S_BodySnatch.new()
-	snatch.group = "physics"
-	world.add_system(snatch)
+	_add_systems(world, "physics", [S_BodySnatch.new()])
 	world.add_observer(O_ExpelFromBody.new())
 	# Порядок регистрации — как в world.tscn: облик раньше габарита. Он не должен
 	# ни на что влиять, и проверка ниже как раз про это.
@@ -33,8 +25,7 @@ func _ready() -> void:
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -286,15 +277,6 @@ func _body_scenes() -> Array[String]:
 		if file.ends_with(".tscn"):
 			out.append("res://src/entities/body/" + file)
 	return out
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])
 
 
 ## Тела-заглушки (капсула без модели) лицом никуда не смотрят — разворачивать

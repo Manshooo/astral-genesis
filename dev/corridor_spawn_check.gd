@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка сборки коридоров в игре (этап 4 карточки «Процедурные коридоры между
 ## комнатами»): настоящий RunManager, коридорный граф, тайлы кита в мире.
 ##
@@ -26,10 +26,7 @@ const GEOMETRY_MASK := 1
 ## Куда дотягивается отчёт о заходе за грань клетки: до грани и на полметра за
 ## неё — то, что стоит в тамбуре тайла.
 const INTRUSION_PROBE := 9.0
-const EXPECTED_ASSERTS := 17
 
-var _ok := 0
-var _fail := 0
 var _save_backup := PackedByteArray()
 var _had_save := false
 var _save_object: RS_WorldSave
@@ -42,15 +39,9 @@ func _ready() -> void:
 	_save_object = WorldSave.save
 	_base_config = GameConfig.config.world_gen
 
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
-	var presence := S_RoomPresence.new()
-	presence.group = "gameplay"
-	world.add_system(presence)
-	var doors := S_DoorOpen.new()
-	doors.group = "physics"
-	world.add_system(doors)
+	var world := _new_world()
+	_add_systems(world, "gameplay", [S_RoomPresence.new()])
+	_add_systems(world, "physics", [S_DoorOpen.new()])
 
 	GameConfig.config.world_gen = _base_config.duplicate() as RS_WorldGenConfig
 	var fresh := RS_WorldSave.new()
@@ -72,11 +63,7 @@ func _ready() -> void:
 	RunManager._end_run()
 	_restore()
 
-	var ran := _ok + _fail
-	_check("все блоки дошли до конца", ran == EXPECTED_ASSERTS,
-		"ассертов %d из %d — какой-то блок упал на ошибке скрипта" % [ran, EXPECTED_ASSERTS])
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # ---------------------------------------------------------------------------
@@ -366,12 +353,3 @@ func _restore() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(WorldSave.SAVE_PATH))
 	_check("сейв разработчика возвращён на место",
 		FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH) == _save_backup, "")
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

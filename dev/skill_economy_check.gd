@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка экономики очков навыка (карточка Задачи/Карточки/Скиллы.md):
 ## RunManager._max_depth_reached — монотонный трекер, «Чистый выход»
 ## (O_ExpelFromBody, порог 50% выжатости тела) и целостность data/skill_tree.tres
@@ -20,16 +20,12 @@ extends Node
 
 const BODY_DECAY_MAX := 60.0
 
-var _ok := 0
-var _fail := 0
 var _original_skill_save: PlayerSkillSave
 var _original_max_depth: int
 
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
 	_original_skill_save = SkillManager.save
 	_original_max_depth = RunManager._max_depth_reached
@@ -40,8 +36,7 @@ func _ready() -> void:
 	SkillManager._save()
 	RunManager._max_depth_reached = _original_max_depth
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -171,12 +166,3 @@ func _make_soul() -> Entity:
 	soul.name = "Soul"
 	soul.component_resources = [C_PlayerInput.new(), C_Lifespan.new(), C_StatModifiers.new()]
 	return soul
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

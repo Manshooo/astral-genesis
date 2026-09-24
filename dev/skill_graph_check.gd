@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка graph-UI дерева навыков (карточка Задачи/Карточки/Skill Tree.md):
 ## раскладка SkillGraphLayout и правило видимости SkillManager.is_revealed.
 ## Запускать: godot --headless dev/skill_graph_check.tscn
@@ -13,8 +13,6 @@ extends Node
 ## правило видимости читает и то, и другое, а прогонять его на реальном
 ## сохранении игрока значило бы проверять его прогресс, а не код.
 
-var _ok := 0
-var _fail := 0
 var _original_save: PlayerSkillSave
 var _original_tree: RS_SkillTree
 
@@ -28,8 +26,7 @@ func _ready() -> void:
 	SkillManager.save = _original_save
 	SkillManager.SKILL_TREE = _original_tree
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -332,12 +329,3 @@ func _tree(definitions: Array, branches: Array) -> RS_SkillTree:
 		typed_branches.append(branch)
 	tree.branches = typed_branches
 	return tree
-
-
-func _check(label: String, condition: bool) -> void:
-	if condition:
-		_ok += 1
-		print("  ok   %s" % label)
-	else:
-		_fail += 1
-		print("  ПРОВАЛ %s" % label)

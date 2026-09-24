@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка дна мира (S_VoidFall): что происходит с тем, кто провалился сквозь
 ## щель в геометрии ниже GameConfig.void_fall_depth.
 ## Запускать: godot --headless dev/void_fall_check.tscn
@@ -17,9 +17,6 @@ const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 ## Тело в комнате — StaticBody3D без C_Velocity. Падать не умеет вовсе, и в
 ## выборку дна попадать не должно.
 const BODY_SCENE := "res://src/entities/body/e_body_walker.tscn"
-
-var _ok := 0
-var _fail := 0
 
 
 ## Соглядатай за концом забега. Настоящий O_RunEnded звать нельзя: он ведёт в
@@ -41,21 +38,16 @@ class _RunEndedSpy:
 
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	var void_fall := S_VoidFall.new()
-	void_fall.group = "gameplay"
-	world.add_system(void_fall)
+	_add_systems(world, "gameplay", [S_VoidFall.new()])
 
 	var spy := _RunEndedSpy.new()
 	world.add_observer(spy)
 
 	await _run(world, spy)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World, spy: _RunEndedSpy) -> void:
@@ -160,12 +152,3 @@ func _run(world: World, spy: _RunEndedSpy) -> void:
 func _tick() -> void:
 	ECS.process(1.0 / 60.0, "gameplay")
 	await get_tree().process_frame
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

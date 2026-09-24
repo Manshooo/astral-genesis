@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка сводки забега: накопитель (RS_RunStats), каталог показателей,
 ## воронка урона и локализация.
 ##
@@ -15,10 +15,6 @@ const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 const CATALOG_PATH := "res://data/run_stat_catalog.tres"
 const SAVE_ICON_PATH := "res://assets/ui/icons/save.svg"
-
-var _ok := 0
-var _fail := 0
-var _pending_ticks := 0
 
 ## Сколько раз сейв отчитался о записи (WorldSave.progress_saved). Поле, а не
 ## локальная переменная в лямбде: лямбда GDScript захватывает переменную ПО
@@ -37,20 +33,13 @@ func _ready() -> void:
 	_save_backup = FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH)
 	_had_save = not _save_backup.is_empty()
 
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
-	for system in [
+	_add_systems(world, "physics", [
 		S_BodySnatch.new(), S_Phasing.new(), S_Gravity.new(),
 		S_EnemyAI.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(), S_Movement.new(),
-	]:
-		system.group = "physics"
-		world.add_system(system)
-
-	var health_sys := S_Health.new()
-	health_sys.group = "gameplay"
-	world.add_system(health_sys)
+	])
+	_add_systems(world, "gameplay", [S_Health.new()])
 
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
@@ -68,8 +57,7 @@ func _ready() -> void:
 	await _check_save_indicator()
 	_restore_save()
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # ---------------------------------------------------------------------------
@@ -461,25 +449,6 @@ func _spawn_body(world: World, path: String, at: Vector3, targeted: bool = true)
 	return body
 
 
-func _physics_process(delta: float) -> void:
-	if _pending_ticks <= 0:
-		return
-	_pending_ticks -= 1
+func _on_physics_tick(delta: float) -> void:
 	ECS.process(delta, "physics")
 	ECS.process(delta, "gameplay")
-
-
-func _physics(frames: int) -> void:
-	_pending_ticks = frames
-	while _pending_ticks > 0:
-		await get_tree().physics_frame
-	await get_tree().physics_frame
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

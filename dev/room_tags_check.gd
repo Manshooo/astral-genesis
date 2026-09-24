@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка СЛОВАРЯ структурных тегов (`RS_RoomTagCatalog`,
 ## `data/room_tag_catalog.tres`).
 ## Запуск: godot --headless dev/room_tags_check.tscn
@@ -20,15 +20,10 @@ extends Node
 
 const SEED_COUNT := 12
 
-var _ok := 0
-var _fail := 0
-
 
 func _ready() -> void:
 	_run()
-
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -118,12 +113,3 @@ func _check_generator_tags(library: RS_RoomPresetLibrary, catalog: RS_RoomTagCat
 			seen.has(entry.id),
 			"флаг устарел: за %d сидов такой тег не выпал ни одному узлу" % SEED_COUNT,
 		)
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

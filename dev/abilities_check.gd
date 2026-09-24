@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка модели «возможность = компонент»: что умеет душа сама, что приходит с
 ## телом, что засыпает во плоти и что просыпается обратно.
 ## Запускать: godot --headless dev/abilities_check.tscn
@@ -12,27 +12,17 @@ const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 ## Тело другой высоты — им проверяется пересадка тело→тело.
 const CRAWLER_SCENE := "res://src/entities/body/e_body_crawler.tscn"
 
-var _ok := 0
-var _fail := 0
-
-## Сколько физкадров ещё прогнать. Считает _physics_process, а ставит _physics().
-var _pending_ticks := 0
-
 
 func _ready() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 
 	# Полный набор систем группы "physics", как в world.tscn: проверка про то,
 	# кого какая выборка забирает, и на неполном наборе она проверяла бы пустоту.
-	for system in [
+	_add_systems(world, "physics", [
 		S_BodySnatch.new(), S_Phasing.new(), S_Gravity.new(),
 		S_EnemyAI.new(), S_Sprint.new(), S_Walk.new(), S_Jump.new(), S_Flight.new(),
 		S_Movement.new(),
-	]:
-		system.group = "physics"
-		world.add_system(system)
+	])
 
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
@@ -41,8 +31,7 @@ func _ready() -> void:
 
 	await _run(world)
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run(world: World) -> void:
@@ -553,28 +542,6 @@ func _run(world: World) -> void:
 	)
 
 
-## Гоняет группу "physics" из НАСТОЯЩЕГО _physics_process, как main.gd в игре.
-##
-## Не из корутины по physics_frame: этот сигнал приходит уже ПОСЛЕ шага физики, а
-## Jolt крутится на своём потоке и наружу состояние тел не отдаёт —
-## move_and_slide() оттуда роняет «Body state is inaccessible right now». Тот же
-## запрет, по которому все кастующие лучи системы обязаны жить в группе "physics"
-## (см. [[GECS и правила движка]]).
-func _physics_process(delta: float) -> void:
-	if _pending_ticks <= 0:
-		return
-	_pending_ticks -= 1
-	ECS.process(delta, "physics")
-
-
-## Прогоняет [param frames] физкадров и ждёт, пока они отработают.
-func _physics(frames: int) -> void:
-	_pending_ticks = frames
-	while _pending_ticks > 0:
-		await get_tree().physics_frame
-	await get_tree().physics_frame  # последнему тику дать долететь
-
-
 func _spawn_body(world: World, path: String, at: Vector3) -> Entity:
 	# Entity наследует Node, поэтому до Node3D — через двойной каст, как в
 	# S_BodySnatch._embody.
@@ -583,12 +550,3 @@ func _spawn_body(world: World, path: String, at: Vector3) -> Entity:
 	world.add_entity(body)
 	body.add_component(C_SnatchTargeted.new())
 	return body
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])

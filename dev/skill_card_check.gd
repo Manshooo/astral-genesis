@@ -1,4 +1,4 @@
-extends Control
+extends "res://dev/check_harness.gd"
 ## Проверка карточки навыка (карточка Задачи/Карточки/Skill Tree.md): начинка
 ## узла не выходит за его границы ни на одном навыке боевого дерева.
 ## Запускать: godot --headless dev/skill_card_check.tscn
@@ -21,8 +21,6 @@ const GRAPH_SCENE := preload("res://src/ui/skill_tree/skill_graph_view.tscn")
 ## частиц у каждых искр свой, а не общий на все карточки.
 const SPARKS_SCENE := preload("res://src/ui/skill_tree/skill_sparks.tscn")
 
-var _ok := 0
-var _fail := 0
 var _original_save: PlayerSkillSave
 var _original_tree: RS_SkillTree
 
@@ -36,8 +34,7 @@ func _ready() -> void:
 	SkillManager.save = _original_save
 	SkillManager.SKILL_TREE = _original_tree
 
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 func _run() -> void:
@@ -363,12 +360,3 @@ func _descendants(node: Node) -> Array[Control]:
 			found.append(child)
 		found.append_array(_descendants(child))
 	return found
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  ПРОВАЛ %s  (%s)" % [what, detail])

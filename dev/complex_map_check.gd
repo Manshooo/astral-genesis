@@ -1,4 +1,4 @@
-extends Node
+extends "res://dev/check_harness.gd"
 ## Проверка экрана карты комплекса (карточка «Экран карты комплекса»): правило
 ## видимости по уровням улучшения, сам экран на сгенерированном графе, путь
 ## открытия через UIManager и терминал в хабе на настоящем забеге.
@@ -16,8 +16,6 @@ extends Node
 
 const RUN_SEED := 515151
 const HUB_DEPTH := 3
-## Сколько ассертов обязано отработать до сторожевого (см. corridor_graph_check).
-const EXPECTED_ASSERTS := 38
 ## Все ключи, которые экран и терминал показывают игроку.
 const KEYS: Array[String] = [
 	"MAP_TITLE", "MAP_TERMINAL_PROMPT", "MAP_NO_LINK", "MAP_LEVEL", "MAP_CLOSE", "MAP_LAYER",
@@ -26,8 +24,6 @@ const KEYS: Array[String] = [
 	"MAP_HINT", "MAP_UNIQUE_HUB", "MAP_UNIQUE_EXIT", "MAP_UNIQUE_ARCHITECT",
 ]
 
-var _ok := 0
-var _fail := 0
 var _save_backup := PackedByteArray()
 var _had_save := false
 var _save_object: RS_WorldSave
@@ -59,11 +55,7 @@ func _ready() -> void:
 
 	_restore()
 
-	var ran := _ok + _fail
-	_check("все блоки дошли до конца", ran == EXPECTED_ASSERTS,
-		"ассертов %d из %d — какой-то блок упал на ошибке скрипта" % [ran, EXPECTED_ASSERTS])
-	print("=== ИТОГ: ок=%d, провалов=%d ===" % [_ok, _fail])
-	get_tree().quit(1 if _fail > 0 else 0)
+	_finish()
 
 
 # ---------------------------------------------------------------------------
@@ -251,9 +243,7 @@ func _check_screen() -> void:
 
 ## Настоящий забег: открытие через UIManager, клавиша, терминал в хабе.
 func _check_run() -> void:
-	var world := World.new()
-	add_child(world)
-	ECS.world = world
+	var world := _new_world()
 	var fresh := RS_WorldSave.new()
 	fresh.world_seed = RUN_SEED
 	WorldSave.save = fresh
@@ -398,12 +388,3 @@ func _restore() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(WorldSave.SAVE_PATH))
 	_check("сейв разработчика возвращён на место",
 		FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH) == _save_backup, "")
-
-
-func _check(what: String, passed: bool, detail: String) -> void:
-	if passed:
-		_ok += 1
-		print("  ok   %s" % what)
-	else:
-		_fail += 1
-		print("  FAIL %s  (%s)" % [what, detail])
