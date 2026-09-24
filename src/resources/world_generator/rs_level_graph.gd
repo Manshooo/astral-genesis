@@ -196,13 +196,24 @@ func _place_unique_rooms(
 			# — прежние сиды дают прежний комплекс.
 			var depths := unique.allowed_depths()
 			var depth_index := rng.randi_range(0, maxi(depths.size() - 1, 0))
-			var depth: int = depths[depth_index] if not depths.is_empty() else unique.depth_min
 			var pool: Array[RS_LevelNode] = []
-			for floor_rooms: Array in floors_by_depth.get(depth, []):
-				for node: RS_LevelNode in floor_rooms:
-					if not reserved.has(node.id):
-						pool.append(node)
+			if not depths.is_empty():
+				for floor_rooms: Array in floors_by_depth.get(depths[depth_index], []):
+					for node: RS_LevelNode in floor_rooms:
+						if not reserved.has(node.id):
+							pool.append(node)
 			var pick := rng.randi_range(0, maxi(pool.size() - 1, 0))
+			# Все глубины вычеркнуты — конфиг невалиден (RS_WorldGenConfig.validate()).
+			# Раньше комната молча вставала на depth_min — то есть ровно туда, куда
+			# дизайнер её не пускал. Лучше не поставить и сказать громко. Броски выше
+			# сделаны всё равно: поток rng у остальных записей не должен зависеть от
+			# того, сломана эта или нет.
+			if depths.is_empty():
+				push_error(
+					"RS_LevelGraph: у уникальной комнаты «%s» вычеркнуты все глубины %d..%d — не ставлю"
+					% [unique.preset.resource_path.get_file(), unique.depth_min, unique.depth_max]
+				)
+				continue
 			# randf() включает единицу: «шанс 1.0» обязан размещать всегда.
 			var placed := unique.chance >= 1.0 or roll < unique.chance
 			if not placed or pool.is_empty():

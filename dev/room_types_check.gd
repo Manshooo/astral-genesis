@@ -197,6 +197,24 @@ func _check_selection() -> void:
 		"пресет своего типа проиграл безликому из-за лишнего тега",
 	)
 
+	# Портальных комнат нет вовсе — портальный узел уходит в fallback, а тот
+	# фильтров не проходит и портала не несёт. Это уже не мягкая деградация, а
+	# оборванный переход, поэтому validate() обязан назвать дыру заранее, до
+	# забега, а не оставить её push_error'у посреди генерации.
+	var no_portals := _make_library([_make_preset("Безликая", &"", [])])
+	var explained := no_portals.explain_selection(_make_node(&"", [&"vertical_hub"]), rng)
+	_check(
+		"без портальных комнат портальный узел уходит в fallback",
+		explained["preset"] == no_portals.fallback,
+		str(explained["reasons"]),
+	)
+	var problems := no_portals.validate()
+	_check(
+		"validate() называет отсутствие портальных пресетов",
+		problems.any(func(p: String) -> bool: return p.contains("vertical_hub")),
+		"; ".join(problems),
+	)
+
 
 # ---------------------------------------------------------------------------
 # 4. Настоящая генерация

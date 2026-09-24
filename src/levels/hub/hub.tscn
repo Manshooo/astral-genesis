@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://dtsbk0vab2ynp" path="res://src/entities/enemy/e_enemy.tscn" id="14_enemy"]
 [ext_resource type="PackedScene" path="res://src/entities/map_terminal/e_map_terminal.tscn" id="15_map_terminal"]
 [ext_resource type="Script" uid="uid://ccb3xm8fbdion" path="res://src/components/rendering/c_visual_root.gd" id="16_visual_root"]
+[ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="17_door_slot"]
 
 [sub_resource type="Resource" id="Resource_oeda6"]
 script = ExtResource("4_18pe2")
@@ -36,6 +37,15 @@ size = Vector3(3.5, 5.5, 3.5)
 [sub_resource type="Resource" id="Resource_chsjf"]
 script = ExtResource("10_alaum")
 metadata/_custom_type_script = "uid://dibrg03qygmfk"
+
+[sub_resource type="Resource" id="Resource_door_inter"]
+script = ExtResource("5_qlrq3")
+prompt_text = "Пройти"
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="Resource_door_slot"]
+script = ExtResource("17_door_slot")
+slot_id = &"north"
 
 [sub_resource type="Resource" id="Resource_map_prompt"]
 script = ExtResource("5_qlrq3")
@@ -75,6 +85,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 1.2064084, -0.793
 [node name="Door" parent="Doors" index="0" unique_id=1986258941 instance=ExtResource("5_is5eu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4450603, 0.45232117, -7.799738)
 actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_chsjf")])
+component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_door_inter"), SubResource("Resource_door_slot")])
 
 [node name="e_body_walker" parent="." index="18" unique_id=250816338 instance=ExtResource("12_5ih0i")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7768965, 1.7258387, -4.7508903)

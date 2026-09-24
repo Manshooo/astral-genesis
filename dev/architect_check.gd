@@ -253,6 +253,17 @@ func _check_generation() -> void:
 	var problems := config.validate()
 	_check("вычеркнуть все глубины — конфиг невалиден", not problems.is_empty(), "validate() молчит")
 
+	# А забег с такой записью её не ставит вовсе: раньше она молча вставала на
+	# depth_min — ровно туда, откуда её вычеркнули. Второй Архитектор в графе и
+	# есть этот след.
+	var with_broken := RS_LevelGraph.new().generate_run(1, library, config)
+	var placed := 0
+	for node: RS_LevelNode in with_broken.nodes.values():
+		if node.room_scene_path == ROOM_SCENE:
+			placed += 1
+	_check("запись без допустимых глубин не ставится никуда", placed == 1,
+		"Архитекторов в графе: %d" % placed)
+
 
 # --- 5. Сцена -----------------------------------------------------------------
 
