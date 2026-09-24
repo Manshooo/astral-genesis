@@ -1,0 +1,19 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b6ywwwtqrc1m4"]
+
+[ext_resource type="Texture2D" uid="uid://bbl8qxfdenhy" path="res://assets/props/interactive/SM_Door/textures/T_door_albedo.png" id="1_gt5kw"]
+[ext_resource type="Texture2D" uid="uid://dqwud631hntg" path="res://assets/props/interactive/SM_Door/textures/T_door_n.png" id="2_deaxc"]
+[ext_resource type="Texture2D" uid="uid://bfh2d08un8wd0" path="res://assets/props/interactive/SM_Door/textures/T_door_orm.png" id="2_um8b7"]
+
+[resource]
+resource_name = "MAT_door"
+albedo_texture = ExtResource("1_gt5kw")
+metallic = 1.0
+metallic_texture = ExtResource("2_um8b7")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_um8b7")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("2_deaxc")
+ao_enabled = true
+ao_light_affect = 0.5
+ao_texture = ExtResource("2_um8b7")

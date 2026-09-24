@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="RS_SkillTree" format=3]
+
+[ext_resource type="Script" uid="uid://1b4pm2xpbsvc" path="res://src/resources/skills/rs_skill_tree.gd" id="1_tree"]
+[ext_resource type="Script" uid="uid://csxedle0e5j8g" path="res://src/resources/skills/rs_skill_definition.gd" id="2_def"]
+[ext_resource type="Script" uid="uid://bftpqmqlvmglj" path="res://src/resources/skills/rs_stat_modifier.gd" id="3_mod"]
+[ext_resource type="Script" uid="uid://blq3s1sboyo4d" path="res://src/resources/skills/rs_skill_branch.gd" id="4_branch"]
+
+[sub_resource type="Resource" id="Resource_branch_knowledge"]
+script = ExtResource("4_branch")
+id = &"knowledge"
+display_name = "ARCHITECT_BRANCH_KNOWLEDGE"
+color = Color(0.56, 0.6, 0.86, 1)
+
+[sub_resource type="Resource" id="Resource_mod_map_level"]
+script = ExtResource("3_mod")
+stat = &"map_level"
+per_rank = 1.0
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_map_level"]
+script = ExtResource("2_def")
+id = &"map_level"
+display_name = "ARCHITECT_MAP"
+description = "ARCHITECT_MAP_DESC"
+branch = &"knowledge"
+max_rank = 4
+cost_per_rank = Array[int]([1, 1, 2, 2])
+modifiers = Array[ExtResource("3_mod")]([SubResource("Resource_mod_map_level")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[resource]
+script = ExtResource("1_tree")
+skills = Array[ExtResource("2_def")]([SubResource("Resource_map_level")])
+branches = Array[ExtResource("4_branch")]([SubResource("Resource_branch_knowledge")])
+points_format = "ARCHITECT_POINTS"
+currency_forms = Array[String](["ARCHITECT_ESSENCE_ONE", "ARCHITECT_ESSENCE_FEW", "ARCHITECT_ESSENCE_MANY"])
+metadata/_custom_type_script = "uid://1b4pm2xpbsvc"

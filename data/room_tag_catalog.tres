@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="RS_RoomTagCatalog" format=3 uid="uid://cvurmu7r4liha"]
+
+[ext_resource type="Script" uid="uid://f1yibb7rrgrr" path="res://src/resources/world_generator/rs_room_tag.gd" id="1_tag"]
+[ext_resource type="Script" uid="uid://dh23vjexwhfd7" path="res://src/resources/world_generator/rs_room_tag_catalog.gd" id="2_catalog"]
+
+[sub_resource type="Resource" id="Resource_floor_hub"]
+script = ExtResource("1_tag")
+id = &"floor_hub"
+display_name = "Хаб этажа"
+description = "Устарел: так генератор помечал переход между этажами слоя, пока между комнатами не было коридоров. Теперь этот переход — портал (vertical_hub), генератор тег не ставит и подбор его не сверяет. Остался на пресетах и может сниматься."
+
+[sub_resource type="Resource" id="Resource_vertical_hub"]
+script = ExtResource("1_tag")
+id = &"vertical_hub"
+display_name = "Вертикальный хаб"
+description = "Узлу нужен портал: переход на соседний слой (глубина ±1) или на соседний этаж того же слоя. У пресета — «в сцене есть портал». Подбор сверяет его в обе стороны: портальная комната достаётся только узлу с переходом, иначе посреди пола стоял бы мёртвый портал. Переход между слоями может быть заперт ключом доступа."
+set_by_generator = true
+
+[sub_resource type="Resource" id="Resource_level_exit"]
+script = ExtResource("1_tag")
+id = &"level_exit"
+display_name = "Выход со слоя"
+description = "Комната выхода — отсюда игрок сбегает на поверхность. Ставит её уникальная комната конфига генерации (data/world_gen_config.tres, флаг exit), а не подбор. В сцене обязана быть дверь с действием A_FinishRun — без неё забег в этой комнате нечем закончить."
+set_by_generator = true
+
+[resource]
+script = ExtResource("2_catalog")
+tags = Array[ExtResource("1_tag")]([SubResource("Resource_floor_hub"), SubResource("Resource_vertical_hub"), SubResource("Resource_level_exit")])

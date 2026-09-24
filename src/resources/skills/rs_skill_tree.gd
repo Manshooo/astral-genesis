@@ -8,10 +8,23 @@ extends Resource
 ## нарисовать ребро, которого не проверяет SkillManager, физически нечем.
 ## Раскладка по колонкам и дорожкам тоже считается — см. SkillGraphLayout.
 
+const DEFAULT_POINTS_FORMAT := "Очки: %d"
+const DEFAULT_CURRENCY_FORMS: Array[String] = ["очко", "очка", "очков"]
+
 @export var skills: Array[RS_SkillDefinition] = []
 ## Порядок веток здесь задаёт порядок ДОРОЖЕК в графе сверху вниз: отдельного
 ## поля order нет, перетащить строку в инспекторе проще, чем расставлять числа.
 @export var branches: Array[RS_SkillBranch] = []
+
+## Валюта дерева называется по-разному (очки навыков, эссенция Архитектора), а
+## экран у деревьев один — поэтому название лежит в данных дерева, а не в экране.
+@export_group("Валюта")
+## Подпись счётчика на экране: ключ перевода или строка с одним %d. Пусто —
+## «Очки: %d», как до второго дерева.
+@export var points_format: String = ""
+## Формы слова для цены ранга — на 1, на 2–4 и на 5+ («очко/очка/очков»): ключи
+## перевода или готовые слова. Не ровно три — очки.
+@export var currency_forms: Array[String] = []
 
 
 func get_definition(id: StringName) -> RS_SkillDefinition:
@@ -46,6 +59,31 @@ func branch_color(id: StringName) -> Color:
 	if branch != null:
 		return branch.color
 	return RS_SkillBranch.DEFAULT_COLOR
+
+
+func points_text(amount: int) -> String:
+	if points_format.is_empty():
+		return DEFAULT_POINTS_FORMAT % amount
+	return String(TranslationServer.translate(points_format)) % amount
+
+
+## Цена ранга словами: «1 очко», «3 эссенции».
+func cost_text(amount: int) -> String:
+	return format_cost(amount, currency_forms if currency_forms.size() == 3 else DEFAULT_CURRENCY_FORMS)
+
+
+## Русское правило числа: 1, 21 — первая форма; 2–4, 22–24 — вторая; всё
+## остальное, включая 11–14, — третья.
+static func format_cost(amount: int, forms: Array[String]) -> String:
+	var index := 2
+	var tail := amount % 100
+	if tail < 11 or tail > 14:
+		match amount % 10:
+			1:
+				index = 0
+			2, 3, 4:
+				index = 1
+	return "%d %s" % [amount, TranslationServer.translate(forms[index])]
 
 
 ## Ветки в порядке дорожек: сначала описанные в branches, затем те, что

@@ -1,0 +1,223 @@
+[gd_scene format=3 uid="uid://d3p0hr34eshqm"]
+
+[ext_resource type="Script" uid="uid://buciio52t81os" path="res://src/ui/skill_tree/skill_node_card.gd" id="1_card"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stripe"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 2
+corner_radius_bottom_left = 2
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pip"]
+bg_color = Color(1, 1, 1, 1)
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glow"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.85, 0.4, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="Animation" id="Animation_reveal"]
+resource_name = "reveal"
+length = 0.35
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate:a")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.35),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.35),
+"transitions": PackedFloat32Array(0.5, 1, 1),
+"update": 0,
+"values": [Vector2(0.86, 0.86), Vector2(1.05, 1.05), Vector2(1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_unlock"]
+resource_name = "unlock"
+length = 0.7
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(0.5, 1),
+"update": 0,
+"values": [Color(1.6, 1.35, 0.7, 1), Color(1, 1, 1, 1)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Glow:modulate:a")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.7),
+"transitions": PackedFloat32Array(2, 1),
+"update": 0,
+"values": [1.0, 0.0]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_spawn_sparks"
+}]
+}
+tracks/3/type = "method"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_play_unlock_sound"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_card"]
+_data = {
+&"reveal": SubResource("Animation_reveal"),
+&"unlock": SubResource("Animation_unlock")
+}
+
+[node name="SkillNodeCard" type="Button" unique_id=1772660358]
+custom_minimum_size = Vector2(196, 96)
+offset_right = 196.0
+offset_bottom = 96.0
+script = ExtResource("1_card")
+
+[node name="Stripe" type="Panel" parent="." unique_id=417544449]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = 1.0
+offset_right = 5.0
+offset_bottom = -1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_stripe")
+
+[node name="SparksAnchor" type="Control" parent="." unique_id=1503227481]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="." unique_id=1573797465]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="Margin" unique_id=103936242]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Margin/VBox" unique_id=2106759064]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "Название навыка"
+autowrap_mode = 3
+clip_text = true
+
+[node name="Bottom" type="HBoxContainer" parent="Margin/VBox" unique_id=1647355685]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Pips" type="HBoxContainer" parent="Margin/VBox/Bottom" unique_id=226660501]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Pip" type="Panel" parent="Margin/VBox/Bottom/Pips" unique_id=1180425331]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(14, 6)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pip")
+
+[node name="Status" type="Label" parent="Margin/VBox/Bottom" unique_id=516945736]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1 очко"
+horizontal_alignment = 2
+
+[node name="Glow" type="Panel" parent="." unique_id=1902884377]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_glow")
+
+[node name="Effects" type="AnimationPlayer" parent="." unique_id=1044318827]
+unique_name_in_owner = true
+libraries = {
+&"": SubResource("AnimationLibrary_card")
+}
+callback_mode_method = 1

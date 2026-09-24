@@ -17,6 +17,12 @@ on:
 
 permissions:
   contents: write
+  # actions:write — иначе actions/cache внутри godot-export не может СОХРАНИТЬ
+  # кэш (падает не сборка, а только post-джоб warning «token has no writable
+  # scopes»). Объявление любого permissions: сбрасывает НЕперечисленные scope
+  # в none, а не наследует умолчания репозитория — contents: write сам по себе
+  # не подразумевает actions: write.
+  actions: write
 
 concurrency:
   group: release
@@ -102,6 +108,24 @@ jobs:
           fetch-depth: 0
           lfs: true
           submodules: recursive
+
+      # То же, что в build.yml: рантайм скачивается прямо с byprod.io (не
+      # хранится копией нигде между прогонами — так требует лицензия), а
+      # byprod.gdextension объявляет его зависимостью — без файла Godot обрывает
+      # экспорт. Здесь шаг тем более обязателен: это ТА САМАЯ сборка, которая
+      # уезжает игрокам, и она обязана быть со звуком.
+      - name: Скачать рантайм byProd
+        shell: bash
+        env:
+          BYPROD_SDK_URL: https://byprod.io/packages/byProdSDK0.5.3.zip
+          BYPROD_SDK_SHA256: 0d7225913b2892bdfaea936f3a39aa57c418b416d3c30a6e18856477914bcd6c
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BYPROD_SDK_URL" -e "https://byprod.io/" -o /tmp/byprod-sdk.zip
+          echo "${BYPROD_SDK_SHA256}  /tmp/byprod-sdk.zip" | sha256sum -c -
+          unzip -jo /tmp/byprod-sdk.zip "*/bin/byProd.dll" "*/bin/libbyProd.so" -d addons/byprod/bin/
+          rm /tmp/byprod-sdk.zip
+          ls -l addons/byprod/bin/
 
       - name: Собрать Windows
         uses: ./.github/actions/godot-export

@@ -1,6 +1,10 @@
 ## res://src/resources/world_generator/rs_level_graph.gd
-## @tool — генератор гоняется из редакторского дока «Генератор» (предпросмотр
-## выборки по сидам), а не-tool ресурс там доступен только плейсхолдером.
+## Граф забега: комнаты и ветки коридора по слоям и этажам, связи между ними.
+## Строится из сида и ручек генерации (RS_WorldGenConfig) детерминированно —
+## сейв хранит сид и снимок ручек, а не комплекс.
+##
+## @tool — генератор гоняется из редакторской вкладки «Генератор мира» (превью слоя
+## и прогон сидов), а не-tool ресурс там доступен только плейсхолдером.
 @tool
 class_name RS_LevelGraph
 extends Resource
@@ -9,356 +13,32 @@ extends Resource
 @export var entry_node_id: StringName
 @export var exit_node_ids: Array[StringName]
 
-const EXTRA_EDGE_RATIO := 0.25
-## ВРЕМЕННО: пока нет RS_RoomPresetLibrary с реальными пресетами комнат.
+## Комната на случай, когда библиотека не дала ничего (нет библиотеки, нет
+## кандидата): генерация не падает, а узел честно остаётся заглушкой.
 const PLACEHOLDER_ROOM_SCENE := "res://src/levels/procedural/rooms/test_room.tscn"
-## Домашний узел (entry) — это хаб: уникальная авторская сцена, а не пресет из
-## библиотеки. Игрок стартует здесь и уходит в комплекс через её дверь.
+## Сцена хаба. Генератор её не ставит — хаб приходит уникальной комнатой из
+## data/world_gen_config.tres; константа нужна инструментам (Room Wizard), чтобы
+## узнать хаб по пути сцены.
 const HUB_ROOM_SCENE := "res://src/levels/hub/hub.tscn"
+## Ручки по умолчанию, если зовущий их не передал (инструменты, проверки).
+const DEFAULT_CONFIG_PATH := "res://data/world_gen_config.tres"
 
-## От самого глубокого к поверхности. Домашний слой игрока — L3, он НЕ центр
-## и не концентратор — это гарантируется отдельно ниже (_generate_floor).
+## От самого глубокого к поверхности (поверхность — 0).
 const DEPTHS := [4, 3, 2, 1, 0]
-## Глубина домашнего слоя игрока. ВАЖНО: это НЕ игровой тюнинг-параметр — ни одна
-## рантайм-система не читает depth, на геймплей само число не влияет. Это якорь
-## ГЕНЕРАТОРНОГО ИНВАРИАНТА: три места обязаны ссылаться на один и тот же слой —
-##   1) выбор домашнего узла: layers_by_depth[HOME_DEPTH] (см. generate_run);
-##   2) размещение гарантированного тупика в комнате 0/этаж 0 ЭТОГО слоя
-##      (_generate_layer_with_floors: dead_end_index);
-##   3) исключение домашнего узла из кандидатов в vertical_hub (generate_run),
-##      иначе у тупика появится второе ребро и degree=1 сломается.
-## Инлайнить как литерал `3` в трёх местах опасно: рассинхрон тихо ломает тупик.
-## Должно быть значением из DEPTHS. Структурно: дом в СЕРЕДИНЕ комплекса — под ним
-## есть слой (4), над ним три к выходу (2,1,0). Число = L3 по лору (История.md).
+## Глубина хаба — для инструментов и отладки (слой по умолчанию во вкладке
+## «Генератор мира»). Генератор её не читает: хаб ставит уникальная комната
+## конфига, и расхождение с ней ловит dev/corridor_graph_check.
 const HOME_DEPTH := 3
-## Поверхность — слой, откуда игрок убегает. Как и HOME_DEPTH, это якорь
-## инварианта, а не тюнинг: на этом слое гарантируется тупик под комнату-выход
-## (см. _generate_layer_with_floors и _place_exits). Комната-выход обслуживает
-## мало рёбер, а на узле с четырьмя дверями она отсеивается по вместимости — без
-## гарантированного тупика забег порой физически нельзя выиграть.
-const SURFACE_DEPTH := 0
-const ROOMS_PER_FLOOR := 4
-const FLOOR_COUNT_MIN := 1
-const FLOOR_COUNT_MAX := 3
-const INTER_LAYER_CONNECTOR_COUNT := 3
-## Потолок степени узла: не больше стольких рёбер (= дверей) на комнату. Гварды
-## ниже держат его на всех необязательных рёбрах и коннекторах; остовное дерево
-## имеет приоритет над лимитом (связность важнее).
-const MAX_ROOM_DEGREE := 4
 
 
-## [param library] если задана — на финальном проходе подбирает каждому узлу
-## реальную сцену комнаты по его тегам и числу рёбер. null =
-## оставить placeholder у всех узлов (поведение до появления библиотеки).
-func generate_run(level_seed: int, library: RS_RoomPresetLibrary = null) -> RS_LevelGraph:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = level_seed
-	var graph := RS_LevelGraph.new()
-
-	var layers_by_depth: Dictionary = {}  # int(depth) -> RS_LevelLayer
-	for depth in DEPTHS:
-		layers_by_depth[depth] = graph._generate_layer_with_floors(rng, depth)
-
-	# Тупики (этаж 0, комната 0 своего слоя) сгенерированы как degree=1 —
-	# см. _generate_floor. Они НИКОГДА не должны попасть в пул хабов ниже, иначе
-	# вертикальный коннектор добавит им второе ребро и тупик сломается.
-	var home_entry: RS_LevelNode = (layers_by_depth[HOME_DEPTH] as RS_LevelLayer).nodes[0]
-	var surface_exit: RS_LevelNode = (layers_by_depth[SURFACE_DEPTH] as RS_LevelLayer).nodes[0]
-
-	# Каждый средний слой участвует в ДВУХ соединениях — со слоем глубже и со
-	# слоем ближе к поверхности, — а портал в комнате ровно один (_bind_portals).
-	# Раньше кандидаты на хаба выбирались отдельно для каждой пары слоёв, и один
-	# и тот же узел мог достаться хабом дважды: лишнее вертикальное ребро
-	# утекало обычной двери, а на карте такая дверь выглядела соседней комнатой
-	# этажа, хотя вела совсем на другой слой. Поэтому пул кандидатов каждого
-	# слоя делится ЗАРАНЕЕ на две непересекающиеся половины — под связь вниз и
-	# под связь вверх, — см. _split_vertical_hub_pool.
-	var hub_pools: Dictionary = {}  # depth -> {"as_upper": [...], "as_lower": [...]}
-	for depth in DEPTHS:
-		var excluded: Array[StringName] = []
-		if depth == HOME_DEPTH:
-			excluded.append(home_entry.id)
-		if depth == SURFACE_DEPTH:
-			excluded.append(surface_exit.id)
-		hub_pools[depth] = graph._split_vertical_hub_pool(
-			rng,
-			layers_by_depth[depth],
-			excluded,
-			depth != SURFACE_DEPTH,  # нужен пул «вниз», кроме самой поверхности
-			depth != DEPTHS[0],  # нужен пул «вверх», кроме самого глубокого слоя
-			INTER_LAYER_CONNECTOR_COUNT,
-		)
-
-	for i in range(DEPTHS.size() - 1):
-		var upper_depth: int = DEPTHS[i]  # глубже
-		var lower_depth: int = DEPTHS[i + 1]  # ближе к поверхности
-		var guarantee_open := lower_depth == 0  # последний рывок к поверхности всегда проходим
-		graph._connect_vertical_layers(
-			rng,
-			hub_pools[upper_depth]["as_upper"],
-			hub_pools[lower_depth]["as_lower"],
-			guarantee_open,
-			0.35,
-		)
-
-	graph._place_exits(rng, layers_by_depth[0], 2)
-
-	var all_layers: Array[RS_LevelLayer] = []
-	for depth in DEPTHS:
-		all_layers.append(layers_by_depth[depth])
-	graph.merge(all_layers)
-
-	# Подстановка реальных сцен комнат — ТОЛЬКО здесь, когда все connections уже
-	# проставлены (иначе select_preset не знает нужного числа слотов).
-	graph._assign_room_scenes(rng, library)
-
-	graph.entry_node_id = home_entry.id
-	# Хаб перекрывает подбор из библиотеки: домашний узел всегда — сцена хаба.
-	graph.nodes[home_entry.id].room_scene_path = HUB_ROOM_SCENE
-
-	return graph
-
-
-## Генерирует один СЛОЙ (depth), состоящий из 1-3 этажей. Каждый этаж —
-## отдельный кластер комнат, этажи внутри слоя соединяются floor_hub'ами.
-## Для HOME_DEPTH и SURFACE_DEPTH комната 0 этажа 0 всегда генерируется как
-## гарантированный тупик (см. _generate_floor(dead_end_index)): дом — чтобы у
-## входного узла было ровно одно ребро, поверхность — чтобы комнате-выходу
-## досталось место, которое она по вместимости обслужит.
-func _generate_layer_with_floors(rng: RandomNumberGenerator, depth: int) -> RS_LevelLayer:
-	var floor_count := rng.randi_range(FLOOR_COUNT_MIN, FLOOR_COUNT_MAX)
-	var floor_layers: Array[RS_LevelLayer] = []
-	var dead_end_id: StringName = &""
-
-	var running_index := 0
-	for f in floor_count:
-		var needs_dead_end := f == 0 and (depth == HOME_DEPTH or depth == SURFACE_DEPTH)
-		var dead_end_index := 0 if needs_dead_end else -1
-		var floor_layer := _generate_floor(rng, depth, f, ROOMS_PER_FLOOR, running_index, dead_end_index)
-		if dead_end_index != -1:
-			dead_end_id = floor_layer.nodes[dead_end_index].id
-		running_index += floor_layer.nodes.size()
-		floor_layers.append(floor_layer)
-
-	# floor_hub-коннекторы между этажами ОДНОГО слоя — без замков (уже загружены
-	# все этажи разом, гейтить прогресс тут незачем), тупик слоя исключён.
-	var excluded: Array[StringName] = []
-	if dead_end_id != &"":
-		excluded.append(dead_end_id)
-	for i in range(floor_layers.size() - 1):
-		_connect_layers(rng, floor_layers[i], floor_layers[i + 1], 1, true, 0.0, &"floor_hub", excluded)
-
-	var merged := RS_LevelLayer.new()
-	for floor_layer in floor_layers:
-		merged.nodes.append_array(floor_layer.nodes)
-	return merged
-
-
-## dead_end_index >= 0: эта комната генерируется В ОБХОД обычного спэннинг-
-## дерева — сначала строим дерево по всем ОСТАЛЬНЫМ комнатам, а тупиковую
-## комнату прикрепляем РОВНО ОДНИМ ребром в конце. Так гарантируется degree=1
-## без риска, что рандом спэннинг-дерева или доп.рёбра случайно дадут ей
-## больше связей (что и произошло бы при обычной пост-обрезке).
-func _generate_floor(
-	rng: RandomNumberGenerator,
-	depth: int,
-	floor_index: int,
-	room_count: int,
-	index_offset: int,
-	dead_end_index: int = -1,
-) -> RS_LevelLayer:
-	var layer := RS_LevelLayer.new()
-	for i in room_count:
-		var node := RS_LevelNode.new()
-		node.id = StringName("L%d_F%d_room_%d" % [depth, floor_index, i])
-		node.depth = depth
-		node.floor_index = floor_index
-		node.index_in_layer = index_offset + i
-		node.room_scene_path = PLACEHOLDER_ROOM_SCENE
-		layer.nodes.append(node)
-
-	var tree_indices: Array[int] = []
-	for i in room_count:
-		if i != dead_end_index:
-			tree_indices.append(i)
-
-	var root: int = tree_indices[0]
-	var connected_indices: Array[int] = [root]
-	for idx in _shuffled_array(rng, tree_indices.slice(1)):
-		var other_idx: int = _pick_open_index(rng, layer, connected_indices)
-		_link_nodes(layer.nodes[idx], layer.nodes[other_idx], RS_LevelConnection.Type.CORRIDOR)
-		connected_indices.append(idx)
-
-	var extra_edges := int(tree_indices.size() * EXTRA_EDGE_RATIO)
-	for i in extra_edges:
-		var a: int = tree_indices[rng.randi_range(0, tree_indices.size() - 1)]
-		var b: int = tree_indices[rng.randi_range(0, tree_indices.size() - 1)]
-		if a == b:
-			continue
-		if layer.nodes[a].get_connection_to(layer.nodes[b].id) != null:
-			continue
-		if _degree(layer.nodes[a]) >= MAX_ROOM_DEGREE or _degree(layer.nodes[b]) >= MAX_ROOM_DEGREE:
-			continue  # доп.ребро необязательно — не превышаем лимит степени
-		_link_nodes(layer.nodes[a], layer.nodes[b], RS_LevelConnection.Type.DOOR)
-
-	if dead_end_index != -1:
-		var attach_to: int = _pick_open_index(rng, layer, connected_indices)
-		_link_nodes(layer.nodes[dead_end_index], layer.nodes[attach_to], RS_LevelConnection.Type.CORRIDOR)
-
-	return layer
-
-
-## Соединяет два соседних слоя/этажа через connector_count хабов.
-## guarantee_one_open гарантирует, что хотя бы один коннектор не заперт.
-## excluded_ids — узлы, которые никогда не должны стать хабом (домашний тупик).
-func _connect_layers(
-	rng: RandomNumberGenerator,
-	layer_from: RS_LevelLayer,
-	layer_to: RS_LevelLayer,
-	connector_count: int,
-	guarantee_one_open: bool = false,
-	lock_chance: float = 0.35,
-	hub_tag: StringName = &"vertical_hub",
-	excluded_ids: Array[StringName] = [],
-) -> void:
-	var from_candidates := layer_from.nodes.filter(
-		func(n): return not excluded_ids.has(n.id) and _degree(n) < MAX_ROOM_DEGREE
-	)
-	var to_candidates := layer_to.nodes.filter(
-		func(n): return not excluded_ids.has(n.id) and _degree(n) < MAX_ROOM_DEGREE
-	)
-	var upper_pool := _shuffled_array(rng, from_candidates)
-	var lower_pool := _shuffled_array(rng, to_candidates)
-	_stamp_connectors(rng, upper_pool, lower_pool, connector_count, guarantee_one_open, lock_chance, hub_tag)
-
-
-## Делит узлы ОДНОГО слоя на два непересекающихся пула под будущих вертикальных
-## хабов — «вниз» (as_upper: слой играет роль upper_depth, связь со слоем
-## глубже) и «вверх» (as_lower: слой играет роль lower_depth, связь со слоем
-## ближе к поверхности). Тот же узел не должен попасть в оба пула — иначе ему
-## достанутся два вертикальных ребра при одном портале в комнате (см.
-## _connect_vertical_layers). Если кандидатов не хватает на оба пула по
-## connector_count — делим ЧЕРЕДОВАНИЕМ после тасовки, а не отдаём всё одной
-## стороне: иначе соседний слой с другой стороны рискует остаться вовсе без
-## связи.
-func _split_vertical_hub_pool(
-	rng: RandomNumberGenerator,
-	layer: RS_LevelLayer,
-	excluded_ids: Array[StringName],
-	needs_as_upper: bool,
-	needs_as_lower: bool,
-	connector_count: int,
-) -> Dictionary:
-	var eligible := layer.nodes.filter(
-		func(n): return not excluded_ids.has(n.id) and _degree(n) < MAX_ROOM_DEGREE
-	)
-	var shuffled := _shuffled_array(rng, eligible)
-
-	var as_upper: Array[RS_LevelNode] = []
-	var as_lower: Array[RS_LevelNode] = []
-	var prefer_upper := true
-	for node: RS_LevelNode in shuffled:
-		if as_upper.size() >= connector_count and as_lower.size() >= connector_count:
-			break
-		var take_upper := needs_as_upper and as_upper.size() < connector_count
-		var take_lower := needs_as_lower and as_lower.size() < connector_count
-		if take_upper and (prefer_upper or not take_lower):
-			as_upper.append(node)
-		elif take_lower:
-			as_lower.append(node)
-		elif take_upper:
-			as_upper.append(node)
-		prefer_upper = not prefer_upper
-
-	return {"as_upper": as_upper, "as_lower": as_lower}
-
-
-## Соединяет два соседних СЛОЯ вертикальными коннекторами по уже готовым
-## непересекающимся пулам (см. _split_vertical_hub_pool) — сам не выбирает
-## кандидатов, чтобы один узел не мог получить хаб-роль дважды.
-func _connect_vertical_layers(
-	rng: RandomNumberGenerator,
-	upper_pool: Array,
-	lower_pool: Array,
-	guarantee_one_open: bool,
-	lock_chance: float,
-) -> void:
-	_stamp_connectors(
-		rng, upper_pool, lower_pool, INTER_LAYER_CONNECTOR_COUNT, guarantee_one_open, lock_chance, &"vertical_hub"
-	)
-
-
-## Общий код раздачи коннекторов для _connect_layers (сам подбирает кандидатов
-## из слоя) и _connect_vertical_layers (получает уже готовые непересекающиеся
-## пулы) — тип связи, замки и сами RS_LevelConnection одинаковы в обоих
-## случаях, разница только в источнике пулов.
-func _stamp_connectors(
-	rng: RandomNumberGenerator,
-	upper_pool: Array,
-	lower_pool: Array,
-	connector_count: int,
-	guarantee_one_open: bool,
-	lock_chance: float,
-	hub_tag: StringName,
-) -> void:
-	connector_count = min(connector_count, upper_pool.size(), lower_pool.size())
-	for i in connector_count:
-		var upper_node: RS_LevelNode = upper_pool[i]
-		var lower_node: RS_LevelNode = lower_pool[i]
-		upper_node.add_tag_unique(hub_tag)
-		lower_node.add_tag_unique(hub_tag)
-
-		var conn_type := (
-			RS_LevelConnection.Type.ELEVATOR
-			if rng.randf() > 0.5
-			else RS_LevelConnection.Type.STAIRWELL
-		)
-		var locked := false
-		if not (guarantee_one_open and i == 0):
-			locked = rng.randf() < lock_chance
-
-		var down := RS_LevelConnection.new()
-		down.target_node_id = lower_node.id
-		down.type = conn_type
-		down.depth_delta = -1
-		if locked:
-			down.locked_by = &"level_access_key"
-		upper_node.connections.append(down)
-
-		var up := RS_LevelConnection.new()
-		up.target_node_id = upper_node.id
-		up.type = conn_type
-		up.depth_delta = 1
-		if locked:
-			up.locked_by = &"level_access_key"
-		lower_node.connections.append(up)
-
-
-## Помечает узлы поверхностного слоя тегом level_exit. Кандидатов не берём подряд
-## из перемешанного пула, а упорядочиваем — иначе выход почти всегда достаётся
-## узлу-коннектору, и забег становится непроходимым:
-##   1. Узлы БЕЗ тега vertical_hub идут первыми. У коннектора теги
-##      [vertical_hub, floor_hub, level_exit] — по специфичности подбор отдаёт ему
-##      vertical_hub-пресет, а в той сцене нет двери с A_FinishRun. Победить в
-##      такой «комнате выхода» физически нечем.
-##   2. Внутри группы — по возрастанию степени: комната-выход обслуживает мало
-##      рёбер (slot_count в data/room/exit_room.tres), на узле с четырьмя дверями
-##      она отсеется по вместимости.
-## Детерминированность сохраняется: пул сперва перемешивается тем же rng.
-func _place_exits(rng: RandomNumberGenerator, layer: RS_LevelLayer, exit_count: int = 2) -> void:
-	var shuffled := _shuffled_array(rng, layer.nodes)
-	var by_degree := func(a: RS_LevelNode, b: RS_LevelNode) -> bool: return _degree(a) < _degree(b)
-
-	var plain := shuffled.filter(func(n: RS_LevelNode) -> bool: return not n.has_tag(&"vertical_hub"))
-	var hubs := shuffled.filter(func(n: RS_LevelNode) -> bool: return n.has_tag(&"vertical_hub"))
-	plain.sort_custom(by_degree)
-	hubs.sort_custom(by_degree)
-
-	var pool: Array = plain + hubs  # коннекторы — только если обычных узлов не хватило
-	exit_count = min(exit_count, pool.size())
-	for i in exit_count:
-		pool[i].add_tag_unique(&"level_exit")
-		exit_node_ids.append(pool[i].id)
+## Строит граф забега. [param library] — пресеты комнат (null — все комнаты
+## заглушки), [param config] — ручки (null — data/world_gen_config.tres).
+func generate_run(
+	level_seed: int, library: RS_RoomPresetLibrary = null, config: RS_WorldGenConfig = null
+) -> RS_LevelGraph:
+	if config == null:
+		config = load(DEFAULT_CONFIG_PATH) as RS_WorldGenConfig
+	return RS_LevelGraph.new()._generate(level_seed, library, config)
 
 
 func get_node_data(node_id: StringName) -> RS_LevelNode:
@@ -376,24 +56,6 @@ func get_nodes_by_depth(depth: int) -> Array[RS_LevelNode]:
 	return result
 
 
-func merge(layers: Array[RS_LevelLayer]) -> void:
-	for layer in layers:
-		for node in layer.nodes:
-			nodes[node.id] = node
-
-
-## Финальный проход: подбирает каждому узлу сцену комнаты через библиотеку
-## пресетов. Узлам, которым пресет не нашёлся (или library == null), остаётся
-## заранее проставленный PLACEHOLDER_ROOM_SCENE — генерация не падает.
-func _assign_room_scenes(rng: RandomNumberGenerator, library: RS_RoomPresetLibrary) -> void:
-	if library == null:
-		return
-	for node in nodes.values():
-		var preset := library.select_preset(node, rng)
-		if preset and preset.scene:
-			node.room_scene_path = preset.scene.resource_path
-
-
 func _link_nodes(a: RS_LevelNode, b: RS_LevelNode, type: RS_LevelConnection.Type) -> void:
 	var forward := RS_LevelConnection.new()
 	forward.target_node_id = b.id
@@ -406,19 +68,6 @@ func _link_nodes(a: RS_LevelNode, b: RS_LevelNode, type: RS_LevelConnection.Type
 	b.connections.append(backward)
 
 
-func _degree(node: RS_LevelNode) -> int:
-	return node.connections.size()
-
-
-## Индекс из pool (индексы в layer.nodes) с приоритетом узлов, у которых ещё есть
-## место (degree < MAX_ROOM_DEGREE). Свободных нет — берём любой: рвать остовное
-## дерево ради лимита степени нельзя, связность важнее.
-func _pick_open_index(rng: RandomNumberGenerator, layer: RS_LevelLayer, pool: Array[int]) -> int:
-	var open := pool.filter(func(ci): return _degree(layer.nodes[ci]) < MAX_ROOM_DEGREE)
-	var chosen: Array = open if not open.is_empty() else pool
-	return chosen[rng.randi_range(0, chosen.size() - 1)]
-
-
 func _shuffled_array(rng: RandomNumberGenerator, source: Array) -> Array:
 	var arr := source.duplicate()
 	for i in range(arr.size() - 1, 0, -1):
@@ -427,3 +76,307 @@ func _shuffled_array(rng: RandomNumberGenerator, source: Array) -> Array:
 		arr[i] = arr[j]
 		arr[j] = tmp
 	return arr
+
+
+# ---------------------------------------------------------------------------
+# Генерация
+#
+# Порядок проходов — из карточки «Рефакторинг генератора мира», и он обратный
+# тому, что был до коридоров (степень узла → комната под неё): сначала
+# решается, КАКАЯ комната стоит в узле, и только потом ей раздаются рёбра —
+# ровно столько, сколько в её сцене дверей. Отсюда заваренных
+# дверей нет по построению, а «гарантированный тупик» хаба перестаёт быть
+# особым случаем: у его сцены одна дверь.
+#
+#   1. комнаты по слоям и этажам (узлы без рёбер);
+#   2. уникальные комнаты — резерв узлов под заранее известные сцены;
+#   3. вертикаль — какие комнаты несут портал (между этажами и между слоями);
+#   4. типы помещений;
+#   5. подбор сцен остальным комнатам;
+#   6. ветки коридоров этажа и рёбра «дверь → ветка».
+#
+# Раскладки здесь нет вовсе: куда какая дверь смотрит и как пройдёт трасса —
+# дело RS_LayerPlan. Граф отвечает только на «что с чем связано».
+# ---------------------------------------------------------------------------
+
+
+## Тег, которым узел объявляет нужду в портале (см. RS_RoomPresetLibrary.PORTAL_TAG).
+const PORTAL_TAG := &"vertical_hub"
+const EXIT_TAG := &"level_exit"
+
+
+func _generate(
+	level_seed: int, library: RS_RoomPresetLibrary, config: RS_WorldGenConfig
+) -> RS_LevelGraph:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = level_seed
+
+	# depth -> Array этажей, этаж — Array[RS_LevelNode] комнат.
+	var floors_by_depth: Dictionary = {}
+	# depth -> следующий index_in_layer: коридоры встают в конец слоя после комнат.
+	var next_index: Dictionary = {}
+	for depth: int in DEPTHS:
+		var floors: Array = []
+		var index := 0
+		for f in rng.randi_range(config.floor_count_min, config.floor_count_max):
+			var floor_rooms: Array[RS_LevelNode] = []
+			for i in config.rooms_per_floor:
+				var id := StringName("L%d_F%d_room_%d" % [depth, f, i])
+				floor_rooms.append(_add_node(id, depth, f, index, RS_LevelNode.Role.ROOM))
+				index += 1
+			floors.append(floor_rooms)
+		floors_by_depth[depth] = floors
+		next_index[depth] = index
+
+	var reserved: Dictionary[StringName, RS_UniqueRoom] = {}
+	var unique_presets := _place_unique_rooms(rng, config, floors_by_depth, reserved)
+	if entry_node_id == &"":
+		push_error("RS_LevelGraph: вход не размещён — проверьте уникальные комнаты в конфиге")
+
+	_connect_floors_vertically(rng, floors_by_depth, reserved)
+	_connect_layers_vertically(rng, config, floors_by_depth, reserved)
+
+	var catalog := library.type_catalog if library else null
+	if catalog:
+		for node: RS_LevelNode in nodes.values():
+			if not reserved.has(node.id):
+				node.room_type = catalog.pick_for_depth(node.depth, rng)
+
+	for node: RS_LevelNode in nodes.values():
+		if reserved.has(node.id):
+			continue
+		var preset := library.select_preset(node, rng, unique_presets) if library else null
+		node.room_scene_path = preset.scene.resource_path if preset and preset.scene else PLACEHOLDER_ROOM_SCENE
+		node.room_type = preset.room_type if preset else &""
+
+	for depth: int in DEPTHS:
+		var floors: Array = floors_by_depth[depth]
+		for f in floors.size():
+			next_index[depth] = _hang_floor_on_corridors(rng, config, floors[f], depth, f, next_index[depth])
+
+	return self
+
+
+func _add_node(
+	id: StringName, depth: int, floor_index: int, index_in_layer: int, role: RS_LevelNode.Role
+) -> RS_LevelNode:
+	var node := RS_LevelNode.new()
+	node.id = id
+	node.depth = depth
+	node.floor_index = floor_index
+	node.index_in_layer = index_in_layer
+	node.role = role
+	node.room_scene_path = PLACEHOLDER_ROOM_SCENE if role == RS_LevelNode.Role.ROOM else ""
+	nodes[id] = node
+	return node
+
+
+## Резервирует узлы под уникальные комнаты. Возвращает их пресеты — подбор
+## обычных комнат их не предлагает, иначе выход выпадал бы вторым финишем.
+##
+## Каждый экземпляр тратит ТРИ броска rng при любом исходе — шанс, глубина,
+## узел: пропущенный бросок сдвинул бы всё, что разыгрывается после, и то, что
+## комната Архитектора в этот раз не выпала, перетасовало бы весь комплекс.
+func _place_unique_rooms(
+	rng: RandomNumberGenerator,
+	config: RS_WorldGenConfig,
+	floors_by_depth: Dictionary,
+	reserved: Dictionary[StringName, RS_UniqueRoom],
+) -> Array[RS_RoomPreset]:
+	var presets: Array[RS_RoomPreset] = []
+	for unique: RS_UniqueRoom in config.unique_rooms:
+		if unique == null or unique.preset == null or unique.preset.scene == null:
+			continue
+		presets.append(unique.preset)
+		for c in unique.count:
+			var roll := rng.randf()
+			# Индекс, а не глубина из отрезка: так вычеркнутая глубина не
+			# перекашивает шансы соседних. При одной допустимой глубине (хаб,
+			# выход) бросок тот же randi_range(a, a), что и до списка вычеркнутых,
+			# — прежние сиды дают прежний комплекс.
+			var depths := unique.allowed_depths()
+			var depth_index := rng.randi_range(0, maxi(depths.size() - 1, 0))
+			var depth: int = depths[depth_index] if not depths.is_empty() else unique.depth_min
+			var pool: Array[RS_LevelNode] = []
+			for floor_rooms: Array in floors_by_depth.get(depth, []):
+				for node: RS_LevelNode in floor_rooms:
+					if not reserved.has(node.id):
+						pool.append(node)
+			var pick := rng.randi_range(0, maxi(pool.size() - 1, 0))
+			# randf() включает единицу: «шанс 1.0» обязан размещать всегда.
+			var placed := unique.chance >= 1.0 or roll < unique.chance
+			if not placed or pool.is_empty():
+				continue
+			var node: RS_LevelNode = pool[pick]
+			reserved[node.id] = unique
+			node.room_scene_path = unique.preset.scene.resource_path
+			node.room_type = unique.preset.room_type
+			node.door_teleports = unique.door_teleports
+			if unique.entry:
+				entry_node_id = node.id
+			if unique.exit:
+				node.add_tag_unique(EXIT_TAG)
+				exit_node_ids.append(node.id)
+	return presets
+
+
+## Этажи одного слоя связывает портал — ходить по коридорам можно только в
+## плоскости этажа. Этажи идут по порядку, на каждую пару по одному переходу.
+## Проходится ДО межслойных: без него этаж отрезан от слоя, а межслойных
+## переходов хватит и на остатке (их бывает меньше заявленного, но не ноль).
+func _connect_floors_vertically(
+	rng: RandomNumberGenerator,
+	floors_by_depth: Dictionary,
+	reserved: Dictionary[StringName, RS_UniqueRoom],
+) -> void:
+	for depth: int in DEPTHS:
+		var floors: Array = floors_by_depth[depth]
+		for f in range(floors.size() - 1):
+			var lower := _free_for_portal(floors[f], reserved)
+			var upper := _free_for_portal(floors[f + 1], reserved)
+			if lower.is_empty() or upper.is_empty():
+				push_error("RS_LevelGraph: этаж %d слоя %d не с чем связать порталом" % [f + 1, depth])
+				continue
+			var a: RS_LevelNode = lower[rng.randi_range(0, lower.size() - 1)]
+			var b: RS_LevelNode = upper[rng.randi_range(0, upper.size() - 1)]
+			_link_vertical(a, b, RS_LevelConnection.Type.STAIRWELL, &"", 0)
+
+
+## Соседние слои — через layer_connectors порталов. Пулы каждого слоя делятся
+## заранее на «вниз» и «вверх»: средний слой участвует в двух соединениях, и без
+## раздела первое съело бы кандидатов второго. Первый переход каждой пары открыт
+## всегда — ключей в игре нет, и запертые наглухо пары делали бы забег
+## непроходимым.
+func _connect_layers_vertically(
+	rng: RandomNumberGenerator,
+	config: RS_WorldGenConfig,
+	floors_by_depth: Dictionary,
+	reserved: Dictionary[StringName, RS_UniqueRoom],
+) -> void:
+	# depth -> {"down": связь со слоем глубже, "up": связь со слоем ближе к поверхности}
+	var pools: Dictionary = {}
+	for depth: int in DEPTHS:
+		var free: Array[RS_LevelNode] = []
+		for floor_rooms: Array in floors_by_depth[depth]:
+			free.append_array(_free_for_portal(floor_rooms, reserved))
+		var down: Array = []
+		var up: Array = []
+		var needs_down: bool = depth != DEPTHS[0]  # глубже самого глубокого некуда
+		var needs_up: bool = depth != DEPTHS[DEPTHS.size() - 1]  # выше поверхности некуда
+		var prefer_down := true
+		for node in _shuffled_array(rng, free):
+			var take_down: bool = needs_down and down.size() < config.layer_connectors
+			var take_up: bool = needs_up and up.size() < config.layer_connectors
+			if take_down and (prefer_down or not take_up):
+				down.append(node)
+			elif take_up:
+				up.append(node)
+			prefer_down = not prefer_down
+		pools[depth] = {"down": down, "up": up}
+
+	for i in range(DEPTHS.size() - 1):
+		var deeper: int = DEPTHS[i]
+		var shallower: int = DEPTHS[i + 1]
+		var from: Array = pools[deeper]["up"]
+		var to: Array = pools[shallower]["down"]
+		var count := mini(config.layer_connectors, mini(from.size(), to.size()))
+		if count == 0:
+			push_error("RS_LevelGraph: слои %d и %d нечем связать" % [deeper, shallower])
+		for c in count:
+			var type := (
+				RS_LevelConnection.Type.ELEVATOR if rng.randf() > 0.5 else RS_LevelConnection.Type.STAIRWELL
+			)
+			var lock_roll := rng.randf()
+			var locked := c > 0 and lock_roll < config.layer_lock_chance
+			_link_vertical(from[c], to[c], type, &"level_access_key" if locked else &"", -1)
+
+
+## Комнаты этажа, которым ещё можно дать портал: не уникальные (их сцена задана
+## и портала в ней может не быть) и без вертикального ребра — портал в комнате
+## ровно один (RunManager._bind_portals).
+func _free_for_portal(
+	floor_rooms: Array, reserved: Dictionary[StringName, RS_UniqueRoom]
+) -> Array[RS_LevelNode]:
+	var free: Array[RS_LevelNode] = []
+	for node: RS_LevelNode in floor_rooms:
+		if not reserved.has(node.id) and not node.has_tag(PORTAL_TAG):
+			free.append(node)
+	return free
+
+
+## Вертикальное ребро в обе стороны. [param depth_delta] — со стороны [param a]:
+## −1 = a глубже b; 0 = переход между этажами одного слоя. Оба конца получают
+## тег портала — по нему подбор даст им комнату с порталом.
+func _link_vertical(
+	a: RS_LevelNode, b: RS_LevelNode, type: RS_LevelConnection.Type, locked_by: StringName, depth_delta: int
+) -> void:
+	a.add_tag_unique(PORTAL_TAG)
+	b.add_tag_unique(PORTAL_TAG)
+	var down := RS_LevelConnection.new()
+	down.target_node_id = b.id
+	down.type = type
+	down.locked_by = locked_by
+	down.depth_delta = depth_delta
+	a.connections.append(down)
+	var up := RS_LevelConnection.new()
+	up.target_node_id = a.id
+	up.type = type
+	up.locked_by = locked_by
+	up.depth_delta = -depth_delta
+	b.connections.append(up)
+
+
+## Подвешивает комнаты этажа на ветки коридора: ветки связаны деревом, каждая
+## комната — на одной ветке, и каждая её дверь — ребро в эту ветку (рёбер между
+## ними столько, сколько дверей: коридор огибает комнату). Это законно — дверь к
+## ребру привязывает раскладка по стороне, а не граф по id соседа. Возвращает
+## следующий свободный index_in_layer.
+##
+## Одна ветка на комнату — не упрощение, а условие укладки. Коридоры этажа не
+## пересекаются, и комната, чьи двери ведут в разные ветки, заставляет эти ветки
+## обойти её со всех сторон; две-три таких комнаты — и граф не укладывается на
+## плоскость вовсе: первый прогон с дверями в случайные ветки не проложил трассы
+## на 8 % этажей, и никакая трассировка это не лечит. Комнаты-перемычки между
+## ветками — отдельная ручка на потом, если планировщик научится их укладывать.
+##
+## Каждая ветка получает хотя бы одну комнату (первые — по кругу после
+## перетасовки): ветка без единой двери — это «коридор в никуда», ради ухода от
+## которого карточка и отказалась от заваренных дверей.
+func _hang_floor_on_corridors(
+	rng: RandomNumberGenerator,
+	config: RS_WorldGenConfig,
+	floor_rooms: Array,
+	depth: int,
+	floor_index: int,
+	index: int,
+) -> int:
+	var doors: Dictionary[StringName, int] = {}
+	var with_doors: Array[RS_LevelNode] = []
+	for node: RS_LevelNode in floor_rooms:
+		doors[node.id] = RS_RoomLayout.door_count_of_scene(node.room_scene_path)
+		if doors[node.id] > 0:
+			with_doors.append(node)
+		else:
+			push_warning("RS_LevelGraph: у комнаты '%s' нет дверей — она недостижима" % node.id)
+	if with_doors.is_empty():
+		return index
+
+	var branch_count := rng.randi_range(
+		mini(config.corridor_branches_min, with_doors.size()),
+		mini(config.corridor_branches_max, with_doors.size()),
+	)
+	var branches: Array[RS_LevelNode] = []
+	for k in branch_count:
+		var id := StringName("L%d_F%d_corridor_%d" % [depth, floor_index, k])
+		branches.append(_add_node(id, depth, floor_index, index, RS_LevelNode.Role.CORRIDOR))
+		index += 1
+	for k in range(1, branches.size()):
+		_link_nodes(branches[k], branches[rng.randi_range(0, k - 1)], RS_LevelConnection.Type.CORRIDOR)
+
+	var shuffled := _shuffled_array(rng, with_doors)
+	for j in shuffled.size():
+		var room: RS_LevelNode = shuffled[j]
+		var branch := branches[j] if j < branches.size() else branches[rng.randi_range(0, branches.size() - 1)]
+		for d in doors[room.id]:
+			_link_nodes(room, branch, RS_LevelConnection.Type.CORRIDOR)
+	return index

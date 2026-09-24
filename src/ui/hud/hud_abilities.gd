@@ -1,12 +1,13 @@
 # res://src/ui/hud/hud_abilities.gd
 ## Раскладка управления «на сейчас»: что риг умеет ПРЯМО СЕЙЧАС, а не полный
 ## список действий игры. Ход/полёт показываем всегда (движение доступно в любом
-## состоянии, меняется только его смысл), прыжок — только пока на риге есть
-## C_Jump: у безногого тела строка исчезает, а не гаснет серым.
+## состоянии, меняется только его смысл), прыжок и бег — только пока на риге
+## есть C_Jump/C_Sprint: у безногого тела строка исчезает, а не гаснет серым.
 ##
-## Клавиша прыжка резолвится из InputMap по C_Jump.action_name тем же приёмом,
-## что и подсказка взаимодействия (hud_prompt.gd) — после переназначения строка
-## обновится сама, без правки этого файла.
+## Клавиши прыжка и бега резолвятся из InputMap по C_Jump.action_name и
+## C_Sprint.action_name тем же приёмом, что и подсказка взаимодействия
+## (hud_prompt.gd) — после переназначения строка обновится сама, без правки
+## этого файла.
 ##
 ## Реагируем на component_added/component_removed, а не поллим каждый кадр
 ## (ср. hud_vitals.gd): набор возможностей — дискретное состояние, меняющееся
@@ -20,6 +21,7 @@ extends PanelContainer
 @onready var _abilities: VBoxContainer = $Margin/Abilities
 @onready var _move_label: Label = $Margin/Abilities/MoveLabel
 @onready var _jump_label: Label = $Margin/Abilities/JumpLabel
+@onready var _sprint_label: Label = $Margin/Abilities/SprintLabel
 
 ## Строки-способности и разделители между ними — СОБРАНЫ ИЗ ДЕТЕЙ, а не
 ## перечислены по именам: авторишь третью строку (сцена) — разделители сами
@@ -61,7 +63,13 @@ func _connect_world_signals(world: World) -> void:
 ## что после него сменился набор возможностей рига — перерисовать дешевле, чем
 ## различать направление.
 func _on_component_changed(_entity: Entity, component: Variant) -> void:
-	if component is C_Walk or component is C_Flight or component is C_Jump or component is C_Embodied:
+	if (
+		component is C_Walk
+		or component is C_Flight
+		or component is C_Jump
+		or component is C_Sprint
+		or component is C_Embodied
+	):
 		_render()
 
 
@@ -86,6 +94,12 @@ func _render() -> void:
 	if jump != null:
 		var key := SettingsManager.action_display_name(jump.action_name)
 		_jump_label.text = "[%s] Прыжок" % key if key != "" else "Прыжок"
+
+	var sprint := player.get_component(C_Sprint) as C_Sprint
+	_sprint_label.visible = sprint != null
+	if sprint != null:
+		var sprint_key := SettingsManager.action_display_name(sprint.action_name)
+		_sprint_label.text = "[%s] Бег" % sprint_key if sprint_key != "" else "Бег"
 
 	_sync_separators()
 

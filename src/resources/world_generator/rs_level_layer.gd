@@ -1,4 +1,4 @@
-@tool  # граф строится в т.ч. из редакторского дока «Генератор» — см. RS_LevelGraph
+@tool  # граф строится в т.ч. из редакторской вкладки «Генератор мира» — см. RS_LevelGraph
 class_name RS_LevelLayer
 extends Resource
 

@@ -10,10 +10,10 @@
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_is5eu"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qlrq3"]
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="10_alaum"]
-[ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="11_uuilv"]
 [ext_resource type="PackedScene" uid="uid://f5i4a5l3ph2j" path="res://src/entities/body/e_body_walker.tscn" id="12_5ih0i"]
-[ext_resource type="PackedScene" uid="uid://biosb4cjxfviu" path="res://src/entities/body/e_body_crawler.tscn" id="13_8ue0e"]
 [ext_resource type="PackedScene" uid="uid://dtsbk0vab2ynp" path="res://src/entities/enemy/e_enemy.tscn" id="14_enemy"]
+[ext_resource type="PackedScene" path="res://src/entities/map_terminal/e_map_terminal.tscn" id="15_map_terminal"]
+[ext_resource type="Script" uid="uid://ccb3xm8fbdion" path="res://src/components/rendering/c_visual_root.gd" id="16_visual_root"]
 
 [sub_resource type="Resource" id="Resource_oeda6"]
 script = ExtResource("4_18pe2")
@@ -37,12 +37,22 @@ size = Vector3(3.5, 5.5, 3.5)
 script = ExtResource("10_alaum")
 metadata/_custom_type_script = "uid://dibrg03qygmfk"
 
+[sub_resource type="Resource" id="Resource_map_prompt"]
+script = ExtResource("5_qlrq3")
+prompt_text = "MAP_TERMINAL_PROMPT"
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="Resource_map_visual"]
+script = ExtResource("16_visual_root")
+path = NodePath("../screen2")
+metadata/_custom_type_script = "uid://ccb3xm8fbdion"
+
 [node name="Hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
 script = ExtResource("2_oeda6")
 alias = &"Hub"
 component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_oeda6")])
 
-[node name="Incubator" parent="." index="0" unique_id=1162994375]
+[node name="Incubator" parent="." index="0" unique_id=187174294]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.236, 3.6953397)
 material_override = SubResource("StandardMaterial3D_7dvkg")
 script = ExtResource("2_k166h")
@@ -63,19 +73,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 1.2064084, -0.793
 [node name="Doors" type="Node3D" parent="." index="2" unique_id=901771904]
 
 [node name="Door" parent="Doors" index="0" unique_id=1986258941 instance=ExtResource("5_is5eu")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0640976, 2.0443382, -7.799738)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4450603, 0.45232117, -7.799738)
 actions = Array[ExtResource("3_da6hf")]([SubResource("Resource_chsjf")])
 
-[node name="headog_skeleton" parent="." index="18" unique_id=1516563894 instance=ExtResource("11_uuilv")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1953435, 0.39336514, -4.275962)
-collision_layer = 20
-collision_mask = 17
-
-[node name="e_body_walker" parent="." index="19" unique_id=250816338 instance=ExtResource("12_5ih0i")]
+[node name="e_body_walker" parent="." index="18" unique_id=250816338 instance=ExtResource("12_5ih0i")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7768965, 1.7258387, -4.7508903)
 
-[node name="half_body_skeleton" parent="." index="20" unique_id=1772587322 instance=ExtResource("13_8ue0e")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.439003, 0.5850637, -6.4384336)
-
-[node name="Enemy" parent="." index="21" unique_id=250816339 instance=ExtResource("14_enemy")]
+[node name="Enemy" parent="." index="19" unique_id=250816339 instance=ExtResource("14_enemy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.3854353, 1.5064085, -0.79322445)
+
+[node name="MapTerminal" parent="." index="20" unique_id=2143663887 instance=ExtResource("15_map_terminal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6556, 2.7953, 6.7723)
+component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_map_prompt"), SubResource("Resource_map_visual")])

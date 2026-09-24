@@ -6,6 +6,7 @@ extends Node
 
 const PAUSE_MENU_SCENE = preload("res://src/ui/pause_menu/pause_menu.tscn")
 const SKILL_TREE_SCENE = preload("res://src/ui/skill_tree/skill_tree_ui.tscn")
+const COMPLEX_MAP_SCENE = preload("res://src/ui/map/complex_map_screen.tscn")
 
 ## Включайте явно из игровой сцены — влияет только на автооткрытие паузы по Esc
 ## и на то, нужно ли возвращать курсор в захват, когда стек опустеет.
@@ -21,6 +22,9 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("map") and not event.is_echo():
+		_toggle_complex_map()
+		return
 	if not event.is_action_pressed("pause_game") or event.is_echo():
 		return
 	if not _stack.is_empty():
@@ -122,11 +126,16 @@ func open_skill_tree(skill_manager, tree_data: RS_SkillTree) -> void:
 			return
 
 	var skill_ui: SkillTreeUI = SKILL_TREE_SCENE.instantiate()
-
-	_set_player_input_blocked(true)
-	
-	push_screen(skill_ui, false, null, func(): _set_player_input_blocked(false))
+	push_blocking_screen(skill_ui)
 	skill_ui.setup(skill_manager, tree_data)
+
+
+## Экран поверх идущей игры, пока открыт который ригом не управляют: курсор нужен
+## экрану, и движение мыши не должно заодно крутить камеру. Паузы нет — мир живёт,
+## как и при дереве навыков. Блок снимается колбэком закрытия, то есть и по Esc.
+func push_blocking_screen(screen: Control) -> void:
+	_set_player_input_blocked(true)
+	push_screen(screen, false, null, func(): _set_player_input_blocked(false))
 
 
 func _set_player_input_blocked(blocked: bool) -> void:
@@ -139,10 +148,129 @@ func _set_player_input_blocked(blocked: bool) -> void:
 			var inp := player.get_component(C_PlayerInput) as C_PlayerInput
 			if inp:
 				inp.mouse_delta = Vector2.ZERO
-				inp.move_direction = Vector3.ZERO 
+				inp.move_direction = Vector3.ZERO
 	else:
 		player.remove_component(C_UIBlocked)
 
 
+# ---------------------------------------------------------------------------
+# Карта комплекса
+# ---------------------------------------------------------------------------
+
+
+## Та же клавиша и закрывает: к карте возвращаются по нескольку раз, сверяясь
+## с ней на ходу. Поверх чужого экрана не открывается — легла бы на меню паузы
+## и закрылась бы по Esc раньше него.
+func _toggle_complex_map() -> void:
+	if not _stack.is_empty():
+		if _stack.back().screen is UI_ComplexMap:
+			close_top()
+			get_viewport().set_input_as_handled()
+		return
+	if enabled:
+		open_complex_map()
+		get_viewport().set_input_as_handled()
+
+
+## Открывает карту комплекса — с клавиши или с терминала в хабе
+## (A_OpenComplexMap). Сколько на ней видно, решает улучшение у Архитектора; без
+## него экрана нет, и игрок получает строку о том, что связи нет, а не молчащую
+## клавишу.
+##
+## На паузе, а не блокирующим экраном, как дерево навыков: карту изучают, стоя
+## на месте, и распад, тикающий под ней, превращал бы планирование в спешку.
+func open_complex_map() -> void:
+	for entry in _stack:
+		if entry.screen is UI_ComplexMap:
+			return
+	if RunManager.current_graph == null:
+		return
+	var level := ArchitectManager.map_level()
+	if level <= MapKnowledge.LEVEL_NONE:
+		_notify_player(tr("MAP_NO_LINK"))
+		return
+	var screen: UI_ComplexMap = COMPLEX_MAP_SCENE.instantiate()
+	push_screen(screen, true)
+	screen.setup(
+		RunManager.current_graph, level, RunManager.current_node_id,
+		WorldSave.save.visited_node_ids, RunManager.plan_for_depth
+	)
+
+
+## Строка поверх HUD — C_ScreenMessage на игроке. Компонент пересоздаётся, а не
+## правится: прямая запись в поля миру не сигналится, и HUD не увидел бы нового
+## текста. Структурная правка здесь законна — и клавиша, и касание терминала
+## приходят вне прохода систем (_unhandled_input; interact() зовётся через
+## call_deferred из S_InteractInput).
+func _notify_player(text: String) -> void:
+	var player := _get_player_entity()
+	if player == null:
+		return
+	if player.has_component(C_ScreenMessage):
+		player.remove_component(C_ScreenMessage)
+	var message := C_ScreenMessage.new()
+	message.text = text
+	player.add_component(message)
+
+
+# ---------------------------------------------------------------------------
+# Затемнение экрана
+# ---------------------------------------------------------------------------
+
+## Шторка живёт НЕ в сцене, а прямым ребёнком root: затемняют как раз для того,
+## чтобы под ним сменить сцену, и уехавшая вместе со старой сценой шторка мигнула
+## бы миром ровно в момент перехода. По той же причине снимает её уже НОВАЯ сцена
+## (fade_from_black) — иначе после смены сцены экран остался бы чёрным навсегда.
+var _fade: ColorRect
+
+
+## Гасит экран в чёрный за [param duration] секунд и возвращает управление, когда
+## погасло. Отдельного экрана-сцены под шторку нет намеренно: это один
+## непрозрачный прямоугольник без начинки, и сцена ради него была бы файлом,
+## который нечего открывать.
+func fade_to_black(duration: float) -> void:
+	_ensure_fade()
+	_fade.color.a = 0.0
+	_fade.show()
+	# PROCESS_MODE_ALWAYS: гасить экран может понадобиться и на паузе, а твин
+	# считает время процессом того узла, к которому привязан.
+	var tween := create_tween()
+	tween.tween_property(_fade, "color:a", 1.0, duration)
+	await tween.finished
+
+
+## Проявляет новую сцену из-под шторки. Молча ничего не делает, если экран и не
+## гасили, — новой сцене не нужно знать, как в неё попали.
+func fade_from_black(duration: float) -> void:
+	if _fade == null or not _fade.visible:
+		return
+	var tween := create_tween()
+	tween.tween_property(_fade, "color:a", 0.0, duration)
+	await tween.finished
+	_fade.hide()
+
+
+func _ensure_fade() -> void:
+	if is_instance_valid(_fade):
+		return
+	_fade = ColorRect.new()
+	_fade.name = "FadeOverlay"
+	_fade.color = Color(0.0, 0.0, 0.0, 0.0)
+	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Мышь сквозь шторку проходит: она рисует, а не перехватывает — иначе кнопки
+	# экрана итогов оказались бы под невидимой крышкой.
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade.process_mode = Node.PROCESS_MODE_ALWAYS
+	# Поверх всего, включая экраны стека: затемнение — это переход между сценами,
+	# а не ещё один экран в очереди.
+	_fade.z_index = 128
+	get_tree().root.add_child(_fade)
+
+
 func _get_player_entity() -> Entity:
+	# Мира может уже не быть: экран смерти гасит стек, находясь В СВОЕЙ сцене —
+	# игровая к тому моменту выгружена вместе с ECS.world. Отсутствие мира здесь
+	# нормально, on_close дерева навыков просто некому применить.
+	if ECS.world == null:
+		return null
 	return ECS.world.query.with_all([C_PlayerInput]).execute_one()
