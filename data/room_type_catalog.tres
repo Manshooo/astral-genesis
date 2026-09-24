@@ -1,0 +1,92 @@
+[gd_resource type="Resource" script_class="RS_RoomTypeCatalog" format=3 uid="uid://bmb060jh75fai"]
+
+[ext_resource type="Script" uid="uid://ckmvfbo5ntu0m" path="res://src/resources/world_generator/rs_room_type.gd" id="1_type"]
+[ext_resource type="Script" uid="uid://dk48e42ykbrw7" path="res://src/resources/world_generator/rs_room_type_catalog.gd" id="2_catalog"]
+
+[sub_resource type="Resource" id="Resource_arsenal"]
+script = ExtResource("1_type")
+id = &"arsenal"
+display_name = "Арсенал"
+description = "Оружейная: запертые стеллажи и шкафчики, рядом пост с людьми при оружии — то есть тела, ради которых сюда стоит зайти. С поверхности убран намеренно: на L0 оружие держит только охрана входа, настоящий арсенал начинается там, где начинается частная армия."
+depth_min = 1
+
+[sub_resource type="Resource" id="Resource_lab"]
+script = ExtResource("1_type")
+id = &"lab"
+display_name = "Лаборатория"
+description = "Рабочее сердце комплекса и самый частый тематический тип: ради этих помещений всё и построено. Подтипов много, и различаться они должны хотя бы визуально — от чистой биологии до вскрытых стендов; тела учёных здесь обычная находка. Чем глубже, тем откровеннее эксперимент."
+weight = 3.0
+depth_min = 1
+
+[sub_resource type="Resource" id="Resource_proving_ground"]
+script = ExtResource("1_type")
+id = &"proving_ground"
+display_name = "Полигон"
+description = "То, что нельзя провести в комнате с трёхметровым потолком: крупный объём, следы испытаний, разрушенная оснастка. Только L3–L4 — наверху таких залов нет, да и опыты там смирнее. Редкий: полигон, встречающийся каждый забег, перестаёт читаться как событие."
+weight = 0.8
+depth_min = 3
+
+[sub_resource type="Resource" id="Resource_storage"]
+script = ExtResource("1_type")
+id = &"storage"
+display_name = "Склад"
+description = "Контейнеры, стеллажи, проходы между ними: лут и укрытия. Единственный тип на всех глубинах — снабжение нужно везде, — и второй по частоте после лаборатории. Это фоновое помещение комплекса, оно и должно быть привычным."
+weight = 2.0
+
+[sub_resource type="Resource" id="Resource_archive"]
+script = ExtResource("1_type")
+id = &"archive"
+display_name = "Архив"
+description = "Записки, отчёты, бумага — способ рассказать историю местом, а не катсценой. Тел и опасности минимум: темп забега здесь падает намеренно. Не глубже L3 — то, что происходит ниже, на бумагу уже не попадало."
+depth_min = 1
+depth_max = 3
+
+[sub_resource type="Resource" id="Resource_canteen"]
+script = ExtResource("1_type")
+id = &"canteen"
+display_name = "Столовая"
+description = "Жилая передышка: столы, посуда, следы обычной жизни до катастрофы — контраст, ради которого тип и заведён. Тела персонала лежат кучно, застигнутые в момент, когда всё пошло не так. Только L0–L2, где комплекс ещё был местом работы, а не местом, куда спускают."
+weight = 1.2
+depth_max = 2
+
+[sub_resource type="Resource" id="Resource_security"]
+script = ExtResource("1_type")
+id = &"security"
+display_name = "Помещения охраны"
+description = "Посты, камеры наблюдения, оружейные шкафчики. Встречаются на всех глубинах, но означают разное: наверху это проходная, от L3 и ниже — пост частной армии, и тела там тренированные. На карте пост сам по себе говорит игроку, что рядом есть что охранять."
+weight = 1.2
+
+[sub_resource type="Resource" id="Resource_barracks"]
+script = ExtResource("1_type")
+id = &"barracks"
+display_name = "Казармы"
+description = "Спальные места, личные вещи, теснота — быт тех, кто в комплексе живёт, а не приходит на смену. L0–L2, хотя стерегут они низ: спят там, где ещё есть вода и свет, а на посты от L3 и ниже спускаются сменами."
+depth_max = 2
+
+[sub_resource type="Resource" id="Resource_creature_containment"]
+script = ExtResource("1_type")
+id = &"creature_containment"
+display_name = "Содержание существ"
+description = "Клетки, боксы, системы кормления — живые «артефакты» из разлома, которые к моменту забега почти наверняка уже не в клетках. Самый опасный тип: сюда идут за телом, а не за лутом. L3–L4, где по лору и стоят усиленные войска; редкий — иначе перестанет пугать."
+weight = 0.8
+depth_min = 3
+
+[sub_resource type="Resource" id="Resource_artifact_containment"]
+script = ExtResource("1_type")
+id = &"artifact_containment"
+display_name = "Содержание артефактов"
+description = "Хранилище принесённого из разлома: стенды, боксы, повреждённые стабилизаторы «Архитектора». Место, где забег меняет не себя, а следующие забеги. L3–L4 — наверх артефакты не поднимали."
+weight = 0.8
+depth_min = 3
+
+[sub_resource type="Resource" id="Resource_recreation"]
+script = ExtResource("1_type")
+id = &"recreation"
+display_name = "Отдых и досуг"
+description = "Комната отдыха, автоматы, что-то похожее на нормальную жизнь: единственный тип, работающий на контраст, а не на угрозу. Ценность в том, с каким ощущением игрок отсюда выходит — комплекс когда-то был обитаем. L0–L2 и редко: досуг заканчивается там же, где начинается частная армия."
+weight = 0.8
+depth_max = 2
+
+[resource]
+script = ExtResource("2_catalog")
+types = Array[ExtResource("1_type")]([SubResource("Resource_arsenal"), SubResource("Resource_lab"), SubResource("Resource_proving_ground"), SubResource("Resource_storage"), SubResource("Resource_archive"), SubResource("Resource_canteen"), SubResource("Resource_security"), SubResource("Resource_barracks"), SubResource("Resource_creature_containment"), SubResource("Resource_artifact_containment"), SubResource("Resource_recreation")])

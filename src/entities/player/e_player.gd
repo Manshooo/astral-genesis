@@ -57,7 +57,7 @@ func foot_offset() -> Vector3:
 	if half < 0.0:
 		push_warning(
 			"E_Player: не удалось измерить коллайдер (%s) — считаем, что origin и есть подошва"
-			% [shape.shape if shape else "нет CollisionShape3D"]
+			% [str(shape.shape) if shape else "нет CollisionShape3D"]
 		)
 		return Vector3.ZERO
 	return Vector3(0.0, half - shape.position.y, 0.0)
@@ -101,6 +101,14 @@ func _input(event: InputEvent) -> void:
 		var inp := get_component(C_PlayerInput) as C_PlayerInput
 		if inp:
 			inp.jump_pressed = true
+
+	# Сам бег читается удержанием (S_PlayerInput.sprint_held); здесь — только
+	# ФРОНТ нажатия, и нужен он одному: отказу «это тело не умеет бегать»,
+	# который обязан прозвучать раз на нажатие, а не каждый кадр удержания.
+	if event.is_action_pressed("sprint") and not event.is_echo():
+		var inp := get_component(C_PlayerInput) as C_PlayerInput
+		if inp:
+			inp.sprint_pressed = true
 
 	# Захват тела — действие "snatch_body" (по умолчанию ЛКМ, задаётся в
 	# project.godot [input], переназначаемо). Здесь только ставим запрос-флаг;

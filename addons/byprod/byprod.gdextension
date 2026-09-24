@@ -1,0 +1,30 @@
+[configuration]
+
+entry_symbol = "byprod_library_init"
+compatibility_minimum = "4.5"
+
+[libraries]
+
+windows.debug.x86_64 = "res://addons/byprod/bin/libgdbyprod.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/byprod/bin/libgdbyprod.windows.template_release.x86_64.dll"
+linux.debug.x86_64 = "res://addons/byprod/bin/libgdbyprod.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://addons/byprod/bin/libgdbyprod.linux.template_release.x86_64.so"
+macos.debug = "res://addons/byprod/bin/libgdbyprod.macos.template_debug.framework"
+macos.release = "res://addons/byprod/bin/libgdbyprod.macos.template_release.framework"
+
+; Рантайм byProd. Расширение с ним не линкуется — оно открывает библиотеку по
+; имени в момент загрузки, — но перечисление здесь и есть то, что кладёт её рядом
+; с игрой при экспорте: внутри .pck библиотеку не загрузить, её должен видеть
+; загрузчик ОС.
+;
+; ВАЖНО: объявленная зависимость обязана существовать на диске, иначе Godot
+; обрывает экспорт с «Failed to copy shared object». В git рантайма нет (лицензия
+; Madrigal, см. README.md рядом), поэтому перед экспортом его кладёт пайплайн из
+; приватного зеркала — шаг «Забрать рантайм byProd» в .github/workflows/build.yml.
+; Локальный экспорт требует того же: положить библиотеку в addons/byprod/bin/.
+[dependencies]
+
+windows.debug.x86_64 = { "res://addons/byprod/bin/byProd.dll": "" }
+windows.release.x86_64 = { "res://addons/byprod/bin/byProd.dll": "" }
+linux.debug.x86_64 = { "res://addons/byprod/bin/libbyProd.so": "" }
+linux.release.x86_64 = { "res://addons/byprod/bin/libbyProd.so": "" }

@@ -7,26 +7,33 @@
 [ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/gameplay/s_fpsLook.gd" id="5_hg6dy"]
 [ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/input/s_player_input.gd" id="5_l0av5"]
 [ext_resource type="Script" uid="uid://idnwtudukdc5" path="res://src/systems/input/s_interact_input.gd" id="6_0wvc1"]
-[ext_resource type="Script" uid="uid://cpdhshxgn35to" path="res://src/systems/physics/s_phasing.gd" id="7_phasing"]
-[ext_resource type="Script" uid="uid://bjm6s54cwlp7q" path="res://src/systems/physics/s_gravity.gd" id="7_gravity"]
-[ext_resource type="Script" uid="uid://bjihournvuknp" path="res://src/systems/physics/s_walk.gd" id="7_walk"]
-[ext_resource type="Script" path="res://src/systems/physics/s_enemy_ai.gd" id="7_enemyai"]
-[ext_resource type="Script" uid="uid://bvs4o2nuvk5fx" path="res://src/systems/physics/s_jump.gd" id="7_jump"]
+[ext_resource type="Script" uid="uid://csppnw7lps0iy" path="res://src/systems/physics/s_enemy_ai.gd" id="7_enemyai"]
 [ext_resource type="Script" uid="uid://ceak284cxbxit" path="res://src/systems/physics/s_flight.gd" id="7_flight"]
+[ext_resource type="Script" uid="uid://bjm6s54cwlp7q" path="res://src/systems/physics/s_gravity.gd" id="7_gravity"]
+[ext_resource type="Script" uid="uid://bvs4o2nuvk5fx" path="res://src/systems/physics/s_jump.gd" id="7_jump"]
+[ext_resource type="Script" uid="uid://cpdhshxgn35to" path="res://src/systems/physics/s_phasing.gd" id="7_phasing"]
+[ext_resource type="Script" uid="uid://bjihournvuknp" path="res://src/systems/physics/s_walk.gd" id="7_walk"]
 [ext_resource type="Script" uid="uid://5ej3l4vg2gbp" path="res://src/systems/gameplay/s_apply_skill_effects.gd" id="8_a20vb"]
 [ext_resource type="Script" uid="uid://dbep4wlyo66j8" path="res://src/systems/physics/s_movement.gd" id="8_jsigt"]
 [ext_resource type="Script" uid="uid://djjbgpjj7dqr7" path="res://src/systems/gameplay/s_interaction_detector.gd" id="9_eo0a0"]
 [ext_resource type="Script" uid="uid://1davl1dw2ge4" path="res://src/systems/gameplay/s_health.gd" id="13_8p8v4"]
 [ext_resource type="Script" uid="uid://dmfpvwuwtjkw" path="res://src/observers/o_outline_visual.gd" id="13_a20vb"]
 [ext_resource type="Script" uid="uid://b7pl1mxb1o0du" path="res://src/systems/gameplay/s_body_snatch.gd" id="14_bsnatch"]
+[ext_resource type="Script" uid="uid://blc2ipv5016mt" path="res://src/systems/gameplay/s_lifespan.gd" id="15_lifespan"]
+[ext_resource type="Script" uid="uid://bmffrjcgeesnb" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
+[ext_resource type="Script" uid="uid://dvcwemjjoh26w" path="res://src/observers/o_run_ended.gd" id="17_runend"]
+[ext_resource type="Script" path="res://src/observers/o_run_stats.gd" id="24_runstats"]
+[ext_resource type="Script" uid="uid://cr8trq4a1wwxw" path="res://src/systems/gameplay/s_screen_message.gd" id="18_screenmsg"]
+[ext_resource type="Script" uid="uid://bpa02a0xfsktj" path="res://src/systems/gameplay/s_footsteps.gd" id="19_footsteps"]
 [ext_resource type="Script" uid="uid://kx4nc8uusse1" path="res://src/systems/physics/s_snatch_target_detector.gd" id="19_snatchdet"]
 [ext_resource type="Script" uid="uid://dx8wc12dujbno" path="res://src/observers/o_body_visual.gd" id="20_bodyvis"]
 [ext_resource type="Script" uid="uid://c7ivw3epluioq" path="res://src/observers/o_body_form.gd" id="21_bodyform"]
 [ext_resource type="Script" uid="uid://ba2j76ofkb3y3" path="res://src/observers/o_soul_traits.gd" id="22_soultraits"]
-[ext_resource type="Script" uid="uid://blc2ipv5016mt" path="res://src/systems/gameplay/s_lifespan.gd" id="15_lifespan"]
-[ext_resource type="Script" uid="uid://bmffrjcgeesnb" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
-[ext_resource type="Script" uid="uid://dvcwemjjoh26w" path="res://src/observers/o_run_ended.gd" id="17_runend"]
-[ext_resource type="Script" uid="uid://cr8trq4a1wwxw" path="res://src/systems/gameplay/s_screen_message.gd" id="18_screenmsg"]
+[ext_resource type="Script" uid="uid://q0edrod0xky3" path="res://src/systems/gameplay/s_outline_mask.gd" id="23_outline"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
+[ext_resource type="Script" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
+[ext_resource type="Script" path="res://src/systems/physics/s_door_open.gd" id="27_dooropen"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -80,6 +87,22 @@ group = &"gameplay"
 script = ExtResource("18_screenmsg")
 group = &"gameplay"
 
+[node name="S_Footsteps" type="Node" parent="World/Systems/gameplay" unique_id=1979994349]
+script = ExtResource("19_footsteps")
+group = &"gameplay"
+
+[node name="S_OutlineMask" type="Node" parent="World/Systems/gameplay" unique_id=1979994350]
+script = ExtResource("23_outline")
+group = &"gameplay"
+
+[node name="S_VoidFall" type="Node" parent="World/Systems/gameplay" unique_id=1979994351]
+script = ExtResource("24_voidfall")
+group = &"gameplay"
+
+[node name="S_RoomPresence" type="Node" parent="World/Systems/gameplay" unique_id=1979994352]
+script = ExtResource("26_presence")
+group = &"gameplay"
+
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]
 script = ExtResource("4_mmdvd")
 metadata/_custom_type_script = "uid://b3vi2ingux88g"
@@ -96,6 +119,10 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_EnemyAI" type="Node" parent="World/Systems/physics" unique_id=201843330]
 script = ExtResource("7_enemyai")
+group = &"physics"
+
+[node name="S_Sprint" type="Node" parent="World/Systems/physics" unique_id=201843331]
+script = ExtResource("25_sprint")
 group = &"physics"
 
 [node name="S_Walk" type="Node" parent="World/Systems/physics" unique_id=201843323]
@@ -133,6 +160,10 @@ script = ExtResource("14_bsnatch")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
+[node name="S_DoorOpen" type="Node" parent="World/Systems/physics" unique_id=2051314059]
+script = ExtResource("27_dooropen")
+group = &"physics"
+
 [node name="O_OutlineVisual" type="Node" parent="World/Systems" unique_id=229755935]
 script = ExtResource("13_a20vb")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
@@ -153,6 +184,9 @@ metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 [node name="O_RunEnded" type="Node" parent="World/Systems" unique_id=1632513265]
 script = ExtResource("17_runend")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
+
+[node name="O_RunStats" type="Node" parent="World/Systems"]
+script = ExtResource("24_runstats")
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]
 script = ExtResource("8_a20vb")

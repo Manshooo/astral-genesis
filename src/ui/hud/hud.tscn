@@ -8,6 +8,8 @@
 [ext_resource type="Script" uid="uid://01ionly7qqo5" path="res://src/ui/hud/hud_map.gd" id="6_map"]
 [ext_resource type="Script" uid="uid://ek66xvjkfy67" path="res://src/ui/hud/vital_bar.gd" id="7_bar"]
 [ext_resource type="Script" uid="uid://dh6qrlpmpgil0" path="res://src/ui/hud/hud_abilities.gd" id="8_abilities"]
+[ext_resource type="Script" path="res://src/ui/hud/hud_save_indicator.gd" id="9_save"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -124,6 +126,13 @@ layout_mode = 2
 [node name="JumpLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000103]
 layout_mode = 2
 text = "[Space] Прыжок"
+
+[node name="HSeparator2" type="HSeparator" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=2002045984]
+layout_mode = 2
+
+[node name="SprintLabel" type="Label" parent="Hud/AbilitiesPanel/Margin/Abilities" unique_id=700000105]
+layout_mode = 2
+text = "[Shift] Бег"
 
 [node name="MapPanel" type="PanelContainer" parent="Hud" unique_id=1336408021]
 layout_mode = 1
@@ -284,3 +293,33 @@ layout_mode = 2
 text = "100"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="SavePanel" type="PanelContainer" parent="Hud"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -58.0
+offset_top = -58.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("9_save")
+
+[node name="Margin" type="MarginContainer" parent="Hud/SavePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Icon" type="TextureRect" parent="Hud/SavePanel/Margin"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+texture = ExtResource("10_save_icon")
+expand_mode = 1
+stretch_mode = 5

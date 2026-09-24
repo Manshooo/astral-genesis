@@ -1,0 +1,58 @@
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://2nin6nr7u4ta"
+path="res://.godot/imported/SM_room_A_1.glb-328a739e252fbde17afb060822b4b604.scn"
+
+[deps]
+
+source_file="res://assets/levels/SM_room_A_1/SM_room_A_1.glb"
+dest_files=["res://.godot/imported/SM_room_A_1.glb-328a739e252fbde17afb060822b4b604.scn"]
+
+[params]
+
+nodes/root_type=""
+nodes/root_name=""
+nodes/root_script=null
+mesh_library/use_node_names_as_mesh_names=false
+array_mesh/deduplicate_surfaces=true
+nodes/apply_root_scale=true
+nodes/root_scale=1.0
+nodes/import_as_skeleton_bones=false
+nodes/use_name_suffixes=true
+nodes/use_node_type_suffixes=true
+meshes/ensure_tangents=true
+meshes/generate_lods=true
+meshes/create_shadow_meshes=true
+meshes/light_baking=2
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=false
+skins/use_named_skins=true
+animation/import=false
+animation/fps=30
+animation/trimming=false
+animation/remove_immutable_tracks=true
+animation/import_rest_as_RESET=false
+import_script/path="res://addons/godot_pipeline/collision_post_import.gd"
+materials/extract=1
+materials/extract_format=0
+materials/extract_path="res://assets/materials"
+_subresources={
+"materials": {
+"GP_CollisionPreview": {
+"use_external/enabled": true,
+"use_external/fallback_path": "res://assets/materials/GP_CollisionPreview.tres",
+"use_external/path": "res://assets/materials/GP_CollisionPreview.tres"
+},
+"MAT_building": {
+"use_external/enabled": true,
+"use_external/fallback_path": "res://assets/materials/MAT_building.tres",
+"use_external/path": "uid://dajpdmo30j0th"
+}
+}
+}
+gltf/naming_version=2
+gltf/embedded_image_handling=0
+gltf/texture_map_mode=1

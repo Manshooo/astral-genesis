@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="RS_WorldGenConfig" format=3 uid="uid://co7y0iexc8dlq"]
+
+[ext_resource type="Script" uid="uid://bkofxglyb1nm0" path="res://src/resources/world_generator/rs_world_gen_config.gd" id="1_config"]
+[ext_resource type="Script" uid="uid://c40mkg52umewn" path="res://src/resources/world_generator/rs_unique_room.gd" id="2_unique"]
+[ext_resource type="Resource" path="res://src/levels/hub/hub.tres" id="3_hub"]
+[ext_resource type="Resource" uid="uid://72rnlgfxse2g" path="res://src/levels/procedural/rooms/exit/exit_room.tres" id="4_exit"]
+[ext_resource type="Resource" path="res://src/levels/procedural/rooms/architect/architect_room.tres" id="5_architect"]
+
+[sub_resource type="Resource" id="Resource_hub"]
+script = ExtResource("2_unique")
+preset = ExtResource("3_hub")
+depth_min = 3
+depth_max = 3
+entry = true
+door_teleports = true
+map_name = "MAP_UNIQUE_HUB"
+
+[sub_resource type="Resource" id="Resource_exit"]
+script = ExtResource("2_unique")
+preset = ExtResource("4_exit")
+count = 2
+exit = true
+map_name = "MAP_UNIQUE_EXIT"
+
+[sub_resource type="Resource" id="Resource_architect"]
+script = ExtResource("2_unique")
+preset = ExtResource("5_architect")
+depth_min = 1
+depth_max = 4
+excluded_depths = Array[int]([3])
+map_name = "MAP_UNIQUE_ARCHITECT"
+
+[resource]
+script = ExtResource("1_config")
+unique_rooms = Array[ExtResource("2_unique")]([SubResource("Resource_hub"), SubResource("Resource_exit"), SubResource("Resource_architect")])

@@ -45,11 +45,21 @@ static func fold(modifiers: Array, rank: int, flat: Dictionary, mult: Dictionary
 			flat[mod.stat] = flat.get(mod.stat, 0.0) + mod.contribution(rank)
 
 
+## Значение стата по свёрнутым словарям: (база + Σflat) × Πmult. Рядом с fold по
+## той же причине — трактовка flat/mult должна быть одна на всех читателей, и
+## стат души (C_StatModifiers) не должен разойтись со статом мира
+## (SkillProgression.stat).
+static func resolve(stat_id: StringName, base: float, flat: Dictionary, mult: Dictionary) -> float:
+	return (base + float(flat.get(stat_id, 0.0))) * float(mult.get(stat_id, 1.0))
+
+
+## Статы мира (ArchitectStats) в том же списке, что и статы души: модификатор не
+## знает, в каком дереве лежит, а опечатка в имени стата одинаково тиха в обоих.
 func _validate_property(property: Dictionary) -> void:
 	if property.name != "stat":
 		return
 	var names := PackedStringArray()
-	for id in C_StatModifiers.ALL:
+	for id in C_StatModifiers.ALL + ArchitectStats.ALL:
 		names.append(String(id))
 	property.hint = PROPERTY_HINT_ENUM
 	property.hint_string = ",".join(names)

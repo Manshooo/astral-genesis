@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" uid="uid://dbs4kll2al20f" path="res://assets/levels/SM_corridor_A_3/SM_corridor_A_3.glb" id="1_mesh"]
+
+[node name="CorridorTee" type="Node3D"]
+
+[node name="Visual" parent="." instance=ExtResource("1_mesh")]
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.8, 0)
+light_color = Color(0.7, 0.82, 1, 1)
+light_energy = 1.3
+omni_range = 12.0
+omni_attenuation = 1.4

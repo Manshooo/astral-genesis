@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bqlvcl3vhd1t4"]
+
+[ext_resource type="Texture2D" uid="uid://bvq5bqg4iem2g" path="res://assets/props/interactive/SM_architect_artifact/textures/T_Ucupaint_MAT_architect_artifact_glow_albedo.png" id="1_wukpc"]
+
+[resource]
+resource_name = "MAT_architect_artifact_glow"
+diffuse_mode = 1
+specular_mode = 2
+albedo_texture = ExtResource("1_wukpc")
+metallic_specular = 0.0
+roughness = 0.0
+emission_enabled = true
+emission_energy_multiplier = 7.0
+emission_texture = ExtResource("1_wukpc")

@@ -39,6 +39,10 @@ const BODY_DECAY := &"body_decay"              ## C_BodyDecay.maximum — объ
 const BODY_HEALTH := &"body_health"            ## C_Health.maximum надетого тела
 const WALK_SPEED := &"walk_speed"              ## C_Walk.speed, м/с
 const JUMP_VELOCITY := &"jump_velocity"        ## C_Jump.velocity, м/с
+## C_Sprint.speed_multiplier — во сколько раз бег быстрее шага ЭТОГО тела.
+## Сам бег кладётся в WALK_SPEED отдельным источником (см. S_Sprint), а этот
+## стат крутит именно множитель: «бегай быстрее» и «ходи быстрее» — разные перки.
+const SPRINT_MULTIPLIER := &"sprint_multiplier"
 ## Доля остатка тела, забираемая при ДОБРОВОЛЬНОМ выходе. База 1.0 — весь
 ## остаток; стат существует, чтобы «+10% к получаемому времени» был модификатором.
 const LEAVE_BODY_GAIN := &"leave_body_gain"
@@ -53,6 +57,7 @@ const ALL: Array[StringName] = [
 	BODY_HEALTH,
 	WALK_SPEED,
 	JUMP_VELOCITY,
+	SPRINT_MULTIPLIER,
 	LEAVE_BODY_GAIN,
 	OVERFLOW_LEAK,
 	DEATH_KEEP,
@@ -80,9 +85,7 @@ static func of(entity: Entity, stat: StringName, base: float) -> float:
 
 
 func value(stat: StringName, base: float) -> float:
-	var flat: float = _flat.get(stat, 0.0)
-	var mult: float = _mult.get(stat, 1.0)
-	return (base + flat) * mult
+	return RS_StatModifier.resolve(stat, base, _flat, _mult)
 
 
 ## Заменить вклад одного источника целиком. Словари приходят уже свёрнутыми по

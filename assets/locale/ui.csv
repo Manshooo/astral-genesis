@@ -1,0 +1,46 @@
+keys,ru,en
+RUN_SUMMARY_TITLE_DEATH,СОЗНАНИЕ УГАСЛО,CONSCIOUSNESS FADED
+RUN_SUMMARY_SUBTITLE_DEATH,"БФЖ распался, не найдя нового тела.","The incorporeal one decayed, finding no new body."
+RUN_SUMMARY_HEADING,ИТОГИ ЗАБЕГА,RUN SUMMARY
+RUN_SUMMARY_REVIVE,Возродиться,Revive
+RUN_SUMMARY_REVIVING,Возрождение…,Reviving…
+RUN_STAT_TIME,Время забега,Run time
+RUN_STAT_ROOMS,Комнат пройдено,Rooms visited
+RUN_STAT_BODIES,Тел занято,Bodies taken
+RUN_STAT_BODY_LIST,Какие тела,Which bodies
+RUN_STAT_DAMAGE_TAKEN,Урона получено,Damage taken
+RUN_STAT_DAMAGE_DEALT,Урона нанесено,Damage dealt
+RUN_STAT_SKILL_POINTS,Очков навыков получено,Skill points earned
+BODY_CORPSE,Труп,Corpse
+BODY_WALKER,Ходок,Walker
+BODY_CRAWLER,Ползун,Crawler
+BODY_HOUND,Гончая,Hound
+ARCHITECT_PROMPT,Архитектор,Architect
+ARCHITECT_POINTS,Эссенция: %d,Essence: %d
+ARCHITECT_ESSENCE_ONE,эссенция,essence
+ARCHITECT_ESSENCE_FEW,эссенции,essence
+ARCHITECT_ESSENCE_MANY,эссенций,essence
+ARCHITECT_BRANCH_KNOWLEDGE,Знание,Knowledge
+ARCHITECT_MAP,Карта комплекса,Complex map
+ARCHITECT_MAP_DESC,"Архитектор делится планом комплекса. Каждый ранг открывает следующий уровень карты: посещённое на слое, весь слой, все слои, содержимое комнат.","The Architect shares the plan of the complex. Each rank opens the next map level: visited rooms of the layer, the whole layer, all layers, room contents."
+MAP_TITLE,Карта комплекса,Complex map
+MAP_TERMINAL_PROMPT,Карта комплекса,Complex map
+MAP_NO_LINK,Нет связи с Архитектором: карта недоступна,No link to the Architect: the map is unavailable
+MAP_LEVEL,Уровень карты: %d из %d,Map level: %d of %d
+MAP_CLOSE,Закрыть,Close
+MAP_LAYER,L%d,L%d
+MAP_LAYER_CLOSED,нет данных,no data
+MAP_HERE,вы здесь,you are here
+MAP_FLOOR,Этаж %d,Floor %d
+MAP_ROOM,Комната,Room
+MAP_CORRIDOR,Коридор,Corridor
+MAP_VISITED,посещено,visited
+MAP_UNEXPLORED,не исследовано,unexplored
+MAP_PORTAL_UP,портал вверх,portal up
+MAP_PORTAL_DOWN,портал вниз,portal down
+MAP_PORTAL_TARGET,"→ L%d, этаж %d","→ L%d, floor %d"
+MAP_LOCKED,заперт: нужен %s,locked: needs %s
+MAP_HINT,"Наведите на комнату, чтобы узнать о ней. Клик по порталу переносит к его второму концу. Закрыть — Esc или клавиша карты.","Hover a room to learn about it. Clicking a portal takes you to its other end. Close with Esc or the map key."
+MAP_UNIQUE_HUB,Хаб,Hub
+MAP_UNIQUE_EXIT,Выход,Exit
+MAP_UNIQUE_ARCHITECT,Архитектор,Architect

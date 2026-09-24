@@ -39,6 +39,7 @@ func _run() -> void:
 	_check_branch_requirement_column()
 	_check_requirement_cycle()
 	_check_visibility()
+	_check_preview()
 
 
 # --- 1. Раскладка боевого дерева ---------------------------------------------
@@ -229,6 +230,55 @@ func _check_visibility() -> void:
 	_check(
 		"видимость: изученный навык виден, даже если требования уже не выполнены",
 		not SkillManager.requirements_met(&"deep") and SkillManager.is_revealed(&"deep")
+	)
+
+
+# --- 7. Предпросмотр «на один шаг» -------------------------------------------
+
+
+## Серая карточка показывается ровно на ОДИН шаг за границу открытого. Ломается
+## это в обе стороны незаметно: без проверки на показанность цели предпросмотр
+## расползается по дереву на всю глубину (условие «ранг >= 1 - 1» верно и для
+## нуля), а без запаса в один ранг он не появляется вообще.
+func _check_preview() -> void:
+	var root := _definition(&"root", &"core")
+	var next := _definition(&"next", &"core")
+	next.requires = _requires([_requirement_skill(&"root", 1)])
+	var deep := _definition(&"deep", &"core")
+	deep.requires = _requires([_requirement_skill(&"next", 2)])
+	var gated := _definition(&"gated", &"secret")
+	gated.requires = _requires([_requirement_branch(&"core", 3)])
+
+	SkillManager.SKILL_TREE = _tree([root, next, deep, gated], [])
+	SkillManager.save = PlayerSkillSave.new()
+	SkillManager.save.ranks = {}
+	SkillManager.save.skill_points = 0
+
+	_check("предпросмотр: следующий за открытым навык показан", SkillManager.is_previewed(&"next"))
+	_check(
+		"предпросмотр: дальше одного шага дерево не видно",
+		not SkillManager.is_previewed(&"deep") and not SkillManager.is_revealed(&"deep")
+	)
+	_check("предпросмотр: открытый навык предпросмотром не считается", not SkillManager.is_previewed(&"root"))
+
+	SkillManager.save.ranks[&"root"] = 1
+	_check(
+		"предпросмотр: купленное требование убирает серую карточку",
+		SkillManager.is_revealed(&"next") and not SkillManager.is_previewed(&"next")
+	)
+	_check(
+		"предпросмотр: до требования ещё два ранга — навык не показан",
+		not SkillManager.is_previewed(&"deep")
+	)
+
+	SkillManager.save.ranks[&"next"] = 1
+	_check(
+		"предпросмотр: остался один ранг — навык показан серым",
+		SkillManager.is_previewed(&"deep") and not SkillManager.is_revealed(&"deep")
+	)
+	_check(
+		"предпросмотр: ветка за суммой рангов показывается за ранг до открытия",
+		SkillManager.is_previewed(&"gated")
 	)
 
 
