@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_wbtds"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_uf4in"]
-[ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_dc270"]
 [ext_resource type="PackedScene" uid="uid://dvejaurune07n" path="res://assets/levels/SM_room_B_2/SM_room_B_2.glb" id="4_87bj8"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_g6fwc"]
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="6_k843v"]
@@ -10,10 +9,6 @@
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="8_k843v"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="9_slot"]
 [ext_resource type="PackedScene" uid="uid://biosb4cjxfviu" path="res://src/entities/body/e_body_crawler.tscn" id="90_body"]
-
-[sub_resource type="Resource" id="Resource_87bj8"]
-script = ExtResource("3_dc270")
-metadata/_custom_type_script = "uid://0747vic3c1i4"
 
 [sub_resource type="Resource" id="Resource_k843v"]
 script = ExtResource("7_g6fwc")
@@ -36,7 +31,6 @@ metadata/_custom_type_script = "uid://dv1d7jb1mo3fv"
 
 [node name="ExitRoom" type="Node3D" unique_id=620451068]
 script = ExtResource("1_wbtds")
-component_resources = Array[ExtResource("2_uf4in")]([SubResource("Resource_87bj8")])
 
 [node name="Visual" parent="." unique_id=1492272158 instance=ExtResource("4_87bj8")]
 [node name="Doors" type="Node3D" parent="." unique_id=1730526942]

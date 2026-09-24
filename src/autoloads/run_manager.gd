@@ -699,10 +699,6 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 
 	ECS.world.add_entity(entity)
 
-	var ref := entity.get_component(C_LevelNode) as C_LevelNode
-	if ref:
-		ref.node_id = node_data.id
-
 	var room := SpawnedRoom.new()
 	room.node_id = node_data.id
 	room.entity = entity

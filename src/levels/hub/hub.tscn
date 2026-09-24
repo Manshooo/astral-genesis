@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://bin0h22anh3cl" path="res://src/entities/incubator/e_incubator.gd" id="2_k166h"]
 [ext_resource type="Script" uid="uid://clp828keyyihu" path="res://src/levels/hub/hub.gd" id="2_oeda6"]
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_da6hf"]
-[ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="4_18pe2"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_is5eu"]
 [ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/a_open_skill_tree.gd" id="4_oeda6"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_is5eu"]
@@ -15,10 +14,6 @@
 [ext_resource type="PackedScene" path="res://src/entities/map_terminal/e_map_terminal.tscn" id="15_map_terminal"]
 [ext_resource type="Script" uid="uid://ccb3xm8fbdion" path="res://src/components/rendering/c_visual_root.gd" id="16_visual_root"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="17_door_slot"]
-
-[sub_resource type="Resource" id="Resource_oeda6"]
-script = ExtResource("4_18pe2")
-metadata/_custom_type_script = "uid://0747vic3c1i4"
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7dvkg"]
 
@@ -60,7 +55,6 @@ metadata/_custom_type_script = "uid://ccb3xm8fbdion"
 [node name="Hub" unique_id=1623291969 instance=ExtResource("1_h75h4")]
 script = ExtResource("2_oeda6")
 alias = &"Hub"
-component_resources = Array[ExtResource("4_is5eu")]([SubResource("Resource_oeda6")])
 
 [node name="Incubator" parent="." index="0" unique_id=187174294]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.236, 3.6953397)

@@ -2,16 +2,11 @@
 
 [ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_ppl6d"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_xlbe8"]
-[ext_resource type="Script" uid="uid://0747vic3c1i4" path="res://src/components/level/c_level_node.gd" id="3_p3bh0"]
 [ext_resource type="PackedScene" uid="uid://m1gutpidevg" path="res://assets/levels/SM_room_A_4/SM_room_A_4.glb" id="4_e328x"]
 [ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_xqnoe"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_int"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_slot"]
 [ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="90_body"]
-
-[sub_resource type="Resource" id="Resource_dpi4f"]
-script = ExtResource("3_p3bh0")
-metadata/_custom_type_script = "uid://0747vic3c1i4"
 
 [sub_resource type="Resource" id="Interactable_shared"]
 script = ExtResource("6_int")
@@ -35,7 +30,6 @@ slot_id = &"east"
 
 [node name="DefaultRoom" type="Node3D" unique_id=620451068]
 script = ExtResource("1_ppl6d")
-component_resources = Array[ExtResource("2_xlbe8")]([SubResource("Resource_dpi4f")])
 
 [node name="Visual" parent="." unique_id=1492272158 instance=ExtResource("4_e328x")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01878047, 0, 0.04731834)
