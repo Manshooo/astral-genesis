@@ -20,8 +20,10 @@
     «Чек-лист ручного плейтеста».
 
 .PARAMETER GodotPath
-    Путь к Godot-исполняемому файлу. По умолчанию — известный путь на машине
-    разработчика (console-сборка: обычная detach'ится и не печатает в консоль).
+    Путь к Godot-исполняемому файлу. По умолчанию — переменная окружения GODOT
+    (так его передаёт CI), иначе известный путь на машине разработчика
+    (console-сборка: обычная detach'ится и не печатает в консоль), иначе
+    `godot` из PATH.
 
 .PARAMETER Check
     Какую проверку прогнать: "All" (по умолчанию, всё), "Gen" (только
@@ -38,18 +40,18 @@
     заведомо инициализирован — проверка дешёвая, но пропустить можно.
 
 .EXAMPLE
-    ./run_gameplay_checks.ps1
+    ./dev/run_checks.ps1
     Прогоняет gen_verifier и все найденные dev/*_check.tscn известным Godot.
 
 .EXAMPLE
-    ./run_gameplay_checks.ps1 -Check body_traits_check -GodotPath "D:\Godot\Godot_v4.7.2-stable_win64_console.exe"
+    ./dev/run_checks.ps1 -Check body_traits_check -GodotPath "D:\Godot\Godot_v4.7.2-stable_win64_console.exe"
 
 .EXAMPLE
-    ./run_gameplay_checks.ps1 -ListChecks
+    ./dev/run_checks.ps1 -ListChecks
     Показывает, что сейчас будет прогнано под "-Check All", без запуска.
 #>
 param(
-    [string]$GodotPath = "C:\Program Files\Godot Engine\4.7.2\Godot_v4.7.2-stable_win64_console.exe",
+    [string]$GodotPath = $(if ($env:GODOT) { $env:GODOT } else { "C:\Program Files\Godot Engine\4.7.2\Godot_v4.7.2-stable_win64_console.exe" }),
     [string]$Check = "All",
     [switch]$ListChecks,
     [switch]$SkipSubmoduleCheck
@@ -57,16 +59,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Раннер лежит в dev/, рядом с самими проверками: один раннер на разработчика и
+# CI. Раньше он жил в папке скилла gameplay-testing, и CI было нечем его звать.
 function Find-RepoRoot {
     $dir = Split-Path -Parent $PSScriptRoot
-    while ($true) {
-        $dir = Split-Path -Parent $dir
-        if (Test-Path (Join-Path $dir "project.godot")) { return $dir }
-        $parent = Split-Path -Parent $dir
-        if ($parent -eq $dir -or [string]::IsNullOrEmpty($parent)) {
-            throw "Не найден project.godot выше $PSScriptRoot — запускать внутри репозитория."
-        }
+    if (-not (Test-Path (Join-Path $dir "project.godot"))) {
+        throw "Не найден project.godot в $dir — раннер должен лежать в dev/ репозитория."
     }
+    return $dir
 }
 
 $RepoRoot = Find-RepoRoot
@@ -90,14 +90,18 @@ if ($ListChecks) {
 Write-Host "Репозиторий: $RepoRoot"
 
 if (-not (Test-Path $GodotPath)) {
-    # Известный путь не подошёл — поищем любую console-сборку Godot 4.
+    # Известный путь не подошёл — поищем любую console-сборку Godot 4, а на
+    # Linux/macOS — godot из PATH.
     $fallback = Get-ChildItem "C:\Program Files\Godot Engine\" -Filter "*_console.exe" -Recurse -ErrorAction SilentlyContinue |
         Select-Object -First 1 -ExpandProperty FullName
+    if (-not $fallback) {
+        $fallback = Get-Command godot -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+    }
     if ($fallback) {
         Write-Host "Godot по умолчанию не найден, использую: $fallback"
         $GodotPath = $fallback
     } else {
-        throw "Godot не найден ни по '$GodotPath', ни в 'C:\Program Files\Godot Engine\'. Передайте -GodotPath явно."
+        throw "Godot не найден ни по '$GodotPath', ни в 'C:\Program Files\Godot Engine\', ни в PATH. Передайте -GodotPath или GODOT."
     }
 }
 
@@ -136,8 +140,16 @@ function Run-GenericCheck([string]$Name) {
     # движок закрылся сам по --quit-after. По коду возврата это неотличимо от
     # успеха, поэтому итоговую строку проверка обязана напечатать сама — её
     # отсутствие и есть признак обрыва.
-    if (-not ($output | Select-String -Pattern "=== ИТОГ:" -SimpleMatch)) {
+    $summary = $output | Select-String -Pattern "=== ИТОГ:" -SimpleMatch | Select-Object -Last 1
+    if (-not $summary) {
         Write-Host "FAIL: $Name не напечатал итоговую строку — прогон оборван, а не пройден" -ForegroundColor Red
+        return $false
+    }
+    # Код 0 при провалах тоже бывает: проверка, чей сценарий сменил сцену
+    # (change_scene_to_file) до её собственного quit(), выходит с кодом того,
+    # кто закрыл движок последним. Итоговая строка при этом честная — ей и верим.
+    if ($summary.Line -match "провалов=([1-9]\d*)") {
+        Write-Host "FAIL: $Name — провалов $($Matches[1]) при коде выхода 0" -ForegroundColor Red
         return $false
     }
     Write-Host "OK: $Name — все ассерты прошли." -ForegroundColor Green
@@ -174,6 +186,12 @@ function Run-GenVerifier {
 
     if ($output | Select-String -Pattern "проблем:") {
         Write-Host "FAIL: RS_RoomPresetLibrary.validate() нашёл проблемы (см. строки 'validate(): N проблем' выше)." -ForegroundColor Red
+        $fail = $true
+    }
+    # gen_verifier не на общей обвязке проверок (dev/check_harness.gd), и сторожа
+    # ошибок скрипта у него нет — оборванный блок ловим здесь, по логу.
+    if ($output | Select-String -Pattern "SCRIPT ERROR" -SimpleMatch) {
+        Write-Host "FAIL: в gen_verifier ошибка скрипта — часть проверки оборвана (см. SCRIPT ERROR выше)." -ForegroundColor Red
         $fail = $true
     }
     if ($output | Select-String -Pattern "room_preset_library не назначена") {

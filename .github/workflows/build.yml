@@ -1,6 +1,6 @@
 name: Сборка
 
-# Проверочная сборка на каждый PR в master И в release/* — по новой схеме
+# Проверки и проверочная сборка на каждый PR в master И в release/* — по новой схеме
 # ветвления feat/fix/docs вливаются в релизную ветку не напрямую, а PR-ом,
 # и та же проверка нужна на этом шаге, а не только на финальном PR в master.
 # Если экспорт сломан, это видно до вливания, а ревьюер может скачать готовую
@@ -18,6 +18,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Headless-проверки из dev/ — те же, что разработчик гоняет перед PR
+  # (dev/run_checks.ps1). Раньше CI их не запускал вовсе: PR, ломающий
+  # генератор, вселение или двери, проходил зелёным, пока держался экспорт, и
+  # проверки оставались ритуалом, которого ничто не требовало. Отдельным джобом,
+  # а не шагом сборки: падение проверок видно сразу, не дожидаясь экспорта, а
+  # шаблоны экспорта (почти гигабайт) проверкам не нужны.
+  checks:
+    name: Headless-проверки
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Клонировать репозиторий
+        uses: actions/checkout@v7
+        with:
+          lfs: true
+          submodules: recursive
+
+      # Рантайм byProd здесь не качается намеренно: его отсутствие обязано
+      # значить «нет звука», а не «не запускается», и byprod_check сверяет
+      # именно это поведение (docs/astral-genesis/how-to/Звук.md).
+      - name: Движок и импорт
+        id: godot
+        uses: ./.github/actions/godot-setup
+        with:
+          templates: "false"
+
+      - name: Прогнать проверки
+        shell: pwsh
+        env:
+          GODOT: ${{ steps.godot.outputs.bin }}
+        run: ./dev/run_checks.ps1 -SkipSubmoduleCheck
+
   build:
     name: Windows и Linux
     runs-on: ubuntu-latest

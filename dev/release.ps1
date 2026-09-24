@@ -72,10 +72,10 @@ function Write-Note([string]$Text) { Write-Host "    $Text" -ForegroundColor Dar
 function Fail([string]$Text) { throw $Text }
 
 # --- версия движка -----------------------------------------------------------
-# Берётся из action.yml, чтобы локальная сборка не разъехалась с CI по движку:
+# Берётся из godot-setup/action.yml, чтобы локальная сборка не разъехалась с CI по движку:
 # обновили godot-version там — здесь подхватится само.
 function Get-ExpectedGodotVersion {
-	$actionYml = Join-Path $Root '.github/actions/godot-export/action.yml'
+	$actionYml = Join-Path $Root '.github/actions/godot-setup/action.yml'
 	$line = Select-String -Path $actionYml -Pattern '^\s*default:\s*"([0-9.]+)"' | Select-Object -First 1
 	if (-not $line) { Fail "Не удалось прочитать godot-version из $actionYml" }
 	return $line.Matches[0].Groups[1].Value
