@@ -172,6 +172,30 @@ func frame_layer() -> void:
 	camera_changed.emit()
 
 
+## Облёт и орбита держат мышь ЗАХВАЧЕННОЙ на весь редактор и отпускают её только
+## по отпусканию кнопки. Отпускание, случившееся вне окна (Alt+Tab посреди драга),
+## или вкладка, спрятанная прямо во время него, до _gui_input не доходят — и мышь
+## оставалась захваченной, пока не щёлкнешь той же кнопкой ещё раз. Поэтому всё,
+## после чего драг заведомо кончился, отпускает камеру само.
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT, NOTIFICATION_FOCUS_EXIT, NOTIFICATION_EXIT_TREE:
+			_release_camera()
+		NOTIFICATION_VISIBILITY_CHANGED:
+			if not is_visible_in_tree():
+				_release_camera()
+
+
+## Только если камера и правда держит мышь: _update_capture ставит курсор
+## видимым безусловно, и отпускание «на всякий случай» отнимало бы захват у
+## чужого инструмента — например, у облёта в родном 3D-редакторе, куда ушёл фокус.
+func _release_camera() -> void:
+	if _camera == null or not _camera.is_moving():
+		return
+	_camera.set_flying(false)
+	_camera.set_orbiting(false)
+
+
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		_handle_mouse_button(event as InputEventMouseButton)
