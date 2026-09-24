@@ -95,8 +95,12 @@ var current_depth: int = NO_DEPTH
 ## возврате на уже пройденный слой (портал проходим в обе стороны), и дробить
 ## награду по нему значило бы фармить очки шатанием туда-обратно.
 var _max_depth_reached: int = 0
-## Идёт ли уже завершение забега по смерти. См. die() — сторож от второго
-## распада, пока экран гаснет.
+## Идёт ли уже завершение забега по смерти. См. die(): экран гаснет почти
+## секунду по ЖИВОМУ миру — ни паузы, ни блокировки ввода, — и всё, что игрок
+## успеет в это окно, обязано упереться в этот флаг. Иначе второй распад сменил бы
+## сцену дважды, портал пересобрал бы слой и записал на диск ещё живой забег, а
+## дверь выхода засчитала бы побег поверх смерти — с двойной наградой. Все входы
+## извне (переход, дверь, побег, точки сохранения) проверяют его через _in_run().
 var _ending: bool = false
 ## node_id -> SpawnedRoom для ВСЕХ комнат текущего слоя, а не только той, где
 ## стоит игрок.
@@ -312,8 +316,8 @@ func _spawn_player() -> void:
 ## происходит только при смерти (пока не реализовано, нужен death_count/состояния).
 ## Зовётся A_FinishRun из комнаты-выхода (тег level_exit).
 func finish_run() -> void:
-	if current_graph == null:
-		return  # не в забеге — выходить неоткуда
+	if not _in_run():
+		return  # не в забеге (или он уже кончается смертью) — выходить неоткуда
 
 	# Награда за побег больше, чем за гибель на той же глубине (die() ниже) —
 	# правильная концовка забега обязана быть выгоднее, тем же принципом, что и
@@ -366,7 +370,7 @@ func _process(delta: float) -> void:
 ## законченный забег. Окно это не теоретическое — экран гаснет почти секунду по
 ## живому миру, и за это время успевает случиться и удар, и развоплощение.
 func save_progress() -> bool:
-	if current_graph == null or current_node_id == &"" or _ending:
+	if not _in_run() or current_node_id == &"":
 		return false
 	_checkpoint(current_node_id)
 	return true
@@ -392,8 +396,8 @@ func leave_to_menu() -> void:
 ## Порядок шагов внутри не произволен, см. комментарии по месту: снимок
 ## статистики → затемнение по живому миру → фиксация смерти и снос забега.
 func die() -> void:
-	if current_graph == null or _ending:
-		return  # не в забеге — умирать некому
+	if not _in_run():
+		return  # не в забеге — умирать некому; уже умираем — второй раз не нужно
 
 	# Гасим экран ДО сноса забега, поэтому между началом смерти и сменой сцены
 	# проходит почти секунда живого мира — а в нём есть кому ударить ещё раз.
@@ -429,6 +433,12 @@ func _end_run() -> void:
 	current_node_id = &""
 
 
+## Забег идёт и не кончается прямо сейчас — единое условие для всего, что
+## приходит извне (см. _ending).
+func _in_run() -> bool:
+	return current_graph != null and not _ending
+
+
 ## Переход в другой узел графа по порталу (через use_door) и для отладочного
 ## телепорта по слоям.
 ##
@@ -440,7 +450,9 @@ func _end_run() -> void:
 ## Смена глубины — по-прежнему целиком здесь: слой надо снести и заспавнить, и
 ## игрока некуда поставить, пока новой комнаты нет в дереве.
 func travel_to(node_id: StringName) -> void:
-	var node_data := current_graph.get_node_data(node_id) if current_graph else null
+	if not _in_run():
+		return
+	var node_data := current_graph.get_node_data(node_id)
 	if node_data == null:
 		push_warning("RunManager: некорректный переход в '%s'" % node_id)
 		return
@@ -462,7 +474,9 @@ func travel_to(node_id: StringName) -> void:
 ## переделки арта): открывать там нечего, и игрока переставляют на тайл перед
 ## дверью. Порталы идут через travel_to.
 func use_door(door: Entity, target: StringName) -> void:
-	var target_data := current_graph.get_node_data(target) if current_graph else null
+	if not _in_run():
+		return
+	var target_data := current_graph.get_node_data(target)
 	var in_place := (
 		target_data != null
 		and target_data.role == RS_LevelNode.Role.CORRIDOR
@@ -522,7 +536,7 @@ func _room_of_door(door: Entity) -> SpawnedRoom:
 ## не узел, и контрольная точка в нём вернула бы игрока в никуда. Во время
 ## смерти точки не ставятся вовсе — см. save_progress про _ending.
 func note_presence(world_position: Vector3) -> void:
-	if current_graph == null or current_depth == NO_DEPTH or _ending:
+	if not _in_run() or current_depth == NO_DEPTH:
 		return
 	var node_id := plan_for_depth(current_depth).node_at(world_position)
 	if node_id == &"" or node_id == current_node_id or not _is_spawned(node_id):

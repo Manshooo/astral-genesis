@@ -357,6 +357,32 @@ func _check_autosave() -> void:
 	_saves = 0
 	_check("во время смерти точка не ставится", not RunManager.save_progress() and _saves == 0,
 		"записей: %d" % _saves)
+
+	# То же окно, но извне: затемнение смерти не ставит мир на паузу и не
+	# блокирует ввод. Портал на другой слой пересобрал бы слой и записал на диск
+	# живой забег, дверь выхода засчитала бы побег поверх смерти с двойной
+	# наградой. Настоящий граф — чтобы у перехода было куда идти и без сторожа.
+	var real_graph := RS_LevelGraph.new().generate_run(
+		1, GameConfig.config.room_preset_library, GameConfig.config.world_gen
+	)
+	var elsewhere: RS_LevelNode = null
+	for node: RS_LevelNode in real_graph.nodes.values():
+		if node.depth != RunManager.current_depth:
+			elsewhere = node
+			break
+	RunManager.current_graph = real_graph
+	_saves = 0
+	var finished := [false]
+	var on_finished := func(): finished[0] = true
+	RunManager.run_finished.connect(on_finished)
+	RunManager.travel_to(elsewhere.id)
+	RunManager.finish_run()
+	RunManager.run_finished.disconnect(on_finished)
+	_check("во время смерти портал никуда не ведёт",
+		RunManager.current_node_id == &"проверочный_узел" and _saves == 0,
+		"узел %s, записей: %d" % [RunManager.current_node_id, _saves])
+	_check("во время смерти побег не засчитывается",
+		not finished[0] and RunManager.current_graph == real_graph, "")
 	RunManager._ending = false
 
 	# Автосохранение по времени: до интервала молчит, после — пишет.
