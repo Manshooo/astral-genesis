@@ -145,10 +145,11 @@ func _set_player_input_blocked(blocked: bool) -> void:
 	if blocked:
 		if not player.has_component(C_UIBlocked):
 			player.add_component(C_UIBlocked.new())
+			# Дальше «ничего не нажато» держит S_PlayerInput, но до его прохода
+			# успеет физкадр — отпускаем удержание сразу (см. release_held).
 			var inp := player.get_component(C_PlayerInput) as C_PlayerInput
 			if inp:
-				inp.mouse_delta = Vector2.ZERO
-				inp.move_direction = Vector3.ZERO
+				inp.release_held()
 	else:
 		player.remove_component(C_UIBlocked)
 

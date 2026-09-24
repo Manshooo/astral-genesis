@@ -24,14 +24,38 @@ func _ready() -> void:
 		S_Movement.new(),
 	])
 
+	# Опрос ввода — отдельной группой: крутит её только _check_blocked_input.
+	_add_systems(world, "input", [S_PlayerInput.new()])
+
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
 	world.add_observer(O_BodyForm.new())
 	world.add_observer(O_SoulTraits.new())
 
 	await _run(world)
+	_check_blocked_input()
 
 	_finish()
+
+
+## Под блокирующим экраном (C_UIBlocked) «ничего не нажато» держит сам источник
+## ввода. Системы движения блок не фильтруют намеренно — выпавшее из S_Walk тело
+## сохранило бы старую скорость, — поэтому зажатое до открытия экрана направление
+## и бег обязаны отпускаться в S_PlayerInput, а не где-то снаружи.
+func _check_blocked_input() -> void:
+	var player := ECS.world.query.with_all([C_PlayerInput]).execute_one()
+	var inp := player.get_component(C_PlayerInput) as C_PlayerInput
+	player.add_component(C_UIBlocked.new())
+	inp.move_direction = Vector3.FORWARD
+	inp.sprint_held = true
+	inp.mouse_delta = Vector2(5.0, 0.0)
+	ECS.process(0.016, "input")
+	_check(
+		"под блокирующим экраном удержание отпущено",
+		inp.move_direction == Vector3.ZERO and not inp.sprint_held and inp.mouse_delta == Vector2.ZERO,
+		"направление %s, бег %s, взгляд %s" % [inp.move_direction, inp.sprint_held, inp.mouse_delta]
+	)
+	player.remove_component(C_UIBlocked)
 
 
 func _run(world: World) -> void:
