@@ -1,10 +1,27 @@
+# res://src/systems/physics/s_interaction_detector.gd
+# Группа: "physics" — луч интеракции (RayCast3D игрока) обновляется вручную
+# force_raycast_update(), а это запрос к space-state: Jolt крутится на отдельном
+# потоке, и безопасен такой запрос только из _physics_process.
+#
+# Держит на интерактиве под взглядом C_Highlighted. Сам ничего не нажимает:
+# нажатие читает S_InteractInput, а подсветку и подсказку рисуют
+# O_OutlineVisual и HUD по той же метке — один источник правды о том, «на что
+# смотрит игрок».
 class_name S_InteractionDetector
 extends System
 
 var _current_target: Entity = null
 
+
 func query() -> QueryBuilder:
 	return q.with_all([C_PlayerInput]).with_none([C_UIBlocked])
+
+
+## После S_Movement: луч идёт от камеры, и кастовать его надо из той точки, где
+## тело стоит ПОСЛЕ перемещения этого тика, а не до.
+func deps() -> Dictionary[int, Array]:
+	return {Runs.After: [S_Movement]}
+
 
 func process(entities: Array[Entity], _components: Array, _delta: float) -> void:
 	if entities.is_empty():

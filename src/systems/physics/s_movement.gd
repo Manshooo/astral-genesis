@@ -15,6 +15,19 @@ func query() -> QueryBuilder:
 	return q.with_all([C_Velocity]).iterate([C_Velocity])
 
 
+## ПОСЛЕ всех, кто пишет скорость, — иначе move_and_slide() применяет скорость
+## прошлого тика. Порядок нод в world.tscn тут не помогает: GECS сортирует группу
+## по Кану (ArrayExtensions.topological_sort), и система с входящей зависимостью
+## (S_Walk после S_Sprint/S_EnemyAI, S_Jump после S_Gravity) уезжает в КОНЕЦ
+## очереди — то есть за S_Movement, если та ничего не объявила. Так и было: ход и
+## прыжок доезжали до тела на тик позже, а dev-проверки, собиравшие системы без
+## сортировки, этого не видели.
+func deps() -> Dictionary[int, Array]:
+	return {
+		Runs.After: [S_Phasing, S_Gravity, S_EnemyAI, S_Sprint, S_Walk, S_Jump, S_Flight]
+	}
+
+
 func process(entities: Array[Entity], components: Array, delta: float) -> void:
 	var velocity_comps: Array = components[0]
 
