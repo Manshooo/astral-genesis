@@ -216,22 +216,12 @@ func _tags_cover(preset_tags: Array, node_tags: Array) -> bool:
 ## Взвешенный бросок по авторским весам. Все веса нулевые — равновероятно:
 ## пресет с весом 0 всё ещё кандидат, если больше некому.
 func _weighted_pick(pool: Array, rng: RandomNumberGenerator) -> RS_RoomPreset:
-	var effective: Array[float] = []
-	var total := 0.0
+	var weights: Array[float] = []
 	for p: RS_RoomPreset in pool:
-		var w := maxf(p.weight, 0.0)
-		effective.append(w)
-		total += w
-	if total <= 0.0:  # все веса нулевые — равновероятно
+		weights.append(p.weight)
+	if WeightedPick.total(weights) <= 0.0:  # все веса нулевые — равновероятно
 		return pool[rng.randi_range(0, pool.size() - 1)]
-
-	var roll := rng.randf() * total
-	var acc := 0.0
-	for i in pool.size():
-		acc += effective[i]
-		if roll <= acc:
-			return pool[i]
-	return pool[pool.size() - 1]
+	return pool[WeightedPick.index(weights, rng.randf())]
 
 
 ## Отладочная проверка сцен пресетов: сверяет заявленный slot_count с фактическим

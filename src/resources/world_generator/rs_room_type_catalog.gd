@@ -32,26 +32,16 @@ extends Resource
 ## после него. Детерминированность по сиду тут дороже сэкономленного вызова.
 func pick_for_depth(depth: int, rng: RandomNumberGenerator) -> StringName:
 	var eligible: Array[RS_RoomType] = []
-	var total := maxf(untyped_weight, 0.0)
+	# Нулевой элемент — «без типа»: он соревнуется с типами наравне.
+	var weights: Array[float] = [untyped_weight]
 	for type: RS_RoomType in types:
 		if type == null or type.weight <= 0.0 or not type.covers_depth(depth):
 			continue
 		eligible.append(type)
-		total += type.weight
+		weights.append(type.weight)
 
-	var roll := rng.randf()
-	if total <= 0.0:
-		return &""
-
-	var acc := maxf(untyped_weight, 0.0)
-	roll *= total
-	if roll <= acc:
-		return &""
-	for type: RS_RoomType in eligible:
-		acc += type.weight
-		if roll <= acc:
-			return type.id
-	return &""
+	var picked := WeightedPick.index(weights, rng.randf())
+	return eligible[picked - 1].id if picked > 0 else &""
 
 
 func by_id(id: StringName) -> RS_RoomType:
