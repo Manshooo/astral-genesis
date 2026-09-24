@@ -29,6 +29,19 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 	for soul in entities:
 		var bs := soul.get_component(C_BodySnatch) as C_BodySnatch
 
+		# Надетое тело добито ЭТИМ тиком, но смерть ещё не объявлена: удар проходит
+		# в "physics" (S_EnemyAI → S_Health.deal_damage), а C_Dead и "entity_died"
+		# вешает S_Health.process() из "gameplay" — после всего физпрохода. В это
+		# окно и захват, и выход обошли бы гибель: захват снял бы смертельный
+		# C_Health вместе с остальными трейтами, а отложенный добровольный выход
+		# сработал бы раньше отложенного выброса по смерти и забрал бы остаток
+		# запаса как награду. Гибель обязана победить — оба нажатия гасим, а не
+		# откладываем, чтобы они не выстрелили в следующем теле.
+		if _worn_body_dying(soul):
+			bs.leave_requested = false
+			bs.capture_requested = false
+			continue
+
 		if bs.leave_requested:
 			bs.leave_requested = false
 			# Отложенно: развоплощение снимает компоненты, а мы внутри прохода
@@ -185,6 +198,13 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 			ECS.world.emit_event(&"body_snatched", soul)
 			RunManager.save_progress()
 	)
+
+
+## Надетое тело уже на нуле, но S_Health ещё не объявил его смерть (см. process).
+## Бестелесная душа C_Health не носит — ей умирать нечем, и захват ей открыт.
+static func _worn_body_dying(soul: Entity) -> bool:
+	var health := soul.get_component(C_Health) as C_Health
+	return health != null and health.current <= 0.0
 
 
 ## Характеристики тела, надетые на душу прямо сейчас.

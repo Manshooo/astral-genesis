@@ -57,8 +57,15 @@ func _tick_soul(entity: Entity, life: C_Lifespan, delta: float) -> void:
 	if overflow > 0.0:
 		# Темп утечки — тоже стат: «излишек тратится медленнее» просится в перки
 		# ровно так же, как сам объём запаса.
-		var leak := C_StatModifiers.of(
-			entity, C_StatModifiers.OVERFLOW_LEAK, GameConfig.config.lifespan_overflow_leak
+		# Снизу — единица: излишек не может утекать МЕДЛЕННЕЕ обычного запаса, иначе
+		# держать буфер стало бы выгоднее, чем не иметь его, — ровно то, что эта
+		# механика запрещает. Заодно это и защита деления ниже: перк, загнавший
+		# множитель в ноль, давал бы бессмертие, а в минус — растущий запас.
+		var leak := maxf(
+			C_StatModifiers.of(
+				entity, C_StatModifiers.OVERFLOW_LEAK, GameConfig.config.lifespan_overflow_leak
+			),
+			1.0
 		)
 		var burned := remaining * leak
 		if burned < overflow:
