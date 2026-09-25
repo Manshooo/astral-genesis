@@ -3,8 +3,9 @@
 
   1. git — на чём стоим прямо сейчас (ветка, расхождение с origin,
      незакоммиченное, стэши).
-  2. Kanban-доска текущей версии (docs/astral-genesis/Задачи/vX.Y.Z.md) —
-     колонки «К выполнению» / «В работе» / «Тестирование» / «Готово».
+  2. Kanban-доска текущей версии (docs/astral-genesis/Задачи/vX.Y.Z.md, версия —
+     config/version из project.godot) — колонки «К выполнению» / «В работе» /
+     «Тестирование» / «Готово».
   3. Код — literal TODO/FIXME/XXX-комментарии (высокая точность; слова вроде
      "placeholder" в этом проекте часто законный термин архитектуры, не
      недоделка, поэтому в широкий скан не берутся).
@@ -90,26 +91,38 @@ def section_git(repo_root: Path) -> None:
     print(log)
 
 
-def section_kanban(repo_root: Path, branch_hint: str) -> None:
+def project_version(repo_root: Path) -> str | None:
+    text = (repo_root / "project.godot").read_text(encoding="utf-8", errors="ignore")
+    m = re.search(r'^config/version="(\d+\.\d+\.\d+)"', text, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+def section_kanban(repo_root: Path) -> None:
     print("\n" + "=" * 70)
     print("РОАДМАП — доска текущей версии")
     print("=" * 70)
 
+    # Релизных веток нет — все PR идут в master. Разрабатываемая версия живёт в
+    # project.godot (её поднимают раз в начале цикла), и её доска — это и есть
+    # ближайшая незакрытая Задачи/vX.Y.Z.md.
     tasks_dir = repo_root / "docs" / "astral-genesis" / "Задачи"
-    m = re.search(r"release/v(\d+\.\d+\.\d+)", branch_hint)
-    board_path = None
-    if m:
-        candidate = tasks_dir / f"v{m.group(1)}.md"
-        if candidate.exists():
-            board_path = candidate
+    version = project_version(repo_root)
+    board_path = tasks_dir / f"v{version}.md" if version else None
 
-    if board_path is None:
+    if board_path is None or not board_path.exists():
         available = sorted(p.name for p in tasks_dir.glob("v*.md"))
         print(
-            f"Не удалось определить версию по имени ветки «{branch_hint}». "
+            f"Нет доски для версии из project.godot («{version or 'не X.Y.Z'}»). "
             f"Доски в Задачи/: {', '.join(available) or '(нет)'}"
         )
         return
+
+    if run(["git", "tag", "-l", f"v{version}"], repo_root).strip():
+        print(
+            f"Внимание: v{version} уже выпущена (тег есть), а номер в project.godot "
+            "не подняли — ниже доска закрытой версии. Поднять: "
+            "bash .github/scripts/set_version.sh X.Y.Z\n"
+        )
 
     print(f"Доска: {board_path.relative_to(repo_root)}\n")
     text = board_path.read_text(encoding="utf-8")
@@ -223,8 +236,7 @@ def main() -> int:
     repo_root = find_repo_root(Path(__file__).resolve())
 
     section_git(repo_root)
-    branch = run(["git", "branch", "--show-current"], repo_root).strip()
-    section_kanban(repo_root, branch)
+    section_kanban(repo_root)
     section_code_todos(repo_root)
     section_doc_gaps(repo_root)
     section_docs_sync(repo_root, skip_doc_check)

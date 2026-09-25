@@ -135,13 +135,14 @@ func _build_rows() -> void:
 		row.get_node("Action").text = _actions[i]["label"]
 
 
-## Сид — чтобы раскладку, на которой что-то нашлось или сломалось, можно было
-## назвать и воспроизвести.
+## Сид и номер сборки — чтобы раскладку, на которой что-то нашлось или
+## сломалось, можно было назвать и воспроизвести: один и тот же сид на другом
+## коммите генератора даёт другой комплекс.
 func _status_text() -> String:
 	var depth := "—"
 	if RunManager.current_depth != RunManager.NO_DEPTH:
 		depth = str(RunManager.current_depth)
-	return "слой %s · узел %s\nочки %d · эссенция %d · бессмертие %s\nсид мира %d · смертей %d" % [
+	return "слой %s · узел %s\nочки %d · эссенция %d · бессмертие %s\nсид мира %d · смертей %d\nсборка v%s" % [
 		depth,
 		RunManager.current_node_id if RunManager.current_node_id != &"" else "—",
 		SkillManager.save.skill_points,
@@ -149,6 +150,7 @@ func _status_text() -> String:
 		"вкл" if _immortal else "выкл",
 		WorldSave.save.world_seed,
 		WorldSave.save.death_count,
+		ProjectSettings.get_setting("application/config/version"),
 	]
 
 

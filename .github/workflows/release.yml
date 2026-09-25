@@ -1,18 +1,20 @@
 name: Релиз
 
-# Версия нигде не хранится руками: её имя — это имя ветки release/vX.Y.Z.
-# Когда PR из такой ветки вливается в master, workflow сам проставляет версию
-# в project.godot и export_presets.cfg, коммитит бамп, вешает тег vX.Y.Z,
-# собирает обе платформы и публикует релиз с архивами.
+# Релиз — кнопка: Actions → Релиз → Run workflow. Пустое поле версии значит
+# «то, что разрабатывается», то есть config/version из project.godot в master;
+# номер руками — для случая, когда выпускать надо под другим (его бамп бот
+# закоммитит сам). Дальше без участия человека: тег vX.Y.Z на коммит с этим
+# номером, сборка обеих платформ, релиз с архивами.
+#
+# Мёрж PR релиз не выпускает: все PR идут прямо в master, и мёрж — обычная
+# работа, а не решение выпустить версию (docs/astral-genesis/Задачи/Карточки/
+# Работа в master и релизы тегами.md).
 on:
-  pull_request:
-    types: [closed]
-    branches: [master]
   workflow_dispatch:
     inputs:
       version:
-        description: "Версия без префикса v, например 0.5.0"
-        required: true
+        description: "Версия без префикса v, например 0.7.0. Пусто — из project.godot в master"
+        required: false
         type: string
 
 permissions:
@@ -31,12 +33,6 @@ concurrency:
 jobs:
   prepare:
     name: Версия и бамп
-    # Обычный PR в master (правка доков, хотфикс) релиз не выпускает — только
-    # влитый PR из ветки, названной по версии.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.pull_request.merged == true &&
-       startsWith(github.event.pull_request.head.ref, 'release/v'))
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -52,29 +48,29 @@ jobs:
       - name: Определить версию
         id: version
         env:
-          # Имя ветки приходит извне, поэтому идёт через переменную окружения,
+          # Поле ввода — текст извне, поэтому идёт через переменную окружения,
           # а не подставляется в текст скрипта.
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            version="$INPUT_VERSION"
-          else
-            version="${HEAD_REF#release/v}"
+          version="$INPUT_VERSION"
+          source="поле ввода"
+          if [ -z "$version" ]; then
+            version="$(sed -n -E 's/^config\/version="(.*)"$/\1/p' project.godot | head -n 1)"
+            source="config/version в project.godot"
           fi
 
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Не удалось получить версию из '${HEAD_REF:-$INPUT_VERSION}'. Ветка должна называться release/vX.Y.Z"
+            echo "::error::${source}: «${version}» — не версия вида X.Y.Z"
             exit 1
           fi
           if git rev-parse -q --verify "refs/tags/v${version}" >/dev/null; then
-            echo "::error::Тег v${version} уже существует — релиз этой версии уже выпускался"
+            echo "::error::Тег v${version} уже существует — релиз этой версии уже выпускался. Следующую версию поднимает bash .github/scripts/set_version.sh X.Y.Z"
             exit 1
           fi
 
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "Версия релиза: ${version}"
+          echo "Версия релиза: ${version} (${source})"
 
       - name: Проставить версию и закоммитить
         id: bump
@@ -86,6 +82,9 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Обычно номер уже в master: его поднимают в начале цикла версии, и
+          # тег встаёт на последний коммит как есть. Коммит бампа — только когда
+          # выпускают под номером, отличным от project.godot.
           if git diff --quiet; then
             echo "Версия в файлах уже ${VERSION} — коммит не нужен"
           else
@@ -132,12 +131,14 @@ jobs:
         with:
           platform: windows
           label: v${{ needs.prepare.outputs.version }}
+          version: ${{ needs.prepare.outputs.version }}
 
       - name: Собрать Linux
         uses: ./.github/actions/godot-export
         with:
           platform: linux
           label: v${{ needs.prepare.outputs.version }}
+          version: ${{ needs.prepare.outputs.version }}
 
       - name: Повесить тег
         env:

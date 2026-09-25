@@ -10,7 +10,10 @@ inputs:
     description: "windows или linux — определяет, какой пресет экспортировать."
     required: true
   label:
-    description: "Что подставить в имя архива после названия игры: v0.5.0, pr42 и т.п."
+    description: "Что подставить в имя архива после названия игры: v0.7.0, v0.7.0-dev.33+fc91d3c, pr42."
+    required: true
+  version:
+    description: "Номер в config/version на время сборки: X.Y.Z у релиза, X.Y.Z-dev.N+HASH у остальных (build_version.sh)."
     required: true
 
 outputs:
@@ -28,6 +31,15 @@ runs:
       uses: ./.github/actions/godot-setup
       with:
         templates: "true"
+
+    # После импорта, а не до: ключ кэша .godot считается от project.godot, и
+    # номер с хэшем коммита промахивался бы мимо кэша даже на правке доков.
+    # Коммитить нечего — правка живёт только на раннере.
+    - name: Проставить номер сборки
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: bash .github/scripts/set_version.sh "$VERSION"
 
     - name: Экспорт
       id: export
