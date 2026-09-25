@@ -76,23 +76,54 @@ jobs:
         id: bump
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           bash .github/scripts/set_version.sh "$VERSION"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Обычно номер уже в master: его поднимают в начале цикла версии, и
           # тег встаёт на последний коммит как есть. Коммит бампа — только когда
           # выпускают под номером, отличным от project.godot.
           if git diff --quiet; then
             echo "Версия в файлах уже ${VERSION} — коммит не нужен"
-          else
-            git commit -am "chore: версия ${VERSION} [skip ci]"
-            git push origin master
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          # Коммит создаёт API (createCommitOnBranch), а не git commit + push:
+          # коммит бота через API GitHub подписывает сам, и тег на нём получает
+          # «Verified». Запушенный через git ничем не подписан — так вышел
+          # v0.6.0. Файлы уходят целиком, поэтому expectedHeadOid обязателен:
+          # если master успел уйти вперёд, мутация падает, а не затирает чужую
+          # правку тех же файлов.
+          additions='[]'
+          while IFS= read -r path; do
+            additions="$(jq -c --arg path "$path" --arg contents "$(base64 -w0 "$path")" \
+              '. + [{path: $path, contents: $contents}]' <<<"$additions")"
+          done < <(git diff --name-only)
+
+          jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg head "$(git rev-parse HEAD)" \
+            --arg headline "chore: версия ${VERSION} [skip ci]" \
+            --argjson additions "$additions" \
+            '{
+              query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
+              variables: {input: {
+                branch: {repositoryNameWithOwner: $repo, branchName: "master"},
+                expectedHeadOid: $head,
+                message: {headline: $headline},
+                fileChanges: {additions: $additions}
+              }}
+            }' > "$RUNNER_TEMP/bump.json"
+
+          sha="$(gh api graphql --input "$RUNNER_TEMP/bump.json" --jq '.data.createCommitOnBranch.commit.oid')"
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Коммит бампа не создан: API вернул «${sha}»"
+            exit 1
+          fi
+          echo "Бамп закоммичен: ${sha}"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
 
   release:
     name: Сборка и публикация
@@ -145,9 +176,12 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${VERSION}" -m "Astral Genesis v${VERSION}"
+          # Тег лёгкий, не аннотированный. У аннотированного GitHub показывает
+          # подпись самого объекта тега, а подписать его боту нечем — v0.5.0 и
+          # v0.6.0 так и остались без «Verified». Лёгкий тег — просто ссылка, и
+          # GitHub показывает подпись коммита под ним: мёрж PR и бамп через API
+          # подписаны GitHub.
+          git tag "v${VERSION}"
           git push origin "v${VERSION}"
 
       - name: Опубликовать релиз
