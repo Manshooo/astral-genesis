@@ -5,14 +5,14 @@
 
 .DESCRIPTION
 	Основной режим — просто выдать готовые архивы в dist/: погонять самому,
-	раздать на тест. Ветка при этом любая, ничего никуда не отправляется, версия
-	берётся из project.godot как есть.
+	раздать на тест. Ветка любая, ничего никуда не отправляется. Номер сборки
+	тот же, что у CI: X.Y.Z-dev.N+HASH от .github/scripts/build_version.sh, а на
+	коммите выпущенного тега — просто X.Y.Z. В project.godot он вписывается
+	через .github/scripts/set_version.sh только на время сборки и после неё
+	возвращается как был.
 
-	Если ветка называется release/vX.Y.Z, скрипт дополнительно проставляет версию
-	через .github/scripts/set_version.sh — тот же и единственный способ, которым
-	это делает CI, — и тогда же становится доступен -Publish: тег и релиз на
-	GitHub. Это запасной путь на случай, когда Actions недоступен; обычный путь
-	релиза — мёрж PR из версионной ветки в master, дальше всё делает release.yml.
+	-Publish — запасной путь релиза на случай, когда Actions недоступен: то же,
+	что кнопка «Run workflow» у release.yml, только со своей машины.
 
 .PARAMETER Config
 	release (по умолчанию) или debug. Debug-сборка идёт на отладочных шаблонах:
@@ -24,12 +24,14 @@
 	когда собираешь просто посмотреть.
 
 .PARAMETER Version
-	Версия без префикса v (например 0.5.0). По умолчанию выводится из имени ветки
-	release/vX.Y.Z, а вне такой ветки не трогается вовсе.
+	Версия без префикса v (например 0.7.0): собрать как релиз под этим номером.
+	По умолчанию номер считает build_version.sh, а с -Publish берётся
+	config/version из project.godot — версия, которая разрабатывается.
 
 .PARAMETER Publish
-	После сборки закоммитить бамп версии, повесить тег vX.Y.Z, запушить и создать
-	релиз на GitHub с обоими архивами. Требует версионной ветки и -Config release.
+	После сборки: закоммитить бамп, если номер отличается от project.godot,
+	повесить тег vX.Y.Z, запушить master и тег, создать релиз на GitHub с обоими
+	архивами. Требует ветки master и -Config release.
 
 .PARAMETER Force
 	Не спрашивать подтверждения перед публикацией.
@@ -47,7 +49,7 @@
 
 .EXAMPLE
 	pwsh dev/release.ps1 -Publish
-	Собрать и опубликовать релиз текущей версии на GitHub.
+	Собрать и опубликовать релиз версии из project.godot на GitHub.
 #>
 [CmdletBinding()]
 param(
@@ -104,28 +106,42 @@ function Resolve-Godot([string]$Expected) {
 	Fail "Не найден godot.exe. Укажи -Godot <путь> или переменную окружения GODOT."
 }
 
+# --- скрипты версии ----------------------------------------------------------
+# Номер собирают и раскладывают по файлам те же bash-скрипты, что у CI, — иначе
+# локальная сборка и сборка из Actions назывались бы по-разному. На Windows bash
+# берётся из Git for Windows (-l — чтобы в PATH были sed и grep), на остальных
+# системах — свой.
+function Invoke-VersionScript([string]$Name, [string]$Argument) {
+	if ($IsWindows) {
+		$bash = 'C:\Program Files\Git\bin\bash.exe'
+		if (-not (Test-Path $bash)) { Fail "Не найден bash из Git for Windows ($bash) — им запускаются скрипты версии" }
+		$flags = '-lc'
+	}
+	else {
+		$bash = 'bash'
+		$flags = '-c'
+	}
+	$out = & $bash $flags "cd '$($Root -replace '\\','/')' && bash .github/scripts/$Name '$Argument'"
+	if ($LASTEXITCODE -ne 0) { Fail "$Name упал" }
+	return ($out | Select-Object -Last 1).Trim()
+}
+
 # --- версия и метка ----------------------------------------------------------
-# Версия проставляется в файлы только тогда, когда её есть откуда взять — с
-# версионной ветки. На любой другой ветке сборка всё равно должна получаться:
-# это обычный «собрать и посмотреть», а не выпуск. Тогда версия остаётся той,
-# что лежит в project.godot, а архив метится именем ветки — как это делает CI
-# для сборок по PR.
+# Релиз — это номер X.Y.Z: заданный руками или, для -Publish, тот, что
+# разрабатывается (project.godot). Всё остальное — сборка «посмотреть», и её
+# номер считает build_version.sh: X.Y.Z-dev.N+HASH, из какого коммита сборка.
+# Имя ветки в номер больше не входит — релизных веток нет.
 function Resolve-Release {
 	$branch = (& git -C $Root rev-parse --abbrev-ref HEAD).Trim()
 
-	$v = $null
 	if ($Version) { $v = $Version }
-	elseif ($branch -match '^release/v([0-9]+\.[0-9]+\.[0-9]+)$') { $v = $Matches[1] }
+	elseif ($Publish) { $v = Get-ProjectVersion }
+	else { $v = Invoke-VersionScript 'build_version.sh' 'HEAD' }
 
-	if ($v -and $v -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { Fail "Версия «$v» не вида X.Y.Z" }
+	$isRelease = $v -match '^[0-9]+\.[0-9]+\.[0-9]+$'
+	if (($Version -or $Publish) -and -not $isRelease) { Fail "Версия «$v» не вида X.Y.Z" }
 
-	if ($v) { $label = "v$v" }
-	else {
-		# Метка уходит в имя файла, а имя ветки может содержать слеш и прочее.
-		$label = ($branch -replace '[^A-Za-z0-9._-]', '-')
-	}
-
-	return [pscustomobject]@{ Branch = $branch; Version = $v; Label = $label }
+	return [pscustomobject]@{ Branch = $branch; Version = $v; IsRelease = $isRelease; Label = "v$v" }
 }
 
 function Get-ProjectVersion {
@@ -180,7 +196,7 @@ function New-ReleaseZip([string]$SourceDir, [string]$ZipPath, [string]$Executabl
 $expected = Get-ExpectedGodotVersion
 $godotExe = Resolve-Godot $expected
 $rel = Resolve-Release
-$tag = if ($rel.Version) { "v$($rel.Version)" } else { $null }
+$tag = if ($rel.IsRelease) { "v$($rel.Version)" } else { $null }
 
 # Debug-архив помечен в имени: перепутать его с раздаточным легко, а весит и
 # ведёт себя он иначе (отладочные шаблоны, работающий удалённый отладчик).
@@ -188,13 +204,15 @@ $suffix = if ($Config -eq 'debug') { '-debug' } else { '' }
 
 Write-Step "Astral Genesis — сборка $Config"
 Write-Note "ветка:    $($rel.Branch)"
-Write-Note "версия:   $(if ($rel.Version) { "$($rel.Version) (проставлю в файлы)" } else { "$(Get-ProjectVersion) — из project.godot, ветка не версионная" })"
+Write-Note "номер:    $($rel.Version) ($(if ($rel.IsRelease) { 'релиз' } else { 'сборка из коммита' }))"
 Write-Note "метка:    $($rel.Label)"
 Write-Note "платформы: $Platform"
 Write-Note "движок:   $godotExe (ожидается $expected)"
 
 if ($Publish) {
-	if (-not $tag) { Fail "Публиковать нечего: ветка «$($rel.Branch)» не называется release/vX.Y.Z. Переключись на версионную ветку или передай -Version X.Y.Z." }
+	# Тег встаёт на коммит master, как у release.yml: все PR идут туда, и релиз
+	# с другой ветки выпустил бы код, которого в master нет.
+	if ($rel.Branch -ne 'master') { Fail "Релиз выпускается из master, а сейчас ветка «$($rel.Branch)»." }
 	if ($Config -ne 'release') { Fail "-Publish только для -Config release: отладочная сборка в релиз не выкладывается." }
 
 	# Тег занят — значит версия уже выпускалась. Молча перезаписать сборку,
@@ -203,61 +221,72 @@ if ($Publish) {
 	if ($LASTEXITCODE -eq 0) { Fail "Тег $tag уже существует — эта версия уже выпускалась. Снеси тег и релиз руками, если правда нужен перевыпуск." }
 }
 
-if ($rel.Version) {
-	Write-Step "Проставляю версию $($rel.Version)"
-	$bash = 'C:\Program Files\Git\bin\bash.exe'
-	if (-not (Test-Path $bash)) { Fail "Не найден bash из Git for Windows ($bash) — им запускается set_version.sh" }
-	& $bash -lc "cd '$($Root -replace '\\','/')' && bash .github/scripts/set_version.sh $($rel.Version)"
-	if ($LASTEXITCODE -ne 0) { Fail "set_version.sh упал" }
-}
+# Номер живёт в файлах только на время сборки: иначе dev-номер с хэшем уехал бы
+# в следующий коммит. Исключение — -Publish: там номер релиза коммитится бампом.
+# Байты, а не текст: вернуть обязано ровно то, что было, вплоть до переводов строк.
+$versionFiles = @('project.godot', 'export_presets.cfg') | ForEach-Object { Join-Path $Root $_ }
+$savedVersionFiles = @{}
+foreach ($f in $versionFiles) { $savedVersionFiles[$f] = [System.IO.File]::ReadAllBytes($f) }
+$built = $false
 
-Write-Step "Импорт ресурсов"
-# Тот же обход зависания многопоточного импорта, что на раннере. Блок помечен и
-# срезается после импорта, чтобы не осесть в project.godot и не уехать в коммит.
-$projectGodot = Join-Path $Root 'project.godot'
-$marker = '; --- dev/release.ps1: временно, срезается после импорта ---'
-$original = Get-Content $projectGodot -Raw
 try {
-	Add-Content $projectGodot "`n$marker`n[editor]`n`nimport/use_multiple_threads=false`n"
-	# Первый проход генерирует .uid-файлы, на которые ссылаются сцены, поэтому
-	# часть зависимостей резолвится только со второго.
-	Invoke-Godot $godotExe @('--headless', '--path', $Root, '--import') | Out-Null
-	$code = Invoke-Godot $godotExe @('--headless', '--path', $Root, '--import')
-	if ($code -ne 0) { Fail "Импорт завершился с кодом $code" }
-}
-finally {
-	Set-Content $projectGodot -Value $original -NoNewline
-}
+	Write-Step "Проставляю номер $($rel.Version)"
+	Invoke-VersionScript 'set_version.sh' $rel.Version | Out-Null
 
-$platforms = @(
-	@{ Name = 'windows'; Preset = 'Windows Desktop'; Binary = 'AstralGenesis.exe' }
-	@{ Name = 'linux';   Preset = 'Linux';           Binary = 'AstralGenesis.x86_64' }
-) | Where-Object { $Platform -eq 'both' -or $_.Name -eq $Platform }
-
-# Ключ CLI ровно один на конфигурацию: он же выбирает набор шаблонов экспорта.
-$exportFlag = if ($Config -eq 'debug') { '--export-debug' } else { '--export-release' }
-
-$archives = @()
-foreach ($p in $platforms) {
-	Write-Step "Экспорт: $($p.Preset) ($Config)"
-	$outDir = Join-Path $Root "build/$($p.Name)-$Config"
-	if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
-	New-Item -ItemType Directory -Force $outDir | Out-Null
-
-	$outFile = Join-Path $outDir $p.Binary
-	$code = Invoke-Godot $godotExe @('--headless', '--path', $Root, $exportFlag, $p.Preset, $outFile)
-	# Godot умеет завершиться с нулевым кодом, ничего не записав (например, если
-	# пресет не нашёлся) — проверяем результат явно.
-	if ($code -ne 0) { Fail "Экспорт «$($p.Preset)» завершился с кодом $code" }
-	if (-not (Test-Path $outFile) -or (Get-Item $outFile).Length -eq 0) {
-		Fail "Экспорт «$($p.Preset)» не создал $($p.Binary)"
+	Write-Step "Импорт ресурсов"
+	# Тот же обход зависания многопоточного импорта, что на раннере. Блок помечен и
+	# срезается после импорта, чтобы не осесть в project.godot и не уехать в коммит.
+	$projectGodot = Join-Path $Root 'project.godot'
+	$marker = '; --- dev/release.ps1: временно, срезается после импорта ---'
+	$original = Get-Content $projectGodot -Raw
+	try {
+		Add-Content $projectGodot "`n$marker`n[editor]`n`nimport/use_multiple_threads=false`n"
+		# Первый проход генерирует .uid-файлы, на которые ссылаются сцены, поэтому
+		# часть зависимостей резолвится только со второго.
+		Invoke-Godot $godotExe @('--headless', '--path', $Root, '--import') | Out-Null
+		$code = Invoke-Godot $godotExe @('--headless', '--path', $Root, '--import')
+		if ($code -ne 0) { Fail "Импорт завершился с кодом $code" }
+	}
+	finally {
+		Set-Content $projectGodot -Value $original -NoNewline
 	}
 
-	# Имя архива буква в букву как у CI, чтобы релизы не различались по способу сборки.
-	$zip = Join-Path $Root "dist/astral-genesis-$($rel.Label)-$($p.Name)-x86_64$suffix.zip"
-	New-ReleaseZip $outDir $zip $p.Binary
-	$archives += $zip
-	Write-Note ("{0} ({1:N1} МБ)" -f (Split-Path -Leaf $zip), ((Get-Item $zip).Length / 1MB))
+	$platforms = @(
+		@{ Name = 'windows'; Preset = 'Windows Desktop'; Binary = 'AstralGenesis.exe' }
+		@{ Name = 'linux';   Preset = 'Linux';           Binary = 'AstralGenesis.x86_64' }
+	) | Where-Object { $Platform -eq 'both' -or $_.Name -eq $Platform }
+
+	# Ключ CLI ровно один на конфигурацию: он же выбирает набор шаблонов экспорта.
+	$exportFlag = if ($Config -eq 'debug') { '--export-debug' } else { '--export-release' }
+
+	$archives = @()
+	foreach ($p in $platforms) {
+		Write-Step "Экспорт: $($p.Preset) ($Config)"
+		$outDir = Join-Path $Root "build/$($p.Name)-$Config"
+		if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
+		New-Item -ItemType Directory -Force $outDir | Out-Null
+
+		$outFile = Join-Path $outDir $p.Binary
+		$code = Invoke-Godot $godotExe @('--headless', '--path', $Root, $exportFlag, $p.Preset, $outFile)
+		# Godot умеет завершиться с нулевым кодом, ничего не записав (например, если
+		# пресет не нашёлся) — проверяем результат явно.
+		if ($code -ne 0) { Fail "Экспорт «$($p.Preset)» завершился с кодом $code" }
+		if (-not (Test-Path $outFile) -or (Get-Item $outFile).Length -eq 0) {
+			Fail "Экспорт «$($p.Preset)» не создал $($p.Binary)"
+		}
+
+		# Имя архива буква в букву как у CI, чтобы релизы не различались по способу сборки.
+		$zip = Join-Path $Root "dist/astral-genesis-$($rel.Label)-$($p.Name)-x86_64$suffix.zip"
+		New-ReleaseZip $outDir $zip $p.Binary
+		$archives += $zip
+		Write-Note ("{0} ({1:N1} МБ)" -f (Split-Path -Leaf $zip), ((Get-Item $zip).Length / 1MB))
+	}
+	$built = $true
+}
+finally {
+	if (-not ($Publish -and $built)) {
+		foreach ($f in $versionFiles) { [System.IO.File]::WriteAllBytes($f, $savedVersionFiles[$f]) }
+	}
 }
 
 Write-Step "Готово"
@@ -268,9 +297,8 @@ if (-not $Publish) {
 		Write-Host "`nЭто отладочная сборка: работает удалённый отладчик и вывод print, для раздачи не годится." -ForegroundColor Yellow
 	}
 	elseif ($tag) {
-		Write-Host "`nВыложить это релизом на GitHub:" -ForegroundColor Yellow
+		Write-Host "`nОбычный путь релиза — Actions → Релиз → Run workflow. Со своей машины, из master:" -ForegroundColor DarkGray
 		Write-Host "    pwsh dev/release.ps1 -Publish" -ForegroundColor Yellow
-		Write-Host "Обычный путь релиза — мёрж PR в master, дальше release.yml сделает то же сам." -ForegroundColor DarkGray
 	}
 	return
 }
@@ -292,7 +320,11 @@ if (-not $Force) {
 	Write-Host "  архивы:   $($archives.Count) шт." -ForegroundColor White
 	Write-Host "  push:     origin $($rel.Branch) и origin $tag" -ForegroundColor White
 	$answer = Read-Host "`nПубликуем? Это видно всем (y/N)"
-	if ($answer -notin @('y', 'Y', 'д', 'Д')) { Write-Host "Отменено."; return }
+	if ($answer -notin @('y', 'Y', 'д', 'Д')) {
+		foreach ($f in $versionFiles) { [System.IO.File]::WriteAllBytes($f, $savedVersionFiles[$f]) }
+		Write-Host "Отменено."
+		return
+	}
 }
 
 $dirty = & git -C $Root status --porcelain -- project.godot export_presets.cfg

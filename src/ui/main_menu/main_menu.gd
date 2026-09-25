@@ -4,6 +4,7 @@ extends Control
 const WORLD_SCENE := "res://src/world/world.tscn"
 
 @onready var load_button: Button = $Panel/MarginContainer/VBoxContainer2/VBoxContainer/Load
+@onready var version_label: Label = %Version
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -11,6 +12,10 @@ func _ready() -> void:
 	# Продолжать нечего, пока на диске нет сейва: WorldSave в этом случае держит
 	# свежесгенерированную заготовку, а не сохранённое прохождение.
 	load_button.disabled = not WorldSave.has_save_file
+	# Номер — чтобы по скриншоту бага было видно, из какого коммита сборка:
+	# не-релизной CI вписывает сюда 0.7.0-dev.33+fc91d3c
+	# (.github/scripts/build_version.sh), релизу — просто 0.7.0.
+	version_label.text = "v%s" % ProjectSettings.get_setting("application/config/version")
 
 func _on_new_game_pressed() -> void:
 	WorldSave.new_game()  # катим новый world_seed до загрузки мира

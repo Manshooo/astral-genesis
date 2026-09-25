@@ -1,21 +1,28 @@
 name: Сборка
 
-# Проверки и проверочная сборка на каждый PR в master И в release/* — по новой схеме
-# ветвления feat/fix/docs вливаются в релизную ветку не напрямую, а PR-ом,
-# и та же проверка нужна на этом шаге, а не только на финальном PR в master.
-# Если экспорт сломан, это видно до вливания, а ревьюер может скачать готовую
-# сборку из артефактов прогона.
+# Проверки и проверочная сборка на каждый PR в master и на каждый пуш в master.
+# Релизных веток нет: все PR идут прямо в master (docs/astral-genesis/Задачи/
+# Карточки/Работа в master и релизы тегами.md), поэтому точка проверки одна.
+# По PR сломанный экспорт видно до вливания, а ревьюер скачивает готовую сборку
+# из артефактов прогона. По пушу в master своя сборка есть у каждого коммита, и
+# номер в ней (0.7.0-dev.33+fc91d3c — в углу главного меню и в имени архива)
+# говорит, из какого она коммита: снапшотов -devN у проекта нет.
 # Пробную сборку с произвольной ветки/коммита даёт workflow_dispatch — кнопка
 # «Run workflow» в Actions позволяет выбрать любую ветку, тег или SHA.
-# Релиз собирается отдельным workflow (release.yml) и только после мёржа в master.
+# Релиз собирается отдельным workflow (release.yml) — по кнопке, не по мёржу.
 on:
   pull_request:
-    branches: [master, "release/**"]
+    branches: [master]
+  push:
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  # Новый пуш в PR делает прошлую сборку PR ненужной, а новый коммит master
+  # прошлую сборку master — нет: у каждого коммита она своя, и отменённая
+  # оставила бы коммит без сборки.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Headless-проверки из dev/ — те же, что разработчик гоняет перед PR
@@ -62,6 +69,9 @@ jobs:
       - name: Клонировать репозиторий
         uses: actions/checkout@v7
         with:
+          # Вся история с тегами: номер сборки считает git describe от
+          # последнего vX.Y.Z, а в клоне глубины 1 тега нет.
+          fetch-depth: 0
           lfs: true
           submodules: recursive
 
@@ -99,22 +109,26 @@ jobs:
           rm /tmp/byprod-sdk.zip
           ls -l addons/byprod/bin/
 
-      - name: Определить метку сборки
+      - name: Определить номер и метку сборки
         id: label
         shell: bash
         env:
-          REF_NAME: ${{ github.ref_name }}
           PR_NUMBER: ${{ github.event.number }}
+          # По PR собирается временный merge-коммит с master, но его хэша нет ни
+          # в одной ветке, и со следующим пушем он пропадает. Номер берётся от
+          # головного коммита PR — того, что автор видит у себя в ветке.
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          version="$(bash .github/scripts/build_version.sh "${PR_HEAD_SHA:-HEAD}")"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             label="pr${PR_NUMBER}"
           else
-            # Метка уходит в имя файла, а имя ветки может содержать слеш
-            # (release/v0.5.0) — иначе архив уехал бы в подкаталог.
-            label="$(printf '%s' "$REF_NAME" | tr -c 'A-Za-z0-9._-' '-')"
+            label="v${version}"
           fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "label=${label}" >> "$GITHUB_OUTPUT"
+          echo "Номер сборки: ${version}, метка архива: ${label}"
 
       # Обе платформы на одном раннере: движок, шаблоны и импорт ресурсов
       # переиспользуются, второй вызов доходит до экспорта за секунды.
@@ -123,12 +137,14 @@ jobs:
         with:
           platform: windows
           label: ${{ steps.label.outputs.label }}
+          version: ${{ steps.label.outputs.version }}
 
       - name: Собрать Linux
         uses: ./.github/actions/godot-export
         with:
           platform: linux
           label: ${{ steps.label.outputs.label }}
+          version: ${{ steps.label.outputs.version }}
 
       - name: Выложить артефакты
         uses: actions/upload-artifact@v7
