@@ -45,6 +45,10 @@ func rebuild(view: LayerView) -> void:
 		var spatial := room as Node3D
 		if spatial:
 			spatial.position = view.plan.position_of(node_data.id)
+			# Сборная комната — теми же стенами, что поставит игра (LayerStreamer).
+			var shell := RS_RoomLayout.shell_of(room)
+			if shell and shell.walls:
+				shell.walls.assemble(spatial, node_data.id, view.plan)
 		add_child(room)
 		_rooms[node_data.id] = room
 	if view.kit != null and view.plan != null:
@@ -67,7 +71,7 @@ func set_selected(node_id: StringName) -> void:
 
 func _build_tiles(view: LayerView) -> void:
 	for cell: Vector3i in view.plan.corridor_tiles:
-		var tile := view.kit.instantiate(view.plan.corridor_tiles[cell])
+		var tile := view.kit.instantiate(view.plan.corridor_tiles[cell], view.plan.door_mask(cell))
 		if tile == null:
 			continue
 		# Позиция до add_child — как у игры (LayerStreamer._spawn_corridor).

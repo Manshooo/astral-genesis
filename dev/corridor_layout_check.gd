@@ -28,7 +28,7 @@ func _ready() -> void:
 	var problems := {
 		"все трассы проложены": [],
 		"комнаты не делят клетку, тайлы не встают на комнаты": [],
-		"стороны дверей — ровно двери сцены, ветки — ровно рёбра графа": [],
+		"двери — ровно двери сцены или сокеты, ветки — ровно рёбра графа": [],
 		"перед каждой дверью — тайл её ветки с проёмом в комнату": [],
 		"проёмы взаимны, в пустоту не ведёт ни один": [],
 		"стык веток есть ровно там, где в графе ребро между ними": [],
@@ -76,10 +76,10 @@ func _collect(
 	for node in layer:
 		if node.role != RS_LevelNode.Role.ROOM:
 			continue
-		var cell: Vector3i = plan.cells[node.id]
-		if room_at.has(cell) or plan.corridor_tiles.has(cell):
-			problems["комнаты не делят клетку, тайлы не встают на комнаты"].append("%s %s" % [tag, node.id])
-		room_at[cell] = node.id
+		for cell in plan.room_cells(node.id):
+			if room_at.has(cell) or plan.corridor_tiles.has(cell):
+				problems["комнаты не делят клетку, тайлы не встают на комнаты"].append("%s %s" % [tag, node.id])
+			room_at[cell] = node.id
 
 	for node in layer:
 		if node.role != RS_LevelNode.Role.ROOM:
@@ -112,7 +112,7 @@ func _collect(
 					adjacent_branches[key] = true
 			elif room_at.has(next):
 				var room: StringName = room_at[next]
-				if plan.door_sides.get(room, {}).get(facing, &"") != owner:
+				if plan.door_faces.get(room, {}).get(GridTopology.face(next, facing), &"") != owner:
 					problems["проёмы взаимны, в пустоту не ведёт ни один"].append("%s %s→%s" % [tag, cell, room])
 			else:
 				problems["проёмы взаимны, в пустоту не ведёт ни один"].append("%s %s→пустота" % [tag, cell])
@@ -142,29 +142,43 @@ func _collect(
 func _check_room_doors(
 	graph: RS_LevelGraph, room: RS_LevelNode, plan: RS_LayerPlan, tag: String, problems: Dictionary
 ) -> void:
-	var sides: Dictionary = plan.door_sides.get(room.id, {})
-	var planned: Array = sides.values()
+	var faces: Dictionary = plan.door_faces.get(room.id, {})
+	var planned: Array = faces.values()
 	var expected: Array = []
 	for conn: RS_LevelConnection in room.connections:
 		var target := graph.get_node_data(conn.target_node_id)
 		if target.role == RS_LevelNode.Role.CORRIDOR:
 			expected.append(conn.target_node_id)
-	var scene_list: Array = []
-	scene_list.append_array(RS_RoomLayout.door_sides_of_scene(room.room_scene_path))
-	var keys: Array = sides.keys()
-	for list: Array in [planned, expected, scene_list, keys]:
-		list.sort()
-	if str(planned) != str(expected) or keys != scene_list:
-		problems["стороны дверей — ровно двери сцены, ветки — ровно рёбра графа"].append(
-			"%s %s: %s vs %s" % [tag, room.id, sides, expected]
+	# Где двери: у комнаты с дверями в сцене — ровно стороны этих дверей, у
+	# сборной — столько сокетов периметра, сколько разыграно, и только сокеты.
+	var placed_right := true
+	if room.socket_doors == 0:
+		var scene_list: Array = []
+		scene_list.append_array(RS_RoomLayout.door_sides_of_scene(room.room_scene_path))
+		var keys: Array = []
+		for face: Vector4i in faces:
+			keys.append(face.w)
+		scene_list.sort()
+		keys.sort()
+		placed_right = keys == scene_list
+	else:
+		var sockets := plan.topology.perimeter(plan.room_cells(room.id))
+		placed_right = faces.size() == room.socket_doors
+		for face: Vector4i in faces:
+			placed_right = placed_right and sockets.has(face)
+	planned.sort()
+	expected.sort()
+	if str(planned) != str(expected) or not placed_right:
+		problems["двери — ровно двери сцены или сокеты, ветки — ровно рёбра графа"].append(
+			"%s %s: %s vs %s" % [tag, room.id, faces, expected]
 		)
-	var room_cell: Vector3i = plan.cells[room.id]
-	for side: int in sides:
-		var cell := plan.topology.neighbour(room_cell, side)
-		var bit := 1 << plan.topology.back_side(room_cell, side)
-		if plan.node_by_cell.get(cell, &"") != sides[side] or plan.corridor_tiles.get(cell, 0) & bit == 0:
+	for face: Vector4i in faces:
+		var inside := GridTopology.face_cell(face)
+		var cell := plan.topology.neighbour(inside, face.w)
+		var bit := 1 << plan.topology.back_side(inside, face.w)
+		if plan.node_by_cell.get(cell, &"") != faces[face] or plan.corridor_tiles.get(cell, 0) & bit == 0:
 			problems["перед каждой дверью — тайл её ветки с проёмом в комнату"].append(
-				"%s %s:%s" % [tag, room.id, RS_RoomLayout.side_name(side)]
+				"%s %s:%s" % [tag, room.id, face]
 			)
 
 
@@ -197,7 +211,7 @@ func _check_determinism(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig
 		for depth: int in RS_LevelGraph.DEPTHS:
 			var a := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
 			var b := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
-			if str(a.corridor_tiles) != str(b.corridor_tiles) or str(a.door_sides) != str(b.door_sides) \
+			if str(a.corridor_tiles) != str(b.corridor_tiles) or str(a.door_faces) != str(b.door_faces) \
 					or str(a.cells) != str(b.cells):
 				diverged.append(s)
 	_check("один граф — одна раскладка", diverged.is_empty(), str(diverged))

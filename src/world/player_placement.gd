@@ -33,7 +33,7 @@ static func in_room(player: Node3D, room: LayerStreamer.SpawnedRoom, came_from: 
 	var exit_entity := return_exit(room, came_from)
 	if exit_entity:
 		# Меняем ТОЛЬКО origin: basis (рыскание) остаётся игроков.
-		player.global_position = arrival_point(exit_entity, room_node, spawn_point)
+		player.global_position = arrival_point(exit_entity, room.face_of(exit_entity).w, room_node, spawn_point)
 		return
 
 	if spawn_point:
@@ -56,10 +56,10 @@ static func in_corridor(player: Node3D, tiles: Array) -> void:
 static func in_front_of(
 	player: Node3D, door: Entity, room: LayerStreamer.SpawnedRoom, plan: RS_LayerPlan
 ) -> void:
-	var side := RS_RoomLayout.door_side(door as Node as Node3D, room.entity)
+	var face := room.face_of(door)
 	var cell: Vector3i = plan.cells.get(room.node_id, Vector3i.ZERO)
-	if side != GridTopology.NO_SIDE:
-		cell = plan.topology.neighbour(cell, side)
+	if face.w != GridTopology.NO_SIDE:
+		cell = plan.topology.neighbour(GridTopology.face_cell(face), face.w)
 	player.global_position = (
 		plan.embedding.cell_origin(cell) + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
 	)
@@ -70,9 +70,11 @@ static func in_front_of(
 ##
 ## Не трансформ самой двери: её origin лежит в плоскости стены и на высоте центра
 ## полотна (~2.3 м) — игрока там зажало бы в геометрии. Направление берём из
-## стороны двери (RS_RoomLayout), а не из вектора «на центр комнаты»: так игрок
-## встаёт ровно напротив проёма, а не наискосок от него.
-static func arrival_point(door: Entity, room_node: Node3D, spawn_point: Node3D) -> Vector3:
+## стороны грани двери ([param side], LayerStreamer.SpawnedRoom.face_of), а не из
+## вектора «на центр комнаты»: так игрок встаёт ровно напротив проёма, а не
+## наискосок от него. И не из положения двери относительно центра: у вытянутой
+## комнаты дверь в торце длинной стены ближе к боковой оси, и сторона вышла бы не та.
+static func arrival_point(door: Entity, side: int, room_node: Node3D, spawn_point: Node3D) -> Vector3:
 	var door_node := door as Node as Node3D
 	var door_origin := door_node.global_transform.origin
 	var room_origin := room_node.global_transform.origin
@@ -80,7 +82,8 @@ static func arrival_point(door: Entity, room_node: Node3D, spawn_point: Node3D) 
 	var into_room := Vector3.ZERO
 	# У портала стены нет — он стоит посреди комнаты, и «перпендикулярно стене»
 	# для него бессмысленно. Отходим от него к центру комнаты.
-	var side := GridTopology.NO_SIDE if door is E_VerticalPortal else RS_RoomLayout.door_side(door_node, room_node)
+	if door is E_VerticalPortal:
+		side = GridTopology.NO_SIDE
 	if side != GridTopology.NO_SIDE:
 		into_room = -Vector3(SquareGridTopology.OFFSETS[side])  # внутрь = против стороны двери
 	else:

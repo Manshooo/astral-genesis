@@ -16,7 +16,7 @@ extends RefCounted
 enum Piece { END, STRAIGHT, CORNER, TEE, CROSS }
 
 const PIECE_NAMES: Array[String] = ["тупик", "прямой", "поворот", "Т", "крест"]
-## Сколько соседних клеток комнаты должна занять её собственная ветка, чтобы
+## Со скольких сторон к комнате должна подходить её собственная ветка, чтобы
 ## комната считалась обволакиваемой: с трёх сторон из четырёх коридор уже обходит
 ## комнату, а не подходит к ней.
 const ENVELOPED_SIDES := 3
@@ -24,8 +24,8 @@ const ENVELOPED_SIDES := 3
 ## Этажей с хотя бы одним узлом.
 var floors := 0
 var rooms := 0
-## Комнаты, у которых ENVELOPED_SIDES и больше соседних клеток — тайлы их же
-## ветки (веток, в которые ведут их двери).
+## Комнаты, к которым с ENVELOPED_SIDES и больше сторон подходит тайл их же ветки
+## (веток, в которые ведут их двери).
 var enveloped_rooms := 0
 var tiles := 0
 ## Piece -> сколько тайлов.
@@ -54,9 +54,9 @@ static func of_plan(plan: RS_LayerPlan) -> RS_LayoutMetrics:
 		var piece := piece_of(plan.corridor_tiles[cell])
 		metrics.pieces[piece] = metrics.pieces.get(piece, 0) + 1
 
-	# Комнаты — ключи door_sides: планировщик пишет туда каждую комнату слоя, даже
+	# Комнаты — ключи door_faces: планировщик пишет туда каждую комнату слоя, даже
 	# без дверей в коридор.
-	for room: StringName in plan.door_sides:
+	for room: StringName in plan.door_faces:
 		metrics.rooms += 1
 		if _own_branch_sides(plan, room) >= ENVELOPED_SIDES:
 			metrics.enveloped_rooms += 1
@@ -136,16 +136,17 @@ func report_lines() -> PackedStringArray:
 	return lines
 
 
-## Сколько соседних клеток комнаты заняты тайлами веток, в которые ведут её двери.
+## Со скольких сторон к комнате подходит тайл ветки, в которую ведут её двери. По
+## сторонам, а не по клеткам: у комнаты в несколько клеток на одной стороне
+## несколько соседей, а обволакивание — это коридор вокруг, а не вдоль одной стены.
 static func _own_branch_sides(plan: RS_LayerPlan, room: StringName) -> int:
-	var own: Array = (plan.door_sides[room] as Dictionary).values()
-	var cell: Vector3i = plan.cells[room]
-	var count := 0
-	for side in plan.topology.side_count(cell):
-		var next := plan.topology.neighbour(cell, side)
+	var own: Array = (plan.door_faces[room] as Dictionary).values()
+	var sides := {}
+	for face in plan.topology.perimeter(plan.room_cells(room)):
+		var next := plan.topology.neighbour(GridTopology.face_cell(face), face.w)
 		if plan.corridor_tiles.has(next) and own.has(plan.node_by_cell.get(next, &"")):
-			count += 1
-	return count
+			sides[face.w] = true
+	return sides.size()
 
 
 ## Цикломатическое число проходимого графа слоя: рёбер − вершин + компонент.
@@ -162,15 +163,15 @@ static func _cycle_rank(plan: RS_LayerPlan, with_rooms: bool) -> int:
 			var next := plan.topology.neighbour(cell, side)
 			if mask & (1 << side) and plan.corridor_tiles.has(next):
 				links[cell].append(next)
-	# Дверь — связь комнаты с тайлом перед ней. У комнаты клетка своя, поэтому
-	# вершины тайлов и комнат не путаются.
-	var rooms: Array = plan.door_sides.keys() if with_rooms else []
+	# Дверь — связь комнаты с тайлом перед ней. Комната — одна вершина, её угловая
+	# клетка: у комнаты клетки свои, поэтому вершины тайлов и комнат не путаются.
+	var rooms: Array = plan.door_faces.keys() if with_rooms else []
 	for room: StringName in rooms:
 		var cell: Vector3i = plan.cells[room]
 		if not links.has(cell):
 			links[cell] = []
-		for side: int in plan.door_sides[room]:
-			var front := plan.topology.neighbour(cell, side)
+		for face: Vector4i in plan.door_faces[room]:
+			var front := plan.topology.neighbour(GridTopology.face_cell(face), face.w)
 			if plan.corridor_tiles.has(front):
 				links[cell].append(front)
 				links[front].append(cell)

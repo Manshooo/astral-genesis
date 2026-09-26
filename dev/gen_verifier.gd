@@ -6,7 +6,7 @@ extends Node
 ##       * по графу  — связен ли граф вообще (гарантия генератора);
 ##       * по дверям — что реально проходимо в мире: из комнаты в ветку коридора
 ##                     только через дверь на стороне, которую план отдал этой
-##                     ветке (RS_LayerPlan.door_sides), на другой этаж или слой —
+##                     ветке (RS_LayerPlan.door_faces), на другой этаж или слой —
 ##                     только если в сцене есть портал;
 ##   - узлы с БОЛЬШЕ ЧЕМ ОДНИМ вертикальным ребром (смена глубины или этажа) —
 ##     портал в комнате один (LayerStreamer._bind_portals), лишнему ребру некуда деться;
@@ -124,7 +124,7 @@ func _verify_seed(seed_value: int, library: RS_RoomPresetLibrary, config: RS_Wor
 		if node.role != RS_LevelNode.Role.ROOM:
 			continue
 		rooms += 1
-		sealed += maxi(RS_RoomLayout.door_count_of_scene(node.room_scene_path) - _horizontal_edges(graph, node), 0)
+		sealed += maxi(node.door_count() - _horizontal_edges(graph, node), 0)
 
 	var unreachable_graph := _bfs_unreachable(graph, plans, false).size()
 	var unreachable_doors := _bfs_unreachable(graph, plans, true).size()
@@ -207,7 +207,7 @@ func _bfs_unreachable(graph: RS_LevelGraph, plans: Dictionary, physical: bool) -
 				reachable.append(conn.target_node_id)
 		else:
 			var plan: RS_LayerPlan = plans[node.depth]
-			reachable.append_array(plan.door_sides.get(node.id, {}).values())
+			reachable.append_array(plan.door_faces.get(node.id, {}).values())
 			if _has_portal(node.room_scene_path):
 				for conn: RS_LevelConnection in node.connections:
 					var target := graph.get_node_data(conn.target_node_id)

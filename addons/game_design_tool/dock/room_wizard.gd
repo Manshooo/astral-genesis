@@ -38,8 +38,16 @@ const CUSTOM_FIELDS := ["scene", "tags", "room_type"]
 const FIELD_LABELS := {
 	"display_name": "Название",
 	"slot_count": "Слоты",
+	"doors_min": "Дверей от",
+	"doors_max": "Дверей до",
 	"weight": "Вес",
 }
+## Поля степени комнаты — у каждого вида свои: у комнаты с дверями в сцене это
+## число её дверей (slot_count), у собранной по сокетам (C_RoomShell) — диапазон
+## doors_min..doors_max. Чужое поле форма прячет: показать оба — значит дать
+## дизайнеру ручку, которую генератор у этой комнаты не читает.
+const SCENE_DOOR_FIELDS := ["slot_count"]
+const SOCKET_DOOR_FIELDS := ["doors_min", "doors_max"]
 ## Границы спинбоксов ПОИМЕННО, а не одни на весь числовой тип. RS_RoomPreset
 ## не носит @export_range, поэтому из get_property_list границы не достать — и
 ## пока они задавались одним числом на TYPE_INT, любое новое целое поле молча
@@ -48,6 +56,8 @@ const FIELD_LABELS := {
 ## значение как есть безопаснее, чем подрезать его под чужую шкалу.
 const FIELD_RANGES := {
 	"slot_count": Library.SLOT_RANGE,
+	"doors_min": Library.SLOT_RANGE,
+	"doors_max": Library.SLOT_RANGE,
 	"weight": Library.WEIGHT_RANGE,
 }
 const DEFAULT_INT_RANGE := {"min": -99999.0, "max": 99999.0, "step": 1.0}
@@ -59,6 +69,10 @@ const TAG_HINT_WHERE := "вкладке «Геймдизайн» → «Реда�
 var _scene_path := ""
 var _preset_path := ""
 var _preset: RS_RoomPreset
+## Открытая сцена — коробка комнаты, собираемой по сокетам (C_RoomShell на корне).
+## Смотрим на живой корень сцены, а не в кэш RS_RoomLayout: компонент мог появиться
+## только что, в этой же сессии редактора.
+var _is_shell := false
 
 var _scene_label: Label
 var _form_box: VBoxContainer
@@ -166,6 +180,7 @@ func refresh_for_scene(scene_root: Node) -> void:
 		return
 
 	_scene_path = scene_path
+	_is_shell = RS_RoomLayout.shell_of(scene_root) != null
 	_scene_label.text = scene_path.get_file()
 	_scene_label.tooltip_text = scene_path
 	# Соглашение имён: Room-ресурс — <сцена>.tres рядом со сценой, тот же файл.
@@ -222,13 +237,14 @@ func _build_form() -> void:
 		child.free()
 	_field_controls.clear()
 
+	var other_kind := SCENE_DOOR_FIELDS if _is_shell else SOCKET_DOOR_FIELDS
 	for prop: Dictionary in _preset.get_property_list():
 		# И SCRIPT_VARIABLE (объявлено в этом скрипте, не в базовом Resource —
 		# иначе в форму попали бы resource_local_to_scene и подобное), И
 		# EDITOR (реально @export, а не служебное поле).
 		if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE and prop.usage & PROPERTY_USAGE_EDITOR):
 			continue
-		if CUSTOM_FIELDS.has(prop.name):
+		if CUSTOM_FIELDS.has(prop.name) or other_kind.has(prop.name):
 			continue
 		_add_field_row(prop)
 

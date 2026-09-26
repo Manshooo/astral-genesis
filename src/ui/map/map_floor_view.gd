@@ -129,6 +129,7 @@ func fit() -> bool:
 		cells.append_array(tiles_of(branch.id))
 	for node_data in rooms:
 		cells.append(_planar(plan.cells[node_data.id]))
+		cells.append(_far_corner(node_data.id))
 	if cells.is_empty():
 		return false
 	_fit(cells)
@@ -203,6 +204,13 @@ static func _planar(cell: Vector3i) -> Vector2i:
 	return Vector2i(cell.x, cell.z)
 
 
+## Дальний от угловой клетки угол footprint комнаты на плане. У комнаты в одну
+## клетку — та же клетка.
+func _far_corner(node_id: StringName) -> Vector2i:
+	var size: Vector3i = plan.footprints.get(node_id, Vector3i.ONE)
+	return _planar(plan.cells[node_id]) + Vector2i(size.x - 1, size.z - 1)
+
+
 func _gui_input(event: InputEvent) -> void:
 	var mouse := event as InputEventMouse
 	if mouse == null:
@@ -256,10 +264,13 @@ func _draw_corridors() -> void:
 				), color, true)
 
 
+## Прямоугольник комнаты на весь её footprint: от центра угловой клетки до центра
+## дальней, плюс доля клетки room_fill — зазор у края тот же, что у комнаты в клетку.
 func _room_rect(node_id: StringName) -> Rect2:
-	var room := Vector2(_step, _step) * room_fill
-	var center := to_screen(Vector2(_planar(plan.cells[node_id])))
-	return Rect2(center - room * 0.5, room)
+	var first := to_screen(Vector2(_planar(plan.cells[node_id])))
+	var last := to_screen(Vector2(_far_corner(node_id)))
+	var room := (last - first) + Vector2(_step, _step) * room_fill
+	return Rect2((first + last) * 0.5 - room * 0.5, room)
 
 
 func _draw_rooms() -> void:

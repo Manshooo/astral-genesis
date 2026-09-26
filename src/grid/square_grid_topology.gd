@@ -37,3 +37,16 @@ func opposite(_cell: Vector3i, side: int) -> int:
 
 func side_toward(cell: Vector3i, other: Vector3i) -> int:
 	return OFFSETS.find(other - cell)
+
+
+## Клетки прямоугольного footprint [param size] = (ширина по X, уровней по Y,
+## длина по Z) от угловой клетки [param anchor] — наименьшей по всем осям.
+## Порядок — по уровням, внутри уровня по Z, затем по X: на нём держится порядок
+## сокетов (GridTopology.perimeter).
+static func box(anchor: Vector3i, size: Vector3i) -> Array[Vector3i]:
+	var cells: Array[Vector3i] = []
+	for y in size.y:
+		for z in size.z:
+			for x in size.x:
+				cells.append(anchor + Vector3i(x, y, z))
+	return cells

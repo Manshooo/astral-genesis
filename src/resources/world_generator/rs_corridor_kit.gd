@@ -21,10 +21,16 @@ extends Resource
 @export var tee_mask: int = 7  # север + восток + юг
 @export var cross: PackedScene
 @export var cross_mask: int = 15
+## Торец с проёмом — на сторону тайла, упёршуюся в дверь комнаты. Стены кита —
+## плоскости лицом внутрь, и без торца из коридора сквозь обратную сторону стены
+## комнаты было бы видно всю комнату ([[Метрики и кит]] §2 п. 7). Нарисован на
+## северной грани, как стены сборной комнаты (RS_RoomWallKit). Пусто — у кита
+## торцов нет: у кита 18 м стык закрывает рамка самой комнаты.
+@export var door_end: PackedScene
 
 
 ## Кусок под маску тайла: { "scene": PackedScene, "turns": четверти оборота
-## вокруг Y }. Пусто — такого куска в ките нет (торец, маска с одним проёмом,
+## вокруг Y }. Пусто — такого куска в ките нет (тупик, маска с одним проёмом,
 ## раскладка не выдаёт вовсе — см. dev/corridor_layout_check).
 func piece_for(mask: int) -> Dictionary:
 	for piece: Array in [[straight, straight_mask], [corner, corner_mask], [tee, tee_mask], [cross, cross_mask]]:
@@ -41,12 +47,23 @@ func piece_for(mask: int) -> Dictionary:
 ## начале координат). Один на игру и на предпросмотр «Генератора мира»: поставь
 ## они тайл каждый по-своему — и превью показывало бы не тот коридор, что
 ## построит игра. null — куска под маску в ките нет.
-func instantiate(mask: int) -> Node3D:
+##
+## [param doors] — какие из проёмов ведут в дверь комнаты (RS_LayerPlan.door_mask):
+## на каждый встаёт торец door_end. Торец — ребёнок тайла, чтобы уходить и
+## подсвечиваться вместе с ним; поворот у него поэтому свой минус поворот тайла.
+func instantiate(mask: int, doors: int = 0) -> Node3D:
 	var piece := piece_for(mask)
 	if piece.is_empty():
 		return null
 	var tile := (piece["scene"] as PackedScene).instantiate() as Node3D
-	tile.rotation.y = piece["turns"] * PI * 0.5
+	var turns: int = piece["turns"]
+	tile.rotation.y = turns * PI * 0.5
+	if door_end:
+		for side in SquareGridTopology.SIDE_COUNT:
+			if doors & (1 << side):
+				var cap := door_end.instantiate() as Node3D
+				cap.rotation.y = (RS_RoomLayout.north_piece_turns(side) - turns) * PI * 0.5
+				tile.add_child(cap)
 	return tile
 
 

@@ -1,5 +1,5 @@
 ## res://src/resources/world_generator/rs_layer_plan.gd
-## План раскладки одного слоя: какую клетку сетки занимает каждая комната, как
+## План раскладки одного слоя: какие клетки сетки занимает каждая комната, как
 ## идут тайлы веток коридора и какая дверь комнаты смотрит в какую ветку. Считает
 ## его RS_CorridorPlanner — комнаты на решётке, коридоры трассируются между ними.
 ##
@@ -42,12 +42,16 @@ var topology := SquareGridTopology.new()
 ## на всю высоту комнаты, включая полёт души под потолком.
 var embedding := SquareGridEmbedding.new(18.0, 20.0, 0.25)
 
-## node_id -> клетка узла. У комнаты — её клетка, у ветки коридора — клетка её
-## первого тайла: у ветки нет одной клетки, а инструментам нужна хоть какая-то.
+## node_id -> клетка узла. У комнаты — угловая клетка footprint (наименьшая по
+## всем осям), у ветки коридора — клетка её первого тайла: у ветки нет одной
+## клетки, а инструментам нужна хоть какая-то.
 var cells: Dictionary[StringName, Vector3i] = {}
-## Клетка -> node_id — и комнат, и тайлов коридора. Одна и та же (x, z) на разных
-## этажах — разные клетки и разные узлы. На ней держится node_at, а через него —
-## «в каком узле стоит игрок».
+## Комната -> footprint в клетках (ширина по X, уровней по Y, длина по Z). У
+## комнаты с дверями в сцене — одна клетка.
+var footprints: Dictionary[StringName, Vector3i] = {}
+## Клетка -> node_id — и всех клеток комнат, и тайлов коридора. Одна и та же
+## (x, z) на разных этажах — разные клетки и разные узлы. На ней держится node_at,
+## а через него — «в каком узле стоит игрок».
 var node_by_cell: Dictionary[Vector3i, StringName] = {}
 ## Клетка тайла -> маска проёмов: бит стороны — 1 << её индекс в топологии. Чья
 ## это ветка — в node_by_cell. По маске сборка выбирает кусок кита: два
@@ -55,10 +59,11 @@ var node_by_cell: Dictionary[Vector3i, StringName] = {}
 ## крест. Проём ставится и к соседнему тайлу своей ветки, и к двери комнаты, и
 ## на стык с родительской веткой.
 var corridor_tiles: Dictionary[Vector3i, int] = {}
-## Комната -> { сторона двери: ветка }. Ключ — сторона (индекс топологии), а не
-## сосед: две двери комнаты законно ведут в одну и ту же ветку, и по id соседа их
-## не различить (RS_LevelGraph._hang_floor_on_corridors).
-var door_sides: Dictionary[StringName, Dictionary] = {}
+## Комната -> { грань двери: ветка }. Грань — клетка footprint и её сторона
+## (GridTopology.face): у комнаты в несколько клеток на одной стороне несколько
+## сокетов. Ключ — грань, а не сосед: две двери комнаты законно ведут в одну и ту
+## же ветку, и по id соседа их не различить (RS_LevelGraph._hang_floor_on_corridors).
+var door_faces: Dictionary[StringName, Dictionary] = {}
 ## Сколько трасс не удалось проложить — ветка заперта чужими коридорами и
 ## комнатами. Раскладка при этом не падает; ноль сверяет проверка.
 var routing_failures: Array[String] = []
@@ -86,12 +91,36 @@ static func build(layer_nodes: Array[RS_LevelNode], config: RS_WorldGenConfig = 
 	return plan
 
 
-## Мировая точка узла — центр пола его клетки (у ветки — первого тайла).
+## Мировая точка узла: у комнаты — центр footprint в плане на уровне пола (origin
+## сцены по контракту клетки, [[Метрики и кит]] §2), у ветки — центр первого тайла.
 ## Vector3.ZERO, если узла в плане нет.
 func position_of(node_id: StringName) -> Vector3:
 	if not cells.has(node_id):
 		return Vector3.ZERO
-	return embedding.cell_origin(cells[node_id])
+	var anchor: Vector3i = cells[node_id]
+	var size: Vector3i = footprints.get(node_id, Vector3i.ONE)
+	if size.x == 1 and size.z == 1:
+		return embedding.cell_origin(anchor)
+	var far := anchor + Vector3i(size.x - 1, 0, size.z - 1)
+	return (embedding.cell_origin(anchor) + embedding.cell_origin(far)) * 0.5
+
+
+## Все клетки комнаты — footprint на всех его уровнях.
+func room_cells(node_id: StringName) -> Array[Vector3i]:
+	return SquareGridTopology.box(cells[node_id], footprints.get(node_id, Vector3i.ONE))
+
+
+## Какие проёмы тайла ведут в дверь комнаты, а не в соседний тайл: маска, как у
+## corridor_tiles. Отдельно не хранится — проём в пустоту раскладка не выдаёт
+## (corridor_layout_check), так что всё открытое не в тайл и есть дверь. Нужна
+## сборке: сторону, упёршуюся в дверь, тайл закрывает своим торцом с проёмом.
+func door_mask(tile: Vector3i) -> int:
+	var open: int = corridor_tiles.get(tile, 0)
+	var doors := 0
+	for side in topology.side_count(tile):
+		if open & (1 << side) and not corridor_tiles.has(topology.neighbour(tile, side)):
+			doors |= 1 << side
+	return doors
 
 
 ## Узел, в чьей клетке лежит мировая точка, или "" — точка вне раскладки

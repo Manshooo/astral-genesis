@@ -163,12 +163,18 @@ func _check_doors_bound() -> void:
 	var floor_portals_wrong: Array[String] = []
 	for id: StringName in RunManager.layer.rooms:
 		var room = RunManager.layer.rooms[id]
-		var sides: Dictionary = plan.door_sides.get(id, {})
+		var faces: Dictionary = plan.door_faces.get(id, {})
+		var shell := RS_RoomLayout.shell_of(room.entity)
 		for door: Entity in room.doors:
-			var side := RS_RoomLayout.door_side(door as Node as Node3D, room.entity)
+			# Грань запечённой двери считаем сами, по стене, — не той же функцией,
+			# которой её привязал спавн. У сборной комнаты грань двери задал сам
+			# спавн, и где она стоит, сверяет room_shell_check.
+			var face: Vector4i = room.face_of(door) if shell else GridTopology.face(
+				plan.cells[id], RS_RoomLayout.door_side(door as Node as Node3D, room.entity)
+			)
 			var portal := door.get_component(C_DoorPortal) as C_DoorPortal
-			if portal == null or portal.target_node_id != sides.get(side, &"-"):
-				wrong.append("%s:%s" % [id, RS_RoomLayout.side_name(side)])
+			if portal == null or portal.target_node_id != faces.get(face, &"-"):
+				wrong.append("%s:%s" % [id, face])
 		var node := RunManager.current_graph.get_node_data(id)
 		for conn: RS_LevelConnection in node.connections:
 			var target := RunManager.current_graph.get_node_data(conn.target_node_id)

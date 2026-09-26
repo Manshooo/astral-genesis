@@ -694,7 +694,7 @@ func _on_preview_pressed() -> void:
 			if node.role == RS_LevelNode.Role.CORRIDOR:
 				continue
 			nodes_total += 1
-			var degree: int = RS_RoomLayout.door_count_of_scene(node.room_scene_path)
+			var degree := node.door_count()
 			degrees[degree] = degrees.get(degree, 0) + 1
 			var picked := _label_for_scene(node.room_scene_path)
 			picks[picked] = picks.get(picked, 0) + 1
