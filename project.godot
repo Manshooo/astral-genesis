@@ -32,6 +32,13 @@ RunManager="*uid://c6536kxev8382"
 RunStats="*res://src/autoloads/run_stats.gd"
 AudioManager="*res://src/autoloads/audio_manager.gd"
 ECS="*uid://dfqwl5njvdnmq"
+BeckettRuntime="*res://addons/beckett/runtime/beckett_autoload.gd"
+
+[beckett]
+
+auto_write_client_config=false
+dock_revealed=true
+effort_schema=2
 
 [display]
 
@@ -45,7 +52,7 @@ version_control/plugin_name="GitPlugin"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/game_design_tool/plugin.cfg", "res://addons/gecs/plugin.cfg")
+enabled=PackedStringArray("res://addons/beckett/plugin.cfg", "res://addons/game_design_tool/plugin.cfg", "res://addons/gecs/plugin.cfg")
 
 [file_customization]
 
