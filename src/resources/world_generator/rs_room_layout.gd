@@ -1,45 +1,41 @@
 ## res://src/resources/world_generator/rs_room_layout.gd
-## Геометрические соглашения комнат: с какой стороны стоит дверь и куда смещается
-## соседняя клетка сетки при раскладке слоя.
+## Геометрические соглашения комнат: к какой стене прижата дверь.
 ##
 ## Общее место для рантайма (RunManager расставляет комнаты слоя и раздаёт рёбра
 ## по дверям) и редакторского инструмента (проверка сцен комнат): правило «где
 ## север» должно быть ОДНО, иначе инструмент будет проверять не то, что делает
 ## игра.
 ##
+## Стена двери — сторона клетки квадратной сетки (SquareGridTopology.Side):
+## комната стоит в клетке плана, и дверь смотрит в соседа за этой стороной.
+## Имена стен остаются только для людей — slot_id дверей в сценах и сообщения
+## проверок.
+##
 ## Только статика — инстанцировать нечего.
 @tool
 class_name RS_RoomLayout
 extends RefCounted
 
-## Куда смещается соседняя клетка за дверью с этой стороны. Клетка — Vector2i(x, z);
-## north = −Z, south = +Z, west = −X, east = +X. Порядок ключей фиксирован: по
-## нему перебираются направления при раскладке, а она обязана быть детерминированной.
-const OFFSETS := {
-	&"north": Vector2i(0, -1),
-	&"east": Vector2i(1, 0),
-	&"south": Vector2i(0, 1),
-	&"west": Vector2i(-1, 0),
-}
-## Сторона, которой сосед из этого направления смотрит на нас.
-const OPPOSITE := {
-	&"north": &"south",
-	&"east": &"west",
-	&"south": &"north",
-	&"west": &"east",
-}
+## Имя стены по индексу стороны — так стены называют slot_id дверей в сценах.
+const SIDE_NAMES: Array[StringName] = [&"north", &"east", &"south", &"west"]
+
+
+## Имя стены стороны [param side]; "" — стороны нет.
+static func side_name(side: int) -> StringName:
+	return SIDE_NAMES[side] if side >= 0 and side < SIDE_NAMES.size() else &""
 
 
 ## Сторона комнаты, к которой прижата дверь. Определяем по ГЕОМЕТРИИ, а не по
 ## C_DoorSlot.slot_id: slot_id — лишь стабильный идентификатор слота, и в
 ## пресетах (vertical_hub_*) он сплошь и рядом не совпадает с реальной стеной.
-static func door_direction(door: Node3D, room: Node) -> StringName:
+## GridTopology.NO_SIDE — двери или комнаты нет.
+static func door_side(door: Node3D, room: Node) -> int:
 	if door == null or room == null:
-		return &""
+		return GridTopology.NO_SIDE
 	var offset := origin_relative_to(door, room)
 	if absf(offset.x) >= absf(offset.z):
-		return &"east" if offset.x > 0.0 else &"west"
-	return &"south" if offset.z > 0.0 else &"north"
+		return SquareGridTopology.Side.EAST if offset.x > 0.0 else SquareGridTopology.Side.WEST
+	return SquareGridTopology.Side.SOUTH if offset.z > 0.0 else SquareGridTopology.Side.NORTH
 
 
 ## Положение узла относительно корня комнаты. global_transform не годится:
@@ -93,38 +89,39 @@ static func slot_id_of(entity: Entity) -> StringName:
 
 
 ## Стороны, с которых у комнаты есть дверь (без повторов).
-static func door_directions(room: Node) -> Array[StringName]:
-	var directions: Array[StringName] = []
+static func door_sides(room: Node) -> Array[int]:
+	var sides: Array[int] = []
 	for door in door_entities(room):
-		var direction := door_direction(door as Node as Node3D, room)
-		if direction != &"" and not directions.has(direction):
-			directions.append(direction)
-	return directions
+		var side := door_side(door as Node as Node3D, room)
+		if side != GridTopology.NO_SIDE and not sides.has(side):
+			sides.append(side)
+	return sides
 
 
 ## Кэш «путь сцены → стороны дверей». Стороны зависят ТОЛЬКО от сцены, не от
 ## узла графа, поэтому считаются один раз за запуск.
-static var _directions_by_scene: Dictionary[String, Array] = {}
+static var _sides_by_scene: Dictionary[String, Array] = {}
 
 
 ## Стороны дверей комнаты по пути её сцены — без инстанцирования на каждый вызов.
+## Массив из кэша общий: зовущий, которому нужно его менять, делает копию.
 ##
 ## Ради этого кэша всё и затевалось: раскладка слоя (RS_LayerPlan)
 ## переставала требовать заспавненные комнаты и стала считаться для ЛЮБОГО слоя —
 ## это нужно карте комплекса, которая рисует и незагруженные слои. Побочно
 ## ускорился и сам спавн: раньше каждый узел инстанцировал свою комнату только
 ## чтобы посчитать двери, хотя один пресет повторяется по слою многократно.
-static func door_directions_of_scene(scene_path: String) -> Array[StringName]:
-	if _directions_by_scene.has(scene_path):
-		return _directions_by_scene[scene_path]
+static func door_sides_of_scene(scene_path: String) -> Array[int]:
+	if _sides_by_scene.has(scene_path):
+		return _sides_by_scene[scene_path]
 
-	var directions: Array[StringName] = []
+	var sides: Array[int] = []
 	if scene_path != "" and ResourceLoader.exists(scene_path):
 		var room := (load(scene_path) as PackedScene).instantiate()
-		directions = door_directions(room)
+		sides = door_sides(room)
 		room.free()
-	_directions_by_scene[scene_path] = directions
-	return directions
+	_sides_by_scene[scene_path] = sides
+	return sides
 
 
 ## Кэш «путь сцены → половина габарита». Как и стороны дверей, зависит только от
@@ -134,8 +131,8 @@ static var _half_extent_by_scene: Dictionary[String, float] = {}
 
 ## Половина габарита комнаты в метрах — по тому, как далеко от центра стоят её
 ## двери. Двери прижаты к стенам, так что это и есть расстояние до стены. Нужна
-## коробке пикинга комнаты в «Генераторе мира»: клетка раскладки (18 м) у комнат
-## с разной геометрией заполнена по-разному, а клик должен ловить саму комнату.
+## коробке пикинга комнаты в «Генераторе мира»: клетка раскладки у комнат с
+## разной геометрией заполнена по-разному, а клик должен ловить саму комнату.
 ##
 ## 0.0 — дверей нет, мерить нечем; зовущий решает, что с этим делать.
 static func half_extent_of_scene(scene_path: String) -> float:
@@ -181,6 +178,6 @@ static func door_count_of_scene(scene_path: String) -> int:
 ## редактора. Зовётся из вкладки на пересборку, рантайму не нужен вовсе:
 ## RunManager инстанцирует граф ровно один раз за забег.
 static func clear_scene_cache() -> void:
-	_directions_by_scene.clear()
+	_sides_by_scene.clear()
 	_half_extent_by_scene.clear()
 	_door_count_by_scene.clear()

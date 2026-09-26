@@ -44,7 +44,7 @@ func rebuild(view: LayerView) -> void:
 		var room := (load(node_data.room_scene_path) as PackedScene).instantiate()
 		var spatial := room as Node3D
 		if spatial:
-			spatial.position = view.plan.positions.get(node_data.id, Vector3.ZERO)
+			spatial.position = view.plan.position_of(node_data.id)
 		add_child(room)
 		_rooms[node_data.id] = room
 	if view.kit != null and view.plan != null:
@@ -71,7 +71,7 @@ func _build_tiles(view: LayerView) -> void:
 		if tile == null:
 			continue
 		# Позиция до add_child — как у игры (LayerStreamer._spawn_corridor).
-		tile.position = view.plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
+		tile.position = view.plan.embedding.cell_origin(cell)
 		add_child(tile)
 		var branch: StringName = view.plan.node_by_cell.get(cell, &"")
 		if not _tiles.has(branch):

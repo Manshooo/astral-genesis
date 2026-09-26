@@ -446,9 +446,7 @@ func use_door(door: Entity, target: StringName) -> void:
 	if room_data != null and room_data.door_teleports:
 		var player := _player_node()
 		if player:
-			PlayerPlacement.in_front_of(
-				player, door, room, plan_for_depth(current_depth), room_data.floor_index
-			)
+			PlayerPlacement.in_front_of(player, door, room, plan_for_depth(current_depth))
 		return
 	_open_door(door)
 

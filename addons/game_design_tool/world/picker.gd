@@ -66,11 +66,11 @@ static func _aabbs_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[AABB
 	if node_data.role != RS_LevelNode.Role.CORRIDOR:
 		return [_aabb_of(node_data, plan)]
 	var boxes: Array[AABB] = []
-	var half := RS_LayerPlan.CELL_SIZE * 0.5
+	var half := plan.embedding.cell_size * 0.5
 	for cell: Vector3i in plan.corridor_tiles:
 		if plan.node_by_cell.get(cell, &"") != node_data.id:
 			continue
-		var pos := plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
+		var pos := plan.embedding.cell_origin(cell)
 		boxes.append(AABB(
 			Vector3(pos.x - half, pos.y - AABB_BELOW, pos.z - half),
 			Vector3(half * 2.0, AABB_BELOW + AABB_ABOVE, half * 2.0)
@@ -79,7 +79,7 @@ static func _aabbs_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[AABB
 
 
 static func _aabb_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> AABB:
-	var pos: Vector3 = plan.positions.get(node_data.id, Vector3.ZERO)
+	var pos := plan.position_of(node_data.id)
 	var half_extent := RS_RoomLayout.half_extent_of_scene(node_data.room_scene_path)
 	half_extent = (half_extent + HALF_EXTENT_PADDING) if half_extent > 0.0 else HALF_EXTENT_FALLBACK
 	return AABB(

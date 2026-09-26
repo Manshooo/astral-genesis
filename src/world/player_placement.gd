@@ -54,14 +54,14 @@ static func in_corridor(player: Node3D, tiles: Array) -> void:
 ## На тайл коридора за дверью [param door] — для комнат, у которых проёма за
 ## дверью нет (RS_LevelNode.door_teleports).
 static func in_front_of(
-	player: Node3D, door: Entity, room: LayerStreamer.SpawnedRoom, plan: RS_LayerPlan, floor_index: int
+	player: Node3D, door: Entity, room: LayerStreamer.SpawnedRoom, plan: RS_LayerPlan
 ) -> void:
-	var side := RS_RoomLayout.door_direction(door as Node as Node3D, room.entity)
-	var cell: Vector2i = (
-		plan.cells.get(room.node_id, Vector2i.ZERO) + RS_RoomLayout.OFFSETS.get(side, Vector2i.ZERO)
-	)
+	var side := RS_RoomLayout.door_side(door as Node as Node3D, room.entity)
+	var cell: Vector3i = plan.cells.get(room.node_id, Vector3i.ZERO)
+	if side != GridTopology.NO_SIDE:
+		cell = plan.topology.neighbour(cell, side)
 	player.global_position = (
-		plan.cell_position(cell, floor_index) + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
+		plan.embedding.cell_origin(cell) + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
 	)
 
 
@@ -80,10 +80,9 @@ static func arrival_point(door: Entity, room_node: Node3D, spawn_point: Node3D) 
 	var into_room := Vector3.ZERO
 	# У портала стены нет — он стоит посреди комнаты, и «перпендикулярно стене»
 	# для него бессмысленно. Отходим от него к центру комнаты.
-	var direction := &"" if door is E_VerticalPortal else RS_RoomLayout.door_direction(door_node, room_node)
-	if direction != &"":
-		var offset: Vector2i = RS_RoomLayout.OFFSETS[direction]
-		into_room = -Vector3(offset.x, 0.0, offset.y)  # внутрь = против стороны двери
+	var side := GridTopology.NO_SIDE if door is E_VerticalPortal else RS_RoomLayout.door_side(door_node, room_node)
+	if side != GridTopology.NO_SIDE:
+		into_room = -Vector3(SquareGridTopology.OFFSETS[side])  # внутрь = против стороны двери
 	else:
 		# Сторону определить не вышло — отступаем к центру комнаты.
 		into_room = room_origin - door_origin
