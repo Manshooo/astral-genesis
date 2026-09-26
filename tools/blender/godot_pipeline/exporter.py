@@ -63,14 +63,31 @@ def objects_of(collection, recursive=True):
 
 
 def materials_of(objects):
+    """Материалы, которые реально окажутся в .glb.
+
+    Слотов объекта мало: у объекта со сборщиком на Geometry Nodes слоты пустые,
+    а материал приходит из геометрии, которую нода взяла у других объектов.
+    Экспорт с применёнными модификаторами пишет именно вычисленный меш, поэтому
+    и материалы берутся оттуда — иначе ссылка use_external не пишется, и материал
+    в Godot тихо становится внутренним.
+    """
+    from .physics import PREVIEW_MATERIAL
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
     materials = []
     seen = set()
     for obj in objects:
-        for slot in getattr(obj, "material_slots", []):
-            mat = slot.material
-            if mat is not None and mat.name not in seen:
-                seen.add(mat.name)
-                materials.append(mat)
+        candidates = [slot.material for slot in getattr(obj, "material_slots", [])]
+        if obj.type == 'MESH' and any(mod.type == 'NODES' for mod in obj.modifiers):
+            try:
+                candidates.extend(obj.evaluated_get(depsgraph).data.materials)
+            except (RuntimeError, ReferenceError):
+                pass  # объекта нет в текущем слое вида — остаются слоты
+        for mat in candidates:
+            if mat is None or mat.name in seen or mat.name == PREVIEW_MATERIAL:
+                continue
+            seen.add(mat.name)
+            materials.append(mat)
     return materials
 
 
@@ -148,6 +165,36 @@ def _find_layer_collection(layer_collection, collection):
         if found is not None:
             return found
     return None
+
+
+@contextmanager
+def without_preview_material(objects):
+    """Снять служебную подсветку с прокси на время экспорта.
+
+    Материал нужен только вьюпорту Blender, но в слоте меша он уезжает в .glb, и
+    там его уже не отличить от настоящего: импорт с «Extract Once» заводит ему
+    .tres на каждом холодном импорте. Мало не ссылаться на него — его не должно
+    быть в файле.
+    """
+    from .physics import PREVIEW_MATERIAL
+
+    restore = []
+    for obj in objects:
+        slots = getattr(getattr(obj, "data", None), "materials", None)
+        if slots is None:
+            continue
+        for index, mat in enumerate(slots):
+            if mat is not None and mat.name == PREVIEW_MATERIAL:
+                restore.append((slots, index, mat))
+                slots[index] = None
+    try:
+        yield
+    finally:
+        for slots, index, mat in restore:
+            try:
+                slots[index] = mat
+            except ReferenceError:
+                pass
 
 
 @contextmanager
@@ -295,7 +342,8 @@ def export_asset(context, prefs, collection, root: str, profile) -> AssetResult:
     paths.ensure_dir(abs_dir)
 
     renames = suffix_renames(objects, materials, actions)
-    with visible_for_export(context.view_layer, collection, objects):
+    with visible_for_export(context.view_layer, collection, objects), \
+            without_preview_material(objects):
         with naming.renamed(renames) as collisions:
             for wanted, got in collisions:
                 result.note("name collision: wanted %r, Blender assigned %r" % (wanted, got))

@@ -10,6 +10,7 @@ than debugging them in the engine.
 import os
 
 import bpy
+from mathutils import Vector
 
 from . import exporter, paths
 from .naming import INVALID_NODE_CHARS, has_manual_suffix, object_export_name
@@ -67,13 +68,94 @@ def validate(context, prefs, collections):
             issues.append(Issue(WARNING, name, "collection is empty"))
             continue
 
-        _check_names(issues, name, objects)
+        file_stem = os.path.splitext(os.path.basename(abs_file))[0]
+        _check_names(issues, name, objects, file_stem)
         _check_meshes(issues, name, objects)
         _check_armatures(issues, name, objects, profile)
         _check_materials(issues, name, objects, profile)
         _check_physics(issues, name, objects, profile)
+        _check_cell(issues, name, collection, objects, profile)
 
     return issues
+
+
+def _export_origin(collection, objects):
+    """Точка, которая станет началом координат .glb.
+
+    Повторяет экспортёр glTF: «Export at Origin» ставит в ноль среднее положение
+    корневых объектов коллекции, а не центр габарита. Считать габарит от другой
+    точки значило бы проверять не тот файл, что уедет в Godot.
+    """
+    if not collection.godot.at_center:
+        return Vector()
+    members = set(objects)
+    roots = [obj for obj in objects if obj.parent not in members]
+    if not roots:
+        return Vector()
+    total = Vector()
+    for obj in roots:
+        total += obj.matrix_world.translation
+    return total / len(roots)
+
+
+def _visual_points(obj, depsgraph):
+    """Вершины меша в мировых координатах — после модификаторов, если выйдет."""
+    try:
+        evaluated = obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+    except (RuntimeError, ReferenceError):
+        evaluated, mesh = None, obj.data
+    matrix = obj.matrix_world
+    points = [matrix @ vertex.co for vertex in mesh.vertices]
+    if evaluated is not None:
+        evaluated.to_mesh_clear()
+    return points
+
+
+def _check_cell(issues, asset, collection, objects, profile):
+    """Контракт клетки кита: генератор ставит тайл трансформом, ничего не подгоняя.
+
+    Выступ за грань клетки даже на сантиметры при повороте тайла переезжает на
+    другую сторону и складывается с погрешностью соседа — это видимый шов, а
+    лучевые проверки в игре сантиметров не ловят. Поэтому габарит сверяется по
+    вершинам, с допуском в миллиметр.
+    """
+    half = profile.cell_size / 2.0
+    height = profile.cell_height
+    if half <= 0.0 and height <= 0.0:
+        return
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    origin = _export_origin(collection, objects)
+    points = []
+    for obj in objects:
+        # Прокси коллизий спрятаны от рендера и в Godot превращаются в формы, а
+        # не в геометрию; «не импортировать» не доезжает вовсе — ни свойством, ни
+        # суффиксом, по старинке вписанным в имя.
+        if (obj.type != 'MESH' or obj.hide_render or obj.godot.collision == 'NOIMP'
+                or has_manual_suffix(obj.name) == "-noimp"):
+            continue
+        points.extend(point - origin for point in _visual_points(obj, depsgraph))
+    if not points:
+        return
+
+    tolerance = 1e-3
+    if half > 0.0:
+        for axis, label in ((0, "X"), (1, "Y")):
+            low = min(point[axis] for point in points)
+            high = max(point[axis] for point in points)
+            overshoot = max(-half - low, high - half)
+            if overshoot > tolerance:
+                issues.append(Issue(WARNING, asset,
+                                    "geometry spans %s %.3f..%.3f, %.3f m past the cell edge "
+                                    "(±%.2f); a rotated tile will not meet its neighbour"
+                                    % (label, low, high, overshoot, half)))
+    if height > 0.0:
+        top = max(point.z for point in points)
+        if top > height + tolerance:
+            issues.append(Issue(WARNING, asset,
+                                "geometry reaches %.3f m above the origin, over the %.2f m "
+                                "height limit" % (top, height)))
 
 
 def _check_ragdoll_bone(issues, asset, obj, settings, profile):
@@ -192,9 +274,24 @@ def _check_physics(issues, asset, objects, profile):
                                 % (obj.name, len(obj.data.polygons))))
 
 
-def _check_names(issues, asset, objects):
+def _check_names(issues, asset, objects, file_stem):
     exported = {}
     for obj in objects:
+        # godotengine/godot#112405: узел с именем файла заставляет Godot дописать
+        # цифру корню сцены, и NodePath в .tscn начинают указывать мимо.
+        if object_export_name(obj, obj.godot) == file_stem:
+            issues.append(Issue(WARNING, asset,
+                                "%r has the same name as its file %s; Godot renames the scene "
+                                "root to %s2. Drop the SM_/SK_ prefix from the object"
+                                % (obj.name, file_stem, file_stem)))
+        # glTF берёт имя меша из данных, а не из объекта: «Cube.011» доедет до
+        # Godot как Cube.011. Общие данные (инстансы) — законно, их не трогаем.
+        data = getattr(obj, "data", None)
+        if (obj.type == 'MESH' and data is not None and data.users == 1
+                and data.name != obj.name):
+            issues.append(Issue(INFO, asset,
+                                "%r keeps mesh data named %r; the mesh reaches Godot under the "
+                                "data name" % (obj.name, data.name)))
         bad = [c for c in obj.name if c in INVALID_NODE_CHARS]
         if bad:
             issues.append(Issue(WARNING, asset,
@@ -215,13 +312,18 @@ def _check_names(issues, asset, objects):
 
 
 def _check_meshes(issues, asset, objects):
+    from .physics import PREVIEW_MATERIAL
+
     for obj in objects:
         if obj.type != 'MESH':
             continue
         mesh = obj.data
         if obj.godot.collision in ('COLONLY', 'CONVCOLONLY', 'NAVMESH', 'OCCONLY'):
             continue  # visual data is discarded anyway
-        if mesh.materials and not mesh.uv_layers:
+        # Служебная подсветка прокси — не материал: прокси в Godot становится
+        # формой, и развёртка ему не нужна. Без этого каждый прокси шумел бы.
+        real = [m for m in mesh.materials if m is not None and m.name != PREVIEW_MATERIAL]
+        if real and not mesh.uv_layers:
             issues.append(Issue(WARNING, asset,
                                 "%r has materials but no UV map" % obj.name))
         if len(mesh.uv_layers) > 2:

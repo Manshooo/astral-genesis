@@ -52,6 +52,11 @@ CASES = [
     ("MAT_door Emission", "T_door_emission"),
     ("MAT_room_base Base Color", "T_room_base_albedo"),
     ("hero_skin normal", "T_hero_skin_n"),
+    # Ucupaint называет запечённое по дереву слоёв, а не по материалу.
+    ("Ucupaint MAT_architect_artifact Color", "T_architect_artifact_albedo"),
+    ("UCU_MAT_Door Normal", "T_Door_n"),
+    # Уже испорченное прежним ренеймером имя чинится повторным прогоном.
+    ("T_Ucupaint_MAT_architect_artifact_albedo", "T_architect_artifact_albedo"),
 ]
 for source, expected in CASES:
     got = ucupaint.target_name(source)
@@ -329,6 +334,115 @@ for profile in prefs.profiles:
 bpy.ops.godot_pipeline.install_import_script()
 failed = godot_pipeline.export_all_headless()
 check(failed == 0, "экспорт без ошибок (%d провал(ов))" % failed)
+
+
+# -- 9. сборщик на Geometry Nodes, имена, контракт клетки ---------------------
+# После экспорта фикстуры намеренно: всё, что заводится здесь, в .glb для
+# Godot-половины не попадает.
+
+print("\n=== 9. сборщик на Geometry Nodes, имена, клетка ===")
+from godot_pipeline.exporter import materials_of                 # noqa: E402
+from godot_pipeline.physics import PREVIEW_MATERIAL              # noqa: E402
+
+kit_mat = bpy.data.materials.new("MAT_kit")
+piece_mesh = bpy.data.meshes.new("kit_piece")
+piece_mesh.from_pydata([(-1.0, -1.0, 0.0), (1.0, -1.0, 0.0), (1.0, 1.0, 0.0), (-1.0, 1.0, 0.0)],
+                       [], [(0, 1, 2, 3)])
+piece_mesh.materials.append(kit_mat)
+piece = bpy.data.objects.new("kit_piece", piece_mesh)
+scene.collection.objects.link(piece)
+
+# Сборщик: берёт геометрию детали через Object Info — ровно как сборщик комнат.
+assembler = bpy.data.node_groups.new("GN_test_assembler", 'GeometryNodeTree')
+assembler.is_modifier = True
+assembler.interface.new_socket("Geometry", in_out='INPUT', socket_type='NodeSocketGeometry')
+assembler.interface.new_socket("Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
+group_out = assembler.nodes.new('NodeGroupOutput')
+info = assembler.nodes.new('GeometryNodeObjectInfo')
+info.inputs["Object"].default_value = piece
+assembler.links.new(info.outputs["Geometry"], group_out.inputs[0])
+
+tile_coll = bpy.data.collections.new("SM_room_T")
+scene.collection.children.link(tile_coll)
+tile = bpy.data.objects.new("room_T", bpy.data.meshes.new("room_T"))
+tile_coll.objects.link(tile)
+tile.modifiers.new("assembler", 'NODES').node_group = assembler
+bpy.context.view_layer.update()
+
+check([m.name for m in materials_of([tile])] == ["MAT_kit"],
+      "материал сборщика найден в вычисленном меше (получено %s)"
+      % [m.name for m in materials_of([tile])])
+
+preview = bpy.data.materials.get(PREVIEW_MATERIAL) or bpy.data.materials.new(PREVIEW_MATERIAL)
+proxy = bpy.data.objects.new("CO_room_T_Box", bpy.data.meshes.new("CO_room_T_Box"))
+proxy.data.materials.append(preview)
+tile_coll.objects.link(proxy)
+check(PREVIEW_MATERIAL not in [m.name for m in materials_of([tile, proxy])],
+      "служебный материал прокси не считается материалом ассета")
+
+chunk = next(p for p in prefs.profiles if p.name == "Level Chunk")
+chunk.cell_size = 18.0
+chunk.cell_height = 20.0
+tile_coll.godot.is_asset = True
+tile_coll.godot.profile = "Level Chunk"
+tile_coll.godot.dest_dir = "assets"
+
+
+def tile_messages():
+    return [i.message for i in validate_mod.validate(bpy.context, prefs, [tile_coll])]
+
+
+got = tile_messages()
+check(not any("cell edge" in m or "height limit" in m for m in got),
+      "тайл внутри клетки претензий не вызывает")
+
+piece_mesh.vertices[1].co.x = 9.5
+piece_mesh.update()
+bpy.context.view_layer.update()
+check(any("cell edge" in m for m in tile_messages()),
+      "выступ за грань клетки ловится по вычисленному мешу")
+piece_mesh.vertices[1].co.x = 1.0
+piece_mesh.vertices[2].co.z = 21.0
+piece_mesh.update()
+bpy.context.view_layer.update()
+check(any("height limit" in m for m in tile_messages()), "превышение высоты ловится")
+piece_mesh.vertices[2].co.z = 0.0
+piece_mesh.update()
+
+chunk.cell_size = 0.0
+chunk.cell_height = 0.0
+piece_mesh.vertices[1].co.x = 9.5
+piece_mesh.update()
+bpy.context.view_layer.update()
+check(not any("cell edge" in m for m in tile_messages()), "с нулевой клеткой проверка молчит")
+
+check(not any("same name as its file" in m for m in tile_messages()),
+      "объект без префикса ассета не путается с файлом")
+tile.name = "SM_room_T"
+got = tile_messages()
+check(any("same name as its file" in m for m in got), "объект с именем файла ловится")
+check(any("mesh data named" in m for m in got), "данные меша с чужим именем отмечены")
+tile.name = "room_T"
+
+print("--- служебный материал прокси не уезжает в .glb ---")
+import json                                                      # noqa: E402
+import struct                                                    # noqa: E402
+from godot_pipeline.exporter import asset_paths, export_asset    # noqa: E402
+
+piece_mesh.vertices[1].co.x = 1.0
+piece_mesh.update()
+result = export_asset(bpy.context, prefs, tile_coll, OUT, chunk)
+glb_path = asset_paths(OUT, chunk, tile_coll)[0]
+check(result.status != "failed" and os.path.isfile(glb_path),
+      "тайл экспортирован (%s)" % result.status)
+with open(glb_path, "rb") as handle:
+    handle.read(12)
+    length, _ = struct.unpack("<II", handle.read(8))
+    gltf = json.loads(handle.read(length))
+names = [m.get("name") for m in gltf.get("materials", [])]
+check(PREVIEW_MATERIAL not in names, "в .glb нет %s (материалы: %s)" % (PREVIEW_MATERIAL, names))
+check("MAT_kit" in names, "настоящий материал сборщика в .glb на месте")
+check(proxy.data.materials[0] == preview, "после экспорта подсветка прокси вернулась в слот")
 
 
 print("")

@@ -517,11 +517,17 @@ DISPLAY_ITEMS = [
 ]
 
 
+# Имя служебного материала подсветки прокси. Он живёт только во вьюпорте Blender,
+# но прокси экспортируются вместе с ним, поэтому экспорт обязан знать его в лицо:
+# иначе он заводит ему .tres и ссылки use_external, как настоящему материалу.
+PREVIEW_MATERIAL = "GP_CollisionPreview"
+
+
 def preview_material():
     """Shared viewport-display material, so proxies read as one thing."""
-    material = bpy.data.materials.get("GP_CollisionPreview")
+    material = bpy.data.materials.get(PREVIEW_MATERIAL)
     if material is None:
-        material = bpy.data.materials.new("GP_CollisionPreview")
+        material = bpy.data.materials.new(PREVIEW_MATERIAL)
         material.use_fake_user = True
     material.diffuse_color = DISPLAY_COLOR
     material.roughness = 1.0

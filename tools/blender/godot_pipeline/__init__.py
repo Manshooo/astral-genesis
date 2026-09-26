@@ -22,7 +22,7 @@ import bpy
 bl_info = {
     "name": "Godot Pipeline",
     "author": "Yanislav Pichugin <yanislavpic@gmail.com>",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > Godot, Properties > Collection/Object/Material",
     "description": "Per-collection glTF asset delivery pipeline for Godot 4",

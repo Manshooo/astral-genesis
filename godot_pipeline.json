@@ -77,7 +77,9 @@
       "generate_material_stubs": true,
       "link_external_materials": true,
       "copy_textures": true,
-      "texture_dir": "assets/textures"
+      "texture_dir": "assets/textures",
+      "cell_size": 18.0,
+      "cell_height": 20.0
     },
     {
       "name": "Prop",
@@ -142,7 +144,7 @@
       "optimize_animation": true,
       "write_import_file": true,
       "create_import_file": false,
-      "root_type": "STATIC",
+      "root_type": "NONE",
       "root_scale": 1.0,
       "ensure_tangents": true,
       "generate_lods": false,
