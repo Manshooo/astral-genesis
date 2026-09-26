@@ -171,7 +171,8 @@ func _check_screen() -> void:
 	var misses: Array[String] = []
 	for view in screen.floor_views():
 		for node_data in view.rooms:
-			var point := view.to_screen(Vector2(view.plan.cells[node_data.id]))
+			var cell: Vector3i = view.plan.cells[node_data.id]
+			var point := view.to_screen(Vector2(cell.x, cell.z))
 			if view.node_at_point(point) != node_data.id:
 				projected = false
 				misses.append("%s→%s" % [node_data.id, view.node_at_point(point)])

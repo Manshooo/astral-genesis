@@ -72,7 +72,7 @@ func rebuild(view: LayerView) -> void:
 
 		var mesh_instance := MeshInstance3D.new()
 		mesh_instance.mesh = sphere_mesh
-		mesh_instance.position = view.plan.positions.get(node_data.id, Vector3.ZERO) + Vector3(0, NODE_HEIGHT, 0)
+		mesh_instance.position = view.plan.position_of(node_data.id) + Vector3(0, NODE_HEIGHT, 0)
 		mesh_instance.material_override = _unshaded_material(color)
 		add_child(mesh_instance)
 		_spheres[node_data.id] = mesh_instance
@@ -105,7 +105,7 @@ func _rebuild_edges(view: LayerView, on_layer: Dictionary) -> void:
 	mesh.surface_begin(Mesh.PRIMITIVE_LINES)
 	var drawn: Dictionary[String, bool] = {}
 	for node_data: RS_LevelNode in view.nodes:
-		var from: Vector3 = view.plan.positions.get(node_data.id, Vector3.ZERO) + Vector3(0, NODE_HEIGHT, 0)
+		var from: Vector3 = view.plan.position_of(node_data.id) + Vector3(0, NODE_HEIGHT, 0)
 		for conn: RS_LevelConnection in node_data.connections:
 			if not on_layer.get(conn.target_node_id, false):
 				continue  # ведёт на другую глубину — здесь рисовать нечем
@@ -113,7 +113,7 @@ func _rebuild_edges(view: LayerView, on_layer: Dictionary) -> void:
 			if drawn.has(pair_key):
 				continue  # ребро хранится на обоих концах — не дублируем линию
 			drawn[pair_key] = true
-			var to: Vector3 = view.plan.positions.get(conn.target_node_id, Vector3.ZERO) + Vector3(0, NODE_HEIGHT, 0)
+			var to: Vector3 = view.plan.position_of(conn.target_node_id) + Vector3(0, NODE_HEIGHT, 0)
 			var color := _edge_color(conn)
 			mesh.surface_set_color(color)
 			mesh.surface_add_vertex(from)

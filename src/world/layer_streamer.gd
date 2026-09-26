@@ -201,7 +201,7 @@ func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 			continue
 		# Позиция ДО входа в дерево — как и у комнат (_spawn_room): иначе
 		# коллизия тайла успеет зарегистрироваться в начале координат.
-		tile.position = plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
+		tile.position = plan.embedding.cell_origin(cell)
 		parent.add_child(tile)
 		tiles.append(tile)
 	corridor_tiles[node_data.id] = tiles
@@ -235,7 +235,7 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	# GDScript не пропускает.
 	var spatial := entity as Node as Node3D
 	if spatial:
-		spatial.position = plan.positions.get(node_data.id, Vector3.ZERO)
+		spatial.position = plan.position_of(node_data.id)
 
 	ECS.world.add_entity(entity)
 
@@ -307,10 +307,10 @@ func _bind_doors(spawned: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPl
 
 	var sides: Dictionary = plan.door_sides.get(node_data.id, {})
 	for door in doors:
-		var side := RS_RoomLayout.door_direction(door as Node as Node3D, spawned.entity)
+		var side := RS_RoomLayout.door_side(door as Node as Node3D, spawned.entity)
 		var target: StringName = sides.get(side, &"")
 		if target == &"":
-			push_warning("LayerStreamer: у двери '%s' узла '%s' нет ветки за стороной %s" % [door.name, node_data.id, side])
+			push_warning("LayerStreamer: у двери '%s' узла '%s' нет ветки за стороной %s" % [door.name, node_data.id, RS_RoomLayout.side_name(side)])
 			_seal_door(door)
 			continue
 		var portal := C_DoorPortal.new()

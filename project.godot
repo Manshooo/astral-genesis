@@ -60,6 +60,7 @@ folder_colors={
 "res://src/autoloads/": "gray",
 "res://src/components/": "yellow",
 "res://src/entities/": "green",
+"res://src/grid/": "teal",
 "res://src/observers/": "orange",
 "res://src/resources/": "gray",
 "res://src/systems/": "purple",

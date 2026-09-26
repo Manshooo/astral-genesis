@@ -291,7 +291,7 @@ func validate_preset(preset: RS_RoomPreset) -> Array[String]:
 	var by_direction := {}
 	var by_slot_id := {}
 	for door in doors:
-		var direction := RS_RoomLayout.door_direction(door as Node as Node3D, room)
+		var direction := RS_RoomLayout.side_name(RS_RoomLayout.door_side(door as Node as Node3D, room))
 		by_direction[direction] = by_direction.get(direction, 0) + 1
 		var slot_id := RS_RoomLayout.slot_id_of(door)
 		if slot_id == &"":

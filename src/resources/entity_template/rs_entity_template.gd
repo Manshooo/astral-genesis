@@ -77,7 +77,7 @@ const LABELS := {
 ## с полностью укомплектованной базовой сценой врало бы.
 ##
 ## Сцену НЕ инстанцируем: читаем состояние упаковки (тот же приём, что в
-## RS_RoomLayout.door_directions_of_scene). Док зовёт это на каждый шаблон при
+## RS_RoomLayout.door_sides_of_scene). Док зовёт это на каждый шаблон при
 ## обновлении списка, а список обновляется при открытии редактора.
 func component_count() -> int:
 	return components.size() + _base_scene_component_count()

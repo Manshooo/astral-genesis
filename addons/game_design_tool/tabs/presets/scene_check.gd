@@ -74,7 +74,7 @@ func _door_lines(preset: RS_RoomPreset) -> Array[String]:
 		return lines
 	var room := preset.scene.instantiate()
 	for door in RS_RoomLayout.door_entities(room):
-		var direction := RS_RoomLayout.door_direction(door as Node as Node3D, room)
+		var direction := RS_RoomLayout.side_name(RS_RoomLayout.door_side(door as Node as Node3D, room))
 		var slot_id := RS_RoomLayout.slot_id_of(door)
 		var mark := "" if slot_id == direction else "   → по стене подошёл бы «%s»" % direction
 		lines.append(

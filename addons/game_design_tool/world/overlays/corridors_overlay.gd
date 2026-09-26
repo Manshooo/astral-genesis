@@ -33,22 +33,25 @@ func rebuild(view: LayerView) -> void:
 	clear()
 	if view.plan == null or view.plan.corridor_tiles.is_empty():
 		return
-	var half := RS_LayerPlan.CELL_SIZE * 0.5
-	for cell: Vector3i in view.plan.corridor_tiles:
-		var branch: StringName = view.plan.node_by_cell.get(cell, &"")
-		var center := view.plan.cell_position(Vector2i(cell.x, cell.z), cell.y) + Vector3(0.0, SLAB_LIFT, 0.0)
+	var plan := view.plan
+	for cell: Vector3i in plan.corridor_tiles:
+		var branch: StringName = plan.node_by_cell.get(cell, &"")
+		var origin := plan.embedding.cell_origin(cell)
+		var center := origin + Vector3(0.0, SLAB_LIFT, 0.0)
 		var material := _material_for(branch)
 		_add_slab(branch, center, Vector3(SLAB_WIDTH, SLAB_HEIGHT, SLAB_WIDTH), material)
-		var mask: int = view.plan.corridor_tiles[cell]
-		for side: StringName in RS_LayerPlan.SIDE_BITS:
-			if mask & RS_LayerPlan.SIDE_BITS[side] == 0:
+		var mask: int = plan.corridor_tiles[cell]
+		for side in plan.topology.side_count(cell):
+			if mask & (1 << side) == 0:
 				continue
-			var offset: Vector2i = RS_RoomLayout.OFFSETS[side]
-			var dir := Vector3(offset.x, 0.0, offset.y)
-			var length := half - SLAB_WIDTH * 0.5
+			# Грань клетки — на полпути к центру соседа: так рукав знает длину из
+			# вложения, а не из зашитого здесь размера клетки.
+			var to_face := (plan.embedding.cell_origin(plan.topology.neighbour(cell, side)) - origin) * 0.5
+			var dir := to_face.normalized()
+			var length := to_face.length() - SLAB_WIDTH * 0.5
 			var arm_center := center + dir * (SLAB_WIDTH * 0.5 + length * 0.5)
 			var size := Vector3(
-				length if offset.x != 0 else SLAB_WIDTH, SLAB_HEIGHT, length if offset.y != 0 else SLAB_WIDTH
+				length if absf(dir.x) > 0.5 else SLAB_WIDTH, SLAB_HEIGHT, length if absf(dir.z) > 0.5 else SLAB_WIDTH
 			)
 			_add_slab(branch, arm_center, size, material)
 	set_selected(_selected_id)

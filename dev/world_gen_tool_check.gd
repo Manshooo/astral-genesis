@@ -113,11 +113,11 @@ func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void
 		if plan.node_by_cell[cell] == branch.id:
 			tile = cell
 			break
-	var above := plan.cell_position(Vector2i(tile.x, tile.z), tile.y) + Vector3(0.0, 50.0, 0.0)
+	var above := plan.embedding.cell_origin(tile) + Vector3(0.0, 50.0, 0.0)
 	_check("коридоры: клик по тайлу выделяет его ветку",
 		Picker.pick(above, Vector3.DOWN, layer_nodes, plan) == branch.id, str(tile))
 	var room_id := graph.entry_node_id
-	var over_room: Vector3 = plan.positions[room_id] + Vector3(0.0, 50.0, 0.0)
+	var over_room := plan.position_of(room_id) + Vector3(0.0, 50.0, 0.0)
 	_check("коридоры: клик по комнате выделяет комнату, а не огибающий её коридор",
 		Picker.pick(over_room, Vector3.DOWN, layer_nodes, plan) == room_id, "")
 
@@ -371,10 +371,11 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 		# над другом по одной сетке X/Z (связаны floor_hub — то же самое,
 		# что видит игрок), и луч издалека сверху честно нашёл бы ближайший
 		# по лучу этаж, а не тот, что проверяется. Коробки высотой 7 м при
-		# разносе FLOOR_SPACING=20 м не пересекаются, так что точка чуть выше
-		# пола комнаты гарантированно принадлежит только её собственной коробке.
+		# разносе этажей 20 м (level_height вложения) не пересекаются, так что
+		# точка чуть выше пола комнаты гарантированно принадлежит только её
+		# собственной коробке.
 		for node_data: RS_LevelNode in layer_nodes:
-			var pos: Vector3 = plan.positions[node_data.id]
+			var pos := plan.position_of(node_data.id)
 			var picked := Picker.pick(pos + Vector3(0, 3.0, 0), Vector3.DOWN, layer_nodes, plan)
 			_check(
 				"%s: пикинг узла %s находит его самого" % [label, node_data.id],

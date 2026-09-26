@@ -23,9 +23,9 @@ const PROBE_HEIGHT := 1.5
 ## Только статическая геометрия (слой static_colliders): объём прицеливания
 ## двери (interactives) шире самой двери и стенкой не является.
 const GEOMETRY_MASK := 1
-## Куда дотягивается отчёт о заходе за грань клетки: до грани и на полметра за
-## неё — то, что стоит в тамбуре тайла.
-const INTRUSION_PROBE := 9.0
+## Насколько по обе стороны грани клетки щупать пол на стыке: щель шире — уже
+## провал под мир.
+const SEAM_PROBE := 0.4
 
 var _save_backup := PackedByteArray()
 var _had_save := false
@@ -78,7 +78,7 @@ func _check_tiles() -> void:
 	for branch: StringName in RunManager.layer.corridor_tiles:
 		for tile: Node3D in RunManager.layer.corridor_tiles[branch]:
 			spawned += 1
-			var cell := _cell_of(tile.global_position)
+			var cell := plan.embedding.cell_at(tile.global_position)
 			var base := _base_mask(kit, tile.scene_file_path)
 			var turns := posmod(roundi(tile.rotation.y / (PI * 0.5)), 4)
 			if RS_CorridorKit.rotate_mask(base, turns) != plan.corridor_tiles.get(cell, -1) \
@@ -100,31 +100,33 @@ func _check_geometry() -> void:
 	var gaps: Array[String] = []
 	var hub := RunManager.current_graph.entry_node_id
 	for cell: Vector3i in plan.corridor_tiles:
-		var center := plan.cell_position(Vector2i(cell.x, cell.z), cell.y)
+		var center := plan.embedding.cell_origin(cell)
 		var mask: int = plan.corridor_tiles[cell]
-		for side: StringName in RS_LayerPlan.SIDE_BITS:
-			var offset: Vector2i = RS_RoomLayout.OFFSETS[side]
-			var dir := Vector3(offset.x, 0.0, offset.y)
+		for side in plan.topology.side_count(cell):
+			var to_face := _to_face(plan, cell, side)
+			var dir := to_face.normalized()
 			var from := center + Vector3(0.0, PROBE_HEIGHT, 0.0)
 			var hit := _ray(space, from, from + dir * PROBE_LENGTH)
-			var open: bool = mask & RS_LayerPlan.SIDE_BITS[side] != 0
+			var open: bool = mask & (1 << side) != 0
+			var side_name := RS_RoomLayout.side_name(side)
 			if open == not hit.is_empty():
-				walls_wrong.append("%s %s: %s" % [cell, side, "стена в проёме" if open else "дыра в стене"])
+				walls_wrong.append("%s %s: %s" % [cell, side_name, "стена в проёме" if open else "дыра в стене"])
 			if not open:
 				continue
 			# Пол по обе стороны грани клетки: щель на стыке — провал под мир.
-			var neighbour := Vector3i(cell.x + offset.x, cell.y, cell.z + offset.y)
+			var neighbour := plan.topology.neighbour(cell, side)
 			var neighbour_id: StringName = plan.node_by_cell.get(neighbour, &"")
 			if neighbour_id == hub:
 				continue
-			for along: float in [8.6, 9.4]:
+			var face := to_face.length()
+			for along: float in [face - SEAM_PROBE, face + SEAM_PROBE]:
 				var foot := center + dir * along
 				if _ray(space, foot + Vector3(0.0, 1.0, 0.0), foot + Vector3(0.0, -1.0, 0.0)).is_empty():
 					# Сцена соседа в выводе: щель почти всегда — меш комнаты без
 					# коллизии, и искать её по клетке пришлось бы руками.
 					var node := RunManager.current_graph.get_node_data(neighbour_id)
 					var scene := node.room_scene_path.get_file() if node and node.room_scene_path else "коридор"
-					gaps.append("%s %s +%.1f %s" % [cell, side, along, scene])
+					gaps.append("%s %s +%.1f %s" % [cell, side_name, along, scene])
 	_check("проёмы и стены тайлов совпадают с маской — по коллизии", walls_wrong.is_empty(),
 		", ".join(walls_wrong.slice(0, 4)))
 	_check("на стыках тайлов и комнат под ногами пол", gaps.is_empty(), ", ".join(gaps.slice(0, 4)))
@@ -140,16 +142,15 @@ func _check_geometry() -> void:
 func _report_intrusions(space: PhysicsDirectSpaceState3D, plan: RS_LayerPlan) -> void:
 	var found := {}
 	for cell: Vector3i in plan.corridor_tiles:
-		var center := plan.cell_position(Vector2i(cell.x, cell.z), cell.y) + Vector3(0.0, PROBE_HEIGHT, 0.0)
-		for side: StringName in RS_LayerPlan.SIDE_BITS:
-			if plan.corridor_tiles[cell] & RS_LayerPlan.SIDE_BITS[side] == 0:
+		var center := plan.embedding.cell_origin(cell) + Vector3(0.0, PROBE_HEIGHT, 0.0)
+		for side in plan.topology.side_count(cell):
+			if plan.corridor_tiles[cell] & (1 << side) == 0:
 				continue
-			var offset: Vector2i = RS_RoomLayout.OFFSETS[side]
-			var hit := _ray(space, center, center + Vector3(offset.x, 0.0, offset.y) * INTRUSION_PROBE)
+			# До самой грани — всё, что стоит в тамбуре тайла.
+			var hit := _ray(space, center, center + _to_face(plan, cell, side))
 			if hit.is_empty():
 				continue
-			var neighbour := Vector3i(cell.x + offset.x, cell.y, cell.z + offset.y)
-			var room: StringName = plan.node_by_cell.get(neighbour, &"")
+			var room: StringName = plan.node_by_cell.get(plan.topology.neighbour(cell, side), &"")
 			var node := RunManager.current_graph.get_node_data(room)
 			found[node.room_scene_path.get_file() if node else String(room)] = true
 	if not found.is_empty():
@@ -164,10 +165,10 @@ func _check_doors_bound() -> void:
 		var room = RunManager.layer.rooms[id]
 		var sides: Dictionary = plan.door_sides.get(id, {})
 		for door: Entity in room.doors:
-			var side := RS_RoomLayout.door_direction(door as Node as Node3D, room.entity)
+			var side := RS_RoomLayout.door_side(door as Node as Node3D, room.entity)
 			var portal := door.get_component(C_DoorPortal) as C_DoorPortal
 			if portal == null or portal.target_node_id != sides.get(side, &"-"):
-				wrong.append("%s:%s" % [id, side])
+				wrong.append("%s:%s" % [id, RS_RoomLayout.side_name(side)])
 		var node := RunManager.current_graph.get_node_data(id)
 		for conn: RS_LevelConnection in node.connections:
 			var target := RunManager.current_graph.get_node_data(conn.target_node_id)
@@ -319,12 +320,12 @@ func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3, mask: in
 	return space.intersect_ray(query)
 
 
-func _cell_of(position: Vector3) -> Vector3i:
-	return Vector3i(
-		roundi(position.x / RS_LayerPlan.CELL_SIZE),
-		roundi(position.y / RS_LayerPlan.FLOOR_SPACING),
-		roundi(position.z / RS_LayerPlan.CELL_SIZE),
-	)
+## От центра клетки до середины её грани за стороной [param side]. Грань — на
+## полпути к центру соседа: так пробы знают размер клетки из вложения плана, а
+## не из числа, зашитого в проверку.
+func _to_face(plan: RS_LayerPlan, cell: Vector3i, side: int) -> Vector3:
+	var next := plan.topology.neighbour(cell, side)
+	return (plan.embedding.cell_origin(next) - plan.embedding.cell_origin(cell)) * 0.5
 
 
 func _base_mask(kit: RS_CorridorKit, scene_path: String) -> int:

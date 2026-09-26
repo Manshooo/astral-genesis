@@ -256,8 +256,8 @@ func _handle_key(key: InputEventKey) -> void:
 ## есть, иначе — комната по центру экрана (тот же пикинг, что и по клику, но
 ## без самого клика), иначе — фиксированная точка перед камерой.
 func _orbit_pivot_hint() -> Vector3:
-	if _selected_id != &"" and _view.plan and _view.plan.positions.has(_selected_id):
-		return _view.plan.positions[_selected_id] + Vector3(0, ORBIT_PIVOT_HEIGHT, 0)
+	if _selected_id != &"" and _view.plan and _view.plan.cells.has(_selected_id):
+		return _view.plan.position_of(_selected_id) + Vector3(0, ORBIT_PIVOT_HEIGHT, 0)
 	return _pivot_ahead_of_camera()
 
 
