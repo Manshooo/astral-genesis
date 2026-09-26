@@ -56,8 +56,30 @@ func _ready() -> void:
 	_check_room_outline(library, host)
 	_check_restore_state()
 	_check_corridors(library, host)
+	_check_seed_sweep()
 
 	_finish()
+
+
+## «Прогон сидов» печатает метрики раскладки (RS_LayoutMetrics) — ровно те же, что
+## считаются по тем же сидам напрямую. Разойдись они — и дизайнер сравнивал бы
+## раскладки по цифрам, которых проверка corridor_layout_check не видит.
+func _check_seed_sweep() -> void:
+	var tab := WorldGen.new()
+	add_child(tab)
+	tab._seeds_spin.value = 3
+	tab._on_preview_pressed()
+
+	var config: RS_WorldGenConfig = tab._world_gen_config()
+	var expected := RS_LayoutMetrics.new()
+	for s in 3:
+		var graph := RS_LevelGraph.new().generate_run(s, tab._library, config)
+		for depth: int in RS_LevelGraph.DEPTHS:
+			expected.add(RS_LayoutMetrics.of_plan(RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)))
+	var report: String = tab._seeds_report.text
+	_check("прогон сидов: метрики раскладки те же, что по сидам напрямую",
+		report.contains("\n".join(expected.report_lines())), report.right(300))
+	tab.free()
 
 
 ## Коридоры во вкладке: оверлей «Коридоры» рисует ветку на каждую ветку плана;

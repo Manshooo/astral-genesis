@@ -652,8 +652,9 @@ func _refill_preset_section(preset: RS_RoomPreset) -> void:
 ## отсева — из RS_RoomPresetLibrary.explain_selection: жёсткие фильтры
 ## (портал/теги) от rng не зависят, поэтому цифры честные. Уникальные комнаты
 ## (хаб, выход) в отсеве не участвуют — их ставит конфиг, а не подбор, — и
-## считаются только в «Что выпало». Заодно — сколько тайлов коридора уходит на
-## этаж и каких кусков кита: это цена раскладки в арте.
+## считаются только в «Что выпало». Заодно — метрики коридорной раскладки: сколько
+## тайлов и каких кусков кита уходит на этаж (цена раскладки в арте) и насколько
+## коридор обволакивает комнаты.
 ##
 ## Прогон НЕ трогает ни _graph, ни вьюпорт: он строит свои графы и выбрасывает
 ## их. Иначе кнопка «Прогнать» незаметно подменяла бы слой под камерой на
@@ -677,9 +678,8 @@ func _on_preview_pressed() -> void:
 	var picks := {}  # label -> сколько раз реально выбран
 	var reasons := {}  # label -> { причина: сколько раз }
 	var degrees := {}  # дверей у комнаты -> сколько комнат
-	var pieces := {}  # кусок кита -> сколько тайлов
+	var layout := RS_LayoutMetrics.new()
 	var nodes_total := 0
-	var floors_total := 0
 	var failures := 0
 
 	for s in seeds:
@@ -687,12 +687,7 @@ func _on_preview_pressed() -> void:
 		for depth: int in RS_LevelGraph.DEPTHS:
 			var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
 			failures += plan.routing_failures.size()
-			var floors := {}
-			for cell: Vector3i in plan.corridor_tiles:
-				floors[cell.y] = true
-				var piece := _piece_name(plan.corridor_tiles[cell])
-				pieces[piece] = pieces.get(piece, 0) + 1
-			floors_total += floors.size()
+			layout.add(RS_LayoutMetrics.of_plan(plan))
 		var rng := RandomNumberGenerator.new()
 		rng.seed = s
 		for node: RS_LevelNode in graph.nodes.values():
@@ -720,43 +715,20 @@ func _on_preview_pressed() -> void:
 				reasons[label][reason] = reasons[label].get(reason, 0) + 1
 
 	_seeds_report.text = _preview_report(seeds, nodes_total, picks, reasons, degrees)
-	_seeds_report.text += _corridor_report(floors_total, pieces, failures)
+	_seeds_report.text += _corridor_report(layout, failures)
 	_set_status("Прогнано сидов: %d, комнат: %d" % [seeds, nodes_total])
 
 
-## Коридоры по всем прогнанным этажам: сколько тайлов на этаж и каких кусков.
-## Отказов трассы быть не должно (dev/corridor_layout_check), но если правка ручек
-## их вернула, увидеть это надо здесь, а не в забеге.
-func _corridor_report(floors_total: int, pieces: Dictionary, failures: int) -> String:
-	var tiles := 0
-	for piece: String in pieces:
-		tiles += pieces[piece]
-	var out := "\n[b]Коридоры[/b]: %d тайлов на %d этажей (%.1f на этаж)" % [
-		tiles, floors_total, float(tiles) / maxi(floors_total, 1)
-	]
+## Коридоры по всем прогнанным этажам: сколько тайлов и каких кусков, насколько
+## коридор обволакивает комнаты и сколько петель (RS_LayoutMetrics — те же цифры,
+## что печатает dev/corridor_layout_check). Отказов трассы быть не должно, но если
+## правка ручек их вернула, увидеть это надо здесь, а не в забеге.
+func _corridor_report(layout: RS_LayoutMetrics, failures: int) -> String:
+	var out := "\n[b]Коридоры[/b]: %d тайлов на %d этажей" % [layout.tiles, layout.floors]
 	if failures > 0:
 		out += " — [color=#e0624b]отказов трассы: %d[/color]" % failures
-	out += "\n[code]"
-	for piece: String in ["прямой", "поворот", "Т", "крест", "торец"]:
-		if pieces.has(piece):
-			out += "%-10s %5d  %4.1f%%\n" % [piece, pieces[piece], 100.0 * pieces[piece] / maxi(tiles, 1)]
-	out += "[/code]"
+	out += "\n[code]%s[/code]" % "\n".join(layout.report_lines())
 	return out
-
-
-func _piece_name(mask: int) -> String:
-	var bits := 0
-	for bit in [1, 2, 4, 8]:
-		if mask & bit:
-			bits += 1
-	match bits:
-		1:
-			return "торец"
-		2:
-			return "прямой" if mask == 5 or mask == 10 else "поворот"
-		3:
-			return "Т"
-	return "крест"
 
 
 func _preview_report(
