@@ -13,6 +13,12 @@ extends "res://dev/check_harness.gd"
 
 const SEEDS := 30
 const CONFIG_PATH := "res://data/world_gen_config.tres"
+## Потолок доли комнат, которые коридор обволакивает своей же веткой
+## (RS_LayoutMetrics), — по нынешнему генератору: 55.0 % на этих сидах, 54.1 % на
+## 200 (замер 26.09). Ловит правку ручек или раскладки, от которой стало хуже.
+## Новая раскладка (п. 7 карточки «Сетка уровня») обязана эту долю опустить — и
+## порог опускается следом, иначе он перестаёт что-либо сторожить.
+const MAX_ENVELOPED_SHARE := 0.56
 
 
 func _ready() -> void:
@@ -30,24 +36,24 @@ func _ready() -> void:
 		"тайлов с одним проёмом (торца в ките нет) не бывает": [],
 		"node_at узнаёт комнаты и коридоры": [],
 	}
-	var pieces := {"прямой": 0, "поворот": 0, "Т": 0, "крест": 0, "торец": 0}
-	var floors := 0
+	var layout := RS_LayoutMetrics.new()
 	for s in SEEDS:
 		var graph := RS_LevelGraph.new().generate_run(s, library, config)
 		for depth: int in RS_LevelGraph.DEPTHS:
 			var layer := graph.get_nodes_by_depth(depth)
 			var plan := RS_LayerPlan.build(layer, config)
-			floors += _floor_count(layer)
-			_collect(graph, layer, plan, s, depth, problems, pieces)
+			layout.add(RS_LayoutMetrics.of_plan(plan))
+			_collect(graph, layer, plan, s, depth, problems)
 
 	for what: String in problems:
 		var list: Array = problems[what]
 		_check("%s (%d сидов)" % [what, SEEDS], list.is_empty(), ", ".join(list.slice(0, 4)))
 
-	var tiles := 0
-	for kind: String in pieces:
-		tiles += pieces[kind]
-	print("  тайлов: %d на %d этажей (%.1f на этаж) — %s" % [tiles, floors, float(tiles) / floors, pieces])
+	print("  раскладка на %d сидах, %d этажей:" % [SEEDS, layout.floors])
+	for line in layout.report_lines():
+		print("    " + line)
+	_check("обволакиваемых комнат не больше %d%%" % roundi(MAX_ENVELOPED_SHARE * 100.0),
+		layout.enveloped_share() <= MAX_ENVELOPED_SHARE, "%.1f%%" % (layout.enveloped_share() * 100.0))
 
 	_check_determinism(library, config)
 
@@ -61,7 +67,6 @@ func _collect(
 	s: int,
 	depth: int,
 	problems: Dictionary,
-	pieces: Dictionary,
 ) -> void:
 	var tag := "сид %d L%d" % [s, depth]
 	for failure in plan.routing_failures:
@@ -87,8 +92,7 @@ func _collect(
 	for cell: Vector3i in plan.corridor_tiles:
 		var mask: int = plan.corridor_tiles[cell]
 		var owner: StringName = plan.node_by_cell[cell]
-		pieces[_piece(mask)] += 1
-		if _bits(mask) == 1:
+		if RS_LayoutMetrics.piece_of(mask) == RS_LayoutMetrics.Piece.END:
 			problems["тайлов с одним проёмом (торца в ките нет) не бывает"].append("%s %s" % [tag, cell])
 		if plan.node_at(plan.embedding.cell_origin(cell) + Vector3(4.0, 1.7, 4.0)) != owner:
 			problems["node_at узнаёт комнаты и коридоры"].append("%s тайл %s" % [tag, cell])
@@ -197,31 +201,3 @@ func _check_determinism(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig
 					or str(a.cells) != str(b.cells):
 				diverged.append(s)
 	_check("один граф — одна раскладка", diverged.is_empty(), str(diverged))
-
-
-
-func _floor_count(layer: Array[RS_LevelNode]) -> int:
-	var floors := 0
-	for node in layer:
-		floors = maxi(floors, node.floor_index + 1)
-	return floors
-
-
-func _bits(mask: int) -> int:
-	var n := 0
-	for bit in [1, 2, 4, 8]:
-		if mask & bit:
-			n += 1
-	return n
-
-
-func _piece(mask: int) -> String:
-	match _bits(mask):
-		1:
-			return "торец"
-		2:
-			return "прямой" if mask == 5 or mask == 10 else "поворот"
-		3:
-			return "Т"
-		_:
-			return "крест"
