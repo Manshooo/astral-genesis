@@ -128,7 +128,7 @@ func fit() -> bool:
 	for branch in branches:
 		cells.append_array(tiles_of(branch.id))
 	for node_data in rooms:
-		cells.append(plan.cells[node_data.id])
+		cells.append(_planar(plan.cells[node_data.id]))
 	if cells.is_empty():
 		return false
 	_fit(cells)
@@ -172,10 +172,11 @@ func to_screen(cell: Vector2) -> Vector2:
 	return _origin + (cell - _min_cell + Vector2(0.5, 0.5)) * _step
 
 
-## Точка на экране для мировой позиции: клетка кита — шаг плана, поэтому метры
-## просто делятся на него.
+## Точка на экране для мировой позиции: метры в клетки переводит вложение плана —
+## то же, по которому комнаты и тайлы расставлены в мире.
 func world_to_screen(world_position: Vector3) -> Vector2:
-	return to_screen(Vector2(world_position.x, world_position.z) / RS_LayerPlan.CELL_SIZE)
+	var point := plan.embedding.grid_point(world_position)
+	return to_screen(Vector2(point.x, point.z))
 
 
 ## Показанный узел под точкой контрола или "". Обратная to_screen: клетка ищется
@@ -193,8 +194,13 @@ func tiles_of(branch: StringName) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []
 	for cell: Vector3i in plan.corridor_tiles:
 		if cell.y == floor_index and plan.node_by_cell.get(cell, &"") == branch:
-			tiles.append(Vector2i(cell.x, cell.z))
+			tiles.append(_planar(cell))
 	return tiles
+
+
+## Клетка на плане этажа: карта — вид сверху, X клетки идёт вправо, Z — вниз.
+static func _planar(cell: Vector3i) -> Vector2i:
+	return Vector2i(cell.x, cell.z)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -236,11 +242,12 @@ func _draw_corridors() -> void:
 		for cell in tiles_of(branch.id):
 			var center := to_screen(Vector2(cell))
 			draw_rect(Rect2(center - Vector2(width, width) * 0.5, Vector2(width, width)), color, true)
-			var mask: int = plan.corridor_tiles[Vector3i(cell.x, floor_index, cell.y)]
-			for side: StringName in RS_LayerPlan.SIDE_BITS:
-				if mask & RS_LayerPlan.SIDE_BITS[side] == 0:
+			var tile := Vector3i(cell.x, floor_index, cell.y)
+			var mask: int = plan.corridor_tiles[tile]
+			for side in plan.topology.side_count(tile):
+				if mask & (1 << side) == 0:
 					continue
-				var offset := Vector2(RS_RoomLayout.OFFSETS[side])
+				var offset := Vector2(_planar(plan.topology.neighbour(tile, side)) - cell)
 				var arm_end := center + offset * _step * 0.5
 				var arm := Rect2(center, Vector2.ZERO).expand(arm_end)
 				draw_rect(arm.grow_individual(
@@ -251,7 +258,7 @@ func _draw_corridors() -> void:
 
 func _room_rect(node_id: StringName) -> Rect2:
 	var room := Vector2(_step, _step) * room_fill
-	var center := to_screen(Vector2(plan.cells[node_id]))
+	var center := to_screen(Vector2(_planar(plan.cells[node_id])))
 	return Rect2(center - room * 0.5, room)
 
 

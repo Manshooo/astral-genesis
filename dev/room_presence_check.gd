@@ -52,9 +52,9 @@ func _check_plan_rule() -> void:
 		var graph := RS_LevelGraph.new().generate_run(s, library)
 		for depth: int in RS_LevelGraph.DEPTHS:
 			var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(depth))
-			for node_id: StringName in plan.positions:
+			for node_id: StringName in plan.cells:
 				checked += 1
-				var at: Vector3 = plan.positions[node_id]
+				var at := plan.position_of(node_id)
 				# Центр, угол комнаты (двери стоят в ~8 м от центра), рост игрока
 				# над полом и точка чуть ниже пола — всё это «в этой комнате».
 				for probe: Vector3 in [
@@ -65,7 +65,7 @@ func _check_plan_rule() -> void:
 					if got != node_id:
 						misses.append("сид %d %s +%s → '%s'" % [s, node_id, probe, got])
 				# Этажом выше та же (x, z) — это уже не эта комната.
-				if plan.node_at(at + Vector3(0.0, RS_LayerPlan.FLOOR_SPACING, 0.0)) == node_id:
+				if plan.node_at(plan.embedding.cell_origin(plan.cells[node_id] + Vector3i.UP)) == node_id:
 					misses.append("сид %d %s: этажом выше всё ещё он" % [s, node_id])
 	_check("каждая точка комнаты находит свой узел (%d узлов)" % checked,
 		misses.is_empty(), ", ".join(misses.slice(0, 5)))
@@ -112,7 +112,7 @@ func _check_run() -> void:
 
 	# Шаг из хаба на тайл его ветки — то, что делает игрок за открытой дверью.
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
-	_player().global_position = plan.positions[neighbour] + Vector3(0.0, 0.5, 0.0)
+	_player().global_position = plan.position_of(neighbour) + Vector3(0.0, 0.5, 0.0)
 	_check("сам шаг узел НЕ меняет — его меняет такт присутствия",
 		RunManager.current_node_id == entry, "текущий '%s'" % RunManager.current_node_id)
 	_check("и игрок стоит в клетке ветки",
@@ -137,7 +137,7 @@ func _check_run() -> void:
 	_check("пустота под миром узел не меняет", RunManager.current_node_id == neighbour,
 		"текущий '%s'" % RunManager.current_node_id)
 
-	_player().global_position = plan.positions[entry] + Vector3(0.0, 1.0, 0.0)
+	_player().global_position = plan.position_of(entry) + Vector3(0.0, 1.0, 0.0)
 	_tick()
 	_check("вернулся пешком — текущим снова стал вход", RunManager.current_node_id == entry,
 		"текущий '%s'" % RunManager.current_node_id)
