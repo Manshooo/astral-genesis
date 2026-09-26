@@ -56,12 +56,20 @@ class SpawnedRoom:
 	## Подмножество children — вертикальные порталы. Им достаются рёбра со сменой
 	## глубины (см. _bind_portals); в остальном они такой же «выход», как дверь.
 	var portals: Array[Entity] = []
+	## Дверь -> грань плана, в которой она стоит (GridTopology.face). Дверь
+	## сборной комнаты знает грань с рождения — её туда поставил спавн; дверь,
+	## запечённая в сцену, получает грань по своей стене (см. _bind_doors).
+	var door_faces: Dictionary[Entity, Vector4i] = {}
 
 	## Всё, что может нести C_DoorPortal, то есть вести в соседний узел графа.
 	func exits() -> Array[Entity]:
 		var all: Array[Entity] = doors.duplicate()
 		all.append_array(portals)
 		return all
+
+	## Грань двери; сторона GridTopology.NO_SIDE — не дверь или стена не определилась.
+	func face_of(door: Entity) -> Vector4i:
+		return door_faces.get(door, Vector4i(0, 0, 0, GridTopology.NO_SIDE))
 
 
 ## Граф забега. Смена графа сбрасывает планы (см. set_graph).
@@ -182,9 +190,10 @@ func _remove_valid_entities(list: Array[Entity]) -> void:
 
 
 ## Застраивает ветку коридора кусками кита: на каждый её тайл плана — кусок под
-## маску проёмов, повёрнутый на нужную четверть оборота. Нет куска под маску
-## (торец) — тайл пропускается с ошибкой: раскладка таких не выдаёт, и если
-## выдала, это надо видеть, а не залатывать молча.
+## маску проёмов, повёрнутый на нужную четверть оборота, с торцами на сторонах,
+## упёршихся в двери комнат (RS_LayerPlan.door_mask). Нет куска под маску (тупик)
+## — тайл пропускается с ошибкой: раскладка таких не выдаёт, и если выдала, это
+## надо видеть, а не залатывать молча.
 func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 	var kit := GameConfig.config.corridor_kit
 	if kit == null:
@@ -195,7 +204,7 @@ func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 	for cell: Vector3i in plan.corridor_tiles:
 		if plan.node_by_cell.get(cell, &"") != node_data.id:
 			continue
-		var tile := kit.instantiate(plan.corridor_tiles[cell])
+		var tile := kit.instantiate(plan.corridor_tiles[cell], plan.door_mask(cell))
 		if tile == null:
 			push_error("LayerStreamer: нет куска кита под маску %d (тайл %s)" % [plan.corridor_tiles[cell], cell])
 			continue
@@ -237,12 +246,32 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	if spatial:
 		spatial.position = plan.position_of(node_data.id)
 
+	# Стены и двери сборной комнаты — тоже до add_entity: двери должны попасть в
+	# обход вложенных сущностей (_register_room_children) вместе с остальными.
+	var shell := RS_RoomLayout.shell_of(entity)
+	var assembled: Dictionary[Node3D, Vector4i] = {}
+	if shell and spatial:
+		if shell.walls:
+			assembled = shell.walls.assemble(spatial, node_data.id, plan)
+		else:
+			push_error("LayerStreamer: у коробки '%s' нет кита стен" % node_data.room_scene_path)
+
 	ECS.world.add_entity(entity)
 
 	var spawned := SpawnedRoom.new()
 	spawned.node_id = node_data.id
 	spawned.entity = entity
 	spawned.children = _register_room_children(entity, node_data.id)
+	# Слот — после регистрации, как и всё, что меняет состав компонентов живой
+	# сущности. Нужен той же выборке дверей, что и у запечённых (_bind_doors).
+	for node: Node3D in assembled:
+		var door := node as Node as Entity
+		if door == null:
+			continue
+		var slot := C_DoorSlot.new()
+		slot.slot_id = StringName("%s_%d" % [RS_RoomLayout.side_name(assembled[node].w), spawned.door_faces.size()])
+		door.add_component(slot)
+		spawned.door_faces[door] = assembled[node]
 	spawned.doors = _bind_doors(spawned, node_data, plan)
 	return spawned
 
@@ -291,10 +320,12 @@ func _body_id(node_id: StringName, room_entity: Entity, body: Node) -> StringNam
 
 
 ## Штампует C_DoorPortal на двери комнаты (подмножество children с C_DoorSlot): за
-## каждой дверью — ветка, которую план поставил на её сторону
-## (RS_LayerPlan.door_sides). По сторонам, а не по рёбрам: две двери комнаты
+## каждой дверью — ветка, которую план поставил на её грань
+## (RS_LayerPlan.door_faces). По граням, а не по рёбрам: две двери комнаты
 ## законно ведут в одну ветку, и по id соседа их не различить. Порядок дверей
-## поэтому ничего не решает — каждая привязывается сама, по своей стене.
+## поэтому ничего не решает — каждая привязывается сама, по своей грани. Дверь
+## сборной комнаты грань уже знает; запечённая в сцену получает её по своей стене
+## — сцена такой комнаты в одну клетку, и грань — это клетка комнаты и сторона.
 ## Остаточного принципа нет — рёбер в коридоры у комнаты ровно столько, сколько
 ## дверей; дверь без ветки значит, что план и сцена разошлись, и её честнее
 ## заварить с предупреждением, чем увести не туда.
@@ -305,12 +336,16 @@ func _bind_doors(spawned: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPl
 			doors.append(e)
 	_bind_portals(spawned, node_data)
 
-	var sides: Dictionary = plan.door_sides.get(node_data.id, {})
+	var faces: Dictionary = plan.door_faces.get(node_data.id, {})
+	var anchor: Vector3i = plan.cells.get(node_data.id, Vector3i.ZERO)
 	for door in doors:
-		var side := RS_RoomLayout.door_side(door as Node as Node3D, spawned.entity)
-		var target: StringName = sides.get(side, &"")
+		if not spawned.door_faces.has(door):
+			var wall := RS_RoomLayout.door_side(door as Node as Node3D, spawned.entity)
+			spawned.door_faces[door] = GridTopology.face(anchor, wall)
+		var face := spawned.face_of(door)
+		var target: StringName = faces.get(face, &"")
 		if target == &"":
-			push_warning("LayerStreamer: у двери '%s' узла '%s' нет ветки за стороной %s" % [door.name, node_data.id, RS_RoomLayout.side_name(side)])
+			push_warning("LayerStreamer: у двери '%s' узла '%s' нет ветки за стороной %s" % [door.name, node_data.id, RS_RoomLayout.side_name(face.w)])
 			_seal_door(door)
 			continue
 		var portal := C_DoorPortal.new()

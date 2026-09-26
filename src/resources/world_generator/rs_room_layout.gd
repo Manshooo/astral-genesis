@@ -172,6 +172,66 @@ static func door_count_of_scene(scene_path: String) -> int:
 	return count
 
 
+## Кэш «путь сцены → C_RoomShell или null». Как и двери, зависит только от сцены.
+static var _shell_by_scene: Dictionary[String, C_RoomShell] = {}
+
+
+## Коробка комнаты, собранной по маске сокетов, — C_RoomShell на корне сцены; null —
+## двери запечены в сцену. Корень смотрим и через has_component, и через
+## component_resources — по той же причине, что и has_door_slot: комнату здесь
+## разглядывают detached, компоненты ещё не разложены.
+static func shell_of_scene(scene_path: String) -> C_RoomShell:
+	if _shell_by_scene.has(scene_path):
+		return _shell_by_scene[scene_path]
+
+	var shell: C_RoomShell = null
+	if scene_path != "" and ResourceLoader.exists(scene_path):
+		var room := (load(scene_path) as PackedScene).instantiate()
+		shell = shell_of(room)
+		room.free()
+	_shell_by_scene[scene_path] = shell
+	return shell
+
+
+## C_RoomShell на корне уже инстанцированной комнаты или null.
+static func shell_of(room: Node) -> C_RoomShell:
+	var entity := room as Entity
+	if entity == null:
+		return null
+	var shell := entity.get_component(C_RoomShell) as C_RoomShell
+	if shell:
+		return shell
+	for component in entity.component_resources:
+		if component is C_RoomShell:
+			return component
+	return null
+
+
+## Footprint комнаты в клетках (ширина по X, уровней по Y, длина по Z). У комнаты
+## с дверями в сцене — одна клетка: её арт и есть клетка.
+static func footprint_of_scene(scene_path: String) -> Vector3i:
+	var shell := shell_of_scene(scene_path)
+	return shell.size if shell else Vector3i.ONE
+
+
+## Сколько сокетов у комнаты, собранной по маске: граней нижнего уровня footprint
+## по периметру. 0 — у комнаты двери в сцене, и сокетов у неё нет.
+static func socket_count_of_scene(scene_path: String) -> int:
+	var shell := shell_of_scene(scene_path)
+	if shell == null:
+		return 0
+	var topology := SquareGridTopology.new()
+	return topology.perimeter(SquareGridTopology.box(Vector3i.ZERO, shell.size)).size()
+
+
+## Четверти оборота вокруг Y (как rotation.y у кусков RS_CorridorKit), которые
+## разворачивают деталь, нарисованную на северной грани клетки, к стороне
+## [param side]: север остаётся на месте, запад — четверть против часовой, восток —
+## три.
+static func north_piece_turns(side: int) -> int:
+	return posmod(-side, SquareGridTopology.SIDE_COUNT)
+
+
 ## Сбрасывает все кэши «сцена → …». Живут всю сессию редактора, поэтому без
 ## явного сброса дизайнер поправит дверь в сцене комнаты, нажмёт «Пересобрать»
 ## во вкладке «Генератор мира» — и увидит СТАРУЮ раскладку до перезапуска
@@ -181,3 +241,4 @@ static func clear_scene_cache() -> void:
 	_sides_by_scene.clear()
 	_half_extent_by_scene.clear()
 	_door_count_by_scene.clear()
+	_shell_by_scene.clear()

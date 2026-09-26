@@ -80,6 +80,15 @@ static func _aabbs_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[AABB
 
 static func _aabb_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> AABB:
 	var pos := plan.position_of(node_data.id)
+	# Сборная комната меряется footprint'ом: дверей, по которым считается габарит
+	# остальных, в её сцене нет, их ставит спавн.
+	if RS_RoomLayout.shell_of_scene(node_data.room_scene_path):
+		var size: Vector3i = plan.footprints.get(node_data.id, Vector3i.ONE)
+		var half := Vector2(size.x, size.z) * plan.embedding.cell_size * 0.5
+		return AABB(
+			Vector3(pos.x - half.x, pos.y - AABB_BELOW, pos.z - half.y),
+			Vector3(half.x * 2.0, AABB_BELOW + AABB_ABOVE, half.y * 2.0)
+		)
 	var half_extent := RS_RoomLayout.half_extent_of_scene(node_data.room_scene_path)
 	half_extent = (half_extent + HALF_EXTENT_PADDING) if half_extent > 0.0 else HALF_EXTENT_FALLBACK
 	return AABB(

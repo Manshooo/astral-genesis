@@ -1,0 +1,21 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_room"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_component"]
+[ext_resource type="Script" uid="uid://d3it37nh6j7in" path="res://src/components/level/c_room_shell.gd" id="3_shell"]
+[ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_walls"]
+[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_mesh"]
+
+[sub_resource type="Resource" id="Shell"]
+script = ExtResource("3_shell")
+size = Vector3i(2, 1, 2)
+walls = ExtResource("4_walls")
+
+[node name="RoomP2x2x1" type="Node3D"]
+script = ExtResource("1_room")
+component_resources = Array[ExtResource("2_component")]([SubResource("Shell")])
+
+[node name="Visual" parent="." instance=ExtResource("5_mesh")]
+
+[node name="SpawnPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)

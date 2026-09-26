@@ -30,9 +30,26 @@ func _ready() -> void:
 	for scene_path in ROOM_SCENES:
 		_check_scene(wizard, scene_path)
 	_check_hub_scene(wizard)
+	_check_shell_scene(wizard)
 
 	wizard.free()
 	_finish()
+
+
+## Коробка сборной комнаты (C_RoomShell): степень у неё — диапазон дверей, а не
+## slot_count. Форма обязана показать диапазон и спрятать слоты — иначе дизайнер
+## правил бы ручку, которую генератор у такой комнаты не читает.
+func _check_shell_scene(wizard: RoomWizard) -> void:
+	var room := (load("res://src/levels/procedural/rooms/kit_p/room_p_2x2x1.tscn") as PackedScene).instantiate()
+	wizard.refresh_for_scene(room)
+	var fields: Array = wizard._field_controls.keys()
+	fields.sort()
+	_check(
+		"коробка P: форма — диапазон дверей вместо слотов",
+		fields == ["display_name", "doors_max", "doors_min", "weight"],
+		str(fields)
+	)
+	room.free()
 
 
 func _check_tagify() -> void:

@@ -48,3 +48,34 @@ func side_toward(cell: Vector3i, other: Vector3i) -> int:
 		if neighbour(cell, side) == other:
 			return side
 	return NO_SIDE
+
+
+## Грани нижнего уровня набора клеток, смотрящие наружу: сторона клетки, за
+## которой уже не этот набор. Для размещения это сокеты footprint — места, где
+## может быть проём. Порядок — порядок клеток, внутри клетки — порядок сторон: от
+## него зависит, какие сокеты займёт размещение, а оно обязано быть одним и тем же
+## от запуска к запуску.
+func perimeter(cells: Array[Vector3i]) -> Array[Vector4i]:
+	var faces: Array[Vector4i] = []
+	if cells.is_empty():
+		return faces
+	var bottom := cells[0].y
+	for cell in cells:
+		bottom = mini(bottom, cell.y)
+	for cell in cells:
+		if cell.y != bottom:
+			continue
+		for side in side_count(cell):
+			if not cells.has(neighbour(cell, side)):
+				faces.append(face(cell, side))
+	return faces
+
+
+## Грань — сторона конкретной клетки. Vector4i, а не пара, чтобы грань, как и
+## клетка, годилась ключом словаря.
+static func face(cell: Vector3i, side: int) -> Vector4i:
+	return Vector4i(cell.x, cell.y, cell.z, side)
+
+
+static func face_cell(face_key: Vector4i) -> Vector3i:
+	return Vector3i(face_key.x, face_key.y, face_key.z)

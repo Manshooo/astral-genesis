@@ -144,10 +144,12 @@ func _generate(
 
 	for node: RS_LevelNode in nodes.values():
 		if reserved.has(node.id):
+			node.socket_doors = _roll_socket_doors(level_seed, node, reserved[node.id].preset)
 			continue
 		var preset := library.select_preset(node, rng, unique_presets) if library else null
 		node.room_scene_path = preset.scene.resource_path if preset and preset.scene else PLACEHOLDER_ROOM_SCENE
 		node.room_type = preset.room_type if preset else &""
+		node.socket_doors = _roll_socket_doors(level_seed, node, preset)
 
 	for depth: int in DEPTHS:
 		var floors: Array = floors_by_depth[depth]
@@ -155,6 +157,25 @@ func _generate(
 			next_index[depth] = _hang_floor_on_corridors(rng, config, floors[f], depth, f, next_index[depth])
 
 	return self
+
+
+## Сколько сокетов комнаты, собранной по маске (C_RoomShell), станут дверями —
+## бросок в диапазоне пресета; 0 — у комнаты двери в сцене.
+##
+## Бросок из СВОЕГО потока на узел (сид + id), а не из общего rng. Общий поток
+## сдвинулся бы от первой же сборной комнаты, и всё, что разыгрывается после неё,
+## стало бы другим: правка одного пресета меняла бы чужие комнаты, а миры, где
+## сборных комнат нет, — вообще все. Свой поток даёт то же, ради чего общий
+## тратится одинаково при любом исходе: остальной граф от этого броска не зависит.
+static func _roll_socket_doors(level_seed: int, node: RS_LevelNode, preset: RS_RoomPreset) -> int:
+	if preset == null or preset.scene == null:
+		return 0
+	var sockets := RS_RoomLayout.socket_count_of_scene(preset.scene.resource_path)
+	if sockets == 0:
+		return 0
+	var roll := RandomNumberGenerator.new()
+	roll.seed = hash("%d/%s" % [level_seed, node.id])
+	return clampi(roll.randi_range(preset.doors_min, preset.doors_max), 1, sockets)
 
 
 func _add_node(
@@ -364,7 +385,7 @@ func _hang_floor_on_corridors(
 	var doors: Dictionary[StringName, int] = {}
 	var with_doors: Array[RS_LevelNode] = []
 	for node: RS_LevelNode in floor_rooms:
-		doors[node.id] = RS_RoomLayout.door_count_of_scene(node.room_scene_path)
+		doors[node.id] = node.door_count()
 		if doors[node.id] > 0:
 			with_doors.append(node)
 		else:

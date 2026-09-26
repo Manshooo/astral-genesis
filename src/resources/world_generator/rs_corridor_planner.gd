@@ -47,14 +47,20 @@ static func plan_floor(plan: RS_LayerPlan, floor_nodes: Array, floor_index: int,
 
 	var result := _layout(plan.topology, rooms, branches, on_floor, rank, floor_index, step)
 	plan.routing_failures.append_array(result["failures"])
-	plan.door_sides.merge(result["door_sides"])
+	plan.door_faces.merge(result["door_faces"])
 	var room_cells: Dictionary = result["room_cells"]
+	var footprints: Dictionary = result["footprints"]
 	var owner: Dictionary = result["owner"]
 	var masks: Dictionary = result["masks"]
 	for id: StringName in room_cells:
-		_put(plan, id, room_cells[id])
+		_put(plan, id, room_cells[id], footprints[id])
 	for cell: Vector3i in owner:
 		var id: StringName = owner[cell]
+		# Этажи раскладываются порознь, и клетку этажа выше может уже занимать
+		# верх высокой комнаты этажа ниже: молча переписать её значило бы
+		# потерять комнату для node_at.
+		if plan.node_by_cell.has(cell):
+			plan.routing_failures.append("%s: тайл %s встал на %s" % [id, cell, plan.node_by_cell[cell]])
 		plan.corridor_tiles[cell] = masks[cell]
 		plan.node_by_cell[cell] = id
 		if not plan.cells.has(id):
@@ -72,36 +78,42 @@ static func _layout(
 	step: int,
 ) -> Dictionary:
 	var failures: Array[String] = []
-	var room_cells := _place_rooms(rooms, on_floor, rank, floor_index, step)
+	var footprints: Dictionary[StringName, Vector3i] = {}
+	for room in rooms:
+		footprints[room.id] = RS_RoomLayout.footprint_of_scene(room.room_scene_path)
+	var room_cells := _place_rooms(rooms, on_floor, rank, floor_index, step, footprints)
 	var taken: Dictionary[Vector3i, bool] = {}
+	var occupied: Array[Vector3i] = []
 	for id: StringName in room_cells:
-		taken[room_cells[id]] = true
+		for cell in SquareGridTopology.box(room_cells[id], footprints[id]):
+			taken[cell] = true
+			occupied.append(cell)
 
 	# Клетка перед дверью -> { ветка, сторона тайла, смотрящая в комнату }.
 	var door_at: Dictionary[Vector3i, Dictionary] = {}
-	var door_sides: Dictionary[StringName, Dictionary] = {}
+	var door_faces: Dictionary[StringName, Dictionary] = {}
 	for room in rooms:
-		var sides := RS_RoomLayout.door_sides_of_scene(room.room_scene_path).duplicate()
-		sides.sort()
+		var faces := _door_faces(topology, room, room_cells[room.id], footprints[room.id])
 		var targets := _branch_edges(room, on_floor, rank)
-		if sides.size() != targets.size():
+		if faces.size() != targets.size():
 			failures.append(
-				"%s: сторон с дверью %d, рёбер в коридоры %d" % [room.id, sides.size(), targets.size()]
+				"%s: дверей %d, рёбер в коридоры %d" % [room.id, faces.size(), targets.size()]
 			)
 		# Пары по порядку: у комнаты все двери в одной ветке (см.
-		# RS_LevelGraph._hang_floor_on_corridors), и какая сторона кому — всё
+		# RS_LevelGraph._hang_floor_on_corridors), и какая дверь кому — всё
 		# равно. Появятся комнаты-перемычки — сюда придёт подбор пар по
 		# направлению к ветке.
 		var paired := {}
-		for i in mini(sides.size(), targets.size()):
-			paired[sides[i]] = targets[i]
-		var room_cell: Vector3i = room_cells[room.id]
-		for side: int in paired:
-			var cell := topology.neighbour(room_cell, side)
-			door_at[cell] = {"branch": paired[side], "face": topology.back_side(room_cell, side)}
-		door_sides[room.id] = paired
+		for i in mini(faces.size(), targets.size()):
+			paired[faces[i]] = targets[i]
+		for face: Vector4i in paired:
+			var cell := GridTopology.face_cell(face)
+			door_at[topology.neighbour(cell, face.w)] = {
+				"branch": paired[face], "face": topology.back_side(cell, face.w)
+			}
+		door_faces[room.id] = paired
 
-	var bounds := _bounds(room_cells.values())
+	var bounds := _bounds(occupied)
 	var owner: Dictionary[Vector3i, StringName] = {}
 	var masks: Dictionary[Vector3i, int] = {}
 	for branch in branches:
@@ -109,22 +121,52 @@ static func _layout(
 	return {
 		"failures": failures,
 		"room_cells": room_cells,
-		"door_sides": door_sides,
+		"footprints": footprints,
+		"door_faces": door_faces,
 		"owner": owner,
 		"masks": masks,
 	}
 
 
+## Грани, на которых у комнаты двери, в порядке, по которому их разбирают ветки.
+##
+## У комнаты с дверями в сцене — стороны её дверей: сцена в одну клетку, и грань —
+## это её сторона. У собранной по сокетам — [member RS_LevelNode.socket_doors]
+## сокетов из периметра footprint, взятых через равный шаг: двери расходятся по
+## сторонам, а не сбиваются в угол. Это заглушка до новой раскладки (п. 7 карточки
+## «Сетка уровня»), которая будет выбирать сокеты, смотрящие на свои ветки.
+static func _door_faces(
+	topology: GridTopology, room: RS_LevelNode, anchor: Vector3i, size: Vector3i
+) -> Array[Vector4i]:
+	var faces: Array[Vector4i] = []
+	if room.socket_doors == 0:
+		var sides := RS_RoomLayout.door_sides_of_scene(room.room_scene_path).duplicate()
+		sides.sort()
+		for side: int in sides:
+			faces.append(GridTopology.face(anchor, side))
+		return faces
+	var sockets := topology.perimeter(SquareGridTopology.box(anchor, size))
+	var count := mini(room.socket_doors, sockets.size())
+	for i in count:
+		faces.append(sockets[i * sockets.size() / count])
+	return faces
+
+
 ## Комнаты на решётке змейкой: ряд за рядом, чётные слева направо, нечётные
 ## справа налево — соседние по порядку комнаты всегда соседние на решётке.
 ## Порядок — по первой ветке комнаты: комнаты одной ветки встают кучно, и её
-## трасса выходит короткой.
+## трасса выходит короткой. Клетка комнаты — угловая клетка её footprint.
+##
+## Шаг решётки растёт на размер крупнейшей комнаты этажа: между footprint'ами
+## остаётся тот же зазор, что между комнатами в одну клетку, и трассе есть где
+## пройти. У этажа из одних комнат в клетку шаг ровно [param step].
 static func _place_rooms(
 	rooms: Array[RS_LevelNode],
 	on_floor: Dictionary[StringName, RS_LevelNode],
 	rank: Dictionary[StringName, int],
 	floor_index: int,
 	step: int,
+	footprints: Dictionary[StringName, Vector3i],
 ) -> Dictionary[StringName, Vector3i]:
 	var ordered := rooms.duplicate()
 	var first_branch := func(room: RS_LevelNode) -> int:
@@ -138,6 +180,10 @@ static func _place_rooms(
 			var rb: int = first_branch.call(b)
 			return ra < rb if ra != rb else a.index_in_layer < b.index_in_layer
 	)
+	var largest := Vector3i.ONE
+	for id: StringName in footprints:
+		largest = largest.max(footprints[id])
+	var stride := Vector2i(step + largest.x - 1, step + largest.z - 1)
 	var cols := maxi(ceili(sqrt(float(ordered.size()))), 1)
 	var cells: Dictionary[StringName, Vector3i] = {}
 	for i in ordered.size():
@@ -145,7 +191,7 @@ static func _place_rooms(
 		var col := i % cols
 		if row % 2 == 1:
 			col = cols - 1 - col
-		cells[(ordered[i] as RS_LevelNode).id] = Vector3i(col * step, floor_index, row * step)
+		cells[(ordered[i] as RS_LevelNode).id] = Vector3i(col * stride.x, floor_index, row * stride.y)
 	return cells
 
 
@@ -292,6 +338,12 @@ static func _bounds(cells: Array) -> Rect2i:
 	return rect
 
 
-static func _put(plan: RS_LayerPlan, id: StringName, cell: Vector3i) -> void:
-	plan.cells[id] = cell
-	plan.node_by_cell[cell] = id
+## Ставит комнату в план: угловая клетка, footprint и все его клетки — на всех его
+## уровнях, иначе node_at не узнал бы комнату под потолком высокого зала.
+static func _put(plan: RS_LayerPlan, id: StringName, anchor: Vector3i, size: Vector3i) -> void:
+	plan.cells[id] = anchor
+	plan.footprints[id] = size
+	for cell in SquareGridTopology.box(anchor, size):
+		if plan.node_by_cell.has(cell):
+			plan.routing_failures.append("%s: клетка %s уже занята %s" % [id, cell, plan.node_by_cell[cell]])
+		plan.node_by_cell[cell] = id

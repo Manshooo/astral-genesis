@@ -116,7 +116,7 @@ func _select(
 	for p: RS_RoomPreset in presets:
 		if p == null:
 			continue
-		if p.scene == null or RS_RoomLayout.door_count_of_scene(p.scene.resource_path) == 0:
+		if p.scene == null or not _has_doors(p):
 			_note(reasons, p, REASON_NO_SCENE)
 		elif excluded.has(p):
 			_note(reasons, p, REASON_UNIQUE)
@@ -282,6 +282,12 @@ func validate_preset(preset: RS_RoomPreset) -> Array[String]:
 	var room := preset.scene.instantiate()
 	var doors := RS_RoomLayout.door_entities(room)
 
+	var shell := RS_RoomLayout.shell_of(room)
+	if shell:
+		problems.append_array(_validate_shell(label, preset, shell, doors.size()))
+		room.free()
+		return problems
+
 	if doors.size() != preset.slot_count:
 		problems.append(
 			"'%s': slot_count=%d, но в сцене %d дверей с C_DoorSlot"
@@ -311,3 +317,46 @@ func validate_preset(preset: RS_RoomPreset) -> Array[String]:
 
 	room.free()
 	return problems
+
+
+## Проверка комнаты, собранной по маске сокетов (C_RoomShell): двери ей ставит
+## спавн, поэтому slot_count и стены дверей тут ни при чём, а ломается другое —
+## пустой кит стен даёт комнату без стен, диапазон дверей шире сокетов тихо
+## обрезается, а C_DoorSlot в самой коробке станет дверью, которой нет в плане.
+func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, scene_doors: int) -> Array[String]:
+	var problems: Array[String] = []
+	if shell.size.x < 1 or shell.size.y < 1 or shell.size.z < 1:
+		problems.append("'%s': footprint коробки %s — нужна хотя бы клетка по каждой оси" % [label, shell.size])
+		return problems
+	if scene_doors > 0:
+		problems.append(
+			"'%s': в коробке %d дверей с C_DoorSlot — двери сборной комнаты ставит спавн" % [label, scene_doors]
+		)
+	if shell.walls == null:
+		problems.append("'%s': у коробки не назначен кит стен (C_RoomShell.walls)" % label)
+	else:
+		var missing: Array[String] = []
+		for field: String in ["door_wall", "blank_wall", "door"]:
+			if shell.walls.get(field) == null:
+				missing.append(field)
+		if shell.size.y > 1 and shell.walls.upper_wall == null:
+			missing.append("upper_wall")
+		if not missing.is_empty():
+			problems.append("'%s': в ките стен нет %s" % [label, ", ".join(missing)])
+	var sockets := RS_RoomLayout.socket_count_of_scene(preset.scene.resource_path)
+	if preset.doors_min < 1 or preset.doors_min > preset.doors_max or preset.doors_max > sockets:
+		problems.append(
+			"'%s': дверей %d..%d, а сокетов у footprint %s — %d; нужно 1 ≤ min ≤ max ≤ сокетов"
+			% [label, preset.doors_min, preset.doors_max, shell.size, sockets]
+		)
+	return problems
+
+
+## Может ли комната пресета получить хотя бы одну дверь: иначе она недостижима, и
+## подбор её не предлагает. У сборной комнаты двери обещает диапазон пресета, у
+## остальных — C_DoorSlot в сцене.
+static func _has_doors(preset: RS_RoomPreset) -> bool:
+	var path := preset.scene.resource_path
+	if RS_RoomLayout.shell_of_scene(path):
+		return preset.doors_max >= 1 and RS_RoomLayout.socket_count_of_scene(path) > 0
+	return RS_RoomLayout.door_count_of_scene(path) > 0
