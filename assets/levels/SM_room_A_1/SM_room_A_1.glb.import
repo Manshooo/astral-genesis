@@ -41,11 +41,6 @@ materials/extract_format=0
 materials/extract_path="res://assets/materials"
 _subresources={
 "materials": {
-"GP_CollisionPreview": {
-"use_external/enabled": true,
-"use_external/fallback_path": "res://assets/materials/GP_CollisionPreview.tres",
-"use_external/path": "res://assets/materials/GP_CollisionPreview.tres"
-},
 "MAT_building": {
 "use_external/enabled": true,
 "use_external/fallback_path": "res://assets/materials/MAT_building.tres",

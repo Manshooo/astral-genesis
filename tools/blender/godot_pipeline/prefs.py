@@ -244,6 +244,11 @@ def draw_profile(layout, profile):
     sub.prop(profile, "animation_fps")
     sub.prop(profile, "import_script")
 
+    col = box.column(align=True)
+    col.label(text="Tile Kit", icon='MESH_GRID')
+    col.prop(profile, "cell_size")
+    col.prop(profile, "cell_height")
+
 
 def get_prefs(context=None) -> GodotPipelinePrefs:
     context = context or bpy.context

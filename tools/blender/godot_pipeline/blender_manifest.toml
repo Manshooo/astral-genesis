@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "godot_pipeline"
-version = "1.3.0"
+version = "1.4.0"
 name = "Godot Pipeline"
 tagline = "Per-collection glTF asset delivery pipeline for Godot 4"
 maintainer = "Yanislav Pichugin <yanislavpic@gmail.com>"

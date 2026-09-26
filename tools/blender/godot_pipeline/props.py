@@ -185,6 +185,18 @@ class GP_ExportProfile(PropertyGroup):
         description="Destination for copied textures, relative to the Godot project",
         default="assets/textures")
 
+    # -- tile kit ------------------------------------------------------------
+    # Числа кита — данные проекта, а не аддона: они живут в профиле и едут в
+    # godot_pipeline.json. 0 значит «не кит», и проверка молчит.
+    cell_size: FloatProperty(
+        name="Cell Size", default=0.0, min=0.0, soft_max=100.0, unit='LENGTH',
+        description="Grid cell of a tile kit. When set, the validator warns about geometry that "
+                    "reaches past ±half a cell around the asset's export origin. 0 disables it")
+    cell_height: FloatProperty(
+        name="Height Limit", default=0.0, min=0.0, soft_max=100.0, unit='LENGTH',
+        description="Max height of a tile above its export origin, e.g. the spacing between "
+                    "stacked floors. 0 disables the check")
+
 
 class GP_ObjectSettings(PropertyGroup):
     """Per-object Godot import hints."""

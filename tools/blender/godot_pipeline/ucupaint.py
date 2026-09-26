@@ -14,6 +14,7 @@ did not happen.
 """
 
 import os
+import re
 
 import bpy
 
@@ -86,10 +87,18 @@ def split_channel(name: str):
 def base_name(raw: str) -> str:
     """Asset part of the name: no MAT_/T_ prefix, no spaces."""
     text = _strip_separators(raw)
-    for prefix in ("MAT_", "mat_", "T_", "t_"):
-        if text.startswith(prefix):
-            text = text[len(prefix):]
-            break
+    # Ucupaint называет запечённое по дереву слоёв, а дерево по умолчанию зовётся
+    # «Ucupaint MAT_x» (или переименовано в «UCU_MAT_x»). Всё до токена MAT_ —
+    # имя дерева, а не ассета: без этого вышло T_Ucupaint_MAT_architect_artifact.
+    # Токен ищется как отдельное слово, и заодно лечится уже испорченное имя.
+    found = re.search(r"(?:^|[ _\-.])(?:MAT|mat)_", text)
+    if found:
+        text = text[found.end():]
+    else:
+        for prefix in ("T_", "t_"):
+            if text.startswith(prefix):
+                text = text[len(prefix):]
+                break
     return _strip_separators(text).replace(" ", "_")
 
 
