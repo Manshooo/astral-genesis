@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/props/interactive/SM_screen/textures/T_screen_albedo.png" id="1_albedo"]
+[ext_resource type="Texture2D" path="res://assets/props/interactive/SM_screen/textures/T_screen_orm.png" id="2_orm"]
+
+[resource]
+resource_name = "MAT_screen"
+albedo_texture = ExtResource("1_albedo")
+metallic = 1.0
+metallic_texture = ExtResource("2_orm")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_orm")
+roughness_texture_channel = 1
+ao_enabled = true
+ao_light_affect = 0.5
+ao_texture = ExtResource("2_orm")
