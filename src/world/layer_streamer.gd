@@ -72,7 +72,7 @@ class SpawnedRoom:
 		return door_faces.get(door, Vector4i(0, 0, 0, GridTopology.NO_SIDE))
 
 
-## Граф забега. Смена графа сбрасывает планы (см. set_graph).
+## Граф забега; планы слоёв — его же (RS_LevelGraph.layer_plan).
 var graph: RS_LevelGraph
 ## Глубина загруженного слоя (NO_DEPTH — ничего не загружено).
 var depth: int = NO_DEPTH
@@ -84,34 +84,20 @@ var rooms: Dictionary[StringName, SpawnedRoom] = {}
 ## присутствие игрока в коридоре меняет текущий узел так же, как в комнате.
 var corridor_tiles: Dictionary[StringName, Array] = {}
 
-## Снимок ручек, по которым построен граф: шаг решётки комнат — тоже ручка, и план
-## обязан строиться по тем же числам, что и граф.
-var _gen_config: RS_WorldGenConfig
-## depth -> RS_LayerPlan. План детерминирован от графа и не зависит от того,
-## загружен слой или нет, — считается один раз за забег. Карта комплекса
-## спрашивает планы слоёв, в которых игрок ещё не был.
-var _plans: Dictionary[int, RS_LayerPlan] = {}
 ## Общий родитель тайлов под ECS.world — см. _corridor_parent.
 var _corridor_root: Node3D
 
 
-## Новый граф забега и ручки, по которым он построен. Планы прошлого графа к
-## новому не относятся — сбрасываем.
-func set_graph(new_graph: RS_LevelGraph, gen_config: RS_WorldGenConfig) -> void:
+## Новый граф забега; планы слоёв приходят вместе с ним.
+func set_graph(new_graph: RS_LevelGraph) -> void:
 	graph = new_graph
-	_gen_config = gen_config
-	_plans.clear()
 
 
 ## План слоя [param layer_depth] — где стоит каждая комната и какое ребро уходит
-## в какую дверь. Считается БЕЗ спавна (стороны дверей берутся из кэша по пути
-## сцены), поэтому доступен и для незагруженных слоёв.
+## в какую дверь. Посчитан при генерации графа, без спавна, поэтому доступен и для
+## незагруженных слоёв: карта комплекса спрашивает слои, где игрок ещё не был.
 func plan_for_depth(layer_depth: int) -> RS_LayerPlan:
-	if _plans.has(layer_depth):
-		return _plans[layer_depth]
-	var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(layer_depth), _gen_config)
-	_plans[layer_depth] = plan
-	return plan
+	return graph.layer_plan(layer_depth)
 
 
 func is_spawned(node_id: StringName) -> bool:

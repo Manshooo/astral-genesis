@@ -109,7 +109,7 @@ func _verify_seed(seed_value: int, library: RS_RoomPresetLibrary, config: RS_Wor
 	var tiles := 0
 	var floors := 0
 	for depth: int in RS_LevelGraph.DEPTHS:
-		var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
+		var plan := graph.layer_plan(depth)
 		plans[depth] = plan
 		failures += plan.routing_failures.size()
 		tiles += plan.corridor_tiles.size()

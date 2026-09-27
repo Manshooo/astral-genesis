@@ -219,20 +219,43 @@ func _check_snapshot() -> void:
 	WorldSave.save = fresh
 
 	var taken: RS_WorldGenConfig = RunManager._run_gen_config()
-	_check("новый забег снимает ручки в сейв",
-		taken != null and fresh.gen_config == taken and taken != GameConfig.config.world_gen, "")
+	_check("новый забег снимает ручки в сейв вместе с версией генератора",
+		taken != null and fresh.gen_config == taken and taken != GameConfig.config.world_gen
+		and fresh.generator_version == RS_LevelGraph.GENERATOR_VERSION, "")
 
 	var in_progress := RS_WorldSave.new()
 	in_progress.run_in_progress = true
 	in_progress.gen_config = GameConfig.config.world_gen.duplicate() as RS_WorldGenConfig
 	in_progress.gen_config.rooms_per_floor = 7
+	in_progress.generator_version = RS_LevelGraph.GENERATOR_VERSION
 	WorldSave.save = in_progress
 	var continued: RS_WorldGenConfig = RunManager._run_gen_config()
 	_check("начатый забег идёт по своему снимку, а не по базе",
 		continued == in_progress.gen_config and continued.rooms_per_floor == 7, "")
 
+	# Забег на прежнем генераторе: снимок есть, но тот же сид теперь даёт другой
+	# комплекс. Прогресс, привязанный к узлам, сбрасывается, запас — нет.
+	var outdated := RS_WorldSave.new()
+	outdated.run_in_progress = true
+	outdated.gen_config = GameConfig.config.world_gen.duplicate() as RS_WorldGenConfig
+	outdated.generator_version = RS_LevelGraph.GENERATOR_VERSION - 1
+	outdated.current_node_id = &"L3_F0_room_2"
+	outdated.visited_node_ids.append(&"L3_F0_room_2")
+	outdated.consumed_body_ids.append(&"body_0")
+	outdated.rewarded_node_ids.append(&"L3_F0_room_2")
+	outdated.lifespan_remaining = 42.0
+	var old_snapshot := outdated.gen_config
+	WorldSave.save = outdated
+	var reset: RS_WorldGenConfig = RunManager._run_gen_config()
+	_check("забег на прежнем генераторе — на вход со свежим снимком, запас остаётся",
+		reset != old_snapshot and outdated.generator_version == RS_LevelGraph.GENERATOR_VERSION
+		and outdated.current_node_id == &"" and outdated.visited_node_ids.is_empty()
+		and outdated.consumed_body_ids.is_empty() and outdated.rewarded_node_ids.is_empty()
+		and outdated.lifespan_remaining == 42.0, "")
+
 	in_progress.clear_run()
-	_check("конец забега отпускает снимок", in_progress.gen_config == null, "")
+	_check("конец забега отпускает снимок и версию",
+		in_progress.gen_config == null and in_progress.generator_version == 0, "")
 
 	WorldSave.save = original
 

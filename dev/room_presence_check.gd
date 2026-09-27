@@ -51,7 +51,7 @@ func _check_plan_rule() -> void:
 	for s in SEEDS:
 		var graph := RS_LevelGraph.new().generate_run(s, library)
 		for depth: int in RS_LevelGraph.DEPTHS:
-			var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(depth))
+			var plan := graph.layer_plan(depth)
 			for node_id: StringName in plan.cells:
 				checked += 1
 				var at := plan.position_of(node_id)
@@ -75,7 +75,7 @@ func _check_plan_rule() -> void:
 		misses.is_empty(), ", ".join(misses.slice(0, 5)))
 
 	var graph := RS_LevelGraph.new().generate_run(0, library)
-	var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH))
+	var plan := graph.layer_plan(RS_LevelGraph.HOME_DEPTH)
 	_check("точка далеко вне раскладки — ничья",
 		plan.node_at(Vector3(10000.0, 0.0, 10000.0)) == &"", "")
 	_check("провал под мир — ничей",

@@ -1,7 +1,7 @@
 ## res://addons/game_design_tool/tabs/world_gen.gd
 ## Вкладка «Генератор мира» единого редактора геймдизайна: 3D-превью текущего
 ## слоя комплекса. Прогоняет ТОТ ЖЕ генератор (RS_LevelGraph.generate_run) и ТУ
-## ЖЕ раскладку (RS_LayerPlan.build), что и игра — см.
+## ЖЕ раскладку (RS_LevelGraph.layer_plan), что и игра — см.
 ## [[world-generator-tool-spec]] и [[Цикл забега]]. Отрисовкой и пикингом
 ## занимается GDT_ViewportHost (viewport_host.gd); эта вкладка — панель
 ## управления и боковая панель узла вокруг него.
@@ -437,7 +437,7 @@ func _rebuild_layer() -> void:
 func _layer_view(depth: int) -> LayerView:
 	var layer_nodes := _graph.get_nodes_by_depth(depth)
 	var view := LayerView.new(
-		_graph, layer_nodes, RS_LayerPlan.build(layer_nodes, _config), _preset_labels_for(layer_nodes)
+		_graph, layer_nodes, _graph.layer_plan(depth), _preset_labels_for(layer_nodes)
 	)
 	if ResourceLoader.exists(CORRIDOR_KIT_PATH):
 		view.kit = load(CORRIDOR_KIT_PATH) as RS_CorridorKit
@@ -685,7 +685,7 @@ func _on_preview_pressed() -> void:
 	for s in seeds:
 		var graph := RS_LevelGraph.new().generate_run(s, _library, config)
 		for depth: int in RS_LevelGraph.DEPTHS:
-			var plan := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
+			var plan := graph.layer_plan(depth)
 			failures += plan.routing_failures.size()
 			layout.add(RS_LayoutMetrics.of_plan(plan))
 		var rng := RandomNumberGenerator.new()
@@ -720,9 +720,10 @@ func _on_preview_pressed() -> void:
 
 
 ## Коридоры по всем прогнанным этажам: сколько тайлов и каких кусков, насколько
-## коридор обволакивает комнаты и сколько петель (RS_LayoutMetrics — те же цифры,
-## что печатает dev/corridor_layout_check). Отказов трассы быть не должно, но если
-## правка ручек их вернула, увидеть это надо здесь, а не в забеге.
+## коридор обволакивает комнаты, сколько обходных путей и тупиков
+## (RS_LayoutMetrics — те же цифры, что печатает dev/corridor_layout_check).
+## Отказов трассы быть не должно, но если правка ручек их вернула, увидеть это надо
+## здесь, а не в забеге.
 func _corridor_report(layout: RS_LayoutMetrics, failures: int) -> String:
 	var out := "\n[b]Коридоры[/b]: %d тайлов на %d этажей" % [layout.tiles, layout.floors]
 	if failures > 0:

@@ -1,7 +1,7 @@
 ## res://src/resources/world_generator/rs_layout_metrics.gd
 ## Метрики коридорной раскладки — то, чем карточка «Сетка уровня» меряет
-## обволакивание комнат коридором. Снимаются на нынешнем генераторе, чтобы новому
-## алгоритму раскладки было с чем сравниваться на тех же сидах.
+## обволакивание комнат коридором, обходные пути и тупики. По ним выбиралась
+## раскладка сетью (п. 7) и по ним же ловится правка, от которой стало хуже.
 ##
 ## Одно место счёта на прогон сидов «Генератора мира» и на corridor_layout_check:
 ## посчитай они каждый по-своему — и цифры в туле разошлись бы с порогом проверки.
@@ -30,15 +30,19 @@ var enveloped_rooms := 0
 var tiles := 0
 ## Piece -> сколько тайлов.
 var pieces: Dictionary[int, int] = {}
-## Независимые циклы проходимого графа этажа (тайлы и комнаты, связи — проёмы и
-## двери): столько раз можно обойти что-то по кругу, не возвращаясь по своим
-## следам. Комната с двумя дверями в одну ветку — тоже петля: через неё можно
-## пройти насквозь и вернуться коридором.
+## Обходные пути: независимые циклы графа узлов этажа — комнаты и ветки, связи —
+## «комната–ветка» (сколько бы дверей ни вело в одну ветку, это одна связь) и
+## стыки веток. Столько раз можно прийти в место другой дорогой, не возвращаясь по
+## своим следам. Две двери комнаты в одну ветку петлёй здесь не считаются: вошёл в
+## одну, вышел в соседнюю — это не другой путь (до п. 7 карточки «Сетка уровня»
+## считались, и такие «петли» были почти все).
 var loops := 0
-## Те же петли, но только по коридору, без прохода через комнаты. Порознь потому,
-## что у нынешнего генератора все петли — через комнаты (следствие «все двери
-## комнаты в одну ветку»), а петли, которых ждёт карточка, — коридорные.
+## Петли по самому коридору — циклы тайлов по проёмам, без прохода через комнаты.
+## Не часть loops: петля внутри одной ветки графа узлов не меняет, а петля между
+## двумя ветками попадает в оба счёта.
 var corridor_loops := 0
+## Тупики — отмеченные раскладкой концы отростков (RS_LayerPlan.dead_ends).
+var dead_ends := 0
 
 
 ## Метрики одного плана слоя.
@@ -61,8 +65,9 @@ static func of_plan(plan: RS_LayerPlan) -> RS_LayoutMetrics:
 		if _own_branch_sides(plan, room) >= ENVELOPED_SIDES:
 			metrics.enveloped_rooms += 1
 
-	metrics.loops = _cycle_rank(plan, true)
-	metrics.corridor_loops = _cycle_rank(plan, false)
+	metrics.loops = _node_loops(plan)
+	metrics.corridor_loops = _tile_loops(plan)
+	metrics.dead_ends = plan.dead_ends.size()
 	return metrics
 
 
@@ -74,6 +79,7 @@ func add(other: RS_LayoutMetrics) -> void:
 	tiles += other.tiles
 	loops += other.loops
 	corridor_loops += other.corridor_loops
+	dead_ends += other.dead_ends
 	for piece: int in other.pieces:
 		pieces[piece] = pieces.get(piece, 0) + other.pieces[piece]
 
@@ -121,16 +127,20 @@ func corridor_loops_per_floor() -> float:
 	return float(corridor_loops) / maxi(floors, 1)
 
 
+func dead_ends_per_floor() -> float:
+	return float(dead_ends) / maxi(floors, 1)
+
+
 ## Сводка строками — одна и та же в туле и в выводе проверки.
 func report_lines() -> PackedStringArray:
 	var lines := PackedStringArray()
-	lines.append("обволакиваемых комнат  %5.1f%%  (%d из %d; своя ветка с %d+ сторон)" % [
+	lines.append("обволакиваемых комнат  %5.1f%%  (%d из %d; свои ветки с %d+ сторон)" % [
 		100.0 * enveloped_share(), enveloped_rooms, rooms, ENVELOPED_SIDES
 	])
 	lines.append("тайлов на комнату      %5.2f   (на этаж %.1f)" % [tiles_per_room(), tiles_per_floor()])
-	lines.append("петель на этаж         %5.2f   (по коридору, без комнат, %.2f)" % [
-		loops_per_floor(), corridor_loops_per_floor()
-	])
+	lines.append("обходов по графу       %5.2f   на этаж (комната на двух ветках, кольцо веток)" % loops_per_floor())
+	lines.append("петель по коридору     %5.2f   на этаж" % corridor_loops_per_floor())
+	lines.append("тупиков                %5.2f   на этаж" % dead_ends_per_floor())
 	for piece in Piece.values():
 		lines.append("%-10s %6d  %5.1f%%" % [PIECE_NAMES[piece], pieces.get(piece, 0), 100.0 * piece_share(piece)])
 	return lines
@@ -149,50 +159,60 @@ static func _own_branch_sides(plan: RS_LayerPlan, room: StringName) -> int:
 	return sides.size()
 
 
-## Цикломатическое число проходимого графа слоя: рёбер − вершин + компонент.
-## Вершины — тайлы (и комнаты, если [param with_rooms]), рёбра — открытые проёмы
-## между тайлами и двери комнат в тайлы. Этажи между собой по сетке не связаны
-## (порталы — не проёмы), так что сумма по слою — это сумма по его этажам.
-static func _cycle_rank(plan: RS_LayerPlan, with_rooms: bool) -> int:
-	var links: Dictionary[Vector3i, Array] = {}  # вершина -> соседи по проёмам
+## Обходные пути слоя (см. loops): цикломатическое число графа узлов — рёбер −
+## вершин + компонент. Вершины — комнаты и ветки, рёбра — пары «комната–ветка» без
+## повторов и стыки веток. Этажи между собой по сетке не связаны (порталы — не
+## проёмы), так что сумма по слою — это сумма по его этажам.
+static func _node_loops(plan: RS_LayerPlan) -> int:
+	var vertices: Dictionary[StringName, bool] = {}
+	var edges: Dictionary[String, Array] = {}
+	for room: StringName in plan.door_faces:
+		vertices[room] = true
+		for branch: StringName in (plan.door_faces[room] as Dictionary).values():
+			vertices[branch] = true
+			edges["%s|%s" % [room, branch]] = [room, branch]
+	for tile: Vector3i in plan.corridor_tiles:
+		vertices[plan.node_by_cell[tile]] = true
+	for joint: Array in plan.branch_joints():
+		edges["%s|%s" % joint] = joint
+	var links: Dictionary = {}
+	for key: String in edges:
+		var pair: Array = edges[key]
+		links.get_or_add(pair[0], []).append(pair[1])
+		links.get_or_add(pair[1], []).append(pair[0])
+	return edges.size() - vertices.size() + _components(vertices.keys(), links)
+
+
+## Петли по коридору: цикломатическое число графа тайлов, рёбра — проёмы между
+## соседними тайлами.
+static func _tile_loops(plan: RS_LayerPlan) -> int:
+	var links: Dictionary = {}
+	var edges := 0
 	for cell: Vector3i in plan.corridor_tiles:
-		if not links.has(cell):
-			links[cell] = []
 		var mask: int = plan.corridor_tiles[cell]
 		for side in plan.topology.side_count(cell):
 			var next := plan.topology.neighbour(cell, side)
 			if mask & (1 << side) and plan.corridor_tiles.has(next):
-				links[cell].append(next)
-	# Дверь — связь комнаты с тайлом перед ней. Комната — одна вершина, её угловая
-	# клетка: у комнаты клетки свои, поэтому вершины тайлов и комнат не путаются.
-	var rooms: Array = plan.door_faces.keys() if with_rooms else []
-	for room: StringName in rooms:
-		var cell: Vector3i = plan.cells[room]
-		if not links.has(cell):
-			links[cell] = []
-		for face: Vector4i in plan.door_faces[room]:
-			var front := plan.topology.neighbour(GridTopology.face_cell(face), face.w)
-			if plan.corridor_tiles.has(front):
-				links[cell].append(front)
-				links[front].append(cell)
+				links.get_or_add(cell, []).append(next)
+				edges += 1
+	edges /= 2  # каждый проём записан с обоих концов
+	return edges - plan.corridor_tiles.size() + _components(plan.corridor_tiles.keys(), links)
 
-	var edges := 0
-	for cell: Vector3i in links:
-		edges += links[cell].size()
-	edges /= 2  # каждая связь записана с обоих концов
 
+## Сколько связных кусков у графа: вершины [param vertices], соседи — [param links].
+static func _components(vertices: Array, links: Dictionary) -> int:
 	var components := 0
 	var seen := {}
-	for start: Vector3i in links:
+	for start in vertices:
 		if seen.has(start):
 			continue
 		components += 1
 		seen[start] = true
-		var stack: Array[Vector3i] = [start]
+		var stack: Array = [start]
 		while not stack.is_empty():
-			var cell: Vector3i = stack.pop_back()
-			for next: Vector3i in links[cell]:
+			var vertex = stack.pop_back()
+			for next in links.get(vertex, []):
 				if not seen.has(next):
 					seen[next] = true
 					stack.append(next)
-	return edges - links.size() + components
+	return components
