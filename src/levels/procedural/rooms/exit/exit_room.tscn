@@ -1,51 +1,32 @@
 [gd_scene format=3 uid="uid://bt1plch36nos5"]
 
-[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_wbtds"]
-[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_uf4in"]
-[ext_resource type="PackedScene" uid="uid://dvejaurune07n" path="res://assets/levels/SM_room_B_2/SM_room_B_2.glb" id="4_87bj8"]
-[ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_g6fwc"]
-[ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="6_k843v"]
-[ext_resource type="Script" uid="uid://b862rhl0ju5v0" path="res://src/resources/interaction/a_finish_run.gd" id="7_g6fwc"]
-[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="8_k843v"]
-[ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="9_slot"]
-[ext_resource type="PackedScene" uid="uid://biosb4cjxfviu" path="res://src/entities/body/e_body_crawler.tscn" id="90_body"]
+[ext_resource type="Script" path="res://src/levels/procedural/rooms/room_template.gd" id="1_wbtds"]
+[ext_resource type="Script" path="res://addons/gecs/ecs/component.gd" id="2_uf4in"]
+[ext_resource type="Script" path="res://src/components/level/c_room_shell.gd" id="3_87bj8"]
+[ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_g6fwc"]
+[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_k843v"]
+[ext_resource type="PackedScene" path="res://src/entities/body/e_body_crawler.tscn" id="90_body"]
 
-[sub_resource type="Resource" id="Resource_k843v"]
-script = ExtResource("7_g6fwc")
-metadata/_custom_type_script = "uid://b862rhl0ju5v0"
-
-[sub_resource type="Resource" id="Resource_8ssbo"]
-script = ExtResource("8_k843v")
-prompt_text = "Наружу"
-metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
-
-[sub_resource type="Resource" id="Interactable_door2"]
-script = ExtResource("8_k843v")
-prompt_text = "Пройти"
-metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
-
-[sub_resource type="Resource" id="Slot_south"]
-script = ExtResource("9_slot")
-slot_id = &"south"
-metadata/_custom_type_script = "uid://dv1d7jb1mo3fv"
+[sub_resource type="Resource" id="Resource_3ib2l"]
+script = ExtResource("3_87bj8")
+size = Vector3i(2, 1, 2)
+walls = ExtResource("4_g6fwc")
 
 [node name="ExitRoom" type="Node3D" unique_id=620451068]
 script = ExtResource("1_wbtds")
+component_resources = Array[ExtResource("2_uf4in")]([SubResource("Resource_3ib2l")])
 
-[node name="Visual" parent="." unique_id=1492272158 instance=ExtResource("4_87bj8")]
-[node name="Doors" type="Node3D" parent="." unique_id=1730526942]
-
-[node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_g6fwc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13231403, 0.022136688, -10)
-actions = Array[ExtResource("6_k843v")]([SubResource("Resource_k843v")])
-component_resources = Array[ExtResource("2_uf4in")]([SubResource("Resource_8ssbo")])
-
-[node name="Door2" parent="Doors" unique_id=674122192 instance=ExtResource("5_g6fwc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14422965, 0.022136688, 9.3)
-component_resources = Array[ExtResource("2_uf4in")]([SubResource("Interactable_door2"), SubResource("Slot_south")])
+[node name="Visual" parent="." unique_id=250268331 instance=ExtResource("5_k843v")]
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)
 
 [node name="BodyCrawler" parent="." unique_id=710000001 instance=ExtResource("90_body")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.00089758635, 3)
+
+[node name="Light" type="OmniLight3D" parent="." unique_id=1314487924]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
+light_color = Color(1, 0.93, 0.82, 1)
+light_energy = 1.6
+omni_range = 14.0
+omni_attenuation = 1.2

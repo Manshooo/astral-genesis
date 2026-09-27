@@ -1,54 +1,22 @@
 [gd_scene format=3 uid="uid://ch8h7c3ft6q1t"]
 
-[ext_resource type="Script" uid="uid://cctjgttgw45u1" path="res://src/levels/procedural/rooms/vertical/vertical_hub_1.gd" id="1_dhosw"]
-[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_sf4mg"]
-[ext_resource type="PackedScene" uid="uid://b85hewbqr2hwg" path="res://assets/levels/SM_room_B_4/SM_room_B_4.glb" id="4_dhosw"]
-[ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_lbhih"]
-[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_k5mo5"]
-[ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_585rs"]
-[ext_resource type="PackedScene" uid="uid://cptqi40u604fy" path="res://src/entities/vertical_portal/e_vertical_portal.tscn" id="8_7gnft"]
-
-[sub_resource type="Resource" id="Resource_8ssbo"]
-script = ExtResource("6_k5mo5")
-metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
-
-[sub_resource type="Resource" id="Resource_kvf8c"]
-script = ExtResource("7_585rs")
-slot_id = &"west"
-
-[sub_resource type="Resource" id="Resource_jspcr"]
-script = ExtResource("7_585rs")
-slot_id = &"north"
-
-[sub_resource type="Resource" id="Resource_dhosw"]
-script = ExtResource("7_585rs")
-slot_id = &"east"
+[ext_resource type="Script" path="res://src/levels/procedural/rooms/vertical/vertical_hub_1.gd" id="1_dhosw"]
+[ext_resource type="Script" path="res://addons/gecs/ecs/component.gd" id="2_sf4mg"]
+[ext_resource type="Script" path="res://src/components/level/c_room_shell.gd" id="3_474ug"]
+[ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_jnd2a"]
+[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_dhosw"]
+[ext_resource type="PackedScene" path="res://src/entities/vertical_portal/e_vertical_portal.tscn" id="8_7gnft"]
 
 [sub_resource type="Resource" id="Resource_sf4mg"]
-script = ExtResource("7_585rs")
-slot_id = &"south"
+script = ExtResource("3_474ug")
+size = Vector3i(2, 1, 2)
+walls = ExtResource("4_jnd2a")
 
 [node name="VerticalHub2" type="Node3D" unique_id=1402548300]
 script = ExtResource("1_dhosw")
+component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_sf4mg")])
 
-[node name="Visual" parent="." unique_id=1316407927 instance=ExtResource("4_dhosw")]
-[node name="Doors" type="Node3D" parent="." unique_id=1093078624]
-
-[node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_lbhih")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13593066, 0.043256044, -9.6)
-component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_kvf8c")])
-
-[node name="Door2" parent="Doors" unique_id=1042643329 instance=ExtResource("5_lbhih")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13592339, 0.053058386, 9.599999)
-component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_jspcr")])
-
-[node name="Door3" parent="Doors" unique_id=1817518063 instance=ExtResource("5_lbhih")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.268652, 0.043256044, -0.15456891)
-component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_dhosw")])
-
-[node name="Door4" parent="Doors" unique_id=1298178528 instance=ExtResource("5_lbhih")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 9.731348, 0.043256044, -0.14650631)
-component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_8ssbo"), SubResource("Resource_sf4mg")])
+[node name="Visual" parent="." unique_id=250268331 instance=ExtResource("5_dhosw")]
 
 [node name="VerticalPortal" parent="." unique_id=1972028151 instance=ExtResource("8_7gnft")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4132774, 0)
@@ -57,10 +25,17 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4132774, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.8, -5.4)
 
 [node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=2138258083]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.972025, 1, -6.024722)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1, -3.5)
 use_collision = true
 size = Vector3(2, 2, 1)
 
 [node name="CSGBox3D2" type="CSGBox3D" parent="CSGBox3D" unique_id=528511629]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.5, 1)
 use_collision = true
+
+[node name="Light" type="OmniLight3D" parent="." unique_id=645230177]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
+light_color = Color(1, 0.93, 0.82, 1)
+light_energy = 1.6
+omni_range = 14.0
+omni_attenuation = 1.2

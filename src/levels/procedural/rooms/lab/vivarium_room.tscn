@@ -1,17 +1,21 @@
 [gd_scene format=3 uid="uid://bq3ukgw2nntde"]
 
-[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_qwslo"]
-[ext_resource type="PackedScene" uid="uid://2nin6nr7u4ta" path="res://assets/levels/SM_room_A_1/SM_room_A_1.glb" id="4_iatwo"]
-[ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_xa3ha"]
+[ext_resource type="Script" path="res://src/levels/procedural/rooms/room_template.gd" id="1_qwslo"]
+[ext_resource type="Script" path="res://addons/gecs/ecs/component.gd" id="2_xa3ha"]
+[ext_resource type="Script" path="res://src/components/level/c_room_shell.gd" id="3_jqxau"]
+[ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_lh1oc"]
+[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_5lyph"]
+
+[sub_resource type="Resource" id="Resource_ng4uo"]
+script = ExtResource("3_jqxau")
+size = Vector3i(2, 1, 2)
+walls = ExtResource("4_lh1oc")
 
 [node name="vivarium" type="Node3D" unique_id=620451068]
 script = ExtResource("1_qwslo")
+component_resources = Array[ExtResource("2_xa3ha")]([SubResource("Resource_ng4uo")])
 
-[node name="Visual" parent="." unique_id=1492272158 instance=ExtResource("4_iatwo")]
-[node name="Doors" type="Node3D" parent="." unique_id=2109765880]
-
-[node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_xa3ha")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8)
+[node name="Visual" parent="." unique_id=250268331 instance=ExtResource("5_5lyph")]
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)

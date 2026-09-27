@@ -54,7 +54,7 @@ func _check_invariants(config: RS_WorldGenConfig) -> void:
 		"граф связен от входа": [],
 		"вход — хаб": [],
 		"выходы: число, глубина, сцена, тег": [],
-		"у комнаты рёбер в коридоры ровно столько, сколько дверей в сцене": [],
+		"у комнаты рёбер в коридоры ровно столько, сколько у неё дверей": [],
 		"двери комнаты ведут в ветки её этажа": [],
 		"у каждой ветки есть хотя бы одна комната, и живёт она в своём этаже": [],
 		"не больше одного вертикального ребра на узел": [],
@@ -120,9 +120,9 @@ func _collect(
 			problems["не больше одного вертикального ребра на узел"].append("сид %d %s" % [s, node.id])
 
 		if node.role == RS_LevelNode.Role.ROOM:
-			var doors := RS_RoomLayout.door_count_of_scene(node.room_scene_path)
+			var doors := node.door_count()
 			if horizontals != doors:
-				problems["у комнаты рёбер в коридоры ровно столько, сколько дверей в сцене"].append(
+				problems["у комнаты рёбер в коридоры ровно столько, сколько у неё дверей"].append(
 					"сид %d %s: рёбер %d, дверей %d" % [s, node.id, horizontals, doors]
 				)
 			if _has_portal(node.room_scene_path) != (verticals > 0):
@@ -178,7 +178,7 @@ func _check_home_depth(config: RS_WorldGenConfig) -> void:
 
 ## Уникальная комната «как Архитектор»: шанс 0 — её нет нигде, в том числе
 ## обычным подбором (пресет уникальной из пула исключён); шанс 1 — ровно одна, в
-## своём диапазоне глубин, и рёбер у неё столько, сколько дверей в сцене.
+## своём диапазоне глубин, и рёбер у неё столько, сколько у неё дверей.
 func _check_unique_chance(config: RS_WorldGenConfig) -> void:
 	var stand_in := load(STAND_IN_PRESET) as RS_RoomPreset
 	var scene_path := stand_in.scene.resource_path

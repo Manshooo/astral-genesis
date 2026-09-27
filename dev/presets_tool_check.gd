@@ -22,8 +22,10 @@ const PresetsTab := preload("res://addons/game_design_tool/tabs/presets.gd")
 const DIR := "user://presets_tool_check"
 const LIB_PATH := DIR + "/library.tres"
 const TAGS_PATH := DIR + "/tags.tres"
-## Однодверная сцена — счётчик «В сцене» обязан её посчитать.
-const ONE_DOOR_SCENE := "res://src/levels/procedural/rooms/test_room.tscn"
+## Однодверная сцена с запечённой дверью — счётчик «В сцене» обязан её посчитать.
+## Фикстура, а не комната игры: с клеткой 8 м все комнаты генератора собираются по
+## сокетам, а путь запечённых дверей редактор поддерживает по-прежнему.
+const ONE_DOOR_SCENE := "res://dev/fixtures/one_door_room.tscn"
 
 
 func _ready() -> void:

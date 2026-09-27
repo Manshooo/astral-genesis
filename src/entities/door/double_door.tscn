@@ -1,0 +1,63 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://id4kvc8cui16" path="res://src/entities/door/e_complex_door.gd" id="2_door"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="3_component"]
+[ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_action"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_interactable"]
+[ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="4_travel"]
+[ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_slot"]
+
+[sub_resource type="Resource" id="Travel"]
+script = ExtResource("4_travel")
+
+[sub_resource type="Resource" id="Interactable"]
+script = ExtResource("4_interactable")
+prompt_text = "Пройти"
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="Slot"]
+script = ExtResource("7_slot")
+
+[sub_resource type="BoxShape3D" id="LeafShape"]
+size = Vector3(1.37, 4.24, 0.36)
+
+[sub_resource type="BoxMesh" id="LeafMesh"]
+size = Vector3(1.37, 4.24, 0.36)
+
+[sub_resource type="BoxShape3D" id="InteractShape"]
+size = Vector3(3.15, 4.35, 0.7)
+
+[node name="DoubleDoor" type="Node3D"]
+script = ExtResource("2_door")
+actions = Array[ExtResource("3_action")]([SubResource("Travel")])
+component_resources = Array[ExtResource("3_component")]([SubResource("Interactable"), SubResource("Slot")])
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="LeafLeft" type="AnimatableBody3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6875, 2.12, 0)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Visual/LeafLeft"]
+mesh = SubResource("LeafMesh")
+
+[node name="Shape" type="CollisionShape3D" parent="Visual/LeafLeft"]
+shape = SubResource("LeafShape")
+
+[node name="LeafRight" type="AnimatableBody3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6875, 2.12, 0)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Visual/LeafRight"]
+mesh = SubResource("LeafMesh")
+
+[node name="Shape" type="CollisionShape3D" parent="Visual/LeafRight"]
+shape = SubResource("LeafShape")
+
+[node name="InteractBody" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.19, 0)
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody"]
+shape = SubResource("InteractShape")

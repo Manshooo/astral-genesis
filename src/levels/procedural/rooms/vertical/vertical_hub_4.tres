@@ -7,6 +7,8 @@
 script = ExtResource("2_7me8n")
 display_name = "Четверной портал"
 scene = ExtResource("1_jn24m")
+doors_min = 4
+doors_max = 4
 tags = Array[StringName]([&"vertical_hub", &"floor_hub", &"level_exit"])
 slot_count = 4
 weight = 0.1

@@ -14,11 +14,12 @@ extends "res://dev/check_harness.gd"
 const SEEDS := 30
 const CONFIG_PATH := "res://data/world_gen_config.tres"
 ## Потолок доли комнат, которые коридор обволакивает своей же веткой
-## (RS_LayoutMetrics), — по нынешнему генератору: 55.0 % на этих сидах, 54.1 % на
-## 200 (замер 26.09). Ловит правку ручек или раскладки, от которой стало хуже.
-## Новая раскладка (п. 7 карточки «Сетка уровня») обязана эту долю опустить — и
-## порог опускается следом, иначе он перестаёт что-либо сторожить.
-const MAX_ENVELOPED_SHARE := 0.56
+## (RS_LayoutMetrics), — по нынешнему генератору: 42.0 % на этих сидах на клетке
+## 8 м (замер 27.09; до сборных комнат, с дверями, запечёнными в арт, было 55 %).
+## Ловит правку ручек или раскладки, от которой стало хуже. Новая раскладка (п. 7
+## карточки «Сетка уровня») обязана эту долю опустить — и порог опускается
+## следом, иначе он перестаёт что-либо сторожить.
+const MAX_ENVELOPED_SHARE := 0.43
 
 
 func _ready() -> void:
@@ -85,7 +86,11 @@ func _collect(
 		if node.role != RS_LevelNode.Role.ROOM:
 			continue
 		_check_room_doors(graph, node, plan, tag, problems)
-		if plan.node_at(plan.position_of(node.id) + Vector3(5.0, 1.7, -5.0)) != node.id:
+		# Ближе к углу комнаты, чем к центру, — в долях footprint, а не в метрах: так
+		# проба остаётся внутри комнаты при любой клетке.
+		var size: Vector3i = plan.footprints.get(node.id, Vector3i.ONE)
+		var corner := Vector3(size.x, 0.0, -size.z) * plan.embedding.cell_size * 0.3 + Vector3(0.0, 1.7, 0.0)
+		if plan.node_at(plan.position_of(node.id) + corner) != node.id:
 			problems["node_at узнаёт комнаты и коридоры"].append("%s %s" % [tag, node.id])
 
 	var adjacent_branches := {}  # "a|b" (a<b) -> есть ли открытый стык
@@ -94,7 +99,8 @@ func _collect(
 		var owner: StringName = plan.node_by_cell[cell]
 		if RS_LayoutMetrics.piece_of(mask) == RS_LayoutMetrics.Piece.END:
 			problems["тайлов с одним проёмом (торца в ките нет) не бывает"].append("%s %s" % [tag, cell])
-		if plan.node_at(plan.embedding.cell_origin(cell) + Vector3(4.0, 1.7, 4.0)) != owner:
+		var off_center := Vector3(0.3, 0.0, 0.3) * plan.embedding.cell_size + Vector3(0.0, 1.7, 0.0)
+		if plan.node_at(plan.embedding.cell_origin(cell) + off_center) != owner:
 			problems["node_at узнаёт комнаты и коридоры"].append("%s тайл %s" % [tag, cell])
 		for side in plan.topology.side_count(cell):
 			if mask & (1 << side) == 0:

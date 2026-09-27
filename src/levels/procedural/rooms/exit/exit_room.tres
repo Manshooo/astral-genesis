@@ -7,5 +7,7 @@
 script = ExtResource("2_l3cpw")
 display_name = "Комната выхода"
 scene = ExtResource("1_hir7v")
+doors_min = 2
+doors_max = 2
 tags = Array[StringName]([&"level_exit", &"floor_hub"])
 metadata/_custom_type_script = "uid://wiaffa7aebsm"
