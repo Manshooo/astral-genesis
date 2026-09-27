@@ -47,9 +47,13 @@ var embedding := SquareGridEmbedding.new(8.0, 8.0, 0.0625)
 ## всем осям), у ветки коридора — клетка её первого тайла: у ветки нет одной
 ## клетки, а инструментам нужна хоть какая-то.
 var cells: Dictionary[StringName, Vector3i] = {}
-## Комната -> footprint в клетках (ширина по X, уровней по Y, длина по Z). У
-## комнаты с дверями в сцене — одна клетка.
+## Комната -> footprint в клетках (ширина по X, уровней по Y, длина по Z) — в осях
+## мира, то есть уже с поворотом комнаты. У комнаты с дверями в сцене — одна клетка.
 var footprints: Dictionary[StringName, Vector3i] = {}
+## Комната -> поворот в четвертях оборота вокруг Y (RS_LevelNode.turns): сторона
+## сцены s смотрит в мир стороной s − turns. Размещение, а не мир: сколько это
+## градусов и вокруг какой оси, решает тот, кто ставит комнату (room_transform).
+var turns: Dictionary[StringName, int] = {}
 ## Клетка -> node_id — и всех клеток комнат, и тайлов коридора. Одна и та же
 ## (x, z) на разных этажах — разные клетки и разные узлы. На ней держится node_at,
 ## а через него — «в каком узле стоит игрок».
@@ -104,6 +108,13 @@ func position_of(node_id: StringName) -> Vector3:
 		return embedding.cell_origin(anchor)
 	var far := anchor + Vector3i(size.x - 1, 0, size.z - 1)
 	return (embedding.cell_origin(anchor) + embedding.cell_origin(far)) * 0.5
+
+
+## Где и как повёрнутой стоит комната в мире: центр footprint и поворот. Один на
+## спавн и предпросмотр — разойдись они, и превью показывало бы комнату не тем
+## боком, каким её поставит игра.
+func room_transform(node_id: StringName) -> Transform3D:
+	return Transform3D(embedding.turn_basis(turns.get(node_id, 0)), position_of(node_id))
 
 
 ## Все клетки комнаты — footprint на всех его уровнях.

@@ -48,7 +48,10 @@ func _ready() -> void:
 		_check_box(path, plan)
 		_check_zones(path, plan)
 	_check_zone_detector()
-	await _check_assembly()
+	# Без поворота и на четверть: стены и двери обязаны встать в стороны мира при
+	# любом повороте корня комнаты.
+	for turns in [0, 1]:
+		await _check_assembly(turns)
 	_finish()
 
 
@@ -169,11 +172,12 @@ func _socket_zones(shell: C_RoomShell, plan: RS_LayerPlan) -> Array[AABB]:
 # --- 3. Сборка на деталях кита P ---------------------------------------------
 
 
-func _check_assembly() -> void:
+func _check_assembly(turns: int) -> void:
 	var room_node := RS_LevelNode.new()
 	room_node.id = &"room"
 	room_node.room_scene_path = KIT_P_ROOM
 	room_node.socket_doors = 2
+	room_node.turns = turns
 	var branch := RS_LevelNode.new()
 	branch.id = &"branch"
 	branch.role = RS_LevelNode.Role.CORRIDOR
@@ -183,14 +187,14 @@ func _check_assembly() -> void:
 	var layer: Array[RS_LevelNode] = [room_node, branch]
 	var plan := RS_LayerPlan.build(layer)
 	var faces: Dictionary = plan.door_faces.get(room_node.id, {})
-	_check("план: у комнаты 2×2×1 ровно две двери, обе в сокетах",
+	_check("поворот %d: у комнаты 2×2×1 ровно две двери, обе в сокетах" % turns,
 		faces.size() == 2 and plan.routing_failures.is_empty(),
 		"%s %s" % [faces, plan.routing_failures])
 
 	var root := Node3D.new()
 	add_child(root)
 	var room := (load(KIT_P_ROOM) as PackedScene).instantiate() as Node3D
-	room.position = plan.position_of(room_node.id)
+	room.transform = plan.room_transform(room_node.id)
 	var walls := RS_RoomLayout.shell_of(room).walls
 	var doors := walls.assemble(room, room_node.id, plan)
 	root.add_child(room)
@@ -208,9 +212,9 @@ func _check_assembly() -> void:
 	for child in room.get_children():
 		door_walls += 1 if child.scene_file_path == walls.door_wall.resource_path else 0
 		blank_walls += 1 if child.scene_file_path == walls.blank_wall.resource_path else 0
-	_check("стен по граням периметра: 2 с проёмом и 6 глухих", door_walls == 2 and blank_walls == 6,
+	_check("поворот %d: стен по граням периметра — 2 с проёмом и 6 глухих" % turns, door_walls == 2 and blank_walls == 6,
 		"с проёмом %d, глухих %d" % [door_walls, blank_walls])
-	_check("торец с проёмом — на каждый тайл перед дверью", caps == 2, "торцов %d" % caps)
+	_check("поворот %d: торец с проёмом — на каждый тайл перед дверью" % turns, caps == 2, "торцов %d" % caps)
 	var misplaced: Array[String] = []
 	for door: Node3D in doors:
 		var face: Vector4i = doors[door]
@@ -218,19 +222,21 @@ func _check_assembly() -> void:
 		var mid := (plan.embedding.cell_origin(cell) + plan.embedding.cell_origin(plan.topology.neighbour(cell, face.w))) * 0.5
 		if door.global_position.distance_to(mid) > EPSILON:
 			misplaced.append("%s: %s вместо %s" % [face, door.global_position, mid])
-	_check("двери стоят на середине своих граней", doors.size() == 2 and misplaced.is_empty(), ", ".join(misplaced))
+	_check("поворот %d: двери стоят на середине своих граней" % turns, doors.size() == 2 and misplaced.is_empty(), ", ".join(misplaced))
 
 	for i in 3:
 		await get_tree().physics_frame
-	_check_assembly_rays(plan, room_node.id, doors)
-	root.queue_free()
+	_check_assembly_rays(plan, room_node.id, doors, turns)
+	# Сразу, а не в конце кадра: следующая сборка встаёт на то же место, и её лучи
+	# не должны задеть коллизию этой.
+	root.free()
 
 
 ## Лучи по коллизии деталей: глухая грань держит изнутри комнаты; через дверь луч
 ## проходит насквозь — сквозь проём стены и проём торца — до центра тайла; над
 ## проёмом упирается и стена комнаты, и торец коридора. Полотна дверей из луча
 ## исключены: закрытая дверь проём и должна закрывать.
-func _check_assembly_rays(plan: RS_LayerPlan, room_id: StringName, doors: Dictionary) -> void:
+func _check_assembly_rays(plan: RS_LayerPlan, room_id: StringName, doors: Dictionary, room_turns: int) -> void:
 	var space := get_viewport().world_3d.direct_space_state
 	var exclude: Array[RID] = []
 	for door: Node in doors:
@@ -256,7 +262,7 @@ func _check_assembly_rays(plan: RS_LayerPlan, room_id: StringName, doors: Dictio
 			var reach: float = inside.distance_to((hit.get("position", outside) as Vector3) - up)
 			if hit.is_empty() or reach > plan.embedding.cell_size * 0.5:
 				wrong.append("%s: глухая стена не держит (до стены %.2f м)" % [face, reach])
-	_check("стены и торцы по коллизии: проёмы там, где двери, глухо везде ещё",
+	_check("поворот %d: стены и торцы по коллизии — проёмы там, где двери, глухо везде ещё" % room_turns,
 		wrong.is_empty(), ", ".join(wrong.slice(0, 4)))
 
 

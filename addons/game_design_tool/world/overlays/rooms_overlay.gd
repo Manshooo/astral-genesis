@@ -44,7 +44,7 @@ func rebuild(view: LayerView) -> void:
 		var room := (load(node_data.room_scene_path) as PackedScene).instantiate()
 		var spatial := room as Node3D
 		if spatial:
-			spatial.position = view.plan.position_of(node_data.id)
+			spatial.transform = view.plan.room_transform(node_data.id)
 			# Сборная комната — теми же стенами, что поставит игра (LayerStreamer).
 			var shell := RS_RoomLayout.shell_of(room)
 			if shell and shell.walls:

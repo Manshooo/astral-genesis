@@ -45,12 +45,17 @@ enum Role { ROOM, CORRIDOR }
 @export var room_type: StringName = &""
 @export var connections: Array[RS_LevelConnection] = []
 ## Двери узла переставляют игрока, а не открываются — копия
-## RS_UniqueRoom.door_teleports (хаб, пока в его арте нет проёма).
+## RS_UniqueRoom.door_teleports (комната, за дверью которой в арте нет проёма).
 @export var door_teleports: bool = false
 ## Сколько сокетов комнаты, собранной по маске (C_RoomShell), станут дверями —
 ## разыграно из диапазона пресета при подстановке. 0 — двери запечены в сцену, и
 ## их число знает сама сцена.
 @export var socket_doors: int = 0
+## На сколько четвертей оборота вокруг Y повёрнута комната — в ту же сторону,
+## что rotation.y = turns · π/2 у кусков кита. Разыграно при подстановке у всех
+## комнат без исключений (решение 24.09 карточки «Сетка уровня»): сторона сцены
+## s смотрит в мир стороной s − turns.
+@export var turns: int = 0
 
 
 func has_tag(tag: StringName) -> bool:

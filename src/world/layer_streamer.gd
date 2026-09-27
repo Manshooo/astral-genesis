@@ -237,14 +237,14 @@ func _instantiate_room(node_data: RS_LevelNode) -> Entity:
 ## Ставит уже инстанцированную комнату на её место по плану и регистрирует всё
 ## её содержимое в мире.
 func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) -> SpawnedRoom:
-	# Позицию ставим ДО add_entity: тот сам вносит узел в дерево, и комната должна
+	# Место и поворот ставим ДО add_entity: тот сам вносит узел в дерево, и комната должна
 	# попасть туда сразу на своё место — иначе коллайдеры успевают
 	# зарегистрироваться в начале координат и телепортируются следом.
 	# Через Node: Entity наследует Node, и прямой каст Entity→Node3D анализатор
 	# GDScript не пропускает.
 	var spatial := entity as Node as Node3D
 	if spatial:
-		spatial.position = plan.position_of(node_data.id)
+		spatial.transform = plan.room_transform(node_data.id)
 
 	# Стены и двери сборной комнаты — тоже до add_entity: двери должны попасть в
 	# обход вложенных сущностей (_register_room_children) вместе с остальными.
@@ -340,7 +340,9 @@ func _bind_doors(spawned: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPl
 	var anchor: Vector3i = plan.cells.get(node_data.id, Vector3i.ZERO)
 	for door in doors:
 		if not spawned.door_faces.has(door):
+			# Сторона стены — в осях сцены; в мир её переводит поворот комнаты.
 			var wall := RS_RoomLayout.door_side(door as Node as Node3D, spawned.entity)
+			wall = plan.topology.rotate_side(anchor, wall, -plan.turns.get(node_data.id, 0))
 			spawned.door_faces[door] = GridTopology.face(anchor, wall)
 		var face := spawned.face_of(door)
 		var target: StringName = faces.get(face, &"")

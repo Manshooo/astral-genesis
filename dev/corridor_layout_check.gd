@@ -160,7 +160,9 @@ func _check_room_doors(
 	var placed_right := true
 	if room.socket_doors == 0:
 		var scene_list: Array = []
-		scene_list.append_array(RS_RoomLayout.door_sides_of_scene(room.room_scene_path))
+		var room_cell: Vector3i = plan.cells[room.id]
+		for side: int in RS_RoomLayout.door_sides_of_scene(room.room_scene_path):
+			scene_list.append(plan.topology.rotate_side(room_cell, side, -room.turns))
 		var keys: Array = []
 		for face: Vector4i in faces:
 			keys.append(face.w)
