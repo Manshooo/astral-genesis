@@ -181,12 +181,11 @@ func _check_assembly(turns: int) -> void:
 	# Слой из одной комнаты раскладывает сам планировщик: план рождается в генерации
 	# графа, а графа здесь нет. Без петель и тупиков — проверяется сборка комнаты.
 	var rooms: Array[RS_LevelNode] = [room_node]
-	var branches: Array[StringName] = [&"branch"]
 	var config := RS_WorldGenConfig.new()
 	config.corridor_loops = 0
 	config.dead_ends = 0
 	var plan := RS_LayerPlan.new()
-	RS_CorridorPlanner.plan_floor(plan, rooms, branches, 0, config, RandomNumberGenerator.new())
+	RS_CorridorPlanner.plan_floor(plan, rooms, "corridor_", 0, config, RandomNumberGenerator.new())
 	var faces: Dictionary = plan.door_faces.get(room_node.id, {})
 	_check("поворот %d: у комнаты 2×2×1 ровно две двери, обе в сокетах" % turns,
 		faces.size() == 2 and plan.routing_failures.is_empty(),

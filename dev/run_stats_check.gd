@@ -52,12 +52,42 @@ func _ready() -> void:
 	_check_accumulator()
 	await _check_world(world)
 	_check_run_boundaries()
+	_check_rooms_count()
 	await _check_screen()
 	_check_autosave()
 	await _check_save_indicator()
 	_restore_save()
 
 	_finish()
+
+
+## «Комнат посещено» — только комнаты. Коридоры — тоже узлы графа и лежат в
+## посещённых, а с коридором на отрезок между развилками (карточка «Коридор —
+## отдельный узел») их на этаже больше, чем комнат: счётчик по всем посещённым
+## врал бы в итогах в разы. Сейв и граф подменяются в памяти и возвращаются.
+func _check_rooms_count() -> void:
+	var saved_save := WorldSave.save
+	var saved_graph := RunManager.current_graph
+	var saved_stats := RunStats.current
+	var graph := RS_LevelGraph.new()
+	var room := RS_LevelNode.new()
+	room.id = &"комната"
+	var corridor := RS_LevelNode.new()
+	corridor.id = &"коридор"
+	corridor.role = RS_LevelNode.Role.CORRIDOR
+	graph.nodes[room.id] = room
+	graph.nodes[corridor.id] = corridor
+	RunManager.current_graph = graph
+	WorldSave.save = RS_WorldSave.new()
+	WorldSave.save.visited_node_ids.append(room.id)
+	WorldSave.save.visited_node_ids.append(corridor.id)
+	RunStats.current = RS_RunStats.new()
+	RunStats._on_room_changed(corridor.id)
+	var counted := RunStats.current.value(RS_RunStats.ROOMS)
+	RunStats.current = saved_stats
+	RunManager.current_graph = saved_graph
+	WorldSave.save = saved_save
+	_check("«комнат посещено» не считает коридоры", is_equal_approx(counted, 1.0), "%.0f" % counted)
 
 
 # ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ extends RefCounted
 enum Piece { END, STRAIGHT, CORNER, TEE, CROSS }
 
 const PIECE_NAMES: Array[String] = ["тупик", "прямой", "поворот", "Т", "крест"]
-## Со скольких сторон к комнате должна подходить её собственная ветка, чтобы
+## Со скольких сторон к комнате должны подходить её собственные коридоры, чтобы
 ## комната считалась обволакиваемой: с трёх сторон из четырёх коридор уже обходит
 ## комнату, а не подходит к ней.
 const ENVELOPED_SIDES := 3
@@ -24,22 +24,25 @@ const ENVELOPED_SIDES := 3
 ## Этажей с хотя бы одним узлом.
 var floors := 0
 var rooms := 0
-## Комнаты, к которым с ENVELOPED_SIDES и больше сторон подходит тайл их же ветки
-## (веток, в которые ведут их двери).
+## Комнаты, к которым с ENVELOPED_SIDES и больше сторон подходят их же коридоры
+## (те, в которые ведут их двери), — все вместе, а не каждый порознь.
 var enveloped_rooms := 0
 var tiles := 0
+## Коридоров — узлов графа: отрезков сети между развилками (карточка «Коридор —
+## отдельный узел»).
+var corridors := 0
 ## Piece -> сколько тайлов.
 var pieces: Dictionary[int, int] = {}
-## Обходные пути: независимые циклы графа узлов этажа — комнаты и ветки, связи —
-## «комната–ветка» (сколько бы дверей ни вело в одну ветку, это одна связь) и
-## стыки веток. Столько раз можно прийти в место другой дорогой, не возвращаясь по
-## своим следам. Две двери комнаты в одну ветку петлёй здесь не считаются: вошёл в
-## одну, вышел в соседнюю — это не другой путь (до п. 7 карточки «Сетка уровня»
-## считались, и такие «петли» были почти все).
+## Обходные пути: независимые циклы графа узлов этажа — комнаты и коридоры, связи
+## — «комната–коридор» (сколько бы дверей ни вело в один коридор, это одна связь) и
+## стыки коридоров. Столько раз можно прийти в место другой дорогой, не
+## возвращаясь по своим следам. Две двери комнаты в один коридор петлёй здесь не
+## считаются: вошёл в одну, вышел в соседнюю — это не другой путь (до п. 7 карточки
+## «Сетка уровня» считались, и такие «петли» были почти все).
 var loops := 0
 ## Петли по самому коридору — циклы тайлов по проёмам, без прохода через комнаты.
-## Не часть loops: петля внутри одной ветки графа узлов не меняет, а петля между
-## двумя ветками попадает в оба счёта.
+## Петля по сети проходит хотя бы через две развилки, а с тех пор как коридор —
+## отрезок между развилками, она попадает и в loops.
 var corridor_loops := 0
 ## Тупики — отмеченные раскладкой концы отростков (RS_LayerPlan.dead_ends).
 var dead_ends := 0
@@ -53,10 +56,13 @@ static func of_plan(plan: RS_LayerPlan) -> RS_LayoutMetrics:
 		floor_levels[plan.cells[id].y] = true
 	metrics.floors = floor_levels.size()
 
+	var corridor_ids := {}
 	for cell: Vector3i in plan.corridor_tiles:
 		metrics.tiles += 1
+		corridor_ids[plan.node_by_cell[cell]] = true
 		var piece := piece_of(plan.corridor_tiles[cell])
 		metrics.pieces[piece] = metrics.pieces.get(piece, 0) + 1
+	metrics.corridors = corridor_ids.size()
 
 	# Комнаты — ключи door_faces: планировщик пишет туда каждую комнату слоя, даже
 	# без дверей в коридор.
@@ -77,6 +83,7 @@ func add(other: RS_LayoutMetrics) -> void:
 	rooms += other.rooms
 	enveloped_rooms += other.enveloped_rooms
 	tiles += other.tiles
+	corridors += other.corridors
 	loops += other.loops
 	corridor_loops += other.corridor_loops
 	dead_ends += other.dead_ends
@@ -115,6 +122,10 @@ func tiles_per_floor() -> float:
 	return float(tiles) / maxi(floors, 1)
 
 
+func corridors_per_floor() -> float:
+	return float(corridors) / maxi(floors, 1)
+
+
 func piece_share(piece: Piece) -> float:
 	return float(pieces.get(piece, 0)) / maxi(tiles, 1)
 
@@ -134,11 +145,16 @@ func dead_ends_per_floor() -> float:
 ## Сводка строками — одна и та же в туле и в выводе проверки.
 func report_lines() -> PackedStringArray:
 	var lines := PackedStringArray()
-	lines.append("обволакиваемых комнат  %5.1f%%  (%d из %d; свои ветки с %d+ сторон)" % [
+	lines.append("обволакиваемых комнат  %5.1f%%  (%d из %d; свои коридоры с %d+ сторон)" % [
 		100.0 * enveloped_share(), enveloped_rooms, rooms, ENVELOPED_SIDES
 	])
 	lines.append("тайлов на комнату      %5.2f   (на этаж %.1f)" % [tiles_per_room(), tiles_per_floor()])
-	lines.append("обходов по графу       %5.2f   на этаж (комната на двух ветках, кольцо веток)" % loops_per_floor())
+	lines.append("коридоров на этаж      %5.2f   (тайлов в коридоре %.1f)" % [
+		corridors_per_floor(), float(tiles) / maxi(corridors, 1)
+	])
+	lines.append(
+		"обходов по графу       %5.2f   на этаж (комната на двух коридорах, кольцо коридоров)" % loops_per_floor()
+	)
 	lines.append("петель по коридору     %5.2f   на этаж" % corridor_loops_per_floor())
 	lines.append("тупиков                %5.2f   на этаж" % dead_ends_per_floor())
 	for piece in Piece.values():
@@ -146,8 +162,8 @@ func report_lines() -> PackedStringArray:
 	return lines
 
 
-## Со скольких сторон к комнате подходит тайл ветки, в которую ведут её двери. По
-## сторонам, а не по клеткам: у комнаты в несколько клеток на одной стороне
+## Со скольких сторон к комнате подходят тайлы коридоров, в которые ведут её двери.
+## По сторонам, а не по клеткам: у комнаты в несколько клеток на одной стороне
 ## несколько соседей, а обволакивание — это коридор вокруг, а не вдоль одной стены.
 static func _own_branch_sides(plan: RS_LayerPlan, room: StringName) -> int:
 	var own: Array = (plan.door_faces[room] as Dictionary).values()

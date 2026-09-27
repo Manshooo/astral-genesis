@@ -60,11 +60,20 @@ func _on_complex_entered(_graph: RS_LevelGraph) -> void:
 
 ## Комнаты не считаем сами: их уже считает сейв (`visited_node_ids`, только
 ## уникальные). Свой счётчик по этому сигналу разъехался бы с ним при первом же
-## возврате в пройденную комнату — дверь проходима в обе стороны.
+## возврате в пройденную комнату — дверь проходима в обе стороны. Но в посещённых
+## лежат и коридоры — они тоже узлы графа, а с тех пор как коридор — отрезок между
+## развилками, их на этаже больше, чем комнат. Поэтому из посещённых берутся только
+## комнаты; узел, которого в графе нет, считается комнатой, как считался всегда.
 func _on_room_changed(_node_id: StringName) -> void:
 	if current == null:
 		return
-	current.put(RS_RunStats.ROOMS, float(WorldSave.save.visited_node_ids.size()))
+	var graph := RunManager.current_graph
+	var rooms := 0
+	for id in WorldSave.save.visited_node_ids:
+		var node := graph.get_node_data(id) if graph else null
+		if node == null or node.role == RS_LevelNode.Role.ROOM:
+			rooms += 1
+	current.put(RS_RunStats.ROOMS, float(rooms))
 
 
 ## Захват тела. Имя берётся из СЦЕНЫ тела ключом перевода (см.
