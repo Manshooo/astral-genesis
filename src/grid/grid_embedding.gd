@@ -18,3 +18,10 @@ extends RefCounted
 
 ## Клетка, в которой лежит точка мира.
 @abstract func cell_at(world_position: Vector3) -> Vector3i
+
+
+## Грань клетки [param cell] за стороной [param side] в мире — отрезок на полу
+## уровня, два конца. Нужна тому, кто рисует сетку (GridView): середину грани
+## можно вывести из центров соседей, а вот где грань кончается, знает только
+## вложение — у квадрата она длиной с клетку, у гекса короче, на шаре кривая.
+@abstract func face_edge(cell: Vector3i, side: int) -> PackedVector3Array

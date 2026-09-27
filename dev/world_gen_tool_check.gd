@@ -56,6 +56,7 @@ func _ready() -> void:
 	_check_room_outline(library, host)
 	_check_restore_state()
 	_check_corridors(library, host)
+	_check_grid_overlay(library, host)
 	_check_seed_sweep()
 
 	_finish()
@@ -142,6 +143,84 @@ func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void
 	var over_room := plan.position_of(room_id) + Vector3(0.0, 50.0, 0.0)
 	_check("коридоры: клик по комнате выделяет комнату, а не огибающий её коридор",
 		Picker.pick(over_room, Vector3.DOWN, layer_nodes, plan) == room_id, "")
+
+
+## Оверлей «Сетка» на пяти сидах, всех слоях. Ломается он молча — схема просто
+## показывает не то: контур не у той комнаты, стрелка поворота не туда, дверь не
+## на том сокете. Стрелка сверяется с поворотом корня комнаты
+## (RS_LayerPlan.room_transform) — формулой, которой оверлей не пользуется: он
+## идёт через стороны топологии, и перепутанный знак поворота в одной из формул
+## здесь и всплывёт.
+func _check_grid_overlay(library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
+	var config := load("res://data/world_gen_config.tres") as RS_WorldGenConfig
+	var problems := {
+		"контур и стрелка у каждой комнаты": [],
+		"стрелка — туда, куда корень комнаты повернул север сцены": [],
+		"дверные отметки — ровно двери плана, глухие — остальные сокеты": [],
+		"тупики и стыки веток отмечены по плану": [],
+		"пересборка не копит отрезки": [],
+	}
+	var overlay := host.overlay(&"grid")
+	for s in 5:
+		var graph := RS_LevelGraph.new().generate_run(s, library, config)
+		for depth: int in RS_LevelGraph.DEPTHS:
+			var nodes := graph.get_nodes_by_depth(depth)
+			var plan := graph.layer_plan(depth)
+			var view := LayerView.new(graph, nodes, plan)
+			host.show_layer(view)
+			var first: int = overlay.grid().segment_count()
+			host.show_layer(view)
+			var tag := "сид %d L%d" % [s, depth]
+			if overlay.grid().segment_count() != first:
+				problems["пересборка не копит отрезки"].append(tag)
+
+			var rooms := 0
+			var doors := 0
+			var blanks := 0
+			for node_data in nodes:
+				if node_data.role == RS_LevelNode.Role.CORRIDOR:
+					continue
+				rooms += 1
+				var room_doors: int = (plan.door_faces.get(node_data.id, {}) as Dictionary).size()
+				doors += room_doors
+				if RS_RoomLayout.shell_of_scene(node_data.room_scene_path):
+					blanks += plan.topology.perimeter(plan.room_cells(node_data.id)).size() - room_doors
+				var want := plan.room_transform(node_data.id).basis * Vector3.FORWARD
+				var got: Vector3 = overlay.arrows.get(node_data.id, Vector3.ZERO)
+				if not got.is_equal_approx(want):
+					problems["стрелка — туда, куда корень комнаты повернул север сцены"].append(
+						"%s %s: %s вместо %s" % [tag, node_data.id, got, want])
+			if overlay.rooms_outlined != rooms or overlay.arrows.size() != rooms:
+				problems["контур и стрелка у каждой комнаты"].append(
+					"%s: контуров %d, стрелок %d, комнат %d" % [tag, overlay.rooms_outlined, overlay.arrows.size(), rooms])
+			if overlay.door_marks != doors or overlay.blank_socket_marks != blanks:
+				problems["дверные отметки — ровно двери плана, глухие — остальные сокеты"].append(
+					"%s: дверей %d из %d, глухих %d из %d" % [tag, overlay.door_marks, doors, overlay.blank_socket_marks, blanks])
+			# Стыков-граней не меньше, чем пар веток со стыком: петля между двумя
+			# ветками даёт им второй стык.
+			var joined := plan.branch_joints().size()
+			if overlay.dead_end_marks != plan.dead_ends.size() or overlay.joint_marks < joined \
+					or (overlay.joint_marks > 0) != (joined > 0):
+				problems["тупики и стыки веток отмечены по плану"].append(
+					"%s: тупиков %d из %d, стыков %d на %d пар" % [
+						tag, overlay.dead_end_marks, plan.dead_ends.size(), overlay.joint_marks, joined])
+	for what: String in problems:
+		var list: Array = problems[what]
+		_check("сетка: %s (5 сидов)" % what, list.is_empty(), ", ".join(list.slice(0, 4)))
+
+	# Выделение перекрашивает ровно контур своей комнаты и её стрелку — и снимается.
+	var graph := RS_LevelGraph.new().generate_run(0, library, config)
+	var home := graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH)
+	var plan := graph.layer_plan(RS_LevelGraph.HOME_DEPTH)
+	host.show_layer(LayerView.new(graph, home, plan))
+	var room_id := graph.entry_node_id
+	overlay.set_selected(room_id)
+	var outline := plan.topology.perimeter(plan.room_cells(room_id)).size()
+	var painted: int = overlay.grid().segments_of_color(overlay.SELECTED_COLOR)
+	overlay.set_selected(&"")
+	var left: int = overlay.grid().segments_of_color(overlay.SELECTED_COLOR)
+	_check("сетка: выделение красит ровно контур и стрелку комнаты и снимается",
+		painted == outline + 3 and left == 0, "покрашено %d из %d, осталось %d" % [painted, outline + 3, left])
 
 
 ## RoomsOverlay.set_selected: material_overlay ставится РОВНО на геометрию

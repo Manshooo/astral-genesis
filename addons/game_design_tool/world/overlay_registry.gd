@@ -52,6 +52,13 @@ const OVERLAYS := [
 		"default_visible": true,
 		"script": preload("res://addons/game_design_tool/world/overlays/corridors_overlay.gd"),
 	},
+	{
+		"id": &"grid",
+		"title": "Сетка",
+		"tooltip": "Показать клетки плана: решётку слоя, footprint и поворот комнат (стрелка — куда смотрит север сцены), сокеты (дверь — стрелкой внутрь цветом ветки, глухой — тусклой чертой), тупики и стыки веток",
+		"default_visible": true,
+		"script": preload("res://addons/game_design_tool/world/overlays/grid_overlay.gd"),
+	},
 ]
 
 ## Оставшийся пункт из исходного набора MVP («Единый редактор геймдизайна»,
