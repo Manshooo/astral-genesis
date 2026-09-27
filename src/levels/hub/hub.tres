@@ -7,5 +7,7 @@
 script = ExtResource("2_hub")
 display_name = "Хаб"
 scene = ExtResource("1_hub")
+doors_min = 1
+doors_max = 1
 slot_count = 1
 metadata/_custom_type_script = "uid://wiaffa7aebsm"

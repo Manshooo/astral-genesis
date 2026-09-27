@@ -269,9 +269,16 @@ func _check_generation() -> void:
 
 
 func _check_scene() -> void:
-	var sides := RS_RoomLayout.door_sides_of_scene(ROOM_SCENE)
-	_check("у комнаты одна дверь, на юг — куда смотрит проём в арте",
-		sides.size() == 1 and sides[0] == SquareGridTopology.Side.SOUTH, str(sides))
+	# Комната — коробка кита P: дверь ей ставит раскладка, и тупиком её делает
+	# диапазон пресета, а не запечённая в арт стена.
+	var preset: RS_RoomPreset = null
+	for unique: RS_UniqueRoom in (load(CONFIG_PATH) as RS_WorldGenConfig).unique_rooms:
+		if unique and unique.preset and unique.preset.scene and unique.preset.scene.resource_path == ROOM_SCENE:
+			preset = unique.preset
+	_check("комната собирается по сокетам и получает ровно одну дверь",
+		RS_RoomLayout.shell_of_scene(ROOM_SCENE) != null and preset != null
+			and preset.doors_min == 1 and preset.doors_max == 1,
+		"пресет %s" % (preset.resource_path if preset else "не найден"))
 
 	var room := (load(ROOM_SCENE) as PackedScene).instantiate() as Node3D
 	add_child(room)
@@ -289,28 +296,25 @@ func _check_scene() -> void:
 	for i in 3:
 		await get_tree().physics_frame
 	var space := get_viewport().world_3d.direct_space_state
-	# Порог двери и пятачок у точки появления: без пола на пороге стык с тайлом
-	# коридора — провал под мир (как у B-комнат без коллизии).
+	# Пол у точки появления и у порога каждого сокета — дверь раскладка может
+	# поставить на любой, и без пола на пороге стык с тайлом коридора — провал под
+	# мир. Порог — в 0.2 м от грани клетки внутрь, по вложению плана.
+	var plan := RS_LayerPlan.new()
+	var shell := RS_RoomLayout.shell_of(room)
+	var far := Vector3i(shell.size.x - 1, 0, shell.size.z - 1)
+	var center := (plan.embedding.cell_origin(Vector3i.ZERO) + plan.embedding.cell_origin(far)) * 0.5
+	var probes: Array[Vector3] = [(room.get_node(^"SpawnPoint") as Node3D).position]
+	for face in plan.topology.perimeter(SquareGridTopology.box(Vector3i.ZERO, shell.size)):
+		var inside := plan.embedding.cell_origin(GridTopology.face_cell(face))
+		var outside := plan.embedding.cell_origin(plan.topology.neighbour(GridTopology.face_cell(face), face.w))
+		probes.append((inside + outside) * 0.5 - center + (inside - outside).normalized() * 0.2)
 	var holes: Array[String] = []
-	for z: float in [5.5, 8.6]:
-		var from := Vector3(0.0, 1.0, z)
+	for probe in probes:
+		var from := Vector3(probe.x, 1.0, probe.z)
 		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 2.0, GEOMETRY_MASK))
 		if hit.is_empty():
-			holes.append("z=%.1f" % z)
-	_check("под порогом и у точки появления пол", holes.is_empty(), ", ".join(holes))
-
-	# Не ассерт: геометрия за гранью клетки у двери сидит в тайле коридора.
-	# Правило стыка — подрезать в арте; опустеет — стать ассертом, как в
-	# corridor_spawn_check. Луч — от центра клетки за дверью до грани, по
-	# вложению плана: комната стоит в начале координат, как в клетке (0, 0, 0).
-	var plan := RS_LayerPlan.new()
-	var behind := plan.embedding.cell_origin(plan.topology.neighbour(Vector3i.ZERO, SquareGridTopology.Side.SOUTH))
-	var chest := Vector3(0.0, 1.5, 0.0)
-	var from := behind + chest
-	var face := plan.embedding.cell_origin(Vector3i.ZERO).lerp(behind, 0.5) + chest
-	var intrusion := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, face, GEOMETRY_MASK))
-	if not intrusion.is_empty():
-		print("  арт  рамка двери выходит за грань клетки: до z=%.2f" % intrusion.position.z)
+			holes.append("(%.1f, %.1f)" % [probe.x, probe.z])
+	_check("у точки появления и под порогом каждого сокета пол", holes.is_empty(), ", ".join(holes))
 	room.queue_free()
 
 

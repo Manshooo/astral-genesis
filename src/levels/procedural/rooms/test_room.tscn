@@ -1,31 +1,28 @@
 [gd_scene format=3 uid="uid://dokr7rxaddh4a"]
 
-[ext_resource type="Script" uid="uid://droghbcanxxxu" path="res://src/levels/procedural/rooms/test_room.gd" id="1_6ov03"]
-[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_cjxtr"]
-[ext_resource type="PackedScene" uid="uid://bb1tb6b0gqk2c" path="res://assets/levels/SM_room_B_1/SM_room_B_1.glb" id="4_bfruy"]
-[ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="5_cjxtr"]
-[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="6_0gk8d"]
-[ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_avea3"]
+[ext_resource type="Script" path="res://src/levels/procedural/rooms/test_room.gd" id="1_6ov03"]
+[ext_resource type="Script" path="res://addons/gecs/ecs/component.gd" id="2_cjxtr"]
+[ext_resource type="Script" path="res://src/components/level/c_room_shell.gd" id="3_cjxtr"]
+[ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_8jqiu"]
+[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_0gk8d"]
 
-[sub_resource type="Resource" id="Resource_8ssbo"]
-script = ExtResource("6_0gk8d")
-metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
-
-[sub_resource type="Resource" id="Resource_tuqw2"]
-script = ExtResource("7_avea3")
-slot_id = &"north"
+[sub_resource type="Resource" id="Resource_avea3"]
+script = ExtResource("3_cjxtr")
+size = Vector3i(2, 1, 2)
+walls = ExtResource("4_8jqiu")
 
 [node name="TestRoom" type="Node3D" unique_id=1655569409]
 script = ExtResource("1_6ov03")
+component_resources = Array[ExtResource("2_cjxtr")]([SubResource("Resource_avea3")])
 
-[node name="Visual" parent="." unique_id=141821171 instance=ExtResource("4_bfruy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.9604645E-08, 0)
-[node name="Doors" type="Node3D" parent="." unique_id=755826966]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.9604645E-08, 0)
-
-[node name="Door" parent="Doors" unique_id=1986258941 instance=ExtResource("5_cjxtr")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09256935, 0.015874565, 9.5)
-component_resources = Array[ExtResource("2_cjxtr")]([SubResource("Resource_8ssbo"), SubResource("Resource_tuqw2")])
+[node name="Visual" parent="." unique_id=250268331 instance=ExtResource("5_0gk8d")]
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=88028626]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -7.4)
+
+[node name="Light" type="OmniLight3D" parent="." unique_id=2000780891]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
+light_color = Color(1, 0.93, 0.82, 1)
+light_energy = 1.6
+omni_range = 14.0
+omni_attenuation = 1.2

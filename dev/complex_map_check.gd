@@ -299,8 +299,8 @@ func _check_run() -> void:
 	_check("объём терминала на слое interactives", body != null and body.collision_layer == 8,
 		"слой %s" % (body.collision_layer if body else "нет"))
 	var geometries := RS_EntityVisuals.geometries(terminal) if terminal else []
-	_check("подсветка терминала находит меш screen2",
-		not geometries.is_empty() and String(geometries[0].name).begins_with("screen2"),
+	_check("подсветка терминала находит меш экрана",
+		not geometries.is_empty() and String(geometries[0].name) == "Screen",
 		str(geometries.map(func(g): return g.name)))
 	if terminal:
 		terminal.interact()

@@ -7,24 +7,23 @@ extends "res://dev/check_harness.gd"
 ## падает с ошибкой.
 ##
 ## Три части:
-##   1. коробка каждой сцены с C_RoomShell = footprint × клетка;
-##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5);
+##   1. все комнаты генератора — коробки, и коробка каждой = footprint × клетка;
+##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5) и стоят
+##      внутри стен коробки;
 ##   3. сборка на настоящих деталях кита P: план с комнатой 2×2×1 и веткой,
 ##      стены и торцы по маске — и лучи по коллизии, как у corridor_spawn_check.
 ##
 ## Запускать: godot --headless dev/room_shell_check.tscn
 
-const ROOMS_DIR := "res://src/levels/procedural/rooms/"
+const ROOMS_DIR := "res://src/levels/"
 const CONFIG_PATH := "res://data/world_gen_config.tres"
+## Эталонная коробка кита P без содержимого — на ней проверяется сборка.
 const KIT_P_ROOM := "res://src/levels/procedural/rooms/kit_p/room_p_2x2x1.tscn"
-const KIT_P_CORRIDORS := "res://data/corridor_kit_p.tres"
-## Клетка, под которую нарисован кит P. До п. 5 игра стоит на 18 м, и коробки P с
-## её вложением не сойдутся; проверяются они на своём. После переключения вложения
-## коробки из подбора сверяются с планом игры, как уже сейчас.
-const KIT_P_CELL := 8.0
 ## Зона перед сокетом, свободная от пропов: 3 м вдоль стены, 2 м вглубь комнаты,
 ## от пола до верха рамки проёма (4.5 м) — [[Метрики и кит]] §2 п. 6, §3.
 const SOCKET_ZONE := Vector3(3.0, 4.5, 2.0)
+## Толщина стены кита внутрь клетки: всё, что дальше от центра, сидит в стене.
+const WALL := 0.25
 ## Допуск сравнения габаритов: экспорт glTF кладёт вершины с погрешностью float.
 const EPSILON := 0.01
 const GEOMETRY_MASK := 1
@@ -37,9 +36,15 @@ const ABOVE_OPENING := 4.8
 func _ready() -> void:
 	var shells := _shell_scenes()
 	_check("в проекте есть хотя бы одна сборная комната", not shells.is_empty(), ROOMS_DIR)
-	var pool := _generator_scenes()
+	# Клетка 8 м: комната с запечённой дверью 18-метрового кита в подборе встала бы
+	# внахлёст на соседей — все комнаты генератора обязаны быть коробками.
+	var baked: Array[String] = []
+	for path in _generator_scenes():
+		if not shells.has(path):
+			baked.append(path.get_file())
+	_check("все комнаты генератора собираются по сокетам", baked.is_empty(), ", ".join(baked))
+	var plan := RS_LayerPlan.new()
 	for path in shells:
-		var plan := RS_LayerPlan.new() if pool.has(path) else _kit_p_plan()
 		_check_box(path, plan)
 		_check_zones(path, plan)
 	_check_zone_detector()
@@ -88,13 +93,29 @@ func _check_zones(path: String, plan: RS_LayerPlan) -> void:
 	add_child(room)
 	var hits := _props_in_zones(room, plan)
 	_check("%s: пропы не заходят в зоны перед сокетами" % path.get_file(), hits.is_empty(), ", ".join(hits))
+	# Содержимое, перенесённое из комнаты 18 м, могло остаться там, где теперь стена.
+	var inside := _props_outside(room, plan)
+	_check("%s: пропы стоят внутри стен коробки" % path.get_file(), inside.is_empty(), ", ".join(inside))
 	room.queue_free()
+
+
+## Пропы, чья геометрия в плане заходит за лицо стены коробки.
+func _props_outside(room: Node3D, plan: RS_LayerPlan) -> Array[String]:
+	var outside: Array[String] = []
+	var shell := RS_RoomLayout.shell_of(room)
+	var half := Vector2(shell.size.x, shell.size.z) * plan.embedding.cell_size * 0.5 - Vector2(WALL, WALL)
+	for geometry in _props(room):
+		var box := room.global_transform.affine_inverse() * geometry.global_transform * geometry.get_aabb()
+		if box.position.x < -half.x - EPSILON or box.end.x > half.x + EPSILON \
+				or box.position.z < -half.y - EPSILON or box.end.z > half.y + EPSILON:
+			outside.append("%s %s" % [geometry.name, box])
+	return outside
 
 
 ## Детектор должен ловить нарушение, иначе зелёная часть 2 ничего не значит: у
 ## коробки P пропов нет вовсе. Ставим куб ровно в зону перед первым сокетом.
 func _check_zone_detector() -> void:
-	var plan := _kit_p_plan()
+	var plan := RS_LayerPlan.new()
 	var room := (load(KIT_P_ROOM) as PackedScene).instantiate() as Node3D
 	add_child(room)
 	var zone: AABB = _socket_zones(RS_RoomLayout.shell_of(room), plan)[0]
@@ -106,19 +127,25 @@ func _check_zone_detector() -> void:
 	room.queue_free()
 
 
-## Пропы — вся геометрия комнаты, кроме самой коробки (узел Visual).
 func _props_in_zones(room: Node3D, plan: RS_LayerPlan) -> Array[String]:
 	var hits: Array[String] = []
 	var zones := _socket_zones(RS_RoomLayout.shell_of(room), plan)
-	for node in room.find_children("*", "GeometryInstance3D", true, false):
-		var geometry := node as GeometryInstance3D
-		if room.get_node(^"Visual").is_ancestor_of(geometry):
-			continue
+	for geometry in _props(room):
 		var box := room.global_transform.affine_inverse() * geometry.global_transform * geometry.get_aabb()
 		for zone in zones:
 			if box.intersects(zone):
 				hits.append("%s в %s" % [geometry.name, zone])
 	return hits
+
+
+## Пропы — вся геометрия комнаты, кроме самой коробки (узел Visual).
+func _props(room: Node3D) -> Array[GeometryInstance3D]:
+	var props: Array[GeometryInstance3D] = []
+	var visual := room.get_node(^"Visual")
+	for node in room.find_children("*", "GeometryInstance3D", true, false):
+		if not visual.is_ancestor_of(node):
+			props.append(node as GeometryInstance3D)
+	return props
 
 
 ## Зоны перед всеми сокетами footprint в координатах корня комнаты: корень стоит
@@ -155,7 +182,6 @@ func _check_assembly() -> void:
 		_link(room_node, branch)
 	var layer: Array[RS_LevelNode] = [room_node, branch]
 	var plan := RS_LayerPlan.build(layer)
-	plan.embedding = SquareGridEmbedding.new(KIT_P_CELL, KIT_P_CELL, 0.25)
 	var faces: Dictionary = plan.door_faces.get(room_node.id, {})
 	_check("план: у комнаты 2×2×1 ровно две двери, обе в сокетах",
 		faces.size() == 2 and plan.routing_failures.is_empty(),
@@ -168,7 +194,7 @@ func _check_assembly() -> void:
 	var walls := RS_RoomLayout.shell_of(room).walls
 	var doors := walls.assemble(room, room_node.id, plan)
 	root.add_child(room)
-	var kit := load(KIT_P_CORRIDORS) as RS_CorridorKit
+	var kit := GameConfig.config.corridor_kit
 	var caps := 0
 	for cell: Vector3i in plan.corridor_tiles:
 		var tile := kit.instantiate(plan.corridor_tiles[cell], plan.door_mask(cell))
@@ -253,10 +279,6 @@ func _link(a: RS_LevelNode, b: RS_LevelNode) -> void:
 	b.connections.append(backward)
 
 
-func _kit_p_plan() -> RS_LayerPlan:
-	var plan := RS_LayerPlan.new()
-	plan.embedding = SquareGridEmbedding.new(KIT_P_CELL, KIT_P_CELL, 0.25)
-	return plan
 
 
 ## Все сцены комнат с C_RoomShell под ROOMS_DIR.

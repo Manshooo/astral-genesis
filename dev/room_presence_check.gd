@@ -55,11 +55,15 @@ func _check_plan_rule() -> void:
 			for node_id: StringName in plan.cells:
 				checked += 1
 				var at := plan.position_of(node_id)
-				# Центр, угол комнаты (двери стоят в ~8 м от центра), рост игрока
-				# над полом и точка чуть ниже пола — всё это «в этой комнате».
+				# Центр, угол в метре от стен, рост игрока над полом, душа под
+				# потолком (уровень минус рост капсулы) и точка чуть ниже пола — всё это
+				# «в этой комнате». Угол и потолок — из footprint и вложения, а не в
+				# метрах старой клетки: иначе проба при другой клетке выходит за стену.
+				var size: Vector3i = plan.footprints.get(node_id, Vector3i.ONE)
+				var half := Vector2(size.x, size.z) * plan.embedding.cell_size * 0.5 - Vector2.ONE
 				for probe: Vector3 in [
-					Vector3.ZERO, Vector3(8.0, 0.0, -8.0), Vector3(0.0, 1.7, 0.0),
-					Vector3(0.0, 9.0, 0.0), Vector3(0.0, -1.0, 0.0),
+					Vector3.ZERO, Vector3(half.x, 0.0, -half.y), Vector3(0.0, 1.7, 0.0),
+					Vector3(0.0, plan.embedding.level_height - 2.0, 0.0), Vector3(0.0, -0.3, 0.0),
 				]:
 					var got := plan.node_at(at + probe)
 					if got != node_id:

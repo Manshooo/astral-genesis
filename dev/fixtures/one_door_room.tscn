@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_room"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_component"]
+[ext_resource type="PackedScene" uid="uid://4kk8ci8ah8h1" path="res://src/entities/door/complex_door.tscn" id="3_door"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_interactable"]
+[ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="5_slot"]
+
+[sub_resource type="Resource" id="Interactable"]
+script = ExtResource("4_interactable")
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="SlotNorth"]
+script = ExtResource("5_slot")
+slot_id = &"north"
+
+[node name="OneDoorRoom" type="Node3D"]
+script = ExtResource("1_room")
+
+[node name="Doors" type="Node3D" parent="."]
+
+[node name="Door" parent="Doors" instance=ExtResource("3_door")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.75)
+component_resources = Array[ExtResource("2_component")]([SubResource("Interactable"), SubResource("SlotNorth")])
+
+[node name="SpawnPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)

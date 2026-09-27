@@ -18,8 +18,11 @@ const ROOM_SCENES := [
 	"res://src/levels/procedural/rooms/exit/exit_room.tscn",
 	"res://src/levels/procedural/rooms/lab/lab_room.tscn",
 	"res://src/levels/procedural/rooms/vertical/vertical_hub_1.tscn",
-	"res://src/levels/procedural/rooms/cross_A/cross_a_1.tscn",
+	"res://src/levels/procedural/rooms/cross_A/cross_a.tscn",
 ]
+## Комната с запечённой дверью — фикстура: в игре таких больше нет (клетка 8 м,
+## все комнаты собираются по сокетам), а форма для них у Wizard'а осталась.
+const BAKED_SCENE := "res://dev/fixtures/one_door_room.tscn"
 
 
 func _ready() -> void:
@@ -30,23 +33,22 @@ func _ready() -> void:
 	for scene_path in ROOM_SCENES:
 		_check_scene(wizard, scene_path)
 	_check_hub_scene(wizard)
-	_check_shell_scene(wizard)
+	_check_baked_scene(wizard)
 
 	wizard.free()
 	_finish()
 
 
-## Коробка сборной комнаты (C_RoomShell): степень у неё — диапазон дверей, а не
-## slot_count. Форма обязана показать диапазон и спрятать слоты — иначе дизайнер
-## правил бы ручку, которую генератор у такой комнаты не читает.
-func _check_shell_scene(wizard: RoomWizard) -> void:
-	var room := (load("res://src/levels/procedural/rooms/kit_p/room_p_2x2x1.tscn") as PackedScene).instantiate()
+## Комната с дверями в сцене: степень у неё — число этих дверей (slot_count), и
+## диапазон дверей сборной комнаты форма прячет — генератор у такой его не читает.
+func _check_baked_scene(wizard: RoomWizard) -> void:
+	var room := (load(BAKED_SCENE) as PackedScene).instantiate()
 	wizard.refresh_for_scene(room)
 	var fields: Array = wizard._field_controls.keys()
 	fields.sort()
 	_check(
-		"коробка P: форма — диапазон дверей вместо слотов",
-		fields == ["display_name", "doors_max", "doors_min", "weight"],
+		"комната с запечённой дверью: форма — слоты вместо диапазона дверей",
+		fields == ["display_name", "slot_count", "weight"],
 		str(fields)
 	)
 	room.free()
@@ -105,12 +107,13 @@ func _check_scene(wizard: RoomWizard, scene_path: String) -> void:
 
 	# Рефлексивная форма: ровно скалярные @export-поля RS_RoomPreset — не
 	# scene/tags (своя вёрстка) и не служебные поля базового Resource
-	# (resource_local_to_scene и т.п.) — иначе фильтр PROPERTY_USAGE сломан.
+	# (resource_local_to_scene и т.п.) — иначе фильтр PROPERTY_USAGE сломан. Комнаты
+	# игры собираются по сокетам, поэтому степень у них — диапазон дверей.
 	var fields: Array = wizard._field_controls.keys()
 	fields.sort()
 	_check(
-		"%s: форма — ровно display_name/slot_count/weight" % label,
-		fields == ["display_name", "slot_count", "weight"],
+		"%s: форма — ровно display_name/doors_min/doors_max/weight" % label,
+		fields == ["display_name", "doors_max", "doors_min", "weight"],
 		str(fields)
 	)
 	# Тип помещения — отдельный контрол, а не поле рефлексивной формы (в форме

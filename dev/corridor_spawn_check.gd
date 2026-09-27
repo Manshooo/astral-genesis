@@ -13,12 +13,11 @@ extends "res://dev/check_harness.gd"
 ## Запускать: godot --headless dev/corridor_spawn_check.tscn
 
 const RUN_SEED := 424242
-## Луч вдоль тайла: из центра до начала тамбура (7 м) и чуть дальше — внутри
-## СВОЕЙ клетки. Стены тайла стоят в 3 м, так что поворот он различает, а
-## чужая геометрия, зашедшая за грань клетки, до него не дотягивается: её
-## ищет отдельный отчёт (_report_intrusions), потому что это вопрос арта, а не
-## сборки.
-const PROBE_LENGTH := 7.5
+## Луч вдоль тайла — из центра до грани клетки без этого запаса, то есть внутри
+## СВОЕЙ клетки. Стены коридора стоят ближе грани, так что поворот он различает,
+## а рамка торца у двери (откос начинается в 0.35 м от грани) и закрытая дверь за
+## ней до него не дотягиваются.
+const PROBE_SHORT := 0.5
 const PROBE_HEIGHT := 1.5
 ## Только статическая геометрия (слой static_colliders): объём прицеливания
 ## двери (interactives) шире самой двери и стенкой не является.
@@ -87,18 +86,36 @@ func _check_tiles() -> void:
 	_check("на каждый тайл плана — ровно один кусок (%d)" % plan.corridor_tiles.size(),
 		spawned == plan.corridor_tiles.size(), "поставлено %d" % spawned)
 	_check("кусок под маску своего тайла и своей ветки", wrong.is_empty(), ", ".join(wrong.slice(0, 4)))
+	_check_tiles_in_cells(plan)
+
+
+## Контракт клетки ([[Метрики и кит]] §2 п. 4): ничего не выходит за footprint.
+## Выступ даже на сантиметры при повороте переносится на другую сторону и
+## складывается с погрешностью соседа — так завелись швы кита 18 м. Меряем
+## геометрию каждого поставленного тайла вместе с торцами.
+func _check_tiles_in_cells(plan: RS_LayerPlan) -> void:
+	var outside: Array[String] = []
+	var half := plan.embedding.cell_size * 0.5 + 0.01
+	for branch: StringName in RunManager.layer.corridor_tiles:
+		for tile: Node3D in RunManager.layer.corridor_tiles[branch]:
+			var center := plan.embedding.cell_origin(plan.embedding.cell_at(tile.global_position))
+			for node in tile.find_children("*", "GeometryInstance3D", true, false):
+				var geometry := node as GeometryInstance3D
+				var box := geometry.global_transform * geometry.get_aabb()
+				if box.position.x < center.x - half or box.end.x > center.x + half \
+						or box.position.z < center.z - half or box.end.z > center.z + half:
+					outside.append("%s %s" % [tile.name, geometry.name])
+	_check("геометрия тайлов не выходит за свою клетку", outside.is_empty(), ", ".join(outside.slice(0, 4)))
 
 
 ## Лучи по коллизии: открытая сторона пропускает, закрытая упирается; на стыке
-## тайла с дверью комнаты под ногами пол (кроме хаба — у него проёма нет вовсе,
-## см. door_teleports).
+## тайла с дверью комнаты под ногами пол.
 func _check_geometry() -> void:
 	await get_tree().physics_frame
 	var space := get_viewport().world_3d.direct_space_state
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
 	var walls_wrong: Array[String] = []
 	var gaps: Array[String] = []
-	var hub := RunManager.current_graph.entry_node_id
 	for cell: Vector3i in plan.corridor_tiles:
 		var center := plan.embedding.cell_origin(cell)
 		var mask: int = plan.corridor_tiles[cell]
@@ -106,7 +123,7 @@ func _check_geometry() -> void:
 			var to_face := _to_face(plan, cell, side)
 			var dir := to_face.normalized()
 			var from := center + Vector3(0.0, PROBE_HEIGHT, 0.0)
-			var hit := _ray(space, from, from + dir * PROBE_LENGTH)
+			var hit := _ray(space, from, from + dir * (to_face.length() - PROBE_SHORT))
 			var open: bool = mask & (1 << side) != 0
 			var side_name := RS_RoomLayout.side_name(side)
 			if open == not hit.is_empty():
@@ -116,8 +133,6 @@ func _check_geometry() -> void:
 			# Пол по обе стороны грани клетки: щель на стыке — провал под мир.
 			var neighbour := plan.topology.neighbour(cell, side)
 			var neighbour_id: StringName = plan.node_by_cell.get(neighbour, &"")
-			if neighbour_id == hub:
-				continue
 			var face := to_face.length()
 			for along: float in [face - SEAM_PROBE, face + SEAM_PROBE]:
 				var foot := center + dir * along
@@ -130,31 +145,6 @@ func _check_geometry() -> void:
 	_check("проёмы и стены тайлов совпадают с маской — по коллизии", walls_wrong.is_empty(),
 		", ".join(walls_wrong.slice(0, 4)))
 	_check("на стыках тайлов и комнат под ногами пол", gaps.is_empty(), ", ".join(gaps.slice(0, 4)))
-	_report_intrusions(space, plan)
-
-
-## Не ассерт, а отчёт: что из соседней клетки заходит в тамбур тайла. Правило
-## стыка — ничего не выходит за грань клетки (±9 м), но у B-комнат и выхода
-## рамки и двери стоят на 9.3–10 м, и полотно двери сидит в коридоре. Подрезка —
-## решение за артом (22.09), и до неё красный ассерт в каждом прогоне был бы
-## шумом. Когда арт поправят, отчёт обязан опустеть — тогда его место занять
-## ассерту.
-func _report_intrusions(space: PhysicsDirectSpaceState3D, plan: RS_LayerPlan) -> void:
-	var found := {}
-	for cell: Vector3i in plan.corridor_tiles:
-		var center := plan.embedding.cell_origin(cell) + Vector3(0.0, PROBE_HEIGHT, 0.0)
-		for side in plan.topology.side_count(cell):
-			if plan.corridor_tiles[cell] & (1 << side) == 0:
-				continue
-			# До самой грани — всё, что стоит в тамбуре тайла.
-			var hit := _ray(space, center, center + _to_face(plan, cell, side))
-			if hit.is_empty():
-				continue
-			var room: StringName = plan.node_by_cell.get(plan.topology.neighbour(cell, side), &"")
-			var node := RunManager.current_graph.get_node_data(room)
-			found[node.room_scene_path.get_file() if node else String(room)] = true
-	if not found.is_empty():
-		print("  арт  за грань клетки заходит геометрия комнат: %s" % ", ".join(found.keys()))
 
 
 func _check_doors_bound() -> void:
@@ -229,22 +219,37 @@ func _check_open_door() -> void:
 	# Тело с sync_to_physics переносится шагом физики — даём ему шаг.
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	# Лучом, а не по высоте узла: прежняя проверка смотрела на Visual и зеленела,
-	# пока меш уезжал вверх, а коллизия полотна оставалась в проёме.
-	var lift := (door.get_component(C_DoorOpen) as C_DoorOpen).lift
+	# Лучом, а не по положению узла: прежняя проверка смотрела на Visual и
+	# зеленела, пока меш уезжал, а коллизия полотна оставалась в проёме. Куда
+	# полотно обязано уехать, считает то же правило, что его двигает.
+	var open := door.get_component(C_DoorOpen) as C_DoorOpen
 	var leaves := S_DoorOpen.leaves_of(door)
-	var lifted := not leaves.is_empty()
+	var moved := not leaves.is_empty()
 	for leaf in leaves:
-		lifted = lifted and leaf.global_position.y >= (door as Node as Node3D).global_position.y + lift - 0.05
+		var rest: Vector3 = leaf.get_meta(S_DoorOpen.REST_META, Vector3.INF)
+		var want := rest + S_DoorOpen.open_offset(open, S_DoorOpen.leaf_side(leaf), leaves.size())
+		moved = moved and leaf.position.distance_to(want) < 0.05
 	var hit := _doorway_ray(space, door)
-	_check("полотно поднялось вместе с коллизией: проём свободен",
-		blocked_before and lifted and hit.is_empty(),
-		"до открытия луч упирался: %s, полотно наверху: %s, упор после: %s" % [
-			blocked_before, lifted, hit.collider.name if not hit.is_empty() else "нет"])
+	_check("полотно открылось вместе с коллизией: проём свободен",
+		blocked_before and moved and hit.is_empty(),
+		"до открытия луч упирался: %s, полотно на месте: %s, упор после: %s" % [
+			blocked_before, moved, hit.collider.name if not hit.is_empty() else "нет"])
+
+	# Ради этого дверь и двустворчатая: открытое полотно не уходит в клетку
+	# уровня выше, где может стоять коридор соседнего этажа.
+	var plan := RunManager.plan_for_depth(RunManager.current_depth)
+	var ceiling := (door as Node as Node3D).global_position.y + plan.embedding.level_height
+	var above: Array[String] = []
+	for node in (door as Node).find_children("*", "GeometryInstance3D", true, false):
+		var geometry := node as GeometryInstance3D
+		if (geometry.global_transform * geometry.get_aabb()).end.y > ceiling + 0.01:
+			above.append(String(geometry.name))
+	_check("открытое полотно не выходит выше своего уровня", above.is_empty(), ", ".join(above))
 
 
-## Хаб (door_teleports): проёма за его дверью нет, и дверь ставит игрока на
-## тайл перед собой — дальше узел меняет присутствие.
+## Хаб — коробка кита P с настоящим проёмом, и его дверь открывается на месте,
+## как любая (прежний хаб 18 м проёма не имел и переставлял игрока). Дальше — шаг
+## за дверь, который сделал бы сам игрок, и узел меняет присутствие.
 func _check_hub_door() -> void:
 	var hub := RunManager.current_graph.entry_node_id
 	var room = RunManager.layer.rooms.get(hub)
@@ -253,9 +258,13 @@ func _check_hub_door() -> void:
 	if portal == null:
 		_check("у хаба есть привязанная дверь", false, "")
 		return
+	var before := _player().global_position
 	RunManager.use_door(door, portal.target_node_id)
+	_check("дверь хаба открывается на месте, как любая",
+		door.has_component(C_DoorOpen) and _player().global_position == before, "")
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
-	_check("дверь хаба ставит игрока в его коридор",
+	PlayerPlacement.in_front_of(_player(), door, room, plan)
+	_check("шаг за дверь хаба — в его коридоре",
 		plan.node_at(_player().global_position) == portal.target_node_id,
 		"клетка игрока '%s'" % plan.node_at(_player().global_position))
 	ECS.process(0.016, "gameplay")
@@ -313,11 +322,13 @@ func _check_reload_in_corridor() -> void:
 
 
 ## Луч сквозь проём двери на высоте груди, поперёк полотна — во что упрётся
-## идущий через дверь.
+## идущий через дверь. Не по оси проёма: у двустворчатой там щель между
+## створками, и закрытая дверь пропускала бы луч.
 func _doorway_ray(space: PhysicsDirectSpaceState3D, door: Node) -> Dictionary:
 	var body := door as Node3D
 	var normal := body.global_transform.basis.z.normalized()
-	var center := body.global_position + Vector3(0.0, PROBE_HEIGHT, 0.0)
+	var along := body.global_transform.basis.x.normalized() * 0.4
+	var center := body.global_position + Vector3(0.0, PROBE_HEIGHT, 0.0) + along
 	return _ray(space, center - normal * 1.5, center + normal * 1.5)
 
 
