@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_interactable"]
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="4_travel"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_slot"]
+[ext_resource type="PackedScene" path="res://assets/props/interactive/SM_Door_double/SM_Door_double.glb" id="8_mesh"]
 
 [sub_resource type="Resource" id="Travel"]
 script = ExtResource("4_travel")
@@ -18,12 +19,6 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 [sub_resource type="Resource" id="Slot"]
 script = ExtResource("7_slot")
 
-[sub_resource type="BoxShape3D" id="LeafShape"]
-size = Vector3(1.37, 4.24, 0.36)
-
-[sub_resource type="BoxMesh" id="LeafMesh"]
-size = Vector3(1.37, 4.24, 0.36)
-
 [sub_resource type="BoxShape3D" id="InteractShape"]
 size = Vector3(3.15, 4.35, 0.7)
 
@@ -32,27 +27,7 @@ script = ExtResource("2_door")
 actions = Array[ExtResource("3_action")]([SubResource("Travel")])
 component_resources = Array[ExtResource("3_component")]([SubResource("Interactable"), SubResource("Slot")])
 
-[node name="Visual" type="Node3D" parent="."]
-
-[node name="LeafLeft" type="AnimatableBody3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6875, 2.12, 0)
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="Visual/LeafLeft"]
-mesh = SubResource("LeafMesh")
-
-[node name="Shape" type="CollisionShape3D" parent="Visual/LeafLeft"]
-shape = SubResource("LeafShape")
-
-[node name="LeafRight" type="AnimatableBody3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6875, 2.12, 0)
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="Visual/LeafRight"]
-mesh = SubResource("LeafMesh")
-
-[node name="Shape" type="CollisionShape3D" parent="Visual/LeafRight"]
-shape = SubResource("LeafShape")
+[node name="Visual" parent="." instance=ExtResource("8_mesh")]
 
 [node name="InteractBody" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.19, 0)
