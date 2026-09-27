@@ -54,6 +54,7 @@ static func plan_floor(plan: RS_LayerPlan, floor_nodes: Array, floor_index: int,
 	var masks: Dictionary = result["masks"]
 	for id: StringName in room_cells:
 		_put(plan, id, room_cells[id], footprints[id])
+		plan.turns[id] = on_floor[id].turns
 	for cell: Vector3i in owner:
 		var id: StringName = owner[cell]
 		# Этажи раскладываются порознь, и клетку этажа выше может уже занимать
@@ -78,9 +79,12 @@ static func _layout(
 	step: int,
 ) -> Dictionary:
 	var failures: Array[String] = []
+	# Footprint — в осях мира: у комнаты, повёрнутой на нечётную четверть, ширина и
+	# длина меняются местами.
 	var footprints: Dictionary[StringName, Vector3i] = {}
 	for room in rooms:
-		footprints[room.id] = RS_RoomLayout.footprint_of_scene(room.room_scene_path)
+		var size := RS_RoomLayout.footprint_of_scene(room.room_scene_path)
+		footprints[room.id] = Vector3i(size.z, size.y, size.x) if room.turns % 2 else size
 	var room_cells := _place_rooms(rooms, on_floor, rank, floor_index, step, footprints)
 	var taken: Dictionary[Vector3i, bool] = {}
 	var occupied: Array[Vector3i] = []
@@ -130,19 +134,23 @@ static func _layout(
 
 ## Грани, на которых у комнаты двери, в порядке, по которому их разбирают ветки.
 ##
-## У комнаты с дверями в сцене — стороны её дверей: сцена в одну клетку, и грань —
-## это её сторона. У собранной по сокетам — [member RS_LevelNode.socket_doors]
-## сокетов из периметра footprint, взятых через равный шаг: двери расходятся по
-## сторонам, а не сбиваются в угол. Это заглушка до новой раскладки (п. 7 карточки
-## «Сетка уровня»), которая будет выбирать сокеты, смотрящие на свои ветки.
+## У комнаты с дверями в сцене — стороны её дверей, повёрнутые вместе с комнатой:
+## сцена в одну клетку, и грань — это её сторона в мире. У собранной по сокетам —
+## [member RS_LevelNode.socket_doors] сокетов из периметра footprint, взятых через
+## равный шаг: двери расходятся по сторонам, а не сбиваются в угол. Периметр уже в
+## сторонах мира, так что поворот комнаты тут ни при чём. Это заглушка до новой
+## раскладки (п. 7 карточки «Сетка уровня»), которая будет выбирать сокеты,
+## смотрящие на свои ветки.
 static func _door_faces(
 	topology: GridTopology, room: RS_LevelNode, anchor: Vector3i, size: Vector3i
 ) -> Array[Vector4i]:
 	var faces: Array[Vector4i] = []
 	if room.socket_doors == 0:
-		var sides := RS_RoomLayout.door_sides_of_scene(room.room_scene_path).duplicate()
+		var sides: Array[int] = []
+		for side: int in RS_RoomLayout.door_sides_of_scene(room.room_scene_path):
+			sides.append(topology.rotate_side(anchor, side, -room.turns))
 		sides.sort()
-		for side: int in sides:
+		for side in sides:
 			faces.append(GridTopology.face(anchor, side))
 		return faces
 	var sockets := topology.perimeter(SquareGridTopology.box(anchor, size))

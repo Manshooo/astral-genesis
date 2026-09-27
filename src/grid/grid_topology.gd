@@ -41,6 +41,16 @@ const NO_SIDE := -1
 @abstract func opposite(cell: Vector3i, side: int) -> int
 
 
+## Сторона [param side] клетки после поворота на [param steps] шагов — сдвиг
+## индекса по кругу сторон, в порядке их индексов; отрицательные шаги — в
+## обратную сторону. Сколько шагов в полном обороте, решает число сторон клетки:
+## на квадрате четыре, на гексе шесть. NO_SIDE остаётся NO_SIDE.
+func rotate_side(cell: Vector3i, side: int, steps: int) -> int:
+	if side == NO_SIDE:
+		return NO_SIDE
+	return posmod(side + steps, side_count(cell))
+
+
 ## Сторона [param cell], за которой лежит [param other], или NO_SIDE, если они не
 ## соседи.
 func side_toward(cell: Vector3i, other: Vector3i) -> int:

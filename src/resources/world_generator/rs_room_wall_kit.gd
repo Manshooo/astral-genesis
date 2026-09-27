@@ -35,14 +35,17 @@ extends Resource
 ##
 ## Детали ставятся в центр клетки и поворачиваются к стороне; дверь — на середину
 ## грани, на границу клеток: туда, где сходятся стена комнаты и торец коридора
-## ([[Метрики и кит]] §2 п. 7). Всё — в координатах корня [param room], который уже
-## стоит в центре footprint (RS_LayerPlan.position_of) и не повёрнут; входить в
-## дерево ему не обязательно.
+## ([[Метрики и кит]] §2 п. 7). Грани плана — в сторонах мира, поэтому место
+## детали считается в мире и переводится в координаты корня [param room] его
+## обратным преобразованием: корень уже стоит на своём месте и повёрнут
+## (RS_LayerPlan.room_transform), и стены обязаны встать в стороны мира при любом
+## повороте комнаты. Входить в дерево корню не обязательно.
 func assemble(room: Node3D, node_id: StringName, plan: RS_LayerPlan) -> Dictionary[Node3D, Vector4i]:
 	var doors: Dictionary[Node3D, Vector4i] = {}
 	var door_faces: Dictionary = plan.door_faces.get(node_id, {})
 	var cells := plan.room_cells(node_id)
 	var bottom: int = plan.cells[node_id].y
+	var to_room := room.transform.affine_inverse()
 	for cell in cells:
 		for side in plan.topology.side_count(cell):
 			var next := plan.topology.neighbour(cell, side)
@@ -53,15 +56,15 @@ func assemble(room: Node3D, node_id: StringName, plan: RS_LayerPlan) -> Dictiona
 			var piece := upper_wall
 			if cell.y == bottom:
 				piece = door_wall if is_door else blank_wall
-			var turn := Basis(Vector3.UP, RS_RoomLayout.north_piece_turns(side) * PI * 0.5)
+			var turn := plan.embedding.turn_basis(RS_RoomLayout.north_piece_turns(side))
 			if piece:
 				var wall := piece.instantiate() as Node3D
-				wall.transform = Transform3D(turn, plan.embedding.cell_origin(cell) - room.position)
+				wall.transform = to_room * Transform3D(turn, plan.embedding.cell_origin(cell))
 				room.add_child(wall)
 			if is_door and door:
 				var panel := door.instantiate() as Node3D
 				var face_mid := (plan.embedding.cell_origin(cell) + plan.embedding.cell_origin(next)) * 0.5
-				panel.transform = Transform3D(turn, face_mid - room.position)
+				panel.transform = to_room * Transform3D(turn, face_mid)
 				room.add_child(panel)
 				doors[panel] = face
 	return doors

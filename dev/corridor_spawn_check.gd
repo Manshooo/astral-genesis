@@ -52,6 +52,7 @@ func _ready() -> void:
 	await get_tree().physics_frame
 
 	_check_tiles()
+	_check_rooms_turned()
 	await _check_geometry()
 	_check_doors_bound()
 	await _check_open_door()
@@ -87,6 +88,25 @@ func _check_tiles() -> void:
 		spawned == plan.corridor_tiles.size(), "поставлено %d" % spawned)
 	_check("кусок под маску своего тайла и своей ветки", wrong.is_empty(), ", ".join(wrong.slice(0, 4)))
 	_check_tiles_in_cells(plan)
+
+
+## Комнаты стоят повёрнутыми так, как разыграл граф (RS_LevelNode.turns), — и
+## повёрнутые в слое вообще есть: поворот, дошедший до плана, но не до корня
+## комнаты, ставил бы стены и двери в стороны мира, а пропы — нет, и ни одна
+## проверка лучами этого бы не заметила.
+func _check_rooms_turned() -> void:
+	var plan := RunManager.plan_for_depth(RunManager.current_depth)
+	var wrong: Array[String] = []
+	var turned := 0
+	for id: StringName in RunManager.layer.rooms:
+		var room := RunManager.layer.rooms[id].entity as Node as Node3D
+		var want := plan.embedding.turn_basis(plan.turns.get(id, 0))
+		if not room.global_transform.basis.is_equal_approx(want):
+			wrong.append(String(id))
+		if plan.turns.get(id, 0) % 4 != 0:
+			turned += 1
+	_check("корни комнат повёрнуты по плану, и повёрнутые в слое есть (%d)" % turned,
+		wrong.is_empty() and turned > 0, ", ".join(wrong.slice(0, 4)))
 
 
 ## Контракт клетки ([[Метрики и кит]] §2 п. 4): ничего не выходит за footprint.
@@ -160,7 +180,8 @@ func _check_doors_bound() -> void:
 			# которой её привязал спавн. У сборной комнаты грань двери задал сам
 			# спавн, и где она стоит, сверяет room_shell_check.
 			var face: Vector4i = room.face_of(door) if shell else GridTopology.face(
-				plan.cells[id], RS_RoomLayout.door_side(door as Node as Node3D, room.entity)
+				plan.cells[id], plan.topology.rotate_side(plan.cells[id],
+					RS_RoomLayout.door_side(door as Node as Node3D, room.entity), -plan.turns.get(id, 0))
 			)
 			var portal := door.get_component(C_DoorPortal) as C_DoorPortal
 			if portal == null or portal.target_node_id != faces.get(face, &"-"):

@@ -38,3 +38,11 @@ func grid_point(world_position: Vector3) -> Vector3:
 	return Vector3(
 		world_position.x / cell_size, world_position.y / level_height, world_position.z / cell_size
 	)
+
+
+## Поворот на [param turns] четвертей оборота вокруг вертикали — против часовой,
+## если смотреть сверху: так же, как rotation.y = turns · π/2. Стороны квадратной
+## топологии идут по часовой, поэтому четверть оборота здесь сдвигает сторону на
+## шаг назад (GridTopology.rotate_side с −turns).
+func turn_basis(turns: int) -> Basis:
+	return Basis(Vector3.UP, turns * PI * 0.5)

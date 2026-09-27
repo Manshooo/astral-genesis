@@ -143,6 +143,7 @@ func _generate(
 				node.room_type = catalog.pick_for_depth(node.depth, rng)
 
 	for node: RS_LevelNode in nodes.values():
+		node.turns = _roll_turns(level_seed, node)
 		if reserved.has(node.id):
 			node.socket_doors = _roll_socket_doors(level_seed, node, reserved[node.id].preset)
 			continue
@@ -176,6 +177,17 @@ static func _roll_socket_doors(level_seed: int, node: RS_LevelNode, preset: RS_R
 	var roll := RandomNumberGenerator.new()
 	roll.seed = hash("%d/%s" % [level_seed, node.id])
 	return clampi(roll.randi_range(preset.doors_min, preset.doors_max), 1, sockets)
+
+
+## Поворот комнаты — четверть оборота, бросок из своего потока на узел, по той же
+## причине, что и число дверей (_roll_socket_doors): остальной граф от него не
+## зависит. Поток отдельный и от дверей — иначе поворот зависел бы от того,
+## бросались ли двери. Все комнаты, включая уникальные: «передней» стены у
+## комнат нет (решение 24.09 карточки «Сетка уровня»).
+static func _roll_turns(level_seed: int, node: RS_LevelNode) -> int:
+	var roll := RandomNumberGenerator.new()
+	roll.seed = hash("%d/%s/turns" % [level_seed, node.id])
+	return roll.randi_range(0, SquareGridTopology.SIDE_COUNT - 1)
 
 
 func _add_node(
