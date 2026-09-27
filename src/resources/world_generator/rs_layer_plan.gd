@@ -1,7 +1,12 @@
 ## res://src/resources/world_generator/rs_layer_plan.gd
 ## План раскладки одного слоя: какие клетки сетки занимает каждая комната, как
 ## идут тайлы веток коридора и какая дверь комнаты смотрит в какую ветку. Считает
-## его RS_CorridorPlanner — комнаты на решётке, коридоры трассируются между ними.
+## его RS_CorridorPlanner по этажу — комнаты на решётке, сеть коридоров между ними.
+##
+## Строит и хранит его граф забега (RS_LevelGraph.layer_plan), а не каждый, кому
+## он нужен: в какую ветку ведёт дверь, решает раскладка, и рёбра графа берутся
+## из неё. План, посчитанный отдельно, пришлось бы сверять с графом, а разойдись
+## они — дверь вела бы в одну ветку в мире и в другую на карте.
 ##
 ## План — слой размещения карточки «Сетка уровня»: он весь в клетках и сторонах
 ## топологии, а в мир его переводит вложение (embedding). Мировые координаты
@@ -15,16 +20,12 @@
 ## существует вовсе, поэтому тул генератора спросить раскладку у него не может, а
 ## считать её собственной копией значило бы показывать не то, что делает игра.
 ##
-## План детерминирован от графа и считается БЕЗ спавна комнат (стороны дверей
+## План детерминирован от сида и считается БЕЗ спавна комнат (стороны дверей
 ## берутся из кэша RS_RoomLayout по пути сцены), поэтому доступен и для слоёв,
 ## которые не загружены: на этом держатся карта комплекса и предпросмотр в туле.
 @tool
 class_name RS_LayerPlan
 extends RefCounted
-
-## Шаг решётки комнат по умолчанию, если ручки не переданы (см.
-## RS_WorldGenConfig.room_lattice_step).
-const DEFAULT_LATTICE_STEP := 3
 
 ## Топология плана: кто чей сосед и через какую сторону. Этажи слоя — уровни
 ## сетки (.y клетки); между собой они связаны только порталами, у которых нет
@@ -61,39 +62,47 @@ var node_by_cell: Dictionary[Vector3i, StringName] = {}
 ## Клетка тайла -> маска проёмов: бит стороны — 1 << её индекс в топологии. Чья
 ## это ветка — в node_by_cell. По маске сборка выбирает кусок кита: два
 ## противоположных проёма — прямой, два соседних — поворот, три — Т, четыре —
-## крест. Проём ставится и к соседнему тайлу своей ветки, и к двери комнаты, и
-## на стык с родительской веткой.
+## крест, один — тупик (dead_ends). Проём ставится и к соседнему тайлу своей
+## ветки, и к двери комнаты, и на стык с соседней веткой.
 var corridor_tiles: Dictionary[Vector3i, int] = {}
 ## Комната -> { грань двери: ветка }. Грань — клетка footprint и её сторона
 ## (GridTopology.face): у комнаты в несколько клеток на одной стороне несколько
 ## сокетов. Ключ — грань, а не сосед: две двери комнаты законно ведут в одну и ту
-## же ветку, и по id соседа их не различить (RS_LevelGraph._hang_floor_on_corridors).
+## же ветку, и по id соседа их не различить. Ключ есть у каждой комнаты слоя, даже
+## без дверей.
 var door_faces: Dictionary[StringName, Dictionary] = {}
+## Клетки-тупики: концы отростков, которые раскладка поставила нарочно
+## (RS_WorldGenConfig.dead_ends), — единственные тайлы с одним проёмом. Место под
+## то, что тянет туда идти (карточка «Источники эссенции»); сам генератор туда
+## ничего не кладёт.
+var dead_ends: Dictionary[Vector3i, bool] = {}
 ## Сколько трасс не удалось проложить — ветка заперта чужими коридорами и
 ## комнатами. Раскладка при этом не падает; ноль сверяет проверка.
 var routing_failures: Array[String] = []
 
 
-## Строит план слоя. Этажи раскладываются независимо: связь между ними — только
-## порталы, у которых нет направления в плоскости этажа. [param config] — только
-## ради шага решётки.
-static func build(layer_nodes: Array[RS_LevelNode], config: RS_WorldGenConfig = null) -> RS_LayerPlan:
-	var plan := RS_LayerPlan.new()
-	var by_floor: Dictionary[int, Array] = {}
-	for node_data in layer_nodes:
-		if not by_floor.has(node_data.floor_index):
-			by_floor[node_data.floor_index] = []
-		by_floor[node_data.floor_index].append(node_data)
-
-	var step := config.room_lattice_step if config else DEFAULT_LATTICE_STEP
-	for floor_index: int in by_floor:
-		var floor_nodes: Array = by_floor[floor_index]
-		# Порядок фиксируем по index_in_layer: раскладка обязана совпадать от
-		# запуска к запуску при одном сиде — иначе сохранённая комната окажется в
-		# другом месте.
-		floor_nodes.sort_custom(func(a, b): return a.index_in_layer < b.index_in_layer)
-		RS_CorridorPlanner.plan_floor(plan, floor_nodes, floor_index, step)
-	return plan
+## Пары веток, между тайлами которых открыт проём, — стыки, каждая пара один раз.
+## По ним граф ставит рёбра между ветками: где ветка переходит в соседнюю, решает
+## раскладка (RS_CorridorPlanner._split и петли), а не граф.
+func branch_joints() -> Array[Array]:
+	var seen: Dictionary[String, bool] = {}
+	var joints: Array[Array] = []
+	for tile: Vector3i in corridor_tiles:
+		var mask: int = corridor_tiles[tile]
+		for side in topology.side_count(tile):
+			var next := topology.neighbour(tile, side)
+			if mask & (1 << side) == 0 or not corridor_tiles.has(next):
+				continue
+			var a: StringName = node_by_cell[tile]
+			var b: StringName = node_by_cell[next]
+			if a == b:
+				continue
+			var pair: Array = [a, b] if String(a) < String(b) else [b, a]
+			var key := "%s|%s" % pair
+			if not seen.has(key):
+				seen[key] = true
+				joints.append(pair)
+	return joints
 
 
 ## Мировая точка узла: у комнаты — центр footprint в плане на уровне пола (origin

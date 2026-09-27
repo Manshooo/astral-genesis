@@ -109,8 +109,8 @@ func _build_sun() -> DirectionalLight3D:
 
 ## Отдаёт вьюпорту готовый слой: граф — для роли узла (вход/выход) и рёбер,
 ## узлы и раскладку — что и где рисовать, подписи пресетов — оверлею
-## «Подписи». Всё считает вызывающий (RS_LevelGraph.generate_run +
-## RS_LayerPlan.build); этот узел сам ничего не генерирует, только отображает.
+## «Подписи». Всё считает вызывающий (RS_LevelGraph.generate_run, план слоя —
+## RS_LevelGraph.layer_plan); этот узел сам ничего не генерирует, только отображает.
 func show_layer(view: LayerView) -> void:
 	_view = view
 	for overlay: Node3D in _overlays.values():

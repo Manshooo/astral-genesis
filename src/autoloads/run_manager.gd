@@ -49,12 +49,11 @@ const NO_DEPTH := LayerStreamer.NO_DEPTH
 ## Что сейчас в дереве: слой, его комнаты и тайлы, планы слоёв.
 var layer := LayerStreamer.new()
 
-## Граф забега. Сеттер отдаёт его стримеру вместе с ручками — планы прошлого графа
-## к новому не относятся и сбрасываются там же.
+## Граф забега. Сеттер отдаёт его стримеру — планы слоёв граф несёт в себе.
 var current_graph: RS_LevelGraph:
 	set(value):
 		current_graph = value
-		layer.set_graph(value, _gen_config)
+		layer.set_graph(value)
 var current_node_id: StringName = &""
 ## Глубина загруженного слоя (NO_DEPTH — ничего не загружено).
 var current_depth: int:
@@ -72,9 +71,7 @@ var _max_depth_reached: int = 0
 ## дверь выхода засчитала бы побег поверх смерти — с двойной наградой. Все входы
 ## извне (переход, дверь, побег, точки сохранения) проверяют его через _in_run().
 var _ending: bool = false
-## Снимок ручек, по которым построен current_graph (см. _run_gen_config). Нужен
-## и раскладке: шаг решётки комнат — тоже ручка, и план обязан строиться по тем
-## же числам, что и граф.
+## Снимок ручек, по которым построен current_graph (см. _run_gen_config).
 var _gen_config: RS_WorldGenConfig
 
 
@@ -116,23 +113,29 @@ func enter_complex(run_seed: int = -1) -> void:
 ## на момент старта, а не голый data/world_gen_config.tres.
 func _run_gen_config() -> RS_WorldGenConfig:
 	var saved := WorldSave.save
-	if saved.run_in_progress and saved.gen_config != null:
+	var same_generator := saved.generator_version == RS_LevelGraph.GENERATOR_VERSION
+	if saved.run_in_progress and saved.gen_config != null and same_generator:
 		return saved.gen_config
 	if saved.run_in_progress:
-		# Забег начат до коридоров: снимка у него нет, а комплекс, по которому он
-		# шёл, больше не строится. Решено сбрасывать его на вход (22.09): узлы
-		# нового графа названы так же (L3_F0_room_0…), и старые посещённые и
-		# съеденные тела молча легли бы на чужие комнаты. Запас и тело остаются —
-		# их восстановит _restore_player_progress.
+		# Забег начат на другом генераторе — до коридоров (снимка нет) или на
+		# прежней версии (RS_LevelGraph.GENERATOR_VERSION): комплекс, по которому
+		# он шёл, больше не строится. Сбрасываем его на вход (решено 22.09 и
+		# 27.09 — на всю v0.7.0): узлы нового графа названы так же
+		# (L3_F0_room_0…), и старые посещённые, съеденные тела и награды молча
+		# легли бы на чужие комнаты. Запас и тело остаются — их восстановит
+		# _restore_player_progress. Снимок ручек берётся свежий: у старого нет
+		# ручек нового генератора.
 		saved.current_node_id = &""
 		saved.visited_node_ids.clear()
 		saved.consumed_body_ids.clear()
+		saved.rewarded_node_ids.clear()
 	var base := GameConfig.config.world_gen
 	if base == null:
 		return null
 	# Мелкая копия намеренно: записи уникальных комнат — данные, их не правят,
 	# а глубокая копия утащила бы в сейв ещё и пресеты со сценами.
 	saved.gen_config = base.duplicate() as RS_WorldGenConfig
+	saved.generator_version = RS_LevelGraph.GENERATOR_VERSION
 	return saved.gen_config
 
 

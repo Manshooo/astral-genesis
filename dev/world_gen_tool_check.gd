@@ -75,7 +75,7 @@ func _check_seed_sweep() -> void:
 	for s in 3:
 		var graph := RS_LevelGraph.new().generate_run(s, tab._library, config)
 		for depth: int in RS_LevelGraph.DEPTHS:
-			expected.add(RS_LayoutMetrics.of_plan(RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)))
+			expected.add(RS_LayoutMetrics.of_plan(graph.layer_plan(depth)))
 	var report: String = tab._seeds_report.text
 	_check("прогон сидов: метрики раскладки те же, что по сидам напрямую",
 		report.contains("\n".join(expected.report_lines())), report.right(300))
@@ -91,7 +91,7 @@ func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void
 	var config := load("res://data/world_gen_config.tres") as RS_WorldGenConfig
 	var graph := RS_LevelGraph.new().generate_run(0, library, config)
 	var layer_nodes := graph.get_nodes_by_depth(RS_LevelGraph.HOME_DEPTH)
-	var plan := RS_LayerPlan.build(layer_nodes, config)
+	var plan := graph.layer_plan(RS_LevelGraph.HOME_DEPTH)
 	var view := LayerView.new(graph, layer_nodes, plan)
 	view.kit = load("res://data/corridor_kit.tres") as RS_CorridorKit
 	# Дважды: вторая сборка обязана заменить тайлы первой, а не лечь поверх.
@@ -155,7 +155,7 @@ func _check_room_outline(library: RS_RoomPresetLibrary, host: ViewportHost) -> v
 	if layer_nodes.size() < 2:
 		_check("обводка: слой L%d содержит хотя бы 2 узла для теста" % RS_LevelGraph.HOME_DEPTH, false, "%d" % layer_nodes.size())
 		return
-	var plan := RS_LayerPlan.build(layer_nodes)
+	var plan := graph.layer_plan(RS_LevelGraph.HOME_DEPTH)
 	host.show_layer(LayerView.new(graph, layer_nodes, plan))
 
 	var first_id := layer_nodes[0].id
@@ -251,7 +251,7 @@ func _check_inline_preset_editor() -> void:
 		# оверлеем на СВОЁМ слое, а не через tab._host (тот показывает только
 		# _current_depth()).
 		var own_layer := tab._graph.get_nodes_by_depth(with_preset.depth)
-		var own_plan := RS_LayerPlan.build(own_layer)
+		var own_plan := tab._graph.layer_plan(with_preset.depth)
 		var labels_overlay := LabelsOverlay.new()
 		labels_overlay.rebuild(
 			LayerView.new(tab._graph, own_layer, own_plan, tab._preset_labels_for(own_layer))
@@ -348,7 +348,7 @@ func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportH
 		var layer_nodes := graph.get_nodes_by_depth(depth)
 		if layer_nodes.is_empty():
 			continue
-		var plan := RS_LayerPlan.build(layer_nodes)
+		var plan := graph.layer_plan(depth)
 		var label := "seed %d L%d" % [seed_value, depth]
 
 		# --- 1. Оверлеи строят ровно по узлу на комнату/сферу, без утечек

@@ -327,7 +327,7 @@ func _open_screen(level: int, here: StringName, visited: Array[StringName]) -> U
 
 func _plan_of(depth: int) -> RS_LayerPlan:
 	if not _plans.has(depth):
-		_plans[depth] = RS_LayerPlan.build(_graph.get_nodes_by_depth(depth), _base_config)
+		_plans[depth] = _graph.layer_plan(depth)
 	return _plans[depth]
 
 

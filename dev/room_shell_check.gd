@@ -178,14 +178,15 @@ func _check_assembly(turns: int) -> void:
 	room_node.room_scene_path = KIT_P_ROOM
 	room_node.socket_doors = 2
 	room_node.turns = turns
-	var branch := RS_LevelNode.new()
-	branch.id = &"branch"
-	branch.role = RS_LevelNode.Role.CORRIDOR
-	branch.index_in_layer = 1
-	for i in room_node.socket_doors:
-		_link(room_node, branch)
-	var layer: Array[RS_LevelNode] = [room_node, branch]
-	var plan := RS_LayerPlan.build(layer)
+	# Слой из одной комнаты раскладывает сам планировщик: план рождается в генерации
+	# графа, а графа здесь нет. Без петель и тупиков — проверяется сборка комнаты.
+	var rooms: Array[RS_LevelNode] = [room_node]
+	var branches: Array[StringName] = [&"branch"]
+	var config := RS_WorldGenConfig.new()
+	config.corridor_loops = 0
+	config.dead_ends = 0
+	var plan := RS_LayerPlan.new()
+	RS_CorridorPlanner.plan_floor(plan, rooms, branches, 0, config, RandomNumberGenerator.new())
 	var faces: Dictionary = plan.door_faces.get(room_node.id, {})
 	_check("поворот %d: у комнаты 2×2×1 ровно две двери, обе в сокетах" % turns,
 		faces.size() == 2 and plan.routing_failures.is_empty(),
@@ -272,19 +273,6 @@ func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3, exclude:
 
 
 # -----------------------------------------------------------------------------
-
-
-func _link(a: RS_LevelNode, b: RS_LevelNode) -> void:
-	var forward := RS_LevelConnection.new()
-	forward.target_node_id = b.id
-	forward.type = RS_LevelConnection.Type.CORRIDOR
-	a.connections.append(forward)
-	var backward := RS_LevelConnection.new()
-	backward.target_node_id = a.id
-	backward.type = RS_LevelConnection.Type.CORRIDOR
-	b.connections.append(backward)
-
-
 
 
 ## Все сцены комнат с C_RoomShell под ROOMS_DIR.

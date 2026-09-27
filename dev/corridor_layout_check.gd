@@ -1,6 +1,7 @@
 extends "res://dev/check_harness.gd"
 ## Проверка коридорной раскладки (этап 3 карточки «Процедурные коридоры между
-## комнатами»): комнаты на решётке, трассы веток по клеткам кита.
+## комнатами», с п. 7 карточки «Сетка уровня» — сетью): комнаты на решётке, сеть
+## коридоров по клеткам кита, ветки, петли и тупики.
 ##
 ## Это второй путь валидации, про который карточка предупреждала: gen_verifier
 ## сверяет двери ПО СЦЕНЕ, а у собранного из тайлов коридора сцены нет — без
@@ -13,19 +14,32 @@ extends "res://dev/check_harness.gd"
 
 const SEEDS := 30
 const CONFIG_PATH := "res://data/world_gen_config.tres"
-## Потолок доли комнат, которые коридор обволакивает своей же веткой
-## (RS_LayoutMetrics), — по нынешнему генератору: 42.0 % на этих сидах на клетке
-## 8 м (замер 27.09; до сборных комнат, с дверями, запечёнными в арт, было 55 %).
-## Ловит правку ручек или раскладки, от которой стало хуже. Новая раскладка (п. 7
-## карточки «Сетка уровня») обязана эту долю опустить — и порог опускается
-## следом, иначе он перестаёт что-либо сторожить.
-const MAX_ENVELOPED_SHARE := 0.43
+## Потолок доли комнат, которые коридор обволакивает своими же ветками
+## (RS_LayoutMetrics). Раскладка сетью (п. 7 карточки «Сетка уровня», 27.09) даёт
+## на этих сидах 0 %: петлю и тупик, которые обволокли бы комнату, она не ставит,
+## а двери смотрят не больше чем с двух сторон. До неё было 42 %, до сборных комнат
+## — 55 %. Порог — по замеру, а не с запасом: он ловит правку ручек или раскладки,
+## от которой стало хуже, и с запасом ничего бы не сторожил.
+const MAX_ENVELOPED_SHARE := 0.01
+## Второй прогон — на крупных этажах: предохранители раскладки от обволакивания
+## работают там. На 4 комнатах двери и так смотрят внутрь решётки, и раскладка без
+## предохранителей давала бы те же 0 %, а на 8 — 15 % (мутация 27.09).
+const STRESS_ROOMS := 8
+const STRESS_SEEDS := 10
 
 
 func _ready() -> void:
 	var library: RS_RoomPresetLibrary = GameConfig.config.room_preset_library
 	var config := (load(CONFIG_PATH) as RS_WorldGenConfig).duplicate() as RS_WorldGenConfig
+	_sweep(library, config, SEEDS, "")
+	var stress := config.duplicate() as RS_WorldGenConfig
+	stress.rooms_per_floor = STRESS_ROOMS
+	_sweep(library, stress, STRESS_SEEDS, ", %d комнат на этаж" % STRESS_ROOMS)
+	_check_determinism(library, config)
+	_finish()
 
+
+func _sweep(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig, seeds: int, label: String) -> void:
 	var problems := {
 		"все трассы проложены": [],
 		"комнаты не делят клетку, тайлы не встают на комнаты": [],
@@ -34,31 +48,40 @@ func _ready() -> void:
 		"проёмы взаимны, в пустоту не ведёт ни один": [],
 		"стык веток есть ровно там, где в графе ребро между ними": [],
 		"тайлы ветки связны": [],
-		"тайлов с одним проёмом (торца в ките нет) не бывает": [],
+		"тайл с одним проёмом — ровно отмеченный тупик": [],
+		"тупиков на этаже не больше ручки": [],
 		"node_at узнаёт комнаты и коридоры": [],
 	}
 	var layout := RS_LayoutMetrics.new()
-	for s in SEEDS:
+	var multi_branch := 0
+	for s in seeds:
 		var graph := RS_LevelGraph.new().generate_run(s, library, config)
 		for depth: int in RS_LevelGraph.DEPTHS:
 			var layer := graph.get_nodes_by_depth(depth)
-			var plan := RS_LayerPlan.build(layer, config)
+			var plan := graph.layer_plan(depth)
 			layout.add(RS_LayoutMetrics.of_plan(plan))
-			_collect(graph, layer, plan, s, depth, problems)
+			_collect(graph, layer, plan, s, depth, config, problems)
+			for room: StringName in plan.door_faces:
+				var branches := {}
+				for branch: StringName in (plan.door_faces[room] as Dictionary).values():
+					branches[branch] = true
+				multi_branch += 1 if branches.size() >= 2 else 0
 
+	var where := "%d сидов%s" % [seeds, label]
 	for what: String in problems:
 		var list: Array = problems[what]
-		_check("%s (%d сидов)" % [what, SEEDS], list.is_empty(), ", ".join(list.slice(0, 4)))
+		_check("%s (%s)" % [what, where], list.is_empty(), ", ".join(list.slice(0, 4)))
 
-	print("  раскладка на %d сидах, %d этажей:" % [SEEDS, layout.floors])
+	print("  раскладка (%s), %d этажей:" % [where, layout.floors])
 	for line in layout.report_lines():
 		print("    " + line)
-	_check("обволакиваемых комнат не больше %d%%" % roundi(MAX_ENVELOPED_SHARE * 100.0),
+	_check("обволакиваемых комнат не больше %d%% (%s)" % [roundi(MAX_ENVELOPED_SHARE * 100.0), where],
 		layout.enveloped_share() <= MAX_ENVELOPED_SHARE, "%.1f%%" % (layout.enveloped_share() * 100.0))
-
-	_check_determinism(library, config)
-
-	_finish()
+	# Ради этого правило «одна ветка на комнату» и снято: без комнат на двух
+	# ветках и петель по коридору раскладка — снова дерево без обходных путей.
+	_check("комнаты на двух ветках есть (%d, %s)" % [multi_branch, where], multi_branch > 0, "")
+	_check("петли по коридору есть (%d, %s)" % [layout.corridor_loops, where], layout.corridor_loops > 0, "")
+	_check("тупики есть (%d, %s)" % [layout.dead_ends, where], layout.dead_ends > 0, "")
 
 
 func _collect(
@@ -67,11 +90,19 @@ func _collect(
 	plan: RS_LayerPlan,
 	s: int,
 	depth: int,
+	config: RS_WorldGenConfig,
 	problems: Dictionary,
 ) -> void:
 	var tag := "сид %d L%d" % [s, depth]
 	for failure in plan.routing_failures:
 		problems["все трассы проложены"].append("%s: %s" % [tag, failure])
+
+	var dead_per_level := {}
+	for cell: Vector3i in plan.dead_ends:
+		dead_per_level[cell.y] = dead_per_level.get(cell.y, 0) + 1
+	for level: int in dead_per_level:
+		if dead_per_level[level] > config.dead_ends:
+			problems["тупиков на этаже не больше ручки"].append("%s этаж %d: %d" % [tag, level, dead_per_level[level]])
 
 	var room_at: Dictionary[Vector3i, StringName] = {}
 	for node in layer:
@@ -97,8 +128,10 @@ func _collect(
 	for cell: Vector3i in plan.corridor_tiles:
 		var mask: int = plan.corridor_tiles[cell]
 		var owner: StringName = plan.node_by_cell[cell]
-		if RS_LayoutMetrics.piece_of(mask) == RS_LayoutMetrics.Piece.END:
-			problems["тайлов с одним проёмом (торца в ките нет) не бывает"].append("%s %s" % [tag, cell])
+		# Тупик в ките есть, но случайный тупик — это обрыв сети, а не место под
+		# награду: одним проёмом кончается только то, что раскладка отметила.
+		if (RS_LayoutMetrics.piece_of(mask) == RS_LayoutMetrics.Piece.END) != plan.dead_ends.has(cell):
+			problems["тайл с одним проёмом — ровно отмеченный тупик"].append("%s %s" % [tag, cell])
 		var off_center := Vector3(0.3, 0.0, 0.3) * plan.embedding.cell_size + Vector3(0.0, 1.7, 0.0)
 		if plan.node_at(plan.embedding.cell_origin(cell) + off_center) != owner:
 			problems["node_at узнаёт комнаты и коридоры"].append("%s тайл %s" % [tag, cell])
@@ -212,14 +245,17 @@ func _connected(plan: RS_LayerPlan, branch: StringName, floor_index: int) -> boo
 	return seen.size() == own.size()
 
 
+## Раскладка разыгрывается внутри генерации графа, из своего потока этажа, —
+## поэтому сверяются два графа одного сида целиком, а не два плана одного графа.
 func _check_determinism(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig) -> void:
 	var diverged: Array[int] = []
 	for s in 5:
-		var graph := RS_LevelGraph.new().generate_run(s, library, config)
+		var first := RS_LevelGraph.new().generate_run(s, library, config)
+		var second := RS_LevelGraph.new().generate_run(s, library, config)
 		for depth: int in RS_LevelGraph.DEPTHS:
-			var a := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
-			var b := RS_LayerPlan.build(graph.get_nodes_by_depth(depth), config)
+			var a := first.layer_plan(depth)
+			var b := second.layer_plan(depth)
 			if str(a.corridor_tiles) != str(b.corridor_tiles) or str(a.door_faces) != str(b.door_faces) \
-					or str(a.cells) != str(b.cells):
+					or str(a.cells) != str(b.cells) or str(a.dead_ends) != str(b.dead_ends):
 				diverged.append(s)
-	_check("один граф — одна раскладка", diverged.is_empty(), str(diverged))
+	_check("один сид — один граф и одна раскладка", diverged.is_empty(), str(diverged))

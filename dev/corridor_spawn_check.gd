@@ -73,11 +73,13 @@ func _check_tiles() -> void:
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
 	_check("у слоя есть тайлы коридора", not RunManager.layer.corridor_tiles.is_empty(), "")
 	var spawned := 0
+	var ends := 0
 	var wrong: Array[String] = []
 	var kit := GameConfig.config.corridor_kit
 	for branch: StringName in RunManager.layer.corridor_tiles:
 		for tile: Node3D in RunManager.layer.corridor_tiles[branch]:
 			spawned += 1
+			ends += 1 if kit.end and tile.scene_file_path == kit.end.resource_path else 0
 			var cell := plan.embedding.cell_at(tile.global_position)
 			var base := _base_mask(kit, tile.scene_file_path)
 			var turns := posmod(roundi(tile.rotation.y / (PI * 0.5)), 4)
@@ -87,6 +89,10 @@ func _check_tiles() -> void:
 	_check("на каждый тайл плана — ровно один кусок (%d)" % plan.corridor_tiles.size(),
 		spawned == plan.corridor_tiles.size(), "поставлено %d" % spawned)
 	_check("кусок под маску своего тайла и своей ветки", wrong.is_empty(), ", ".join(wrong.slice(0, 4)))
+	# Иначе лучи ниже не видели бы ни одного тупика, и перевёрнутый кусок тупика
+	# прошёл бы молча.
+	_check("тупики слоя встали куском тупика, и они есть (%d)" % ends,
+		ends == plan.dead_ends.size() and ends > 0, "тупиков в плане %d" % plan.dead_ends.size())
 	_check_tiles_in_cells(plan)
 
 
@@ -373,6 +379,8 @@ func _base_mask(kit: RS_CorridorKit, scene_path: String) -> int:
 		return kit.corner_mask
 	if kit.tee and scene_path == kit.tee.resource_path:
 		return kit.tee_mask
+	if kit.end and scene_path == kit.end.resource_path:
+		return kit.end_mask
 	return kit.cross_mask
 
 

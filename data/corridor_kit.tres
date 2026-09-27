@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="RS_CorridorKit" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="RS_CorridorKit" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://src/resources/world_generator/rs_corridor_kit.gd" id="1_kit"]
 [ext_resource type="PackedScene" path="res://src/levels/procedural/corridors/corridor_straight.tscn" id="2_straight"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://src/levels/procedural/corridors/corridor_tee.tscn" id="4_tee"]
 [ext_resource type="PackedScene" path="res://src/levels/procedural/corridors/corridor_cross.tscn" id="5_cross"]
 [ext_resource type="PackedScene" path="res://assets/levels/SM_corridor_P_door_end/SM_corridor_P_door_end.glb" id="6_door_end"]
+[ext_resource type="PackedScene" path="res://src/levels/procedural/corridors/corridor_end.tscn" id="7_end"]
 
 [resource]
 script = ExtResource("1_kit")
@@ -13,4 +14,5 @@ straight = ExtResource("2_straight")
 corner = ExtResource("3_corner")
 tee = ExtResource("4_tee")
 cross = ExtResource("5_cross")
+end = ExtResource("7_end")
 door_end = ExtResource("6_door_end")
