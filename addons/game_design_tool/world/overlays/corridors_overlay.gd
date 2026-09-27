@@ -97,8 +97,13 @@ func _add_slab(branch: StringName, center: Vector3, size: Vector3, material: Mat
 ## того же сида остаётся того же цвета, и глаз её не теряет. Общий с оверлеем
 ## «Сетка»: дверь там красится цветом ветки, в которую ведёт, и разные цвета
 ## одной ветки в двух оверлеях врали бы.
+##
+## Хэш — через золотое сечение, а не остатком от деления: у соседних имён
+## (…corridor_0, …corridor_1) хэш строки отличается на единицы, и остаток давал
+## им почти один оттенок. Пока веток было 1–3 на этаж, это терялось; с коридором
+## на каждый отрезок между развилками соседние коридоры сливались в одно пятно.
 static func branch_color(branch: StringName) -> Color:
-	return Color.from_hsv(float(hash(String(branch)) % 360) / 360.0, 0.55, 0.85)
+	return Color.from_hsv(fposmod(hash(String(branch)) * 0.6180339887, 1.0), 0.55, 0.85)
 
 
 func _material_for(branch: StringName) -> StandardMaterial3D:

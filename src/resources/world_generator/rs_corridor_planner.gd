@@ -1,17 +1,19 @@
 ## res://src/resources/world_generator/rs_corridor_planner.gd
 ## Коридорная раскладка этажа: комнаты на решётке, сеть коридоров — дерево по
 ## клеткам сетки, связывающее все двери этажа, и петли с тупиками поверх него.
-## Здесь же решается, в какую ветку ведёт каждая дверь: граф берёт эти рёбра из
-## раскладки (RS_LevelGraph._lay_out_floor), а не диктует их ей.
+## Здесь же решается, какие в сети коридоры и в какой ведёт каждая дверь: граф
+## берёт эти узлы и рёбра из раскладки (RS_LevelGraph._lay_out_floor), а не
+## диктует их ей.
 ##
 ## Почему решает раскладка, а не граф (п. 7 карточки «Сетка уровня»): пока граф
 ## заранее назначал двери веткам, укладки могло не существовать вовсе — двери в
 ## случайные ветки не трассировались на 8 % этажей, а лекарство «все двери комнаты
 ## в одну ветку» заставляло ветку обходить комнату кругом (42 % обволакиваемых
 ## комнат). Здесь сеть на этаже одна и растёт от двери к ближайшему уже
-## проложенному коридору, поэтому трасса есть всегда; на ветки её режут уже
-## готовой, и ветки ложатся туда, куда их положила геометрия. Подход «хребет с
-## комнатами по сторонам» сравнивался с этим на тех же сидах — цифры в карточке.
+## проложенному коридору, поэтому трасса есть всегда; на коридоры её режут уже
+## готовой — по развилкам (карточка «Коридор — отдельный узел»). Подход «хребет с
+## комнатами по сторонам» сравнивался с этим на тех же сидах — цифры в карточке
+## «Сетка уровня».
 ##
 ## Работает только в клетках и сторонах топологии (карточка «Сетка уровня»): где
 ## клетка стоит в мире, решает вложение плана, и отсюда его не видно. Квадратная
@@ -53,7 +55,8 @@ var _room_at: Dictionary[Vector3i, StringName] = {}
 var _doors: Dictionary[StringName, Array] = {}
 ## Тайл сети -> соседние тайлы, с которыми он связан проёмом.
 var _links: Dictionary[Vector3i, Array] = {}
-## Тайл -> номер ветки (индекс в именах, которые заготовил граф).
+## Тайл -> номер коридора. До разреза по развилкам (_segment) вся сеть — нулевой:
+## петли и тупики ставятся раньше, и для них своя для комнаты — вся сеть.
 var _owner: Dictionary[Vector3i, int] = {}
 ## Клетки перед дверями — концы, которые сеть обязана связать.
 var _terminals: Array[Vector3i] = []
@@ -71,27 +74,28 @@ func _init(plan: RS_LayerPlan, level: int) -> void:
 
 
 ## Раскладывает этаж [param floor_index] в [param plan]: комнаты, сеть, двери,
-## петли и тупики. [param branch_ids] — имена веток, заготовленные графом; веток
-## выходит не больше, чем дверей на этаже, и возвращается, сколько первых имён
-## пошло в дело.
+## петли, тупики и коридоры. Имя коридора — [param id_prefix] и номер; возвращает
+## имена всех коридоров этажа — по ним граф заводит узлы.
 static func plan_floor(
 	plan: RS_LayerPlan,
 	rooms: Array[RS_LevelNode],
-	branch_ids: Array[StringName],
+	id_prefix: String,
 	floor_index: int,
 	config: RS_WorldGenConfig,
 	rng: RandomNumberGenerator,
-) -> int:
+) -> Array[StringName]:
 	var planner := RS_CorridorPlanner.new(plan, floor_index)
 	planner._place_rooms(rooms, config.room_lattice_step, rng)
 	for room in rooms:
 		planner._choose_doors(room)
 	planner._grow_network()
-	var used := planner._split(mini(branch_ids.size(), planner._terminals.size()))
 	planner._add_loops(config.corridor_loops)
 	planner._add_dead_ends(config.dead_ends, rng)
-	planner._write(rooms, branch_ids)
-	return used
+	var ids: Array[StringName] = []
+	for k in planner._segment():
+		ids.append(StringName("%s%d" % [id_prefix, k]))
+	planner._write(rooms, ids)
+	return ids
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +205,7 @@ func _sockets_on(sockets: Array[Vector4i], sides: Array) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Сеть и ветки
+# Сеть и коридоры
 # ---------------------------------------------------------------------------
 
 
@@ -250,52 +254,141 @@ func _grow_network() -> void:
 			for terminal in pending:
 				_plan.routing_failures.append("этаж %d: дверь перед %s не связана с сетью" % [_level, terminal])
 			break
-		_claim(best, -1)
+		_claim(best)
 	_area = _bounds().grow(ROUTE_MARGIN)
 
 
-## Режет дерево сети на [param count] веток, у каждой хоть одна дверь: ветка без
-## двери — коридор в никуда. Режется ребро, делящее двери ровнее всего, при
-## равенстве — у развилки: стык веток — место под будущий шлюз, и на развилке он
-## читается как отходящий коридор, а не как дверь посреди прямого. Разрез — только
-## граница владения, проём на стыке остаётся открытым. Возвращает, сколько веток
-## вышло; нулевая — ветка первой двери.
-func _split(count: int) -> int:
-	var cut: Dictionary[String, bool] = {}
-	var fronts: Dictionary[Vector3i, bool] = {}
-	for terminal in _terminals:
-		if _links.has(terminal):
-			fronts[terminal] = true
-	for k in count - 1:
-		var best_key := ""
-		var best_score := 0
-		var best_fork := false
-		for a: Vector3i in _links:
-			for b: Vector3i in _links[a]:
-				if not _before(a, b):
-					continue
-				var key := _edge_key(a, b)
-				if cut.has(key):
-					continue
-				var part_a := _reach(a, cut, key)
-				var part_b := _reach(b, cut, key)
-				var score := mini(_count_in(part_a, fronts), _count_in(part_b, fronts))
-				var fork: bool = (_links[a] as Array).size() >= 3 or (_links[b] as Array).size() >= 3
-				if score > best_score or (score == best_score and score > 0 and fork and not best_fork):
-					best_key = key
-					best_score = score
-					best_fork = fork
-		if best_key == "":
-			break
-		cut[best_key] = true
-	var next := 0
-	for terminal in _terminals:
-		if not _links.has(terminal) or _owner.has(terminal):
+## Режет сеть на коридоры — отрезки между развилками (карточка «Коридор —
+## отдельный узел»): поворот и дверь коридор не режут, развилка режет. Узлом
+## графа был бы и каждый тайл, но тогда текущий узел и карта менялись бы каждые
+## 8 м, а ветка из многих коридоров с развилками, как до этого, — не то место,
+## которое игрок называет «коридором».
+##
+## Клетка развилки достаётся коридору, который идёт через неё прямо, а боковой к
+## нему примыкает: длинный коридор с ответвлениями читается целиком, а стык —
+## место под будущий шлюз — встаёт на входе в боковой. Отдельным узлом
+## «перекрёсток» развилка не стала по той же причине. Разрез — только граница
+## владения: проём на стыке открыт. Возвращает, сколько коридоров вышло;
+## номера — по порядку дверей (нулевой — у двери ближе всех к центру), затем
+## коридоры без дверей — перемычки и тупики.
+##
+## Коридоры собираются объединением, а не вырезанием боковых проёмов: петля может
+## вернуть коридор к его же развилке сбоку (форма «Р»), и разрез бокового проёма
+## тогда ничего не отделяет — коридор шёл бы через развилку и сам к ней
+## примыкал. Такая развилка отпускает сперва одного прямого соседа, потом другого,
+## а если и это не помогло — остаётся коридором в одну клетку.
+func _segment() -> int:
+	var keep: Dictionary[Vector3i, Array] = {}  # развилка -> прямые соседи, с кем она в одном коридоре
+	for tile: Vector3i in _links:
+		if (_links[tile] as Array).size() >= 3:
+			keep[tile] = _through_pair(tile)
+	var root := _join(keep)
+	var looped := _self_joined(keep, root)
+	while looped != Vector3i.MAX:
+		var pair := _through_pair(looped)
+		var kept: Array = keep[looped]
+		if kept.size() == 2:
+			keep[looped] = [pair[0]]
+		elif kept.size() == 1 and kept[0] == pair[0]:
+			keep[looped] = [pair[1]]
+		else:
+			keep[looped] = []
+		root = _join(keep)
+		looped = _self_joined(keep, root)
+	_owner.clear()
+	var number: Dictionary[Vector3i, int] = {}  # корень коридора -> номер
+	var starts: Array[Vector3i] = []
+	starts.append_array(_terminals)
+	starts.append_array(_links.keys())
+	for start in starts:
+		if _links.has(start) and not number.has(root[start]):
+			number[root[start]] = number.size()
+	for tile: Vector3i in _links:
+		_owner[tile] = number[root[tile]]
+	return number.size()
+
+
+## Коридоры как множества тайлов: тайл -> корень своего коридора. Проём
+## объединяет двоих, только если каждый из них его принимает: обычный тайл —
+## любой, развилка — только к своим прямым соседям ([param keep]).
+func _join(keep: Dictionary[Vector3i, Array]) -> Dictionary[Vector3i, Vector3i]:
+	var parent: Dictionary[Vector3i, Vector3i] = {}
+	for tile: Vector3i in _links:
+		parent[tile] = tile
+	for tile: Vector3i in _links:
+		for next: Vector3i in _links[tile]:
+			if not _before(tile, next) or not _accepts(keep, tile, next) or not _accepts(keep, next, tile):
+				continue
+			var a := _find(parent, tile)
+			var b := _find(parent, next)
+			if a != b:
+				parent[b] = a
+	var root: Dictionary[Vector3i, Vector3i] = {}
+	for tile: Vector3i in _links:
+		root[tile] = _find(parent, tile)
+	return root
+
+
+## Развилка, оказавшаяся в одном коридоре с соседом, которого не принимала, —
+## коридор вернулся к ней сбоку. Vector3i.MAX — таких нет.
+func _self_joined(keep: Dictionary[Vector3i, Array], root: Dictionary[Vector3i, Vector3i]) -> Vector3i:
+	for tile: Vector3i in keep:
+		for next: Vector3i in _links[tile]:
+			if not _accepts(keep, tile, next) and root[next] == root[tile]:
+				return tile
+	return Vector3i.MAX
+
+
+func _accepts(keep: Dictionary[Vector3i, Array], tile: Vector3i, next: Vector3i) -> bool:
+	return not keep.has(tile) or (keep[tile] as Array).has(next)
+
+
+static func _find(parent: Dictionary[Vector3i, Vector3i], tile: Vector3i) -> Vector3i:
+	while parent[tile] != tile:
+		tile = parent[tile]
+	return tile
+
+
+## Два соседа развилки [param tile], через которых коридор идёт прямо: стороны
+## напротив друг друга (GridTopology.opposite — «прямо» по топологии, а не по
+## осям). У креста прямых два — клетку берёт тот, что длиннее прямо в обе
+## стороны, при равенстве — с меньшей стороной. Прямого нет (развилка из трёх
+## сторон вразнобой, на квадрате не бывает) — пусто: клетка остаётся отдельным
+## коридором.
+func _through_pair(tile: Vector3i) -> Array[Vector3i]:
+	var linked: Array = _links[tile]
+	var best: Array[Vector3i] = []
+	var best_run := -1
+	for side in _topology.side_count(tile):
+		var back := _topology.opposite(tile, side)
+		if back <= side:
 			continue
-		for cell: Vector3i in _reach(terminal, cut, ""):
-			_owner[cell] = next
-		next += 1
-	return next
+		var ahead := _topology.neighbour(tile, side)
+		var behind := _topology.neighbour(tile, back)
+		if not linked.has(ahead) or not linked.has(behind):
+			continue
+		var run := _straight_run(tile, side) + _straight_run(tile, back)
+		if run > best_run:
+			best_run = run
+			best = [ahead, behind]
+	return best
+
+
+## Сколько тайлов подряд сеть идёт прямо от [param from] через сторону
+## [param side]: на каждом следующем «прямо» — сторона напротив той, через
+## которую вошли.
+func _straight_run(from: Vector3i, side: int) -> int:
+	var run := 0
+	var cell := from
+	var out := side
+	while run < _links.size():
+		var next := _topology.neighbour(cell, out)
+		if not (_links[cell] as Array).has(next):
+			break
+		run += 1
+		out = _topology.opposite(next, _topology.back_side(cell, out))
+		cell = next
+	return run
 
 
 # ---------------------------------------------------------------------------
@@ -328,13 +421,13 @@ func _add_loops(count: int) -> void:
 					continue
 				var loop: Array[Vector3i] = [a]
 				loop.append_array(path)
-				if _envelops(loop, _owner[a]):
+				if _envelops(loop):
 					continue
 				best = loop
 				best_gain = gain
 		if best.is_empty():
 			return
-		_claim(best, _owner[best[0]])
+		_claim(best)
 
 
 ## Тупики: отросток в одну-две клетки от тайла в свободное место, лучше — не вдоль
@@ -356,7 +449,7 @@ func _add_dead_ends(count: int, rng: RandomNumberGenerator) -> void:
 				while stub.size() <= DEAD_END_LENGTH and _free(cell, _area) and not _touches_tiles(cell, stub[-1]):
 					stub.append(cell)
 					cell = _topology.neighbour(cell, side)
-				if stub.size() < 2 or _envelops(stub, _owner[a]):
+				if stub.size() < 2 or _envelops(stub):
 					continue
 				var score := 0
 				for i in range(1, stub.size()):
@@ -371,15 +464,17 @@ func _add_dead_ends(count: int, rng: RandomNumberGenerator) -> void:
 			return
 		var stub: Array[Vector3i] = []
 		stub.assign(candidates[rng.randi_range(0, candidates.size() - 1)])
-		_claim(stub, _owner[stub[0]])
+		_claim(stub)
 		_dead_ends.append(stub[-1])
 
 
-## Обволокла бы комнату трасса [param path] ветки [param branch]: к комнате с трёх
-## сторон подошли бы её собственные ветки — те, куда ведут её двери, как в
-## RS_LayoutMetrics. Все свои вместе, а не каждая порознь: границ веток игрок не
-## видит, и кольцо из двух веток вокруг комнаты — то же обволакивание.
-func _envelops(path: Array[Vector3i], branch: int) -> bool:
+## Обволокла бы комнату трасса [param path]: сеть вместе с ней подошла бы к
+## комнате с трёх сторон. Петли и тупики ставятся до разреза на коридоры, так что
+## своя для комнаты здесь — вся сеть, чей бы ни был коридор. Это строже, чем «её
+## коридоры» в RS_LayoutMetrics, и как раз то, что видит игрок: коридор с трёх
+## сторон комнаты, как его ни режь на узлы. Комната без дверей не в счёт — у неё
+## своих коридоров нет вовсе.
+func _envelops(path: Array[Vector3i]) -> bool:
 	var added: Dictionary[Vector3i, bool] = {}
 	for cell in path:
 		added[cell] = true
@@ -390,19 +485,12 @@ func _envelops(path: Array[Vector3i], branch: int) -> bool:
 			if _room_at.has(next):
 				rooms[_room_at[next]] = true
 	for room: StringName in rooms:
-		var own: Dictionary[int, bool] = {}
-		for face: Vector4i in _doors[room]:
-			var front := _front(face)
-			if _owner.has(front):
-				own[_owner[front]] = true
-			elif added.has(front):
-				own[branch] = true
-		if own.is_empty():
+		if (_doors[room] as Array).is_empty():
 			continue
 		var sides: Dictionary[int, bool] = {}
 		for face in _topology.perimeter(_plan.room_cells(room)):
 			var next := _front(face)
-			if (added.has(next) and own.has(branch)) or (_owner.has(next) and own.has(_owner[next])):
+			if added.has(next) or _links.has(next):
 				sides[face.w] = true
 		if sides.size() >= 3:
 			return true
@@ -414,26 +502,26 @@ func _envelops(path: Array[Vector3i], branch: int) -> bool:
 # ---------------------------------------------------------------------------
 
 
-## Переносит сеть в план: маски проёмов (к соседним тайлам и к дверям), чья ветка,
-## грани дверей с их ветками, тупики. Клетка ветки — её первый тайл: у ветки нет
-## одной клетки, а инструментам нужна хоть какая-то.
-func _write(rooms: Array[RS_LevelNode], branch_ids: Array[StringName]) -> void:
+## Переносит сеть в план: маски проёмов (к соседним тайлам и к дверям), чей
+## коридор, грани дверей с их коридорами, тупики. Клетка коридора — его первый
+## тайл: одной клетки у коридора нет, а инструментам нужна хоть какая-то.
+func _write(rooms: Array[RS_LevelNode], corridor_ids: Array[StringName]) -> void:
 	for tile: Vector3i in _links:
 		var mask := 0
 		for next: Vector3i in _links[tile]:
 			mask |= 1 << _topology.side_toward(tile, next)
-		var branch := branch_ids[_owner[tile]]
+		var corridor := corridor_ids[_owner[tile]]
 		_plan.corridor_tiles[tile] = mask
-		_plan.node_by_cell[tile] = branch
-		if not _plan.cells.has(branch):
-			_plan.cells[branch] = tile
+		_plan.node_by_cell[tile] = corridor
+		if not _plan.cells.has(corridor):
+			_plan.cells[corridor] = tile
 	for room in rooms:
 		var faces := {}
 		for face: Vector4i in _doors[room.id]:
 			var front := _front(face)
 			if not _owner.has(front):
 				continue  # сеть до двери не дотянулась — это уже в routing_failures
-			faces[face] = branch_ids[_owner[front]]
+			faces[face] = corridor_ids[_owner[front]]
 			_plan.corridor_tiles[front] |= 1 << _topology.back_side(GridTopology.face_cell(face), face.w)
 		_plan.door_faces[room.id] = faces
 	for cell in _dead_ends:
@@ -460,14 +548,12 @@ func _route(start: Vector3i, goal: Callable, area: Rect2i) -> Array[Vector3i]:
 	return []
 
 
-## Занимает клетки пути за веткой [param branch] (−1 — ещё не разрезано) и
-## открывает проёмы между соседними клетками пути.
-func _claim(path: Array[Vector3i], branch: int) -> void:
+## Занимает клетки пути под сеть и открывает проёмы между соседними клетками пути.
+## Чей это коридор, решает потом разрез (_segment).
+func _claim(path: Array[Vector3i]) -> void:
 	for cell in path:
 		if not _links.has(cell):
 			_links[cell] = []
-			if branch >= 0:
-				_owner[cell] = branch
 	for i in range(path.size() - 1):
 		var a := path[i]
 		var b := path[i + 1]
@@ -526,29 +612,6 @@ func _distances(start: Vector3i) -> Dictionary[Vector3i, int]:
 	return dist
 
 
-## Тайлы, достижимые от [param start] по проёмам, кроме разрезанных.
-func _reach(start: Vector3i, cut: Dictionary[String, bool], also_cut: String) -> Dictionary[Vector3i, bool]:
-	var seen: Dictionary[Vector3i, bool] = {start: true}
-	var stack: Array[Vector3i] = [start]
-	while not stack.is_empty():
-		var cell: Vector3i = stack.pop_back()
-		for next: Vector3i in _links[cell]:
-			var key := _edge_key(cell, next)
-			if seen.has(next) or cut.has(key) or key == also_cut:
-				continue
-			seen[next] = true
-			stack.append(next)
-	return seen
-
-
-func _count_in(part: Dictionary[Vector3i, bool], fronts: Dictionary[Vector3i, bool]) -> int:
-	var count := 0
-	for cell: Vector3i in part:
-		if fronts.has(cell):
-			count += 1
-	return count
-
-
 ## Прямоугольник комнат и тайлов этажа в плоскости (X, Z).
 func _bounds() -> Rect2i:
 	var rect := Rect2i()
@@ -590,7 +653,3 @@ static func _face_before(a: Vector4i, b: Vector4i) -> bool:
 	if a.x != b.x:
 		return a.x < b.x
 	return a.w < b.w
-
-
-static func _edge_key(a: Vector3i, b: Vector3i) -> String:
-	return "%s|%s" % ([a, b] if _before(a, b) else [b, a])

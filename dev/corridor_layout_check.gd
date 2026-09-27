@@ -47,7 +47,9 @@ func _sweep(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig, seeds: int
 		"перед каждой дверью — тайл её ветки с проёмом в комнату": [],
 		"проёмы взаимны, в пустоту не ведёт ни один": [],
 		"стык веток есть ровно там, где в графе ребро между ними": [],
-		"тайлы ветки связны": [],
+		"тайлы коридора связны": [],
+		"коридор — путь без развилок внутри, развилка — прямому коридору": [],
+		"коридор без двери — перемычка или тупик": [],
 		"тайл с одним проёмом — ровно отмеченный тупик": [],
 		"тупиков на этаже не больше ручки": [],
 		"node_at узнаёт комнаты и коридоры": [],
@@ -79,7 +81,7 @@ func _sweep(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig, seeds: int
 		layout.enveloped_share() <= MAX_ENVELOPED_SHARE, "%.1f%%" % (layout.enveloped_share() * 100.0))
 	# Ради этого правило «одна ветка на комнату» и снято: без комнат на двух
 	# ветках и петель по коридору раскладка — снова дерево без обходных путей.
-	_check("комнаты на двух ветках есть (%d, %s)" % [multi_branch, where], multi_branch > 0, "")
+	_check("комнаты на двух коридорах есть (%d, %s)" % [multi_branch, where], multi_branch > 0, "")
 	_check("петли по коридору есть (%d, %s)" % [layout.corridor_loops, where], layout.corridor_loops > 0, "")
 	_check("тупики есть (%d, %s)" % [layout.dead_ends, where], layout.dead_ends > 0, "")
 
@@ -164,12 +166,22 @@ func _collect(
 		if node.role != RS_LevelNode.Role.CORRIDOR:
 			continue
 		if not _connected(plan, node.id, node.floor_index):
-			problems["тайлы ветки связны"].append("%s %s" % [tag, node.id])
+			problems["тайлы коридора связны"].append("%s %s" % [tag, node.id])
+		var rooms := 0
+		var corridors := 0
 		for conn: RS_LevelConnection in node.connections:
 			var target := graph.get_node_data(conn.target_node_id)
 			if target.role == RS_LevelNode.Role.CORRIDOR:
+				corridors += 1
 				var ids := [node.id, target.id] if String(node.id) < String(target.id) else [target.id, node.id]
 				expected_joints["%s|%s" % ids] = true
+			else:
+				rooms += 1
+		_check_corridor_shape(plan, node.id, tag, problems)
+		# Коридор без двери законен, только если он соединяет коридоры или кончается
+		# тупиком: иначе это коридор в никуда.
+		if rooms == 0 and corridors < 2 and not _has_dead_end(plan, node.id):
+			problems["коридор без двери — перемычка или тупик"].append("%s %s" % [tag, node.id])
 	for key in expected_joints:
 		if not adjacent_branches.has(key):
 			problems["стык веток есть ровно там, где в графе ребро между ними"].append("%s нет %s" % [tag, key])
@@ -223,7 +235,43 @@ func _check_room_doors(
 			)
 
 
-## Связность тайлов ветки по открытым проёмам — обход от первого тайла.
+## Коридор — отрезок сети между развилками (карточка «Коридор — отдельный узел»):
+## внутри него у тайла не больше двух соседей своего коридора, а на развилке
+## коридор не сворачивает — двое своих там стоят напротив друг друга: клетку
+## развилки забирает коридор, идущий через неё прямо. Один свой сосед на развилке
+## законен — у соседней развилки прямая поперёк, и коридор кончается здесь.
+## Сломанный разрез тихий: узлы просто не те, и карта и присутствие делят сеть не
+## там, где её видит игрок.
+func _check_corridor_shape(plan: RS_LayerPlan, corridor: StringName, tag: String, problems: Dictionary) -> void:
+	for cell: Vector3i in plan.corridor_tiles:
+		if plan.node_by_cell[cell] != corridor:
+			continue
+		var mask: int = plan.corridor_tiles[cell]
+		var own: Array[int] = []
+		var tile_links := 0
+		for side in plan.topology.side_count(cell):
+			var next := plan.topology.neighbour(cell, side)
+			if mask & (1 << side) == 0 or not plan.corridor_tiles.has(next):
+				continue
+			tile_links += 1
+			if plan.node_by_cell[next] == corridor:
+				own.append(side)
+		var ok := own.size() <= 2
+		if tile_links >= 3 and own.size() == 2:
+			ok = plan.topology.opposite(cell, own[0]) == own[1]
+		if not ok:
+			problems["коридор — путь без развилок внутри, развилка — прямому коридору"].append(
+				"%s %s %s" % [tag, corridor, cell])
+
+
+func _has_dead_end(plan: RS_LayerPlan, corridor: StringName) -> bool:
+	for cell: Vector3i in plan.dead_ends:
+		if plan.node_by_cell.get(cell, &"") == corridor:
+			return true
+	return false
+
+
+## Связность тайлов коридора по открытым проёмам — обход от первого тайла.
 func _connected(plan: RS_LayerPlan, branch: StringName, floor_index: int) -> bool:
 	var own: Array[Vector3i] = []
 	for cell: Vector3i in plan.corridor_tiles:

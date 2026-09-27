@@ -18,8 +18,9 @@ extends Resource
 ## (RunManager._run_gen_config): мир выводится из сида, и тот же сид на другом
 ## генераторе — другой комплекс, где сохранённый узел и посещённые комнаты
 ## легли бы на чужие места. Поднимать при любой правке, меняющей мир на том же
-## сиде. 1 — v0.7.0: клетка 8 м, повороты, раскладка сетью (карточка «Сетка уровня»).
-const GENERATOR_VERSION := 1
+## сиде. 1 — клетка 8 м, повороты, раскладка сетью (карточка «Сетка уровня»);
+## 2 — коридор отдельным узлом (карточка «Коридор — отдельный узел»). Обе — v0.7.0.
+const GENERATOR_VERSION := 2
 
 ## Глубина -> план раскладки слоя. Считается при генерации, а не по запросу:
 ## рёбра «дверь → ветка» граф берёт из раскладки, и план — её же результат, а не
@@ -112,8 +113,8 @@ func _shuffled_array(rng: RandomNumberGenerator, source: Array) -> Array:
 #   3. вертикаль — какие комнаты несут портал (между этажами и между слоями);
 #   4. типы помещений;
 #   5. подбор сцен остальным комнатам, их поворот и число дверей;
-#   6. раскладка этажа (RS_CorridorPlanner) — и из неё ветки коридоров и рёбра
-#      «дверь → ветка», «ветка → ветка».
+#   6. раскладка этажа (RS_CorridorPlanner) — и из неё коридоры и рёбра
+#      «дверь → коридор», «коридор → коридор».
 #
 # Шестой проход — совместный: в какую ветку ведёт дверь, решает раскладка, а граф
 # записывает то, что она построила. Наоборот, как было до п. 7 карточки «Сетка
@@ -178,7 +179,7 @@ func _generate(
 		var plan := RS_LayerPlan.new()
 		var floors: Array = floors_by_depth[depth]
 		for f in floors.size():
-			next_index[depth] = _lay_out_floor(rng, level_seed, config, plan, floors[f], depth, f, next_index[depth])
+			next_index[depth] = _lay_out_floor(level_seed, config, plan, floors[f], depth, f, next_index[depth])
 		for joint: Array in plan.branch_joints():
 			_link_nodes(nodes[joint[0]], nodes[joint[1]], RS_LevelConnection.Type.CORRIDOR)
 		_plans[depth] = plan
@@ -397,18 +398,18 @@ func _link_vertical(
 
 
 ## Раскладывает этаж в [param plan] и записывает в граф то, что раскладка
-## построила: ветки коридора и по ребру на каждую дверь — в ту ветку, что стоит
-## перед ней (рёбер у комнаты ровно столько, сколько дверей). Рёбра между ветками
-## ставятся по стыкам всего слоя, когда разложены все этажи. Возвращает следующий
-## свободный index_in_layer.
+## построила: коридоры — по узлу на отрезок сети между развилками (карточка
+## «Коридор — отдельный узел»), и по ребру на каждую дверь — в тот коридор, что
+## стоит перед ней (рёбер у комнаты ровно столько, сколько дверей). Рёбра между
+## коридорами ставятся по стыкам всего слоя, когда разложены все этажи.
+## Возвращает следующий свободный index_in_layer.
 ##
-## Число веток бросается из общего потока всегда, даже на этаже без дверей, —
-## бросок тратит rng одинаково при любом исходе. Сама раскладка — из своего
-## потока этажа (сид + слой + этаж): иначе её правка сдвигала бы всё, что
-## разыгрывается после. Веток выходит не больше дверей: у каждой хоть одна дверь,
-## ветка без неё — коридор в никуда.
+## Сколько на этаже коридоров, решает сеть, а не бросок: раньше граф бросал число
+## веток и раскладка резала сеть на столько кусков, и в одну ветку попадали
+## коридоры с развилками — узлом был не коридор, а их связка. Раскладка — из
+## своего потока этажа (сид + слой + этаж): иначе её правка сдвигала бы всё, что
+## разыгрывается после.
 func _lay_out_floor(
-	rng: RandomNumberGenerator,
 	level_seed: int,
 	config: RS_WorldGenConfig,
 	plan: RS_LayerPlan,
@@ -418,24 +419,16 @@ func _lay_out_floor(
 	index: int,
 ) -> int:
 	var rooms: Array[RS_LevelNode] = []
-	var doors := 0
 	for node: RS_LevelNode in floor_rooms:
 		rooms.append(node)
-		doors += node.door_count()
 		if node.door_count() == 0:
 			push_warning("RS_LevelGraph: у комнаты '%s' нет дверей — она недостижима" % node.id)
-	var branch_count := rng.randi_range(
-		mini(config.corridor_branches_min, doors), mini(config.corridor_branches_max, doors)
-	)
-	var branch_ids: Array[StringName] = []
-	for k in branch_count:
-		branch_ids.append(StringName("L%d_F%d_corridor_%d" % [depth, floor_index, k]))
 
 	var layout := RandomNumberGenerator.new()
 	layout.seed = hash("%d/L%d_F%d/layout" % [level_seed, depth, floor_index])
-	var used := RS_CorridorPlanner.plan_floor(plan, rooms, branch_ids, floor_index, config, layout)
-	for k in used:
-		_add_node(branch_ids[k], depth, floor_index, index, RS_LevelNode.Role.CORRIDOR)
+	var prefix := "L%d_F%d_corridor_" % [depth, floor_index]
+	for id in RS_CorridorPlanner.plan_floor(plan, rooms, prefix, floor_index, config, layout):
+		_add_node(id, depth, floor_index, index, RS_LevelNode.Role.CORRIDOR)
 		index += 1
 	for room in rooms:
 		var faces: Dictionary = plan.door_faces.get(room.id, {})
