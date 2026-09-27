@@ -94,11 +94,16 @@ func _add_slab(branch: StringName, center: Vector3, size: Vector3, material: Mat
 
 
 ## Цвет ветки — от её id, а не от порядка: одна и та же ветка на пересборке
-## того же сида остаётся того же цвета, и глаз её не теряет.
+## того же сида остаётся того же цвета, и глаз её не теряет. Общий с оверлеем
+## «Сетка»: дверь там красится цветом ветки, в которую ведёт, и разные цвета
+## одной ветки в двух оверлеях врали бы.
+static func branch_color(branch: StringName) -> Color:
+	return Color.from_hsv(float(hash(String(branch)) % 360) / 360.0, 0.55, 0.85)
+
+
 func _material_for(branch: StringName) -> StandardMaterial3D:
 	if not _materials.has(branch):
-		var hue := float(hash(String(branch)) % 360) / 360.0
-		_materials[branch] = _flat_material(Color.from_hsv(hue, 0.55, 0.85))
+		_materials[branch] = _flat_material(branch_color(branch))
 	return _materials[branch]
 
 

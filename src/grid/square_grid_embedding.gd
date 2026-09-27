@@ -31,6 +31,17 @@ func cell_at(world_position: Vector3) -> Vector3i:
 	return Vector3i(roundi(point.x), floori(point.y + level_tolerance), roundi(point.z))
 
 
+## Грань — сторона квадрата клетки: середина на полпути к соседу, концы — по
+## полклетки в обе стороны вдоль неё. Стороны у этого вложения те же, что у
+## квадратной топологии (SquareGridTopology.OFFSETS): вложение без пары ей не
+## бывает.
+func face_edge(cell: Vector3i, side: int) -> PackedVector3Array:
+	var offset := Vector3(SquareGridTopology.OFFSETS[side])
+	var mid := cell_origin(cell) + offset * cell_size * 0.5
+	var along := Vector3(-offset.z, 0.0, offset.x) * cell_size * 0.5
+	return PackedVector3Array([mid - along, mid + along])
+
+
 ## Точка мира в координатах сетки — дробная: центр клетки в целых, граница на
 ## половинах. Нужна тому, что рисует сетку в клетках, а живёт между ними, —
 ## маркеру игрока на карте.
