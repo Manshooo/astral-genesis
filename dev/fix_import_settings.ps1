@@ -226,11 +226,16 @@ function Set-ExternalMaterials {
 	# только строки и bool, так что разбор безопасен. Раздел "meshes" не
 	# трогаем вообще: в нём лежат числа с плавающей точкой, и пересборка их
 	# текста меняла бы тип параметра (20.0 -> 20).
+	#
+	# Заголовок раздела ищем без оглядки на пробелы: Godot пишет `"materials": {`,
+	# а аддон Blender (_dump_subresources в godot_import.py) — компактно,
+	# `"materials":{`. Не узнав раздел, скрипт вставлял рядом второй, и в
+	# _subresources появлялся дубль ключа.
 	$range = Get-BlockRange $Lines $subIndex
 	$region = $Lines[$range[0]..$range[1]]
 	$matStart = -1
 	for ($i = 0; $i -lt $region.Count; $i++) {
-		if ($region[$i] -eq '"materials": {') { $matStart = $range[0] + $i; break }
+		if ($region[$i] -match '^\s*"materials"\s*:\s*\{') { $matStart = $range[0] + $i; break }
 	}
 
 	$entries = @{}
@@ -277,9 +282,14 @@ function Set-ExternalMaterials {
 	}
 	if (-not $dirty) { return $changes }
 
+	# Запятую после раздела берём из файла: была — за ним идёт следующий раздел.
+	# Судить по тому, есть ли строки ниже, нельзя — ниже всегда стоит закрывающая
+	# скобка самого _subresources, и последний раздел получал висячую запятую,
+	# на которой спотыкается json.loads аддона.
+	$trailing = $null -ne $matRange -and $Lines[$matRange[1]].TrimEnd().EndsWith(',')
 	# Приведение к [string[]] обязательно: из функции List[string] возвращается
 	# развёрнутым в Object[], и InsertRange такой аргумент не принимает.
-	$block = [string[]](Format-MaterialsSection $entries ($null -ne $matRange -and $matRange[1] -lt $range[1]))
+	$block = [string[]](Format-MaterialsSection $entries $trailing)
 	if ($null -ne $matRange) {
 		$Lines.RemoveRange($matRange[0], $matRange[1] - $matRange[0] + 1)
 		$Lines.InsertRange($matRange[0], $block)
