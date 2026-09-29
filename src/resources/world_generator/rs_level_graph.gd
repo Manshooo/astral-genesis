@@ -21,9 +21,12 @@ extends Resource
 ## сиде. 1 — клетка 8 м, повороты, раскладка сетью (карточка «Сетка уровня»);
 ## 2 — коридор отдельным узлом (карточка «Коридор — отдельный узел»); 3 — вес
 ## default_room сравнян с cross_a (карточка «Баг — default_room почти не
-## выпадает в забеге»). Все — v0.7.0. Веса пресетов в снимок ручек не входят,
-## поэтому их правка меняет мир и начатого забега — отсюда и подъём версии.
-const GENERATOR_VERSION := 3
+## выпадает в забеге»); 4 — комнаты этажа разбросаны, а не стоят решёткой, и
+## этажи слоя связаны лестницей, а не порталами (карточка «Хаос раскладки
+## этажа»). Все — v0.7.0. Веса пресетов в снимок ручек
+## не входят, поэтому их правка меняет мир и начатого забега — отсюда и подъём
+## версии.
+const GENERATOR_VERSION := 4
 
 ## Глубина -> план раскладки слоя. Считается при генерации, а не по запросу:
 ## рёбра «дверь → ветка» граф берёт из раскладки, и план — её же результат, а не
@@ -113,7 +116,8 @@ func _shuffled_array(rng: RandomNumberGenerator, source: Array) -> Array:
 #
 #   1. комнаты по слоям и этажам (узлы без рёбер);
 #   2. уникальные комнаты — резерв узлов под заранее известные сцены;
-#   3. вертикаль — какие комнаты несут портал (между этажами и между слоями);
+#   3. вертикаль — лестницы между этажами слоя (или порталы, если лестницы в
+#      ручках нет) и порталы между слоями;
 #   4. типы помещений;
 #   5. подбор сцен остальным комнатам, их поворот и число дверей;
 #   6. раскладка этажа (RS_CorridorPlanner) — и из неё коридоры и рёбра
@@ -159,7 +163,10 @@ func _generate(
 	if entry_node_id == &"":
 		push_error("RS_LevelGraph: вход не размещён — проверьте уникальные комнаты в конфиге")
 
-	_connect_floors_vertically(rng, floors_by_depth, reserved)
+	if config.floor_stairs and config.floor_stairs.scene:
+		_place_floor_stairs(rng, config, floors_by_depth, reserved)
+	else:
+		_connect_floors_vertically(rng, floors_by_depth, reserved)
 	_connect_layers_vertically(rng, config, floors_by_depth, reserved)
 
 	var catalog := library.type_catalog if library else null
@@ -183,6 +190,18 @@ func _generate(
 		var floors: Array = floors_by_depth[depth]
 		for f in floors.size():
 			next_index[depth] = _lay_out_floor(level_seed, config, plan, floors[f], depth, f, next_index[depth])
+		# Рёбра дверей — когда разложены все этажи: верхняя дверь лестницы ведёт в
+		# коридор этажа выше, и он появляется, только когда очередь доходит до того
+		# этажа. Порядок прежний: этажи по очереди, у комнаты — двери по граням.
+		for floor_rooms: Array in floors:
+			for room: RS_LevelNode in floor_rooms:
+				var faces: Dictionary = plan.door_faces.get(room.id, {})
+				for face: Vector4i in faces:
+					_link_nodes(room, nodes[faces[face]], RS_LevelConnection.Type.CORRIDOR)
+		for face: Vector4i in plan.pending_doors:
+			plan.routing_failures.append(
+				"%s: дверь на уровне %d, а этажа там нет" % [plan.pending_doors[face], face.y]
+			)
 		for joint: Array in plan.branch_joints():
 			_link_nodes(nodes[joint[0]], nodes[joint[1]], RS_LevelConnection.Type.CORRIDOR)
 		_plans[depth] = plan
@@ -294,7 +313,8 @@ func _place_unique_rooms(
 	return presets
 
 
-## Этажи одного слоя связывает портал — ходить по коридорам можно только в
+## Этажи одного слоя связывает портал, если лестницы в ручках нет (иначе —
+## _place_floor_stairs): ходить по коридорам можно только в
 ## плоскости этажа. Этажи идут по порядку, на каждую пару по одному переходу.
 ## Проходится ДО межслойных: без него этаж отрезан от слоя, а межслойных
 ## переходов хватит и на остатке (их бывает меньше заявленного, но не ноль).
@@ -314,6 +334,36 @@ func _connect_floors_vertically(
 			var a: RS_LevelNode = lower[rng.randi_range(0, lower.size() - 1)]
 			var b: RS_LevelNode = upper[rng.randi_range(0, upper.size() - 1)]
 			_link_vertical(a, b, RS_LevelConnection.Type.STAIRWELL, &"", 0)
+
+
+## Этажи слоя связывает лестница (RS_WorldGenConfig.floor_stairs): по одной на
+## пару соседних этажей, комнатой нижнего из них. Её коробка в два уровня, и
+## верхняя дверь ведёт в коридор этажа выше — это обычное коридорное ребро,
+## которое раскладка ставит, дойдя до того этажа (RS_LayerPlan.pending_doors).
+## Порталы между этажами ею заменены: слой стоит в дереве целиком, этажи — друг
+## над другом, и подняться можно ногами, а не переносом.
+##
+## Лестница резервируется как уникальная комната — сцена задана заранее, подбор
+## и порталы слоёв её не трогают.
+func _place_floor_stairs(
+	rng: RandomNumberGenerator,
+	config: RS_WorldGenConfig,
+	floors_by_depth: Dictionary,
+	reserved: Dictionary[StringName, RS_UniqueRoom],
+) -> void:
+	var stairs := RS_UniqueRoom.new()
+	stairs.preset = config.floor_stairs
+	for depth: int in DEPTHS:
+		var floors: Array = floors_by_depth[depth]
+		for f in range(floors.size() - 1):
+			var free := _free_for_portal(floors[f], reserved)
+			if free.is_empty():
+				push_error("RS_LevelGraph: этаж %d слоя %d некуда поставить лестницу" % [f, depth])
+				continue
+			var node: RS_LevelNode = free[rng.randi_range(0, free.size() - 1)]
+			reserved[node.id] = stairs
+			node.room_scene_path = stairs.preset.scene.resource_path
+			node.room_type = stairs.preset.room_type
 
 
 ## Соседние слои — через layer_connectors порталов. Пулы каждого слоя делятся
@@ -402,9 +452,9 @@ func _link_vertical(
 
 ## Раскладывает этаж в [param plan] и записывает в граф то, что раскладка
 ## построила: коридоры — по узлу на отрезок сети между развилками (карточка
-## «Коридор — отдельный узел»), и по ребру на каждую дверь — в тот коридор, что
-## стоит перед ней (рёбер у комнаты ровно столько, сколько дверей). Рёбра между
-## коридорами ставятся по стыкам всего слоя, когда разложены все этажи.
+## «Коридор — отдельный узел»). Рёбра дверей и стыков коридоров ставит
+## _generate, когда разложены все этажи слоя: верхняя дверь лестницы смотрит в
+## коридор этажа выше, которого ещё нет.
 ## Возвращает следующий свободный index_in_layer.
 ##
 ## Сколько на этаже коридоров, решает сеть, а не бросок: раньше граф бросал число
@@ -433,8 +483,4 @@ func _lay_out_floor(
 	for id in RS_CorridorPlanner.plan_floor(plan, rooms, prefix, floor_index, config, layout):
 		_add_node(id, depth, floor_index, index, RS_LevelNode.Role.CORRIDOR)
 		index += 1
-	for room in rooms:
-		var faces: Dictionary = plan.door_faces.get(room.id, {})
-		for face: Vector4i in faces:
-			_link_nodes(room, nodes[faces[face]], RS_LevelConnection.Type.CORRIDOR)
 	return index

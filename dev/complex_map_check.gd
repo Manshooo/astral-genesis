@@ -156,13 +156,19 @@ func _check_screen() -> void:
 	var floors := {}
 	for node_data in _graph.get_nodes_by_depth(HUB_DEPTH):
 		floors[node_data.floor_index] = true
+	# Узел — на стольких панелях, сколько этажей занимает: лестница стоит на своём
+	# этаже и на этаже выше, и коридор там упирается в её верхнюю дверь.
 	var shown_once := true
+	var hub_plan := _graph.layer_plan(HUB_DEPTH)
 	for node_data in _graph.get_nodes_by_depth(HUB_DEPTH):
 		var times := 0
 		for view in screen.floor_views():
 			times += 1 if view.shows(node_data.id) else 0
-		shown_once = shown_once and times == 1
-	_check("уровень 2: панель на каждый этаж, каждый узел ровно в одной",
+		var floors_taken: int = 1
+		if node_data.role == RS_LevelNode.Role.ROOM:
+			floors_taken = hub_plan.footprints.get(node_data.id, Vector3i.ONE).y
+		shown_once = shown_once and times == floors_taken
+	_check("уровень 2: панель на каждый этаж, каждый узел — на каждом своём этаже",
 		screen.floor_views().size() == floors.size() and shown_once,
 		"панелей %d, этажей %d" % [screen.floor_views().size(), floors.size()])
 

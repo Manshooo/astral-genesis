@@ -5,6 +5,7 @@
 [ext_resource type="Resource" path="res://src/levels/hub/hub.tres" id="3_hub"]
 [ext_resource type="Resource" uid="uid://72rnlgfxse2g" path="res://src/levels/procedural/rooms/exit/exit_room.tres" id="4_exit"]
 [ext_resource type="Resource" path="res://src/levels/procedural/rooms/architect/architect_room.tres" id="5_architect"]
+[ext_resource type="Resource" uid="uid://4xpgypcetksn" path="res://src/levels/procedural/rooms/stairs/stairs_2x2x2.tres" id="6_stairs"]
 
 [sub_resource type="Resource" id="Resource_hub"]
 script = ExtResource("2_unique")
@@ -32,4 +33,5 @@ map_name = "MAP_UNIQUE_ARCHITECT"
 [resource]
 script = ExtResource("1_config")
 rooms_per_floor = 8
+floor_stairs = ExtResource("6_stairs")
 unique_rooms = Array[ExtResource("2_unique")]([SubResource("Resource_hub"), SubResource("Resource_exit"), SubResource("Resource_architect")])

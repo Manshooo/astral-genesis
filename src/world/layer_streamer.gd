@@ -343,8 +343,10 @@ func _bind_doors(spawned: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPl
 	return doors
 
 
-## Раздаёт ВЕРТИКАЛЬНЫЕ рёбра порталам комнаты — и между слоями, и между этажами
-## слоя: ходить по коридорам можно только в плоскости этажа. Портал без ребра
+## Раздаёт рёбра ПОРТАЛОВ порталам комнаты — между слоями и, если лестницы в
+## ручках нет, между этажами слоя. Портальное ребро узнаётся по типу
+## (RS_LevelConnection.is_portal): верхняя дверь лестницы тоже ведёт на другой
+## этаж, но это дверь, и её ребро раздаёт _bind_doors. Портал без ребра
 ## «глушится» так же, как лишняя дверь: остаётся интерактивным, но объясняет, что
 ## никуда не ведёт.
 ##
@@ -364,10 +366,7 @@ func _bind_portals(spawned: SpawnedRoom, node_data: RS_LevelNode) -> void:
 	var free_portals := portals.duplicate()
 	for conn: RS_LevelConnection in node_data.connections:
 		var target := graph.get_node_data(conn.target_node_id)
-		var is_vertical := target != null and (
-			target.depth != node_data.depth or target.floor_index != node_data.floor_index
-		)
-		if not is_vertical:
+		if target == null or not conn.is_portal():
 			continue
 		if free_portals.is_empty():
 			push_warning("LayerStreamer: у узла '%s' нет портала под ребро в '%s'" % [node_data.id, conn.target_node_id])

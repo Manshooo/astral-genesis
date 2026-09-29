@@ -1,6 +1,7 @@
 extends "res://dev/check_harness.gd"
 ## Проверка графа забега (карточка «Процедурные коридоры между комнатами»):
-## двери комнат выходят в коридоры своего этажа, а рёбер у комнаты ровно столько,
+## двери комнат выходят в коридоры своего этажа (у лестницы верхняя — в коридор
+## этажа выше), а рёбер у комнаты ровно столько,
 ## сколько у неё дверей.
 ##
 ## Всё здесь ломается тихо. Ребро без двери и дверь без ребра не бросают ошибок —
@@ -55,7 +56,7 @@ func _check_invariants(config: RS_WorldGenConfig) -> void:
 		"вход — хаб": [],
 		"выходы: число, глубина, сцена, тег": [],
 		"у комнаты рёбер в коридоры ровно столько, сколько у неё дверей": [],
-		"двери комнаты ведут в ветки её этажа": [],
+		"двери комнаты ведут в коридоры своего этажа, у лестницы — и этажа выше": [],
 		"у каждого коридора есть сосед, и живёт он в своём этаже": [],
 		"не больше одного вертикального ребра на узел": [],
 		"портал в сцене ровно тогда, когда есть вертикальное ребро": [],
@@ -102,19 +103,28 @@ func _collect(
 		var horizontals := 0
 		for conn: RS_LevelConnection in node.connections:
 			var target := graph.get_node_data(conn.target_node_id)
-			var vertical := target.depth != node.depth or target.floor_index != node.floor_index
-			if vertical:
+			# Переход на этаж выше — портальная пара или верхняя дверь лестницы: у
+			# лестницы это обычное ребро в коридор, а не портал.
+			if target.depth == node.depth and target.floor_index == node.floor_index + 1:
+				var key := "%d/%d-%d" % [node.depth, node.floor_index, target.floor_index]
+				floor_links[key] = floor_links.get(key, 0) + 1
+			if conn.is_portal():
 				verticals += 1
 				if target.depth < node.depth and not conn.is_locked():
 					var key := "%d-%d" % [node.depth, target.depth]
 					open_between[key] = open_between.get(key, 0) + 1
-				elif target.depth == node.depth and target.floor_index == node.floor_index + 1:
-					var key := "%d/%d-%d" % [node.depth, node.floor_index, target.floor_index]
-					floor_links[key] = floor_links.get(key, 0) + 1
 				continue
 			horizontals += 1
 			if node.role == RS_LevelNode.Role.ROOM and target.role != RS_LevelNode.Role.CORRIDOR:
-				problems["двери комнаты ведут в ветки её этажа"].append("сид %d %s→%s" % [s, node.id, target.id])
+				problems["двери комнаты ведут в коридоры своего этажа, у лестницы — и этажа выше"].append(
+					"сид %d %s→%s" % [s, node.id, target.id]
+				)
+			elif node.role == RS_LevelNode.Role.ROOM and target.floor_index != node.floor_index:
+				var stairs := node.room_scene_path == _stairs_scene(config)
+				if not stairs or target.depth != node.depth or target.floor_index != node.floor_index + 1:
+					problems["двери комнаты ведут в коридоры своего этажа, у лестницы — и этажа выше"].append(
+						"сид %d %s→%s" % [s, node.id, target.id]
+					)
 
 		if verticals > 1:
 			problems["не больше одного вертикального ребра на узел"].append("сид %d %s" % [s, node.id])
@@ -279,6 +289,13 @@ func _reachable(graph: RS_LevelGraph) -> Dictionary:
 				seen[conn.target_node_id] = true
 				queue.append(conn.target_node_id)
 	return seen
+
+
+## Сцена лестницы между этажами из ручек; "" — этажи связывают порталы.
+func _stairs_scene(config: RS_WorldGenConfig) -> String:
+	if config.floor_stairs == null or config.floor_stairs.scene == null:
+		return ""
+	return config.floor_stairs.scene.resource_path
 
 
 ## Есть ли в сцене вертикальный портал — по самой сцене, а не по тегу пресета:

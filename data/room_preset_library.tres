@@ -4,7 +4,6 @@
 [ext_resource type="Resource" uid="uid://cmp4ddibc3adc" path="res://src/levels/procedural/rooms/test_room.tres" id="1_b4ndt"]
 [ext_resource type="Resource" uid="uid://dbhqt6q30yvd4" path="res://src/levels/procedural/rooms/vertical/vertical_hub_1.tres" id="2_453vo"]
 [ext_resource type="Script" uid="uid://psftg6prkpvd" path="res://src/levels/procedural/rooms/rs_room_preset_library.gd" id="2_v4gys"]
-[ext_resource type="Resource" uid="uid://4xpgypcetksn" path="res://src/levels/procedural/rooms/vertical/vertical_hub_2.tres" id="3_v612c"]
 [ext_resource type="Resource" uid="uid://cqrt3rp5fmnck" path="res://src/levels/procedural/rooms/vertical/vertical_hub_3.tres" id="4_6j4np"]
 [ext_resource type="Resource" uid="uid://bqexuu8imwkej" path="res://src/levels/procedural/rooms/vertical/vertical_hub_4.tres" id="5_ro8lj"]
 [ext_resource type="Resource" uid="uid://cxwq3u6nqe5hh" path="res://src/levels/procedural/rooms/default/default_room.tres" id="6_ro8lj"]
@@ -17,7 +16,7 @@
 
 [resource]
 script = ExtResource("2_v4gys")
-presets = Array[ExtResource("1_2x2ou")]([ExtResource("2_453vo"), ExtResource("3_v612c"), ExtResource("4_6j4np"), ExtResource("5_ro8lj"), ExtResource("6_ro8lj"), ExtResource("8_0vxyi"), ExtResource("9_wc6lj"), ExtResource("10_wc6lj")])
+presets = Array[ExtResource("1_2x2ou")]([ExtResource("2_453vo"), ExtResource("4_6j4np"), ExtResource("5_ro8lj"), ExtResource("6_ro8lj"), ExtResource("8_0vxyi"), ExtResource("9_wc6lj"), ExtResource("10_wc6lj")])
 type_catalog = ExtResource("16_types")
 tag_catalog = ExtResource("17_tags")
 fallback = ExtResource("1_b4ndt")

@@ -25,3 +25,11 @@ enum Type { DOOR, CORRIDOR, ELEVATOR, STAIRWELL, COLLAPSE, SHORTCUT }
 
 func is_locked() -> bool:
 	return locked_by != &""
+
+
+## Ребро портала — переноса на другой этаж или слой (RS_LevelGraph._link_vertical
+## ставит только ELEVATOR и STAIRWELL). По типу, а не по тому, на чей этаж ведёт
+## ребро: у лестницы между этажами верхняя дверь — обычное коридорное ребро в
+## коридор этажа выше, и по разнице этажей её приняли бы за портал.
+func is_portal() -> bool:
+	return type == Type.ELEVATOR or type == Type.STAIRWELL

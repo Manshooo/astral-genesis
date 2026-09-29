@@ -1,6 +1,6 @@
 extends "res://dev/check_harness.gd"
 ## Проверка коридорной раскладки (этап 3 карточки «Процедурные коридоры между
-## комнатами», с п. 7 карточки «Сетка уровня» — сетью): комнаты на решётке, сеть
+## комнатами», с п. 7 карточки «Сетка уровня» — сетью): комнаты вразброс, сеть
 ## коридоров по клеткам кита, ветки, петли и тупики.
 ##
 ## Это второй путь валидации, про который карточка предупреждала: gen_verifier
@@ -19,12 +19,15 @@ const CONFIG_PATH := "res://data/world_gen_config.tres"
 ## на этих сидах 0 %: петлю и тупик, которые обволокли бы комнату, она не ставит,
 ## а двери смотрят не больше чем с двух сторон. До неё было 42 %, до сборных комнат
 ## — 55 %. Порог — по замеру, а не с запасом: он ловит правку ручек или раскладки,
-## от которой стало хуже, и с запасом ничего бы не сторожил.
+## от которой стало хуже, и с запасом ничего бы не сторожил. Разброс комнат
+## (29.09) без обхода стен стволом сети давал 0.6 % и 1.2 % на стрессе — второе
+## порог и поймал.
 const MAX_ENVELOPED_SHARE := 0.01
 ## Второй прогон — на крупных этажах: предохранители раскладки от обволакивания
-## работают там. На 4 комнатах двери и так смотрят внутрь решётки, и раскладка без
-## предохранителей давала бы те же 0 %, а на 8 — 15 % (мутация 27.09). С 29.09 8
-## комнат — ручки по умолчанию, поэтому стресс — на потолке ручки.
+## работают там. На решётке из 4 комнат двери и так смотрели друг на друга, и
+## раскладка без предохранителей давала бы те же 0 %, а на 8 — 15 % (мутация
+## 27.09). С 29.09 8 комнат — ручки по умолчанию, поэтому стресс — на потолке
+## ручки.
 const STRESS_ROOMS := 12
 const STRESS_SEEDS := 10
 
@@ -169,19 +172,20 @@ func _collect(
 		if not _connected(plan, node.id, node.floor_index):
 			problems["тайлы коридора связны"].append("%s %s" % [tag, node.id])
 		var rooms := 0
-		var corridors := 0
 		for conn: RS_LevelConnection in node.connections:
 			var target := graph.get_node_data(conn.target_node_id)
 			if target.role == RS_LevelNode.Role.CORRIDOR:
-				corridors += 1
 				var ids := [node.id, target.id] if String(node.id) < String(target.id) else [target.id, node.id]
 				expected_joints["%s|%s" % ids] = true
 			else:
 				rooms += 1
 		_check_corridor_shape(plan, node.id, tag, problems)
-		# Коридор без двери законен, только если он соединяет коридоры или кончается
-		# тупиком: иначе это коридор в никуда.
-		if rooms == 0 and corridors < 2 and not _has_dead_end(plan, node.id):
+		# Коридор без двери законен, только если он соединяет места сети или
+		# кончается тупиком: иначе это коридор в никуда. Места — стыки в плане, а не
+		# соседи по графу: петля может замкнуться обоими концами на один и тот же
+		# прямой коридор, и в графе у такой перемычки один сосед, хотя в мире это
+		# обход (на разбросанных комнатах — пара сидов из 30).
+		if rooms == 0 and _joint_count(plan, node.id) < 2 and not _has_dead_end(plan, node.id):
 			problems["коридор без двери — перемычка или тупик"].append("%s %s" % [tag, node.id])
 	for key in expected_joints:
 		if not adjacent_branches.has(key):
@@ -202,7 +206,9 @@ func _check_room_doors(
 		if target.role == RS_LevelNode.Role.CORRIDOR:
 			expected.append(conn.target_node_id)
 	# Где двери: у комнаты с дверями в сцене — ровно стороны этих дверей, у
-	# сборной — столько сокетов периметра, сколько разыграно, и только сокеты.
+	# сборной — столько сокетов, сколько разыграно, и только сокеты: объявленные
+	# коробкой (у лестницы — с верхним уровнем) или грани нижнего уровня. Что
+	# поворот объявленных сокетов сходится со сценой, сверяет room_shell_check.
 	var placed_right := true
 	if room.socket_doors == 0:
 		var scene_list: Array = []
@@ -216,7 +222,7 @@ func _check_room_doors(
 		keys.sort()
 		placed_right = keys == scene_list
 	else:
-		var sockets := plan.topology.perimeter(plan.room_cells(room.id))
+		var sockets := RS_RoomLayout.sockets_in_plan(room.room_scene_path, room.turns, plan.cells[room.id])
 		placed_right = faces.size() == room.socket_doors
 		for face: Vector4i in faces:
 			placed_right = placed_right and sockets.has(face)
@@ -270,6 +276,19 @@ func _has_dead_end(plan: RS_LayerPlan, corridor: StringName) -> bool:
 		if plan.node_by_cell.get(cell, &"") == corridor:
 			return true
 	return false
+
+
+## Сколько открытых проёмов ведёт из тайлов коридора в тайлы других коридоров.
+func _joint_count(plan: RS_LayerPlan, corridor: StringName) -> int:
+	var joints := 0
+	for cell: Vector3i in plan.corridor_tiles:
+		if plan.node_by_cell[cell] != corridor:
+			continue
+		for side in plan.topology.side_count(cell):
+			var next := plan.topology.neighbour(cell, side)
+			if plan.corridor_tiles[cell] & (1 << side) and plan.corridor_tiles.has(next) and plan.node_by_cell[next] != corridor:
+				joints += 1
+	return joints
 
 
 ## Связность тайлов коридора по открытым проёмам — обход от первого тайла.

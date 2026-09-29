@@ -16,18 +16,19 @@ extends Resource
 @export var door_wall: PackedScene
 ## Глухая стена — на сокет, оставшийся стеной.
 @export var blank_wall: PackedScene
-## Глухая стена верхних уровней высокой комнаты: сокетов выше нижнего уровня нет.
-## Пусто — у стиля нет высоких коробок.
+## Глухая стена верхних уровней высокой комнаты. Пусто — у стиля нет высоких
+## коробок. Дверь выше нижнего уровня (объявленный сокет, C_RoomShell.door_sockets)
+## ставится той же door_wall: деталь рисуется от пола своей клетки.
 @export var upper_wall: PackedScene
 ## Полотно в проём — сущность с дверным механизмом. Встаёт на границу клеток, в
 ## середину грани; C_DoorSlot ей выдаёт спавн.
 @export var door: PackedScene
 
 
-## Собирает комнату [param node_id] плана: на каждую грань нижнего уровня по
-## периметру — стена с проёмом и дверью, если план поставил туда дверь, иначе
-## глухая; на грани верхних уровней — глухая стена верха. Возвращает поставленные
-## двери с их гранями.
+## Собирает комнату [param node_id] плана: на каждую грань по периметру — стена с
+## проёмом и дверью, если план поставил туда дверь, иначе глухая: на нижнем
+## уровне — blank_wall, выше — глухая стена верха. Возвращает поставленные двери с
+## их гранями.
 ##
 ## Одна сборка на игру (LayerStreamer) и на предпросмотр «Генератора мира» — по той
 ## же причине, что и RS_CorridorKit.instantiate: собери они комнату каждый
@@ -52,10 +53,12 @@ func assemble(room: Node3D, node_id: StringName, plan: RS_LayerPlan) -> Dictiona
 			if cells.has(next):
 				continue
 			var face := GridTopology.face(cell, side)
-			var is_door := cell.y == bottom and door_faces.has(face)
+			var is_door := door_faces.has(face)
 			var piece := upper_wall
-			if cell.y == bottom:
-				piece = door_wall if is_door else blank_wall
+			if is_door:
+				piece = door_wall
+			elif cell.y == bottom:
+				piece = blank_wall
 			var turn := plan.embedding.turn_basis(RS_RoomLayout.north_piece_turns(side))
 			if piece:
 				var wall := piece.instantiate() as Node3D

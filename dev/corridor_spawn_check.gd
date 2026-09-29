@@ -197,15 +197,17 @@ func _check_doors_bound() -> void:
 			var target := RunManager.current_graph.get_node_data(conn.target_node_id)
 			if target.depth != node.depth or target.floor_index == node.floor_index:
 				continue
+			# Портальное ребро несёт портал, а верхнюю дверь лестницы — дверь: она
+			# ведёт в коридор этажа выше обычным проёмом.
 			var bound := false
-			for portal_entity in room.portals:
-				var portal := (portal_entity as Entity).get_component(C_DoorPortal) as C_DoorPortal
+			for exit_entity in (room.portals if conn.is_portal() else room.doors):
+				var portal := (exit_entity as Entity).get_component(C_DoorPortal) as C_DoorPortal
 				bound = bound or (portal != null and portal.target_node_id == target.id)
 			if not bound:
 				floor_portals_wrong.append("%s→%s" % [id, target.id])
 	_check("каждая дверь ведёт в ветку своей стороны, заваренных нет", wrong.is_empty(),
 		", ".join(wrong.slice(0, 4)))
-	_check("переход между этажами слоя — порталом", floor_portals_wrong.is_empty(),
+	_check("переход между этажами слоя — порталом или дверью лестницы", floor_portals_wrong.is_empty(),
 		", ".join(floor_portals_wrong.slice(0, 4)))
 
 

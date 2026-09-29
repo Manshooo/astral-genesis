@@ -9,4 +9,5 @@
 script = ExtResource("1_kit")
 door_wall = ExtResource("2_door_wall")
 blank_wall = ExtResource("3_blank_wall")
+upper_wall = ExtResource("3_blank_wall")
 door = ExtResource("4_door")
