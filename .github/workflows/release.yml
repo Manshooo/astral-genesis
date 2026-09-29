@@ -19,11 +19,10 @@ on:
 
 permissions:
   contents: write
-  # actions:write — иначе actions/cache внутри godot-export не может СОХРАНИТЬ
-  # кэш (падает не сборка, а только post-джоб warning «token has no writable
-  # scopes»). Объявление любого permissions: сбрасывает НЕперечисленные scope
-  # в none, а не наследует умолчания репозитория — contents: write сам по себе
-  # не подразумевает actions: write.
+  # actions:write добавлен ради сохранения кэша, но предупреждение «token has no
+  # writable scopes» v0.6.0 дал и с ним: режим кэша задаёт событие (строка
+  # «Cache mode» в «Set up job»), а не этот scope. Убирать — после того как
+  # первый релиз кнопкой покажет свой Cache mode («Релизы и сборка» → «Грабли»).
   actions: write
 
 concurrency:
