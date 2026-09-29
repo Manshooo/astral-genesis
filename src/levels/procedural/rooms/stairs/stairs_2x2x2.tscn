@@ -45,6 +45,7 @@ omni_attenuation = 1.2
 
 [node name="_ceil_CSGBox3D" type="CSGBox3D" parent="Visual" unique_id=709589910]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.099999994, 0)
+use_collision = true
 size = Vector3(16, 0.2, 16)
 
 [node name="_stairs_CSGBox3D3" type="CSGBox3D" parent="Visual" unique_id=1913401547]
@@ -103,6 +104,7 @@ mesh = SubResource("ArrayMesh_pw0oc")
 
 [node name="_floor_CSGBox3D2" type="CSGBox3D" parent="Visual" unique_id=137078998]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 16.1, 0)
+use_collision = true
 size = Vector3(16, 0.2, 16)
 
 [node name="_ceil_ref" type="CSGBox3D" parent="Visual" unique_id=539222498]
