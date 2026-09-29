@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://cdu5tlyk72uu4" path="res://addons/gecs/ecs/world.gd" id="1_6xmxd"]
 [ext_resource type="Script" uid="uid://dnjtb1bxfp3vs" path="res://src/world/main.gd" id="1_mmdvd"]
-[ext_resource type="Environment" uid="uid://dt6nbx8xwsp5s" path="res://assets/environment.tres" id="3_h5o24"]
 [ext_resource type="Script" uid="uid://b3vi2ingux88g" path="res://addons/gecs/lib/system_group.gd" id="4_mmdvd"]
 [ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/gameplay/s_fps_look.gd" id="5_hg6dy"]
 [ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/input/s_player_input.gd" id="5_l0av5"]
@@ -22,7 +21,6 @@
 [ext_resource type="Script" uid="uid://blc2ipv5016mt" path="res://src/systems/gameplay/s_lifespan.gd" id="15_lifespan"]
 [ext_resource type="Script" uid="uid://bmffrjcgeesnb" path="res://src/observers/o_expel_from_body.gd" id="16_expel"]
 [ext_resource type="Script" uid="uid://dvcwemjjoh26w" path="res://src/observers/o_run_ended.gd" id="17_runend"]
-[ext_resource type="Script" path="res://src/observers/o_run_stats.gd" id="24_runstats"]
 [ext_resource type="Script" uid="uid://cr8trq4a1wwxw" path="res://src/systems/gameplay/s_screen_message.gd" id="18_screenmsg"]
 [ext_resource type="Script" uid="uid://bpa02a0xfsktj" path="res://src/systems/gameplay/s_footsteps.gd" id="19_footsteps"]
 [ext_resource type="Script" uid="uid://kx4nc8uusse1" path="res://src/systems/physics/s_snatch_target_detector.gd" id="19_snatchdet"]
@@ -30,10 +28,11 @@
 [ext_resource type="Script" uid="uid://c7ivw3epluioq" path="res://src/observers/o_body_form.gd" id="21_bodyform"]
 [ext_resource type="Script" uid="uid://ba2j76ofkb3y3" path="res://src/observers/o_soul_traits.gd" id="22_soultraits"]
 [ext_resource type="Script" uid="uid://q0edrod0xky3" path="res://src/systems/gameplay/s_outline_mask.gd" id="23_outline"]
-[ext_resource type="Script" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
-[ext_resource type="Script" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
-[ext_resource type="Script" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
-[ext_resource type="Script" path="res://src/systems/physics/s_door_open.gd" id="27_dooropen"]
+[ext_resource type="Script" uid="uid://dgf2o7ah8ye2b" path="res://src/observers/o_run_stats.gd" id="24_runstats"]
+[ext_resource type="Script" uid="uid://bvmnlyanw1vd8" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
+[ext_resource type="Script" uid="uid://ce1egkovweis2" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
+[ext_resource type="Script" uid="uid://djr3ni2jldn8y" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
+[ext_resource type="Script" uid="uid://c8sf3oftjjlwm" path="res://src/systems/physics/s_door_open.gd" id="27_dooropen"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 auto_exposure_enabled = true
@@ -185,7 +184,7 @@ metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 script = ExtResource("17_runend")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
-[node name="O_RunStats" type="Node" parent="World/Systems"]
+[node name="O_RunStats" type="Node" parent="World/Systems" unique_id=2034243215]
 script = ExtResource("24_runstats")
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]
@@ -193,9 +192,4 @@ script = ExtResource("8_a20vb")
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]
-environment = ExtResource("3_h5o24")
 camera_attributes = SubResource("CameraAttributesPractical_3owqy")
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1553004646]
-transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
-shadow_enabled = true

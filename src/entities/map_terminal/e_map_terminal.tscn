@@ -1,30 +1,33 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://d3t4v6ivh52c6"]
 
 [ext_resource type="Script" uid="uid://ebxavm5qyxcf" path="res://src/entities/interactable/e_interactable_object.gd" id="1_entity"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_component"]
 [ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_action"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_interactable"]
-[ext_resource type="Script" path="res://src/resources/interaction/a_open_complex_map.gd" id="5_open_map"]
+[ext_resource type="Script" uid="uid://dhgyj4py6t8jx" path="res://src/resources/interaction/a_open_complex_map.gd" id="5_open_map"]
+[ext_resource type="PackedScene" uid="uid://bxdmdxexbom0m" path="res://assets/props/interactive/SM_screen/SM_screen.glb" id="6_kooto"]
+
+[sub_resource type="Resource" id="Resource_open_map"]
+script = ExtResource("5_open_map")
 
 [sub_resource type="Resource" id="Resource_interactable"]
 script = ExtResource("4_interactable")
 prompt_text = "MAP_TERMINAL_PROMPT"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
-[sub_resource type="Resource" id="Resource_open_map"]
-script = ExtResource("5_open_map")
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_interact"]
-size = Vector3(5, 3.4, 2.6)
+size = Vector3(1.7197266, 0.9121094, 0.3486328)
 
-[node name="MapTerminal" type="Node3D"]
+[node name="MapTerminal" type="Node3D" unique_id=1465893552]
 script = ExtResource("1_entity")
 actions = Array[ExtResource("3_action")]([SubResource("Resource_open_map")])
 component_resources = Array[ExtResource("2_component")]([SubResource("Resource_interactable")])
 
-[node name="InteractBody" type="StaticBody3D" parent="."]
+[node name="InteractBody" type="StaticBody3D" parent="." unique_id=1452690181]
 collision_layer = 8
 collision_mask = 8
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=1479736416]
 shape = SubResource("BoxShape3D_interact")
+
+[node name="Visual" parent="." unique_id=1185653455 instance=ExtResource("6_kooto")]
