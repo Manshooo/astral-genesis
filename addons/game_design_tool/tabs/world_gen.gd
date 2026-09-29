@@ -676,6 +676,7 @@ func _on_preview_pressed() -> void:
 			if unique and unique.preset:
 				excluded.append(unique.preset)
 	var picks := {}  # label -> сколько раз реально выбран
+	var presence := {}  # label -> { глубина или ANYWHERE: в скольких сидах выпал }
 	var reasons := {}  # label -> { причина: сколько раз }
 	var degrees := {}  # дверей у комнаты -> сколько комнат
 	var layout := RS_LayoutMetrics.new()
@@ -690,6 +691,7 @@ func _on_preview_pressed() -> void:
 			layout.add(RS_LayoutMetrics.of_plan(plan))
 		var rng := RandomNumberGenerator.new()
 		rng.seed = s
+		var seen := {}  # label -> { глубина: true } — где пресет стоит в этом сиде
 		for node: RS_LevelNode in graph.nodes.values():
 			if node.role == RS_LevelNode.Role.CORRIDOR:
 				continue
@@ -698,6 +700,9 @@ func _on_preview_pressed() -> void:
 			degrees[degree] = degrees.get(degree, 0) + 1
 			var picked := _label_for_scene(node.room_scene_path)
 			picks[picked] = picks.get(picked, 0) + 1
+			if not seen.has(picked):
+				seen[picked] = {}
+			seen[picked][node.depth] = true
 			if excluded.any(func(p: RS_RoomPreset) -> bool: return p.scene and p.scene.resource_path == node.room_scene_path):
 				continue
 
@@ -713,8 +718,9 @@ func _on_preview_pressed() -> void:
 				if not reasons.has(label):
 					reasons[label] = {}
 				reasons[label][reason] = reasons[label].get(reason, 0) + 1
+		_count_presence(presence, seen)
 
-	_seeds_report.text = _preview_report(seeds, nodes_total, picks, reasons, degrees)
+	_seeds_report.text = _preview_report(seeds, nodes_total, picks, presence, reasons, degrees)
 	_seeds_report.text += _corridor_report(layout, failures)
 	_set_status("Прогнано сидов: %d, комнат: %d" % [seeds, nodes_total])
 
@@ -732,16 +738,64 @@ func _corridor_report(layout: RS_LayoutMetrics, failures: int) -> String:
 	return out
 
 
+## Ключ «на весь комплекс» в таблице «Где встретить» — рядом с глубинами слоёв.
+const ANYWHERE := -1
+
+
+## Сид засчитывается пресету один раз на слой и один раз на комплекс, сколько бы
+## комнат он там ни занял: таблица отвечает «встретит ли игрок», а не «сколько».
+static func _count_presence(presence: Dictionary, seen: Dictionary) -> void:
+	for label: String in seen:
+		if not presence.has(label):
+			presence[label] = {}
+		var counts: Dictionary = presence[label]
+		counts[ANYWHERE] = counts.get(ANYWHERE, 0) + 1
+		for depth: int in seen[label]:
+			counts[depth] = counts.get(depth, 0) + 1
+
+
+## Строка таблицы «Где встретить»: доля сидов, где пресет выпал на весь комплекс
+## и на каждом слое. Одна на отчёт и на проверку — формат у них не разъедется.
+static func _presence_line(label: String, counts: Dictionary, seeds: int) -> String:
+	var line := "%-24s %4d%%" % [label, _percent(counts.get(ANYWHERE, 0), seeds)]
+	for depth: int in RS_LevelGraph.DEPTHS:
+		line += " %4d%%" % _percent(counts.get(depth, 0), seeds)
+	return line
+
+
+static func _percent(part: int, whole: int) -> int:
+	return roundi(100.0 * part / maxi(whole, 1))
+
+
 func _preview_report(
-	seeds: int, nodes_total: int, picks: Dictionary, reasons: Dictionary, degrees: Dictionary
+	seeds: int,
+	nodes_total: int,
+	picks: Dictionary,
+	presence: Dictionary,
+	reasons: Dictionary,
+	degrees: Dictionary,
 ) -> String:
 	var out := "[b]Прогон %d сидов, %d комнат[/b]\n" % [seeds, nodes_total]
 
-	out += "\n[b]Что выпало[/b]\n[code]"
+	out += "\n[b]Что выпало[/b] (доля среди всех комнат всех сидов)\n[code]"
 	var picked_labels := picks.keys()
 	picked_labels.sort_custom(func(a, b): return picks[a] > picks[b])
 	for label: String in picked_labels:
 		out += "%-24s %5d  %4.1f%%\n" % [label, picks[label], 100.0 * picks[label] / maxi(nodes_total, 1)]
+	out += "[/code]"
+
+	# Доля выше отвечает не на тот вопрос, который задаёт дизайнер. default_room
+	# была 2,4 % всех комнат — в сумме по 30 сидам она есть всегда, — а на слое
+	# хаба стояла в 4 % сидов, и за три забега её не встретили ни разу.
+	out += "\n[b]Где встретить[/b] (в скольких сидах выпал хотя бы раз; * — слой хаба, с него начинается забег)\n[code]"
+	var header := "%-24s %5s" % ["", "весь"]
+	for depth: int in RS_LevelGraph.DEPTHS:
+		header += " %5s" % ("L%d%s" % [depth, "*" if depth == RS_LevelGraph.HOME_DEPTH else ""])
+	out += header + "\n"
+	var present_labels := presence.keys()
+	present_labels.sort_custom(func(a, b): return presence[a][ANYWHERE] > presence[b][ANYWHERE])
+	for label: String in present_labels:
+		out += _presence_line(label, presence[label], seeds) + "\n"
 	out += "[/code]"
 
 	out += "\n[b]Почему отсеивались[/b] (по узлам всех сидов)\n[code]"

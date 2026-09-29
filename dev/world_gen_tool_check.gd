@@ -80,6 +80,35 @@ func _check_seed_sweep() -> void:
 	var report: String = tab._seeds_report.text
 	_check("прогон сидов: метрики раскладки те же, что по сидам напрямую",
 		report.contains("\n".join(expected.report_lines())), report.right(300))
+
+	# «Где встретить» — счёт по сидам, а не по комнатам: пресет, занявший на слое
+	# три комнаты, засчитывается этому слою один раз. Считается здесь заново, без
+	# _count_presence, — общий у отчёта и проверки только формат строки.
+	var presence := {}  # label -> { глубина или ANYWHERE: сидов }
+	for s in 3:
+		var graph := RS_LevelGraph.new().generate_run(s, tab._library, config)
+		var pairs := {}  # "label|глубина" -> true
+		var labels := {}
+		for node: RS_LevelNode in graph.nodes.values():
+			if node.role == RS_LevelNode.Role.CORRIDOR:
+				continue
+			var label: String = tab._label_for_scene(node.room_scene_path)
+			labels[label] = true
+			pairs["%s|%d" % [label, node.depth]] = true
+		for label: String in labels:
+			if not presence.has(label):
+				presence[label] = {}
+			presence[label][WorldGen.ANYWHERE] = presence[label].get(WorldGen.ANYWHERE, 0) + 1
+			for depth: int in RS_LevelGraph.DEPTHS:
+				if pairs.has("%s|%d" % [label, depth]):
+					presence[label][depth] = presence[label].get(depth, 0) + 1
+	var missing: Array[String] = []
+	for label: String in presence:
+		var line := WorldGen._presence_line(label, presence[label], 3)
+		if not report.contains(line):
+			missing.append(line)
+	_check("прогон сидов: «Где встретить» — доля сидов по слоям, как по сидам напрямую",
+		not presence.is_empty() and missing.is_empty(), "\n".join(missing))
 	tab.free()
 
 
