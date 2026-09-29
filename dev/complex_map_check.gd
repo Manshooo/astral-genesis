@@ -6,9 +6,9 @@ extends "res://dev/check_harness.gd"
 ## Ломается здесь всё тихо. Уровень, открывший чужой слой раньше времени, просто
 ## показывает лишнее — и улучшение Архитектора обесценено; уровень 1, видящий
 ## меньше мини-карты, выглядит как пустой экран. Обратная проекция курсора,
-## съехавшая на полклетки, подписывает соседнюю комнату. Терминал, чей
-## C_VisualRoot указывает мимо меша, работает, но не подсвечивается — а
-## ключ перевода с опечаткой показывает игроку «MAP_NO_LINK».
+## съехавшая на полклетки, подписывает соседнюю комнату. Терминал без меша в
+## своём Visual работает, но не подсвечивается — а ключ перевода с опечаткой
+## показывает игроку «MAP_NO_LINK».
 ##
 ## Сейв забега и сейв Архитектора подменяются на время прогона и возвращаются.
 ##
@@ -298,10 +298,14 @@ func _check_run() -> void:
 	var body := terminal.get_node_or_null(^"InteractBody") as StaticBody3D if terminal else null
 	_check("объём терминала на слое interactives", body != null and body.collision_layer == 8,
 		"слой %s" % (body.collision_layer if body else "нет"))
+	# Сверка по поддереву Visual, а не по имени меша: имя внутри .glb — дело арта,
+	# и проверка на «Screen» упала в первый же раз, как пришёл настоящий проп.
 	var geometries := RS_EntityVisuals.geometries(terminal) if terminal else []
-	_check("подсветка терминала находит меш экрана",
-		not geometries.is_empty() and String(geometries[0].name) == "Screen",
-		str(geometries.map(func(g): return g.name)))
+	var visual := terminal.get_node_or_null(^"Visual") if terminal else null
+	_check("подсветка терминала находит меш его пропа",
+		visual != null and not geometries.is_empty()
+			and geometries.all(func(g: Node) -> bool: return g == visual or visual.is_ancestor_of(g)),
+		str(geometries.map(func(g): return terminal.get_path_to(g))))
 	if terminal:
 		terminal.interact()
 	await get_tree().process_frame
