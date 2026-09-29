@@ -1,5 +1,5 @@
 ## res://src/resources/world_generator/rs_corridor_planner.gd
-## Коридорная раскладка этажа: комнаты на решётке, сеть коридоров — дерево по
+## Коридорная раскладка этажа: комнаты вразброс, сеть коридоров — дерево по
 ## клеткам сетки, связывающее все двери этажа, и петли с тупиками поверх него.
 ## Здесь же решается, какие в сети коридоры и в какой ведёт каждая дверь: граф
 ## берёт эти узлы и рёбра из раскладки (RS_LevelGraph._lay_out_floor), а не
@@ -17,8 +17,8 @@
 ##
 ## Работает только в клетках и сторонах топологии (карточка «Сетка уровня»): где
 ## клетка стоит в мире, решает вложение плана, и отсюда его не видно. Квадратная
-## здесь только сама решётка комнат — ряды по X и Z; это свойство алгоритма
-## раскладки, а не сетки.
+## здесь только расстановка комнат — область этажа и footprint'ы как
+## прямоугольники по X и Z; это свойство алгоритма раскладки, а не сетки.
 ##
 ## Случайность — только из переданного rng, своего потока этажа: раскладка
 ## разыгрывается внутри генерации графа, и общий поток сдвигался бы от любой
@@ -27,8 +27,8 @@
 class_name RS_CorridorPlanner
 extends RefCounted
 
-## Запас клеток вокруг решётки комнат, по которому может пройти сеть: дверь,
-## смотрящая наружу решётки, обходит комнаты по краю.
+## Запас клеток вокруг комнат этажа, по которому может пройти сеть: дверь,
+## смотрящая наружу, обходит комнаты по краю.
 const ROUTE_MARGIN := 1
 ## Предел расширения запаса, если трасса не нашлась: дальше она уже не обходит
 ## препятствие, а значит, её заперли.
@@ -40,6 +40,20 @@ const TURN_COST := 3
 ## обволакивание; у коробки 2×2 на двух сторонах четыре сокета, этого хватает
 ## любой нынешней комнате.
 const DOOR_SIDES := 2
+## Сколько случайных точек пробует каждая комната при разбросе (_place_rooms).
+## Из годных выбор взвешен шумом, поэтому точек нужно больше одной: при одной
+## шум ничего не решал бы.
+const SCATTER_TRIES := 24
+## Частота шума плотности в клетках: пятно — около 1 / 0.08 ≈ 12 клеток, то есть
+## на этаж приходится одно-два сгущения комнат, а не рябь от клетки к клетке.
+const NOISE_FREQUENCY := 0.08
+## Насколько сильно шум тянет комнаты в сгущения: вес точки — шум в этой
+## степени. При 1 разница между пятном и пустырём тонет в случайности броска.
+const NOISE_SHARPNESS := 3.0
+## Предел вытянутости области этажа (длинная сторона к короткой).
+const MAX_ASPECT := 2.0
+## Сколько раз ствол сети ищет обход комнаты, которую обволок (_route_around).
+const ENVELOP_RETRIES := 3
 ## Петля, срезающая по сети меньше этого, — обход пары клеток, а не другой путь.
 const MIN_LOOP_GAIN := 6
 ## Тупик — отросток не длиннее этого: длиннее он читается уже коридором, который
@@ -61,7 +75,7 @@ var _owner: Dictionary[Vector3i, int] = {}
 ## Клетки перед дверями — концы, которые сеть обязана связать.
 var _terminals: Array[Vector3i] = []
 var _dead_ends: Array[Vector3i] = []
-## Где ищутся петли и тупики: решётка с сетью и запасом вокруг.
+## Где ищутся петли и тупики: комнаты этажа с сетью и запасом вокруг.
 var _area := Rect2i()
 ## Центр комнат этажа в клетках — к нему смотрят двери.
 var _center := Vector2.ZERO
@@ -85,7 +99,7 @@ static func plan_floor(
 	rng: RandomNumberGenerator,
 ) -> Array[StringName]:
 	var planner := RS_CorridorPlanner.new(plan, floor_index)
-	planner._place_rooms(rooms, config.room_lattice_step, rng)
+	planner._place_rooms(rooms, config.room_gap, config.room_density, rng)
 	for room in rooms:
 		planner._choose_doors(room)
 	planner._grow_network()
@@ -103,37 +117,102 @@ static func plan_floor(
 # ---------------------------------------------------------------------------
 
 
-## Комнаты на решётке рядами в перетасованном порядке: где встанет хаб или выход,
-## решает сид этажа, а не порядковый номер узла. Клетка комнаты — угловая клетка
-## её footprint.
+## Комнаты разбросаны по области этажа: каждая встаёт в случайную точку, где
+## вокруг неё остаётся улица в [param gap] клеток, а из годных точек чаще
+## выигрывают те, где выше шум плотности. Так комнаты сбиваются в кучки, а между
+## кучками остаются пустыри. Решётка рядами, которая была до 29.09, давала
+## одинаковые по форме этажи: 4 комнаты — всегда квадрат по углам (карточка «Хаос
+## раскладки этажа»). Шум — ради пустырей: без него бросок равномерен по всей
+## области, и пустыри выходят только случайно, а хаос комплекса — это и
+## сгущения, и пустоты между ними.
 ##
-## Шаг решётки растёт на размер крупнейшей комнаты этажа: между footprint'ами
-## остаётся тот же зазор, что между комнатами в одну клетку, и сети есть где
-## пройти. Footprint — в осях мира: у комнаты, повёрнутой на нечётную четверть,
-## ширина и длина меняются местами.
-func _place_rooms(rooms: Array[RS_LevelNode], step: int, rng: RandomNumberGenerator) -> void:
+## Цена разброса — длина коридоров: двери больше не смотрят друг на друга через
+## ровную улицу, и тайлов на комнату при density 0.65 выходит 6.3 против 4.4 у
+## решётки (замер 29.09, 30 сидов). Поднять density — коридоры короче, но
+## пустырей меньше.
+##
+## Порядок перетасован: где встанет хаб или выход, решает сид этажа, а не
+## порядковый номер узла. Клетка комнаты — угловая клетка её footprint, footprint
+## — в осях мира: у комнаты, повёрнутой на нечётную четверть, ширина и длина
+## меняются местами.
+##
+## Площадь области — сумма footprint'ов с улицами, делённая на [param density]:
+## комнатам заранее есть где встать, и бросок не упирается в край. Если всё же
+## упёрся, область растёт на клетку — раскладка не падает, а становится реже.
+func _place_rooms(rooms: Array[RS_LevelNode], gap: int, density: float, rng: RandomNumberGenerator) -> void:
 	var sizes: Dictionary[StringName, Vector3i] = {}
-	var largest := Vector3i.ONE
+	var budget := 0
 	for room in rooms:
 		var size := RS_RoomLayout.footprint_of_scene(room.room_scene_path)
 		sizes[room.id] = Vector3i(size.z, size.y, size.x) if room.turns % 2 else size
-		largest = largest.max(sizes[room.id])
+		budget += (sizes[room.id].x + gap) * (sizes[room.id].z + gap)
 	var order := rooms.duplicate()
 	for i in range(order.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
 		var swap: RS_LevelNode = order[i]
 		order[i] = order[j]
 		order[j] = swap
-	var stride := Vector2i(step + largest.x - 1, step + largest.z - 1)
-	var cols := maxi(ceili(sqrt(float(order.size()))), 1)
+
+	# Вытянутость области — тоже бросок: квадратная область при любом сиде давала бы
+	# этажи одной формы, только с другой начинкой.
+	var aspect := rng.randf_range(1.0 / MAX_ASPECT, MAX_ASPECT)
+	var side := sqrt(budget / clampf(density, 0.05, 1.0))
+	var area := Rect2i(0, 0, maxi(ceili(side * sqrt(aspect)), 1), maxi(ceili(side / sqrt(aspect)), 1))
+	var noise := FastNoiseLite.new()
+	noise.seed = rng.randi()
+	noise.frequency = NOISE_FREQUENCY
+
 	var sum := Vector2.ZERO
-	for i in order.size():
-		var room: RS_LevelNode = order[i]
+	for room: RS_LevelNode in order:
 		var size: Vector3i = sizes[room.id]
-		var anchor := Vector3i((i % cols) * stride.x, _level, (i / cols) * stride.y)
+		var anchor := _scatter_anchor(size, gap, area, noise, rng)
+		while anchor == Vector3i.MAX:
+			area = area.grow_individual(0, 0, 1, 1)
+			anchor = _scatter_anchor(size, gap, area, noise, rng)
 		_put(room, anchor, size)
 		sum += Vector2(anchor.x + (size.x - 1) * 0.5, anchor.z + (size.z - 1) * 0.5)
 	_center = sum / maxi(order.size(), 1)
+
+
+## Угловая клетка под footprint [param size] в [param area]: SCATTER_TRIES
+## случайных точек, из годных — взвешенно по шуму. Vector3i.MAX — годных нет.
+func _scatter_anchor(
+	size: Vector3i, gap: int, area: Rect2i, noise: FastNoiseLite, rng: RandomNumberGenerator
+) -> Vector3i:
+	var fits: Array[Vector3i] = []
+	var weights: Array[float] = []
+	for t in SCATTER_TRIES:
+		# Бросок тратится при любом исходе: иначе число бросков зависело бы от
+		# того, какие точки оказались заняты, и сдвиг расползался бы по этажу.
+		var anchor := Vector3i(
+			rng.randi_range(area.position.x, maxi(area.end.x - size.x, area.position.x)),
+			_level,
+			rng.randi_range(area.position.y, maxi(area.end.y - size.z, area.position.y)),
+		)
+		if not _fits(anchor, size, gap, area):
+			continue
+		var centre := Vector2(anchor.x + size.x * 0.5, anchor.z + size.z * 0.5)
+		fits.append(anchor)
+		weights.append(pow((noise.get_noise_2dv(centre) + 1.0) * 0.5, NOISE_SHARPNESS))
+	if fits.is_empty():
+		return Vector3i.MAX
+	if WeightedPick.total(weights) <= 0.0:
+		return fits[0]
+	return fits[WeightedPick.index(weights, rng.randf())]
+
+
+## Встаёт ли footprint в области так, чтобы до любой занятой клетки плана на его
+## уровнях оставалось не меньше [param gap] клеток. Смотрит в план, а не только
+## в комнаты этажа: верх высокой комнаты этажа ниже тоже занимает клетку этого
+## уровня, и встать на неё — наложение, которое раньше уходило в routing_failures.
+func _fits(anchor: Vector3i, size: Vector3i, gap: int, area: Rect2i) -> bool:
+	if anchor.x + size.x > area.end.x or anchor.z + size.z > area.end.y:
+		return false
+	var around := anchor - Vector3i(gap, 0, gap)
+	for cell in SquareGridTopology.box(around, size + Vector3i(gap * 2, 0, gap * 2)):
+		if _plan.node_by_cell.has(cell):
+			return false
+	return true
 
 
 ## Ставит комнату в план: угловая клетка, footprint, поворот и все его клетки — на
@@ -154,7 +233,7 @@ func _put(room: RS_LevelNode, anchor: Vector3i, size: Vector3i) -> void:
 ## Грани под двери комнаты. У комнаты с дверями в сцене — стороны её дверей,
 ## повёрнутые вместе с комнатой: сцена в одну клетку, и грань — её сторона в мире.
 ## У собранной по сокетам — [member RS_LevelNode.socket_doors] сокетов, смотрящих
-## внутрь решётки (_inward_sockets).
+## внутрь этажа (_inward_sockets).
 func _choose_doors(room: RS_LevelNode) -> void:
 	var anchor: Vector3i = _plan.cells[room.id]
 	var faces: Array[Vector4i] = []
@@ -169,7 +248,7 @@ func _choose_doors(room: RS_LevelNode) -> void:
 
 
 ## [param count] сокетов, ближайших к центру комнат этажа, и не больше чем с
-## DOOR_SIDES сторон, пока на них хватает сокетов. Двери внутрь решётки смотрят
+## DOOR_SIDES сторон, пока на них хватает сокетов. Двери внутрь этажа смотрят
 ## друг на друга через улицу, и сеть связывает их коротко; дверь наружу тянула бы
 ## коридор в обход, а дверь на третьей стороне — коридор вокруг комнаты.
 func _inward_sockets(sockets: Array[Vector4i], count: int) -> Array[Vector4i]:
@@ -247,7 +326,7 @@ func _grow_network() -> void:
 		for terminal in pending:
 			if not best.is_empty() and bound[terminal] >= best.size() - 1:
 				break
-			var path := _route(terminal, to_network, search)
+			var path := _route_around(terminal, to_network, search)
 			if not path.is_empty() and (best.is_empty() or path.size() < best.size()):
 				best = path
 		if best.is_empty():
@@ -475,6 +554,12 @@ func _add_dead_ends(count: int, rng: RandomNumberGenerator) -> void:
 ## сторон комнаты, как его ни режь на узлы. Комната без дверей не в счёт — у неё
 ## своих коридоров нет вовсе.
 func _envelops(path: Array[Vector3i]) -> bool:
+	return not _enveloped(path).is_empty()
+
+
+## Комнаты, которые обволокла бы трасса [param path] (см. _envelops).
+func _enveloped(path: Array[Vector3i]) -> Array[StringName]:
+	var enveloped: Array[StringName] = []
 	var added: Dictionary[Vector3i, bool] = {}
 	for cell in path:
 		added[cell] = true
@@ -493,8 +578,8 @@ func _envelops(path: Array[Vector3i]) -> bool:
 			if added.has(next) or _links.has(next):
 				sides[face.w] = true
 		if sides.size() >= 3:
-			return true
-	return false
+			enveloped.append(room)
+	return enveloped
 
 
 # ---------------------------------------------------------------------------
@@ -536,16 +621,52 @@ func _write(rooms: Array[RS_LevelNode], corridor_ids: Array[StringName]) -> void
 ## Трасса от [param start] до первой клетки, где [param goal] истинна
 ## (GridRouter.find_path). Сперва в [param area], затем запас растёт: обход по
 ## краю лучше, чем отказ.
-func _route(start: Vector3i, goal: Callable, area: Rect2i) -> Array[Vector3i]:
+func _route(
+	start: Vector3i, goal: Callable, area: Rect2i, avoid: Dictionary[Vector3i, bool] = {}
+) -> Array[Vector3i]:
 	var margin := 0
 	while margin <= MAX_ROUTE_MARGIN - ROUTE_MARGIN:
 		var grown := area.grow(margin)
-		var passable := func(cell: Vector3i) -> bool: return _free(cell, grown)
+		var passable := func(cell: Vector3i) -> bool: return _free(cell, grown) and not avoid.has(cell)
 		var path := GridRouter.find_path(_topology, start, goal, passable, TURN_COST)
 		if not path.is_empty():
 			return path
 		margin += 2
 	return []
+
+
+## Трасса от двери к сети, которая не обволакивает комнат: подошла к комнате с
+## третьей стороны — клетки трассы вдоль стен этой комнаты запрещаются, и трасса
+## ищется заново, не больше ENVELOP_RETRIES раз. Петлям и тупикам такая трасса
+## просто не ставится (_envelops), а ствол обязан дойти, поэтому ему — обход.
+## На решётке хватало дверей, смотрящих внутрь: улицы шли ровно между рядами. При
+## разбросе комнаты стоят вразбег, и кратчайший путь к соседней то и дело идёт
+## вдоль чужой стены — без обхода так обволакивалось 0.6 % комнат при 8 на этаж и
+## 1.2 % при 12 (замер 29.09 при density 0.5), с обходом — снова 0.
+## Обхода не нашлось — остаётся первая трасса: дверь без сети хуже коридора с
+## трёх сторон.
+func _route_around(start: Vector3i, goal: Callable, area: Rect2i) -> Array[Vector3i]:
+	var avoid: Dictionary[Vector3i, bool] = {}
+	var path := _route(start, goal, area)
+	for attempt in ENVELOP_RETRIES:
+		var rooms := _enveloped(path)
+		if rooms.is_empty():
+			break
+		for cell in path:
+			if not _terminals.has(cell) and _touches_any(cell, rooms):
+				avoid[cell] = true
+		var detour := _route(start, goal, area, avoid)
+		if detour.is_empty():
+			break
+		path = detour
+	return path
+
+
+func _touches_any(cell: Vector3i, rooms: Array[StringName]) -> bool:
+	for side in _topology.side_count(cell):
+		if rooms.has(_room_at.get(_topology.neighbour(cell, side), &"")):
+			return true
+	return false
 
 
 ## Занимает клетки пути под сеть и открывает проёмы между соседними клетками пути.
