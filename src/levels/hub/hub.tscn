@@ -12,7 +12,6 @@
 [ext_resource type="PackedScene" uid="uid://f5i4a5l3ph2j" path="res://src/entities/body/e_body_walker.tscn" id="10_walker"]
 [ext_resource type="PackedScene" uid="uid://dtsbk0vab2ynp" path="res://src/entities/enemy/e_enemy.tscn" id="11_enemy"]
 [ext_resource type="PackedScene" uid="uid://d3t4v6ivh52c6" path="res://src/entities/map_terminal/e_map_terminal.tscn" id="12_map_terminal"]
-[ext_resource type="Script" uid="uid://ccb3xm8fbdion" path="res://src/components/rendering/c_visual_root.gd" id="13_visual_root"]
 
 [sub_resource type="Resource" id="Shell"]
 script = ExtResource("3_shell")
@@ -35,15 +34,6 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="BoxShape3D" id="IncubatorShape"]
 size = Vector3(3.5, 5.5, 3.5)
-
-[sub_resource type="Resource" id="MapPrompt"]
-script = ExtResource("9_interactable")
-prompt_text = "MAP_TERMINAL_PROMPT"
-metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
-
-[sub_resource type="Resource" id="MapVisual"]
-script = ExtResource("13_visual_root")
-metadata/_custom_type_script = "uid://ccb3xm8fbdion"
 
 [node name="Hub" type="Node3D" unique_id=963274486]
 script = ExtResource("1_hub")
@@ -77,8 +67,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7768965, 0.1, -4.7508903)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.3854353, 0.1, -0.79322445)
 
 [node name="MapTerminal" parent="." unique_id=2066716002 instance=ExtResource("12_map_terminal")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 6.6, 2.4, 7.6684785)
-component_resources = Array[ExtResource("2_component")]([SubResource("MapPrompt"), SubResource("MapVisual")])
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 6.6, 2.4, 7.6284785)
 
 [node name="Light" type="OmniLight3D" parent="." unique_id=1860668570]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
