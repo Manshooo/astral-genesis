@@ -206,7 +206,9 @@ func _check_room_doors(
 		if target.role == RS_LevelNode.Role.CORRIDOR:
 			expected.append(conn.target_node_id)
 	# Где двери: у комнаты с дверями в сцене — ровно стороны этих дверей, у
-	# сборной — столько сокетов периметра, сколько разыграно, и только сокеты.
+	# сборной — столько сокетов, сколько разыграно, и только сокеты: объявленные
+	# коробкой (у лестницы — с верхним уровнем) или грани нижнего уровня. Что
+	# поворот объявленных сокетов сходится со сценой, сверяет room_shell_check.
 	var placed_right := true
 	if room.socket_doors == 0:
 		var scene_list: Array = []
@@ -220,7 +222,7 @@ func _check_room_doors(
 		keys.sort()
 		placed_right = keys == scene_list
 	else:
-		var sockets := plan.topology.perimeter(plan.room_cells(room.id))
+		var sockets := RS_RoomLayout.sockets_in_plan(room.room_scene_path, room.turns, plan.cells[room.id])
 		placed_right = faces.size() == room.socket_doors
 		for face: Vector4i in faces:
 			placed_right = placed_right and sockets.has(face)

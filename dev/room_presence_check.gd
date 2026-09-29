@@ -68,9 +68,15 @@ func _check_plan_rule() -> void:
 					var got := plan.node_at(at + probe)
 					if got != node_id:
 						misses.append("сид %d %s +%s → '%s'" % [s, node_id, probe, got])
-				# Этажом выше та же (x, z) — это уже не эта комната.
-				if plan.node_at(plan.embedding.cell_origin(plan.cells[node_id] + Vector3i.UP)) == node_id:
-					misses.append("сид %d %s: этажом выше всё ещё он" % [s, node_id])
+				# Высокая комната (лестница) — на каждом своём уровне, а над её
+				# footprint та же (x, z) — это уже не она.
+				for level in size.y:
+					var inside := plan.cells[node_id] + Vector3i(0, level, 0)
+					if plan.node_at(plan.embedding.cell_origin(inside) + Vector3(0.0, 1.7, 0.0)) != node_id:
+						misses.append("сид %d %s: на уровне %d не он" % [s, node_id, inside.y])
+				var above := plan.cells[node_id] + Vector3i(0, size.y, 0)
+				if plan.node_at(plan.embedding.cell_origin(above)) == node_id:
+					misses.append("сид %d %s: над footprint всё ещё он" % [s, node_id])
 	_check("каждая точка комнаты находит свой узел (%d узлов)" % checked,
 		misses.is_empty(), ", ".join(misses.slice(0, 5)))
 

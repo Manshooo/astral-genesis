@@ -6,9 +6,10 @@ extends Node
 ##       * по графу  — связен ли граф вообще (гарантия генератора);
 ##       * по дверям — что реально проходимо в мире: из комнаты в ветку коридора
 ##                     только через дверь на стороне, которую план отдал этой
-##                     ветке (RS_LayerPlan.door_faces), на другой этаж или слой —
+##                     ветке (RS_LayerPlan.door_faces; у лестницы и на этаж
+##                     выше), порталом на другой этаж или слой —
 ##                     только если в сцене есть портал;
-##   - узлы с БОЛЬШЕ ЧЕМ ОДНИМ вертикальным ребром (смена глубины или этажа) —
+##   - узлы с БОЛЬШЕ ЧЕМ ОДНИМ портальным ребром —
 ##     портал в комнате один (LayerStreamer._bind_portals), лишнему ребру некуда деться;
 ##   - «заваренные двери»: дверей в сцене минус рёбер комнаты в коридоры. С
 ##     коридорами рёбер у комнаты ровно столько, сколько дверей, и метрика обязана
@@ -161,20 +162,22 @@ func _room_type_counts(graph: RS_LevelGraph) -> Dictionary:
 	return counts
 
 
-func _is_vertical(node: RS_LevelNode, target: RS_LevelNode) -> bool:
-	return target.depth != node.depth or target.floor_index != node.floor_index
+## Портальное ребро — по типу (RS_LevelConnection.is_portal), а не по смене
+## этажа: верхняя дверь лестницы ведёт на этаж выше, но это дверь.
+func _is_vertical(conn: RS_LevelConnection) -> bool:
+	return conn.is_portal()
 
 
 func _horizontal_edges(graph: RS_LevelGraph, node: RS_LevelNode) -> int:
 	var count := 0
 	for conn: RS_LevelConnection in node.connections:
 		var target := graph.get_node_data(conn.target_node_id)
-		if target != null and not _is_vertical(node, target):
+		if target != null and not _is_vertical(conn):
 			count += 1
 	return count
 
 
-## Узлы с БОЛЬШЕ ЧЕМ ОДНИМ вертикальным ребром (смена глубины или этажа). В
+## Узлы с БОЛЬШЕ ЧЕМ ОДНИМ портальным ребром (_is_vertical). В
 ## комнате ровно один портал, и второму такому ребру некуда деться.
 func _multi_vertical_edge_nodes(graph: RS_LevelGraph) -> Array:
 	var result: Array = []
@@ -182,7 +185,7 @@ func _multi_vertical_edge_nodes(graph: RS_LevelGraph) -> Array:
 		var vertical_edges := 0
 		for conn: RS_LevelConnection in node.connections:
 			var target := graph.get_node_data(conn.target_node_id)
-			if target != null and _is_vertical(node, target):
+			if target != null and _is_vertical(conn):
 				vertical_edges += 1
 		if vertical_edges > 1:
 			result.append(node.id)
@@ -211,7 +214,7 @@ func _bfs_unreachable(graph: RS_LevelGraph, plans: Dictionary, physical: bool) -
 			if _has_portal(node.room_scene_path):
 				for conn: RS_LevelConnection in node.connections:
 					var target := graph.get_node_data(conn.target_node_id)
-					if target != null and _is_vertical(node, target):
+					if target != null and _is_vertical(conn):
 						reachable.append(conn.target_node_id)
 		for target_id in reachable:
 			if not seen.has(target_id):

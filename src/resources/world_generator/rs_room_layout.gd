@@ -214,14 +214,54 @@ static func footprint_of_scene(scene_path: String) -> Vector3i:
 	return shell.size if shell else Vector3i.ONE
 
 
-## Сколько сокетов у комнаты, собранной по маске: граней нижнего уровня footprint
-## по периметру. 0 — у комнаты двери в сцене, и сокетов у неё нет.
+## Сколько сокетов у комнаты, собранной по маске (sockets_of_scene). 0 — у
+## комнаты двери в сцене, и сокетов у неё нет.
 static func socket_count_of_scene(scene_path: String) -> int:
+	return sockets_of_scene(scene_path).size()
+
+
+## Сокеты комнаты, собранной по маске, — в осях сцены, от нижней северо-западной
+## клетки footprint (как C_RoomShell.door_sockets): объявленные коробкой, а если
+## она их не объявила — все грани нижнего уровня по периметру. Пусто — у комнаты
+## двери в сцене.
+static func sockets_of_scene(scene_path: String) -> Array[Vector4i]:
 	var shell := shell_of_scene(scene_path)
 	if shell == null:
-		return 0
-	var topology := SquareGridTopology.new()
-	return topology.perimeter(SquareGridTopology.box(Vector3i.ZERO, shell.size)).size()
+		return []
+	if not shell.door_sockets.is_empty():
+		return shell.door_sockets
+	return SquareGridTopology.new().perimeter(SquareGridTopology.box(Vector3i.ZERO, shell.size))
+
+
+## Сокеты комнаты в плане: грани мира, если комната стоит угловой клеткой в
+## [param anchor] и повёрнута на [param turns] (RS_LevelNode.turns).
+static func sockets_in_plan(scene_path: String, turns: int, anchor: Vector3i) -> Array[Vector4i]:
+	var faces: Array[Vector4i] = []
+	var size := footprint_of_scene(scene_path)
+	for face in sockets_of_scene(scene_path):
+		faces.append(face_in_plan(face, size, turns, anchor))
+	return faces
+
+
+## Грань [param face] в осях сцены (клетка от нижней северо-западной и сторона) —
+## в грань плана. Сцена поворачивается вокруг центра footprint на [param turns]
+## четвертей (RS_LayerPlan.room_transform: сторона сцены s смотрит в мир стороной
+## s − turns), поэтому и клетка крутится вокруг центра: считается в полуклетках от
+## него, чтобы остаться в целых. [param size] — footprint в осях сцены; в мире у
+## нечётного поворота ширина и длина меняются местами, и угловой клеткой
+## становится другая.
+static func face_in_plan(face: Vector4i, size: Vector3i, turns: int, anchor: Vector3i) -> Vector4i:
+	var t := posmod(turns, SquareGridTopology.SIDE_COUNT)
+	var x := face.x * 2 + 1 - size.x
+	var z := face.z * 2 + 1 - size.z
+	for i in t:
+		# Четверть оборота по turn_basis: север (0, −1) уходит на запад (−1, 0).
+		var turned := z
+		z = -x
+		x = turned
+	var world := Vector3i(size.z, size.y, size.x) if t % 2 else size
+	var cell := anchor + Vector3i((x + world.x - 1) / 2, face.y, (z + world.z - 1) / 2)
+	return GridTopology.face(cell, posmod(face.w - t, SquareGridTopology.SIDE_COUNT))
 
 
 ## Четверти оборота вокруг Y (как rotation.y у кусков RS_CorridorKit), которые

@@ -82,13 +82,18 @@ func build_view() -> Dictionary:
 	floor_index = current.floor_index
 	here = current_id
 	visited = WorldSave.save.visited_node_ids
-	set_nodes(MapKnowledge.known_nodes(graph.get_nodes_by_depth(current.depth), visited))
 
 	var player := UI_MapFloor.player_node()
 	show_player = player != null
 	if player:
 		player_position = player.global_position
 		player_forward = UI_MapFloor.forward_of(player)
+		# Этаж — под игроком, а не этаж узла: на верхней площадке лестницы узел её,
+		# а она числится этажом ниже. Только если игрок и правда в клетке узла — в
+		# кадр переноса между слоями он ещё стоит в старом плане.
+		if plan and plan.node_at(player_position) == current_id:
+			floor_index = plan.embedding.cell_at(player_position).y
+	set_nodes(MapKnowledge.known_nodes(graph.get_nodes_by_depth(current.depth), visited))
 
 	if not fit():
 		return {}

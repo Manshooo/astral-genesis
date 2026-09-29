@@ -96,19 +96,26 @@ var _hovered: StringName = &""
 
 
 ## Раскладывает узлы по комнатам и веткам. Чужие этажи отсеиваются здесь, чтобы
-## экран мог отдать всем панелям один и тот же список слоя.
+## экран мог отдать всем панелям один и тот же список слоя. Комната — на каждом
+## этаже, который занимает её footprint, а не только на этаже узла: лестница
+## числится нижним этажом, а коридор этажа выше упирается в её верхнюю дверь.
 func set_nodes(nodes: Array[RS_LevelNode]) -> void:
 	rooms.clear()
 	branches.clear()
 	if plan == null:
 		return
 	for node_data in nodes:
-		if node_data.floor_index != floor_index:
-			continue
 		if node_data.role == RS_LevelNode.Role.CORRIDOR:
-			branches.append(node_data)
-		elif plan.cells.has(node_data.id):
+			if node_data.floor_index == floor_index:
+				branches.append(node_data)
+		elif plan.cells.has(node_data.id) and _spans_floor(node_data.id):
 			rooms.append(node_data)
+
+
+func _spans_floor(node_id: StringName) -> bool:
+	var bottom: int = plan.cells[node_id].y
+	var height: int = plan.footprints.get(node_id, Vector3i.ONE).y
+	return floor_index >= bottom and floor_index < bottom + height
 
 
 ## Показан ли узел — комнатой или веткой.

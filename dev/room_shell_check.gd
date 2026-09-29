@@ -54,6 +54,7 @@ func _ready() -> void:
 	for path in shells:
 		_check_box(path, plan)
 		_check_zones(path, plan)
+		_check_socket_turns(path)
 	_check_zone_detector()
 	# Без поворота и на четверть: стены и двери обязаны встать в стороны мира при
 	# любом повороте корня комнаты.
@@ -159,22 +160,61 @@ func _props(room: Node3D) -> Array[GeometryInstance3D]:
 	return props
 
 
-## Зоны перед всеми сокетами footprint в координатах корня комнаты: корень стоит
-## в центре footprint (RS_LayerPlan.position_of), как его поставит спавн.
+## Зоны перед всеми сокетами коробки в координатах корня комнаты: корень стоит
+## в центре footprint (RS_LayerPlan.position_of), как его поставит спавн. Сокеты —
+## объявленные коробкой (у лестницы и на верхнем уровне, зона — от пола того
+## уровня) или все грани нижнего уровня.
 func _socket_zones(shell: C_RoomShell, plan: RS_LayerPlan) -> Array[AABB]:
 	var zones: Array[AABB] = []
 	var cells := SquareGridTopology.box(Vector3i.ZERO, shell.size)
 	var far := Vector3i(shell.size.x - 1, 0, shell.size.z - 1)
 	var center := (plan.embedding.cell_origin(Vector3i.ZERO) + plan.embedding.cell_origin(far)) * 0.5
-	for face in plan.topology.perimeter(cells):
+	var sockets := shell.door_sockets if not shell.door_sockets.is_empty() else plan.topology.perimeter(cells)
+	for face in sockets:
 		var inside := plan.embedding.cell_origin(GridTopology.face_cell(face))
 		var outside := plan.embedding.cell_origin(plan.topology.neighbour(GridTopology.face_cell(face), face.w))
 		var inward := (inside - outside).normalized()
 		var along := inward.cross(Vector3.UP).abs()
 		var mid := (inside + outside) * 0.5 - center + inward * SOCKET_ZONE.z * 0.5
 		var half := along * SOCKET_ZONE.x * 0.5 + inward.abs() * SOCKET_ZONE.z * 0.5
-		zones.append(AABB(Vector3(mid.x - half.x, 0.0, mid.z - half.z), Vector3(half.x * 2.0, SOCKET_ZONE.y, half.z * 2.0)))
+		zones.append(AABB(Vector3(mid.x - half.x, mid.y, mid.z - half.z), Vector3(half.x * 2.0, SOCKET_ZONE.y, half.z * 2.0)))
 	return zones
+
+
+## Объявленные сокеты (C_RoomShell.door_sockets) встают в плане туда, где их
+## поставит спавн, при любом повороте. Сверка — не той же функцией: середина
+## грани сокета берётся в осях сцены и переводится в мир корнем комнаты
+## (RS_LayerPlan.room_transform, им комнату ставит спавн), а сравнивается с
+## гранью из RS_RoomLayout.sockets_in_plan, по которой раскладка тянет коридор.
+## Разойдись они — дверь раскладки упёрлась бы в стену, а проём сборки — в
+## пустоту, и у лестницы верхний вход оказался бы не у площадки.
+func _check_socket_turns(path: String) -> void:
+	var shell := RS_RoomLayout.shell_of_scene(path)
+	if shell == null or shell.door_sockets.is_empty():
+		return
+	var plan := RS_LayerPlan.new()
+	var size := plan.embedding.cell_size
+	var wrong: Array[String] = []
+	for turns in SquareGridTopology.SIDE_COUNT:
+		var anchor := Vector3i(3, 1, -2)
+		plan.cells[&"room"] = anchor
+		plan.footprints[&"room"] = Vector3i(shell.size.z, shell.size.y, shell.size.x) if turns % 2 else shell.size
+		plan.turns[&"room"] = turns
+		var faces := RS_RoomLayout.sockets_in_plan(path, turns, anchor)
+		for i in shell.door_sockets.size():
+			var socket := shell.door_sockets[i]
+			var local := Vector3(
+				(socket.x + 0.5 - shell.size.x * 0.5) * size,
+				socket.y * plan.embedding.level_height,
+				(socket.z + 0.5 - shell.size.z * 0.5) * size,
+			) + Vector3(SquareGridTopology.OFFSETS[socket.w]) * size * 0.5
+			var want := plan.room_transform(&"room") * local
+			var cell := GridTopology.face_cell(faces[i])
+			var got := (plan.embedding.cell_origin(cell) + plan.embedding.cell_origin(plan.topology.neighbour(cell, faces[i].w))) * 0.5
+			if not got.is_equal_approx(want):
+				wrong.append("поворот %d, сокет %s: %s вместо %s" % [turns, socket, got, want])
+	_check("%s: объявленные сокеты встают в плане туда же, куда их ставит спавн" % path.get_file(),
+		wrong.is_empty(), ", ".join(wrong.slice(0, 3)))
 
 
 # --- 3. Сборка на деталях китов ----------------------------------------------
@@ -311,6 +351,7 @@ func _generator_scenes() -> Array[String]:
 	for unique: RS_UniqueRoom in config.unique_rooms:
 		if unique:
 			presets.append(unique.preset)
+	presets.append(config.floor_stairs)
 	for preset: RS_RoomPreset in presets:
 		if preset and preset.scene:
 			scenes.append(preset.scene.resource_path)

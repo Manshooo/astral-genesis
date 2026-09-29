@@ -58,14 +58,16 @@ static func visible_nodes(
 	return layer
 
 
-## Портал комнаты — ребро на другой этаж или слой; null — портала нет. Первого
-## найденного достаточно: портал в комнате ровно один (LayerStreamer._bind_portals).
+## Портал комнаты — ребро переноса на другой этаж или слой; null — портала нет.
+## Первого найденного достаточно: портал в комнате ровно один
+## (LayerStreamer._bind_portals).
 ##
-## Узнаётся по тому, КУДА ведёт ребро, а не по depth_delta: у перехода между
-## этажами одного слоя он нулевой, как и у двери в коридор.
+## Узнаётся по типу ребра (RS_LevelConnection.is_portal), а не по depth_delta — у
+## перехода между этажами одного слоя он нулевой, как и у двери в коридор, — и
+## не по тому, куда ребро ведёт: верхняя дверь лестницы ведёт на этаж выше, но
+## порталом не является.
 static func portal_of(graph: RS_LevelGraph, node_data: RS_LevelNode) -> RS_LevelConnection:
 	for conn: RS_LevelConnection in node_data.connections:
-		var target := graph.get_node_data(conn.target_node_id)
-		if target and (target.depth != node_data.depth or target.floor_index != node_data.floor_index):
+		if conn.is_portal() and graph.get_node_data(conn.target_node_id):
 			return conn
 	return null

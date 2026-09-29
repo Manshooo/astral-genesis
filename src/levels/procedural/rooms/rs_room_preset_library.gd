@@ -343,6 +343,16 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 			missing.append("upper_wall")
 		if not missing.is_empty():
 			problems.append("'%s': в ките стен нет %s" % [label, ", ".join(missing)])
+	# Объявленный сокет не на наружной грани — дверь, которой раскладка найдёт
+	# место в плане, а спавн не найдёт стены: сборка ставит двери только на грани
+	# периметра (RS_RoomWallKit.assemble).
+	var box := SquareGridTopology.box(Vector3i.ZERO, shell.size)
+	var topology := SquareGridTopology.new()
+	for face in shell.door_sockets:
+		var cell := GridTopology.face_cell(face)
+		var outward := face.w >= 0 and face.w < SquareGridTopology.SIDE_COUNT
+		if not box.has(cell) or not outward or box.has(topology.neighbour(cell, face.w)):
+			problems.append("'%s': сокет %s — не наружная грань footprint %s" % [label, face, shell.size])
 	var sockets := RS_RoomLayout.socket_count_of_scene(preset.scene.resource_path)
 	if preset.doors_min < 1 or preset.doors_min > preset.doors_max or preset.doors_max > sockets:
 		problems.append(

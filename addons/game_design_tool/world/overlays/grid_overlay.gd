@@ -115,7 +115,8 @@ func _draw_lattice(plan: RS_LayerPlan) -> void:
 
 ## Контур footprint, стрелка поворота и сокеты комнаты. Стрелка показывает, куда
 ## смотрит север сцены (её −Z): сторона сцены s смотрит в мир стороной s − turns
-## (RS_LevelNode.turns). Сокеты — грани периметра сборной комнаты: дверь цветом
+## (RS_LevelNode.turns). Сокеты — где у сборной комнаты может быть дверь
+## (RS_RoomLayout.sockets_in_plan, у лестницы и на верхнем уровне): дверь цветом
 ## своей ветки, глухой — тускло. У комнаты с дверями в сцене сокетов нет, только
 ## её двери.
 func _draw_room(plan: RS_LayerPlan, node_data: RS_LevelNode) -> void:
@@ -135,7 +136,7 @@ func _draw_room(plan: RS_LayerPlan, node_data: RS_LevelNode) -> void:
 	var doors: Dictionary = plan.door_faces.get(id, {})
 	var faces: Array = doors.keys()
 	if RS_RoomLayout.shell_of_scene(node_data.room_scene_path) != null:
-		faces = plan.topology.perimeter(cells)
+		faces = RS_RoomLayout.sockets_in_plan(node_data.room_scene_path, node_data.turns, anchor)
 	for face: Vector4i in faces:
 		var cell := GridTopology.face_cell(face)
 		if doors.has(face):

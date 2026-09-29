@@ -102,13 +102,14 @@ static func plan_floor(
 	planner._place_rooms(rooms, config.room_gap, config.room_density, rng)
 	for room in rooms:
 		planner._choose_doors(room)
+	planner._adopt_pending()
 	planner._grow_network()
 	planner._add_loops(config.corridor_loops)
 	planner._add_dead_ends(config.dead_ends, rng)
 	var ids: Array[StringName] = []
 	for k in planner._segment():
 		ids.append(StringName("%s%d" % [id_prefix, k]))
-	planner._write(rooms, ids)
+	planner._write(ids)
 	return ids
 
 
@@ -233,7 +234,11 @@ func _put(room: RS_LevelNode, anchor: Vector3i, size: Vector3i) -> void:
 ## Грани под двери комнаты. У комнаты с дверями в сцене — стороны её дверей,
 ## повёрнутые вместе с комнатой: сцена в одну клетку, и грань — её сторона в мире.
 ## У собранной по сокетам — [member RS_LevelNode.socket_doors] сокетов, смотрящих
-## внутрь этажа (_inward_sockets).
+## внутрь этажа (_inward_sockets): из объявленных коробкой
+## (C_RoomShell.door_sockets), а если она их не объявила — из всех граней нижнего
+## уровня. Дверь выше этажа комнаты (верх лестницы) эта раскладка не свяжет — её
+## уровень трассы не видят, — и дверь ждёт в плане раскладку своего этажа
+## (_adopt_pending).
 func _choose_doors(room: RS_LevelNode) -> void:
 	var anchor: Vector3i = _plan.cells[room.id]
 	var faces: Array[Vector4i] = []
@@ -241,9 +246,36 @@ func _choose_doors(room: RS_LevelNode) -> void:
 		for side: int in RS_RoomLayout.door_sides_of_scene(room.room_scene_path):
 			faces.append(GridTopology.face(anchor, _topology.rotate_side(anchor, side, -room.turns)))
 	else:
-		faces = _inward_sockets(_topology.perimeter(_plan.room_cells(room.id)), room.socket_doors)
-	_doors[room.id] = faces
+		var shell := RS_RoomLayout.shell_of_scene(room.room_scene_path)
+		var sockets := _topology.perimeter(_plan.room_cells(room.id))
+		if shell and not shell.door_sockets.is_empty():
+			sockets = RS_RoomLayout.sockets_in_plan(room.room_scene_path, room.turns, anchor)
+		faces = _inward_sockets(sockets, room.socket_doors)
+	_doors[room.id] = []
 	for face in faces:
+		if face.y != _level:
+			_plan.pending_doors[face] = room.id
+			continue
+		_doors[room.id].append(face)
+		_terminals.append(_front(face))
+
+
+## Забирает из плана двери комнат этажа ниже, чей уровень — этот (верх
+## лестницы): они становятся концами сети, как свои. Клетки такой комнаты на этом
+## уровне раскладка считает комнатой — иначе петля или тупик могли бы обволочь её
+## верх, а сеть не знала бы, у чьей стены идёт.
+func _adopt_pending() -> void:
+	for face: Vector4i in _plan.pending_doors.keys():
+		if face.y != _level:
+			continue
+		var room: StringName = _plan.pending_doors[face]
+		_plan.pending_doors.erase(face)
+		if not _doors.has(room):
+			_doors[room] = []
+			for cell in _plan.room_cells(room):
+				if cell.y == _level:
+					_room_at[cell] = room
+		_doors[room].append(face)
 		_terminals.append(_front(face))
 
 
@@ -573,13 +605,27 @@ func _enveloped(path: Array[Vector3i]) -> Array[StringName]:
 		if (_doors[room] as Array).is_empty():
 			continue
 		var sides: Dictionary[int, bool] = {}
-		for face in _topology.perimeter(_plan.room_cells(room)):
+		for face in _faces_here(room):
 			var next := _front(face)
 			if added.has(next) or _links.has(next):
 				sides[face.w] = true
 		if sides.size() >= 3:
 			enveloped.append(room)
 	return enveloped
+
+
+## Наружные грани комнаты на уровне этого этажа. Не perimeter: тот отдаёт нижний
+## уровень, а у лестницы этажа ниже здесь её верх.
+func _faces_here(room: StringName) -> Array[Vector4i]:
+	var cells := _plan.room_cells(room)
+	var faces: Array[Vector4i] = []
+	for cell in cells:
+		if cell.y != _level:
+			continue
+		for side in _topology.side_count(cell):
+			if not cells.has(_topology.neighbour(cell, side)):
+				faces.append(GridTopology.face(cell, side))
+	return faces
 
 
 # ---------------------------------------------------------------------------
@@ -589,8 +635,10 @@ func _enveloped(path: Array[Vector3i]) -> Array[StringName]:
 
 ## Переносит сеть в план: маски проёмов (к соседним тайлам и к дверям), чей
 ## коридор, грани дверей с их коридорами, тупики. Клетка коридора — его первый
-## тайл: одной клетки у коридора нет, а инструментам нужна хоть какая-то.
-func _write(rooms: Array[RS_LevelNode], corridor_ids: Array[StringName]) -> void:
+## тайл: одной клетки у коридора нет, а инструментам нужна хоть какая-то. Грани
+## дверей дописываются к уже записанным: у лестницы этажа ниже нижняя дверь уже
+## в плане, а эта раскладка добавляет верхнюю.
+func _write(corridor_ids: Array[StringName]) -> void:
 	for tile: Vector3i in _links:
 		var mask := 0
 		for next: Vector3i in _links[tile]:
@@ -600,15 +648,15 @@ func _write(rooms: Array[RS_LevelNode], corridor_ids: Array[StringName]) -> void
 		_plan.node_by_cell[tile] = corridor
 		if not _plan.cells.has(corridor):
 			_plan.cells[corridor] = tile
-	for room in rooms:
-		var faces := {}
-		for face: Vector4i in _doors[room.id]:
+	for room: StringName in _doors:
+		var faces: Dictionary = _plan.door_faces.get(room, {})
+		for face: Vector4i in _doors[room]:
 			var front := _front(face)
 			if not _owner.has(front):
 				continue  # сеть до двери не дотянулась — это уже в routing_failures
 			faces[face] = corridor_ids[_owner[front]]
 			_plan.corridor_tiles[front] |= 1 << _topology.back_side(GridTopology.face_cell(face), face.w)
-		_plan.door_faces[room.id] = faces
+		_plan.door_faces[room] = faces
 	for cell in _dead_ends:
 		_plan.dead_ends[cell] = true
 

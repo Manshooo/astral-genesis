@@ -53,6 +53,13 @@ extends Resource
 @export_range(0, 4) var dead_ends: int = 1
 
 @export_group("Вертикаль")
+## Лестница между этажами слоя — комната, по которой этажи связаны ногами: её
+## коробка в два уровня, дверь у подножия ведёт в коридор своего этажа, дверь у
+## верхней площадки — в коридор этажа выше. Встаёт по одной на пару соседних
+## этажей вместо пары порталов (RS_LevelGraph._place_floor_stairs). Пусто — этажи
+## связывают порталы, как до 29.09. Между слоями — всегда порталы: слой
+## грузится целиком, и соседний слой в дереве не стоит.
+@export var floor_stairs: RS_RoomPreset
 ## Сколько вертикальных переходов между соседними слоями.
 @export_range(1, 6) var layer_connectors: int = 3
 ## Шанс, что вертикальный переход заперт. Один переход на каждую пару слоёв
@@ -88,4 +95,25 @@ func validate() -> Array[String]:
 				problems.append("вход обязан быть ровно один и гарантированный")
 	if entries != 1:
 		problems.append("входов среди уникальных комнат %d, нужен ровно один" % entries)
+	problems.append_array(_validate_stairs())
+	return problems
+
+
+## Лестница обязана связать этаж с этажом выше: сокет на нижнем уровне коробки и
+## сокет на следующем, и открыты все. Раскладка выбирает двери из сокетов ближе к
+## центру этажа, и при дверях меньше, чем сокетов, верхняя могла бы не выпасть —
+## этаж выше остался бы отрезан.
+func _validate_stairs() -> Array[String]:
+	var problems: Array[String] = []
+	if floor_stairs == null:
+		return problems
+	var path := floor_stairs.scene.resource_path if floor_stairs.scene else ""
+	var levels := {}
+	var sockets := RS_RoomLayout.sockets_of_scene(path)
+	for face in sockets:
+		levels[face.y] = true
+	if RS_RoomLayout.shell_of_scene(path) == null or not levels.has(0) or not levels.has(1):
+		problems.append("лестнице нужна коробка с сокетами на нижнем уровне и на уровне выше (C_RoomShell.door_sockets)")
+	elif floor_stairs.doors_min != sockets.size():
+		problems.append("у лестницы дверей %d..%d, а сокетов %d — открыты должны быть все" % [floor_stairs.doors_min, floor_stairs.doors_max, sockets.size()])
 	return problems

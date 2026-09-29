@@ -213,7 +213,7 @@ func _check_grid_overlay(library: RS_RoomPresetLibrary, host: ViewportHost) -> v
 				var room_doors: int = (plan.door_faces.get(node_data.id, {}) as Dictionary).size()
 				doors += room_doors
 				if RS_RoomLayout.shell_of_scene(node_data.room_scene_path):
-					blanks += plan.topology.perimeter(plan.room_cells(node_data.id)).size() - room_doors
+					blanks += RS_RoomLayout.sockets_in_plan(node_data.room_scene_path, node_data.turns, plan.cells[node_data.id]).size() - room_doors
 				var want := plan.room_transform(node_data.id).basis * Vector3.FORWARD
 				var got: Vector3 = overlay.arrows.get(node_data.id, Vector3.ZERO)
 				if not got.is_equal_approx(want):

@@ -232,7 +232,7 @@ func _check_generation() -> void:
 			var vertical := false
 			for conn: RS_LevelConnection in node.connections:
 				var target := graph.get_node_data(conn.target_node_id)
-				vertical = vertical or target.depth != node.depth or target.floor_index != node.floor_index
+				vertical = vertical or (target != null and conn.is_portal())
 			if node.connections.size() != 1 or vertical or node.id == graph.entry_node_id \
 					or graph.exit_node_ids.has(node.id):
 				wrong_wiring.append("сид %d: %s" % [s, node.id])
