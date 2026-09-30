@@ -56,6 +56,10 @@ func _walk(entity: Entity, move_direction: Vector3) -> void:
 	# быстрее в любом теле» обязано выражаться перком, а не правкой тел.
 	var walk := entity.get_component(C_Walk) as C_Walk
 	var speed := C_StatModifiers.of(entity, C_StatModifiers.WALK_SPEED, walk.speed)
-	var wish := (node.transform.basis * move_direction).normalized()
+	# Базис МИРОВОЙ: velocity у CharacterBody3D мировая, а transform — поворот
+	# относительно родителя. У игрока родитель — корень мира, и разницы не видно;
+	# враг — ребёнок комнаты, повёрнутой на четверть оборота, и с transform шёл
+	# мимо цели на −turns · 90° (ловит dev/enemy_ai_check).
+	var wish := (node.global_transform.basis * move_direction).normalized()
 	vel.velocity.x = wish.x * speed
 	vel.velocity.z = wish.z * speed
