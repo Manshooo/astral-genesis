@@ -1,0 +1,261 @@
+<div class="ag" style="position:relative;width:1497px;height:{{rootH}}px;background:#0B0A0D;overflow:hidden">
+<div style="position:relative;width:1497px;height:720px;overflow:hidden;background:#0B0A0D">
+
+<sc-if value="{{inRun}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;top:0;width:1497px;height:720px">GAMESCENE</div>
+</sc-if>
+<sc-if value="{{overGame}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;top:0;width:1497px;height:720px;background:rgba(11,10,13,.66);backdrop-filter:blur(3px) grayscale(.7)"></div>
+<div style="position:absolute;left:0;top:0;width:1497px;height:720px;background:radial-gradient(ellipse 72% 78% at 50% 50%, rgba(18,10,30,0) 30%, rgba(18,10,30,.95) 100%)"></div>
+</sc-if>
+
+<sc-if value="{{isGame}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none"><circle cx="748.5" cy="360" r="2" fill="#F2EEF7" opacity=".85"></circle></svg>
+<div style="position:absolute;left:28px;bottom:26px;display:flex;flex-direction:column;gap:2px">
+<button class="ag-esc" onClick="{{pause}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.HINT_PAUSE}}</span></button>
+<button class="ag-esc" onClick="{{openSkills}}"><span class="br">[</span><span class="k">K</span><span class="br">]</span><span>{{t.HINT_SKILLS}}</span></button>
+<button class="ag-esc" onClick="{{openMap}}"><span class="br">[</span><span class="k">M</span><span class="br">]</span><span>{{t.HINT_MAP}}</span></button>
+<button class="ag-esc" onClick="{{die}}"><span class="br">[</span><span class="k">—</span><span class="br">]</span><span>{{t.HINT_DIE}}</span></button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isMenu}}" hint-placeholder-val="{{ true }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+MENUSCENE
+<div style="position:absolute;left:0;top:0;width:760px;height:720px;background:radial-gradient(ellipse 62% 74% at 14% 52%, rgba(6,5,9,.86), rgba(6,5,9,.5) 55%, rgba(6,5,9,0))"></div>
+<div style="position:absolute;left:112px;top:156px">
+<div class="ag-title" data-text="{{t.MENU_TITLE}}">{{t.MENU_TITLE}}</div>
+</div>
+<nav style="position:absolute;left:82px;top:318px;display:flex;flex-direction:column;align-items:flex-start;gap:6px">
+<button class="ag-item {{cl.menu_new}}" data-text="{{t.MENU_NEW_GAME}}" onClick="{{newGame}}">{{t.MENU_NEW_GAME}}RAG</button>
+<button class="ag-item {{cl.menu_load}}" data-text="{{t.MENU_LOAD}}" disabled="{{noSave}}" onClick="{{load}}">{{t.MENU_LOAD}}<sc-if value="{{noSave}}" hint-placeholder-val="{{ false }}"><span class="ag-aside">{{t.MENU_LOAD_EMPTY}}</span></sc-if>RAG</button>
+<button class="ag-item {{cl.menu_set}}" data-text="{{t.MENU_SETTINGS}}" onClick="{{openSettingsMenu}}">{{t.MENU_SETTINGS}}RAG</button>
+<button class="ag-item {{cl.menu_quit}}" data-text="{{t.MENU_QUIT}}" onClick="{{quit}}">{{t.MENU_QUIT}}RAG</button>
+</nav>
+<div style="position:absolute;right:24px;bottom:18px;font-size:12px;color:rgba(180,173,192,.55);font-variant-numeric:tabular-nums;letter-spacing:.02em">{{build}}</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isPause}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<div style="position:absolute;left:448px;top:150px;width:600px;height:420px;background:radial-gradient(closest-side, rgba(6,5,9,.7), rgba(6,5,9,0))"></div>
+<div style="position:absolute;left:0;top:200px;width:1497px;display:flex;flex-direction:column;align-items:center;gap:4px">
+<div class="ag-label" style="margin-bottom:22px">{{t.PAUSE_TITLE}}</div>
+<button class="ag-item center {{cl.pause_resume}}" data-text="{{t.PAUSE_CONTINUE}}" onClick="{{resume}}">{{t.PAUSE_CONTINUE}}RAG</button>
+<button class="ag-item center {{cl.pause_save}} {{savedCls}}" data-text="{{saveLabel}}" onClick="{{doSave}}">{{saveLabel}}<sc-if value="{{saved}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A8F2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="align-self:center"><path pathLength="1" class="ag-fresh" style="stroke:#C9A8F2;stroke-width:1.6" d="M4.5 4.5h11l4 4v11a1 1 0 0 1-1 1h-14a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1z"></path><path d="M8 4.5v5h6v-5"></path><path d="M7 20.5v-6h10v6"></path></svg></sc-if>RAG</button>
+<button class="ag-item center {{cl.pause_set}}" data-text="{{t.MENU_SETTINGS}}" onClick="{{openSettingsPause}}">{{t.MENU_SETTINGS}}RAG</button>
+<button class="ag-item center {{cl.pause_menu}}" data-text="{{t.PAUSE_TO_MENU}}" onClick="{{toMenu}}">{{t.PAUSE_TO_MENU}}RAG</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSettings}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<sc-if value="{{outRun}}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;top:0;width:1497px;height:720px;background:radial-gradient(ellipse 80% 90% at 30% 40%, #15121b, #0B0A0D 70%)"></div></sc-if>
+<div class="ag-label" style="position:absolute;left:112px;top:52px">{{t.SETTINGS_TITLE}}</div>
+<div style="position:absolute;right:40px;top:36px">
+<button class="ag-esc" onClick="{{cancel}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.HINT_BACK}}</span></button>
+</div>
+<nav style="position:absolute;left:86px;top:80px;display:flex;gap:18px">
+<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="3">
+<button class="ag-tab {{tb.cls}}" data-text="{{tb.label}}" aria-pressed="{{tb.sel}}" onClick="{{tb.pick}}">{{tb.label}}RAG</button>
+</sc-for>
+</nav>
+<div style="position:absolute;left:112px;top:150px;width:880px;display:flex;flex-direction:column;gap:0">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<div class="ag-row {{r.cls}}" onMouseEnter="{{r.mark}}" onFocus="{{r.mark}}">
+<div class="ag-row-label">{{r.label}}</div>
+<div style="display:flex;align-items:center;gap:18px;position:relative">
+<sc-if value="{{r.isDrop}}" hint-placeholder-val="{{ false }}">
+<div style="position:relative">
+<button class="ag-drop {{r.openCls}}" disabled="{{r.disabled}}" aria-expanded="{{r.open}}" onClick="{{r.toggle}}"><span>{{r.valueText}}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>RAG</button>
+<sc-if value="{{r.open}}" hint-placeholder-val="{{ false }}">
+<div class="ag-pop">
+<sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3">
+<button class="ag-opt {{o.cls}}" onClick="{{o.pick}}">{{o.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{r.isSlider}}" hint-placeholder-val="{{ false }}">
+<input type="range" class="ag-range" aria-label="{{r.label}}" min="{{r.min}}" max="{{r.max}}" step="{{r.step}}" value="{{r.val}}" disabled="{{r.disabled}}" onInput="{{r.onInput}}" onChange="{{r.onInput}}" style="background-image: {{r.trackBg}}">
+<span class="ag-val">{{r.valueText}}</span>
+</sc-if>
+<sc-if value="{{r.isCheck}}" hint-placeholder-val="{{ false }}">
+<button class="ag-check {{r.checkCls}}" aria-pressed="{{r.on}}" onClick="{{r.toggle}}"><span class="ag-box"><sc-if value="{{r.on}}" hint-placeholder-val="{{ true }}"><span class="ag-tick"></span></sc-if></span><span>{{r.valueText}}</span></button>
+</sc-if>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{isControls}}" hint-placeholder-val="{{ false }}">
+<div class="ag-label" style="margin:30px 0 10px 4px;color:#B4ADC0">{{t.SETTINGS_KEYS}}</div>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));column-gap:56px;margin-left:-20px">
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{binds1}}" as="b" hint-placeholder-count="5">
+<button class="ag-key-row {{b.cls}}" onClick="{{b.start}}" onKeyDown="{{b.key_down}}" onMouseDown="{{b.mouse_down}}"><span>{{b.label}}</span><span class="ag-kh"><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="ag-wait">{{waitText}}</span></sc-if><span class="br">[</span><sc-if value="{{b.idle}}" hint-placeholder-val="{{ true }}"><span class="k">{{b.key}}</span></sc-if><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="k ag-cursor">_</span></sc-if><span class="br">]</span></span></button>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{binds2}}" as="b" hint-placeholder-count="5">
+<button class="ag-key-row {{b.cls}}" onClick="{{b.start}}" onKeyDown="{{b.key_down}}" onMouseDown="{{b.mouse_down}}"><span>{{b.label}}</span><span class="ag-kh"><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="ag-wait">{{waitText}}</span></sc-if><span class="br">[</span><sc-if value="{{b.idle}}" hint-placeholder-val="{{ true }}"><span class="k">{{b.key}}</span></sc-if><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="k ag-cursor">_</span></sc-if><span class="br">]</span></span></button>
+</sc-for>
+</div>
+</div>
+<div class="ag-caption" style="margin:12px 0 0 4px;min-height:18px">
+<sc-if value="{{anyWaiting}}" hint-placeholder-val="{{ false }}"><span>{{cancelText}}</span></sc-if>
+<sc-if value="{{hasSwap}}" hint-placeholder-val="{{ false }}"><span style="color:#D4B8F7">{{swapText}}</span></sc-if>
+</div>
+</sc-if>
+</div>
+<div style="position:absolute;left:1060px;top:162px;width:330px">
+<div style="font-size:15px;font-weight:600;color:#ECE8F2;margin-bottom:8px">{{hintTitle}}</div>
+<div class="ag-caption" style="font-size:14px;line-height:20px">{{hintText}}</div>
+</div>
+<div style="position:absolute;right:96px;bottom:40px;display:flex;align-items:center;gap:22px">
+<sc-if value="{{dirty}}" hint-placeholder-val="{{ false }}"><span class="ag-caption" style="margin-right:10px">{{t.SETTINGS_DIRTY}}</span></sc-if>
+<button class="ag-item sm {{cl.set_cancel}}" data-text="{{t.SETTINGS_CANCEL}}" onClick="{{cancel}}">{{t.SETTINGS_CANCEL}}RAG</button>
+<button class="ag-item sm {{cl.set_reset}}" data-text="{{t.SETTINGS_RESET}}" onClick="{{reset}}">{{t.SETTINGS_RESET}}RAG</button>
+<button class="ag-item sm {{cl.set_apply}}" data-text="{{t.SETTINGS_APPLY}}" disabled="{{applyOff}}" onClick="{{apply}}">{{t.SETTINGS_APPLY}}RAG</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSummary}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+SUMMARYSCENE
+<div style="position:absolute;left:0;top:96px;width:1497px;display:flex;flex-direction:column;align-items:center">
+<div class="ag-label">{{t.RUN_SUMMARY_HEADING}}</div>
+<h1 class="ag-death" data-text="{{t.RUN_SUMMARY_TITLE_DEATH}}">{{t.RUN_SUMMARY_TITLE_DEATH}}</h1>
+<p style="margin:10px 0 0;max-width:640px;text-align:center;font-size:17px;line-height:24px;color:#DCD6E4">{{t.RUN_SUMMARY_SUBTITLE_DEATH}}</p>
+<div style="width:560px;margin-top:34px;display:flex;flex-direction:column">
+<sc-for list="{{stats}}" as="st" hint-placeholder-count="7">
+<div class="ag-stat"><span class="l">{{st.label}}</span><span class="d"></span><span class="v">{{st.value}}</span></div>
+</sc-for>
+</div>
+<div style="margin-top:34px;display:flex;flex-direction:column;align-items:center">
+<button class="ag-item center {{cl.revive}}" data-text="{{reviveLabel}}" disabled="{{reviving}}" onClick="{{revive}}">{{reviveLabel}}RAG</button>
+<sc-if value="{{reviving}}" hint-placeholder-val="{{ false }}">
+<svg class="ag-loader" width="180" height="8" viewBox="0 0 100 6" preserveAspectRatio="none" style="margin-top:2px"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSkills}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<div class="ag-label" style="position:absolute;left:112px;top:52px">{{t.SKILL_TITLE}}</div>
+<nav style="position:absolute;left:86px;top:80px;display:flex;gap:18px">
+<sc-for list="{{treeTabs}}" as="tb" hint-placeholder-count="2">
+<button class="ag-tab {{tb.cls}}" data-text="{{tb.label}}" aria-pressed="{{tb.sel}}" onClick="{{tb.pick}}">{{tb.label}}RAG</button>
+</sc-for>
+</nav>
+<div style="position:absolute;right:40px;top:36px">
+<button class="ag-esc" onClick="{{closeOverlay}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.HINT_BACK}}</span></button>
+</div>
+<div style="position:absolute;left:740px;top:70px;display:flex;flex-direction:column;align-items:flex-start">
+<div class="ag-caption">{{walletLabel}}</div>
+<div class="ag-wallet {{walletCls}}">{{walletValue}}</div>
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="ag-toast">{{toast}}</div></sc-if>
+</div>
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none">
+<path d="{{extraD}}" fill="none" stroke="rgba(236,232,242,.07)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="{{linkLock}}" fill="none" stroke="rgba(236,232,242,.22)" stroke-width="1" stroke-dasharray="1 3" stroke-linecap="round"></path>
+<path d="{{linkAvail}}" fill="none" stroke="rgba(236,232,242,.45)" stroke-width="1.2" stroke-linecap="round"></path>
+<path d="{{linkLit}}" fill="none" stroke="#C9A8F2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".85"></path>
+<sc-if value="{{hasFresh}}" hint-placeholder-val="{{ false }}"><path class="ag-fresh" pathLength="1" d="{{linkFresh}}"></path></sc-if>
+</svg>
+<sc-for list="{{branches}}" as="br" hint-placeholder-count="3">
+<div class="ag-label" style="position:absolute;left: {{br.x}}px;top: {{br.y}}px;font-size:11px;letter-spacing:.32em;color:rgba(201,168,242,.62)">{{br.label}}</div>
+</sc-for>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="11">
+<button class="ag-node {{n.cls}}" style="left: {{n.x}}px; top: {{n.y}}px" aria-label="{{n.name}}" onClick="{{n.pick}}">
+<svg width="44" height="44" viewBox="0 0 44 44"><circle class="halo" cx="22" cy="22" r="21"></circle><circle class="focusring" cx="22" cy="22" r="21.5"></circle><path class="roff" d="{{n.ringOff}}"></path><path class="ron" d="{{n.ringOn}}"></path><circle class="core" cx="22" cy="22" r="7"></circle></svg>
+<sc-if value="{{n.flash}}" hint-placeholder-val="{{ false }}"><span class="ag-pulse"></span></sc-if>
+<span class="ag-nl {{n.side}}"><span class="nm">{{n.name}}</span><span class="rk">{{n.rankText}}</span></span>
+</button>
+</sc-for>
+<div style="position:absolute;left:1060px;top:150px;width:340px;display:flex;flex-direction:column;align-items:flex-start">
+<div class="ag-label" style="font-size:11px;letter-spacing:.32em;color:rgba(201,168,242,.62)">{{det.branch}}</div>
+<div class="ag-title" data-text="{{det.name}}" style="font-size:26px;line-height:32px;letter-spacing:.02em;text-transform:none;white-space:normal;margin-top:8px">{{det.name}}</div>
+<div style="display:flex;align-items:center;gap:12px;margin-top:10px">
+<span style="display:inline-flex"><sc-for list="{{det.pips}}" as="p" hint-placeholder-count="3"><span class="ag-pip {{p.cls}}"></span></sc-for></span>
+<span class="ag-caption" style="font-variant-numeric:tabular-nums">{{det.rank}}</span>
+</div>
+<p style="margin:16px 0 0;font-size:16px;line-height:23px;color:#DCD6E4">{{det.desc}}</p>
+<div style="display:flex;gap:10px;align-items:baseline;margin-top:18px">
+<span class="ag-caption">{{det.costLabel}}</span><span style="font-size:17px;font-weight:600;color:#ECE8F2;font-variant-numeric:tabular-nums">{{det.cost}}</span>
+</div>
+<div class="ag-caption" style="margin-top:14px">{{det.reqLabel}}</div>
+<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">
+<sc-for list="{{det.reqs}}" as="q" hint-placeholder-count="1">
+<div class="ag-req {{q.cls}}"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="{{q.fill}}" stroke="{{q.stroke}}" stroke-dasharray="{{q.dash}}"></circle></svg><span>{{q.text}}</span></div>
+</sc-for>
+</div>
+<button class="ag-item sm {{det.btnCls}}" data-text="{{det.btn}}" disabled="{{det.cannot}}" onClick="{{unlock}}" style="margin:22px 0 0 -26px">{{det.btn}}RAG</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isMap}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<div class="ag-label" style="position:absolute;left:112px;top:52px">{{t.MAP_TITLE}}</div>
+<div style="position:absolute;right:40px;top:36px">
+<button class="ag-esc" onClick="{{closeOverlay}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.MAP_CLOSE}}</span></button>
+</div>
+<sc-if value="{{mapNoLink}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;top:330px;width:1497px;display:flex;justify-content:center">
+<div class="ag-title" data-text="{{t.MAP_NO_LINK}}" style="font-size:20px;line-height:28px;letter-spacing:.02em;text-transform:none;font-weight:500;color:#DCD6E4">{{t.MAP_NO_LINK}}</div>
+</div>
+</sc-if>
+<sc-if value="{{mapOk}}" hint-placeholder-val="{{ true }}">
+<div class="ag-caption" style="position:absolute;left:112px;top:84px;letter-spacing:.2em;text-transform:uppercase;font-size:11px">{{t.MAP_SLICE}}</div>
+<sc-for list="{{layers}}" as="ly" hint-placeholder-count="6">
+<button class="ag-layer {{ly.cls}}" style="left:112px;top: {{ly.top}}px;width:364px;height: {{ly.h}}px" aria-label="{{ly.label}}" onClick="{{ly.pick}}">
+<span class="ln">{{ly.label}}</span><span class="ls">{{ly.sub}}</span>
+<span class="fog"></span>
+<svg width="364" height="{{ly.h}}" viewBox="0 0 364 {{ly.h}}"><path class="fl" d="{{ly.lines}}"></path><path class="td" d="{{ly.tdim}}"></path><path class="tk" d="{{ly.ticks}}"></path>
+<sc-if value="{{ly.hereMark}}" hint-placeholder-val="{{ false }}"><circle class="ag-breathe" cx="{{ly.px}}" cy="{{ly.py}}" r="7" fill="rgba(242,238,247,.14)"></circle><circle cx="{{ly.px}}" cy="{{ly.py}}" r="3.2" fill="#F2EEF7"></circle></sc-if>
+</svg>
+<span class="lsep"></span>
+</button>
+</sc-for>
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none"><path d="{{sliceLinks}}" fill="none" stroke="#C9A8F2" stroke-width="1.2" stroke-dasharray="2 3" opacity=".7"></path></svg>
+<div class="ag-caption" style="position:absolute;left:112px;top:660px;font-variant-numeric:tabular-nums">{{mapLevelText}}</div>
+<div style="position:absolute;left:560px;top:84px;font-size:15px;font-weight:600;letter-spacing:.06em;color:#ECE8F2">{{selTitle}}</div>
+<sc-if value="{{selUnknown}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:560px;top:280px;width:840px;text-align:center;font-size:18px;color:rgba(220,214,228,.5)">{{t.MAP_LAYER_CLOSED}}</div>
+</sc-if>
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none">
+<path d="{{corrU}}" fill="none" stroke="rgba(236,232,242,.2)" stroke-width="2" stroke-dasharray="3 4"></path>
+<path d="{{corrK}}" fill="none" stroke="rgba(236,232,242,.5)" stroke-width="2.4" stroke-linecap="round"></path>
+</svg>
+<sc-for list="{{floors}}" as="fl" hint-placeholder-count="2">
+<div class="ag-caption" style="position:absolute;left: {{fl.gx}}px;top: {{fl.ly}}px;letter-spacing:.14em;text-transform:uppercase;font-size:11px">{{fl.label}}</div>
+<sc-for list="{{fl.rooms}}" as="rm" hint-placeholder-count="6">
+<button class="ag-room {{rm.cls}}" style="left: {{rm.left}}px; top: {{rm.top}}px; width: {{rm.w}}px; height: {{rm.h}}px" aria-label="{{rm.name}}" onMouseEnter="{{rm.enter}}" onMouseLeave="{{rm.leave}}" onFocus="{{rm.enter}}" onBlur="{{rm.leave}}"><sc-if value="{{rm.uniq}}" hint-placeholder-val="{{ false }}"><span class="u">{{rm.uniqText}}</span></sc-if></button>
+</sc-for>
+<sc-for list="{{fl.portals}}" as="pt" hint-placeholder-count="1">
+<button class="ag-portal {{pt.cls}}" style="left: {{pt.left}}px; top: {{pt.top}}px" aria-label="{{pt.label}}" onMouseEnter="{{pt.enter}}" onMouseLeave="{{pt.leave}}" onFocus="{{pt.enter}}" onBlur="{{pt.leave}}" onClick="{{pt.jump}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{pt.arrow}}"></path></svg></button>
+</sc-for>
+<sc-if value="{{fl.here}}" hint-placeholder-val="{{ false }}">
+<svg class="ag-here" style="left: {{fl.hl}}px; top: {{fl.ht}}px" width="24" height="24" viewBox="0 0 24 24"><circle class="ag-breathe" cx="12" cy="12" r="10" fill="rgba(242,238,247,.16)"></circle><circle cx="12" cy="12" r="4.2" fill="#F2EEF7"></circle></svg>
+</sc-if>
+</sc-for>
+<div style="position:absolute;left:560px;top:620px;width:840px;font-size:15px;line-height:22px;color:#DCD6E4">
+<span class="{{mapInfoCls}}">{{mapInfo}}</span>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{fx}}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;top:0;width:1497px;height:720px;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, rgba(201,168,242,.06), rgba(11,10,13,.35))"></div></sc-if>
+</div>
+
+<sc-if value="{{live}}" hint-placeholder-val="{{ true }}">
+PROTOSTRIP
+</sc-if>
+</div>

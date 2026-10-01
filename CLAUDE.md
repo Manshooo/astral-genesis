@@ -89,6 +89,7 @@ Autoloads (`src/autoloads/`), in declaration order: `GameConfig`, `SettingsManag
 | Blender→Godot: раскладка assets, бюджет карт, ORM, подмена материалов | [Blender-Godot пайплайн](docs/astral-genesis/Справка/Blender-Godot%20пайплайн.md) |
 | Масштаб (клетка vs тело), контракт клетки-куба 8 м, сокеты, кит P и стили поверх него, двустворчатая дверь и её карман | [Метрики и кит](docs/astral-genesis/Справка/Метрики%20и%20кит.md) |
 | Раскраска по классам ассетов: палитра, детальный слой, декали, трим-лист | [Визуальный стиль и текстуры](docs/astral-genesis/Справка/Визуальный%20стиль%20и%20текстуры.md) |
+| Макеты и прототипы Claude Design (копии холстов, генераторы; Godot папку не сканирует) | [design/README.md](design/README.md) |
 | Debug cheats for a live run, and which tool checks what | [Отладочный оверлей](docs/astral-genesis/how-to/Отладочный%20оверлей.md) |
 | CI, build numbers, releases, cloud-session setup | [Релизы и сборка](docs/astral-genesis/how-to/Релизы%20и%20сборка.md) |
 | Controls, player-facing | [Управление](docs/astral-genesis/Справка/Управление.md) |
