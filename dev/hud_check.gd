@@ -31,6 +31,7 @@ func _ready() -> void:
 	_check_key_names()
 	_check_translation_keys()
 	_check_scene()
+	_check_minimap_strokes()
 	_finish()
 
 
@@ -310,7 +311,10 @@ func _check_scene() -> void:
 	hud.free()
 
 	var theme: Theme = load(ProjectSettings.get_setting("gui/theme/custom"))
-	for variation: StringName in [&"HudThought", &"HudKey", &"HudKeyBracket", &"HudMessage", &"HudControls"]:
+	for variation: StringName in [
+		&"HudThought", &"HudKey", &"HudKeyBracket", &"HudMessage", &"HudControls",
+		&"HudMapLabel", &"HudMapKey", &"HudMapKeyBracket",
+	]:
 		var font := theme.get_font(&"font", variation) as FontVariation
 		_check(
 			"вариация %s — Golos Text из общей темы" % variation,
@@ -318,3 +322,14 @@ func _check_scene() -> void:
 			and font.base_font.resource_path.contains("GolosText"),
 			str(font)
 		)
+
+
+# --- 12. Мини-карта: контур прорисовывается пером --------------------------------
+func _check_minimap_strokes() -> void:
+	var square := PackedVector2Array([Vector2(0, 0), Vector2(10, 0), Vector2(10, 10), Vector2(0, 10), Vector2(0, 0)])
+	var half := UI_MiniMap._partial(square, 0.5)
+	_check("полконтура кончается на середине пути, а не на середине точек",
+		half[half.size() - 1].is_equal_approx(Vector2(10, 10)), str(half))
+	var quarter := UI_MiniMap._partial(square, 0.125)
+	_check("перо останавливается внутри стороны", quarter.size() == 2 and quarter[1].is_equal_approx(Vector2(5, 0)), str(quarter))
+	_check("полный контур — весь", UI_MiniMap._partial(square, 1.0) == square, "")

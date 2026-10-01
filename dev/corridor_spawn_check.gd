@@ -307,7 +307,7 @@ func _check_hub_door() -> void:
 ## рисует, а ломается карта тихо: ветка, не попавшая в «известные», просто не
 ## нарисуется, маркер за краем просто не виден.
 func _check_minimap() -> void:
-	var map := UI_HudMap.new()
+	var map := UI_MiniMap.new()
 	map.size = Vector2(240.0, 240.0)
 	add_child(map)
 	await get_tree().process_frame

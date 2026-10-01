@@ -27,6 +27,8 @@ const REBINDABLE_ACTIONS := {
 	&"snatch_body": "Захват тела",
 	&"leave_body": "Покинуть тело",
 	&"map": "Карта",
+	# Новые подписи — ключом перевода: Label экрана настроек переводит его сам.
+	&"map_mini": "ACTION_MAP_MINI",
 }
 
 ## Имена кнопок мыши — ключи перевода: OS.get_keycode_string умеет только

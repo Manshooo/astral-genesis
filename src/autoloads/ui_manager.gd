@@ -25,6 +25,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("map") and not event.is_echo():
 		_toggle_complex_map()
 		return
+	if event.is_action_pressed("map_mini") and not event.is_echo():
+		_toggle_mini_map()
+		return
 	if not event.is_action_pressed("pause_game") or event.is_echo():
 		return
 	if not _stack.is_empty():
@@ -168,9 +171,22 @@ func _toggle_complex_map() -> void:
 			close_top()
 			get_viewport().set_input_as_handled()
 		return
-	if enabled:
-		open_complex_map()
-		get_viewport().set_input_as_handled()
+	if not enabled:
+		return
+	get_viewport().set_input_as_handled()
+	var level := ArchitectManager.map_level()
+	if RunManager.current_graph and level > MapKnowledge.LEVEL_NONE and not full_map_by_key():
+		_notify_player(tr("MAP_TERMINAL_ONLY"))
+		return
+	open_complex_map()
+
+
+## Полная карта по клавише, где бы игрок ни стоял, — только последний ранг
+## «Карты комплекса». До него карта целиком — терминал в хабе, а на ходу —
+## мини-карта: иначе ранги покупали бы лишь подробность экрана, а не то, где его
+## можно открыть.
+func full_map_by_key() -> bool:
+	return ArchitectManager.map_level() >= ArchitectStats.MAP_LEVEL_MAX
 
 
 ## Открывает карту комплекса — с клавиши или с терминала в хабе
@@ -190,6 +206,11 @@ func open_complex_map() -> void:
 	if level <= MapKnowledge.LEVEL_NONE:
 		_notify_player(tr("MAP_NO_LINK"))
 		return
+	# Подсказка мини-карты обещает «[M] Вся карта» — переключение, а не слой
+	# поверх: закрыв полную карту, игрок возвращается к чистому экрану.
+	var mini_map := _mini_map()
+	if mini_map:
+		mini_map.close()
 	var screen: UI_ComplexMap = COMPLEX_MAP_SCENE.instantiate()
 	push_screen(screen, true)
 	screen.setup(
@@ -203,6 +224,30 @@ func open_complex_map() -> void:
 ## через call_deferred из S_InteractInput).
 func _notify_player(line: String) -> void:
 	C_ScreenMessage.show_on(E_Player.find(), line)
+
+
+## Мини-карта — не экран стека, а узел HUD (UI_MiniMap): мир под ней живёт, и
+## Esc её не трогает. Доступ тот же, что у полной карты, — без связи с
+## Архитектором клавиша отвечает строкой, а не молчит. Поверх экрана не
+## открывается: под меню паузы её не видно, а открытой она осталась бы после.
+func _toggle_mini_map() -> void:
+	var mini_map := _mini_map()
+	if mini_map == null or not _stack.is_empty() or not enabled:
+		return
+	get_viewport().set_input_as_handled()
+	if mini_map.is_open:
+		mini_map.close()
+		return
+	if RunManager.current_graph == null:
+		return
+	if ArchitectManager.map_level() <= MapKnowledge.LEVEL_NONE:
+		_notify_player(tr("MAP_NO_LINK"))
+		return
+	mini_map.open()
+
+
+func _mini_map() -> UI_MiniMap:
+	return get_tree().get_first_node_in_group(UI_MiniMap.GROUP) as UI_MiniMap
 
 
 # ---------------------------------------------------------------------------

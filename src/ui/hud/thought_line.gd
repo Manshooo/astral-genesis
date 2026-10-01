@@ -1,6 +1,6 @@
 # res://src/ui/hud/thought_line.gd
-## Строка «[клавиша] действие» без подложки: подсказка взаимодействия и строки
-## управления тела (§2, §4 «HUD — спека»).
+## Строка «[клавиша] действие» без подложки: подсказка взаимодействия, строки
+## управления тела и подсказка под мини-картой (§2, §4, §10 «HUD — спека»).
 ##
 ## Клавиша — отдельные подписи, а не часть строки: строка перевода хранит только
 ## действие, а клавиша приходит из настроек управления и бывает буквой, словом
@@ -16,8 +16,16 @@
 class_name UI_ThoughtLine
 extends Control
 
-## Кегль управления (16) вместо кегля мысли (19).
-@export var small := false
+## Набор вариаций темы: мысль (19), управление (16) или подпись мини-карты (14).
+enum Style { THOUGHT, CONTROLS, MAP }
+
+const _VARIATIONS := {
+	Style.THOUGHT: ["HudKeyBracket", "HudKey", "HudThought"],
+	Style.CONTROLS: ["HudControlsKeyBracket", "HudControlsKey", "HudControls"],
+	Style.MAP: ["HudMapKeyBracket", "HudMapKey", "HudMapLabel"],
+}
+
+@export var style := Style.THOUGHT
 ## Насколько пятно тени шире строки с каждой стороны.
 @export var shadow_margin := Vector2(46.0, 16.0)
 ## Строка центрируется по своей точке (подсказка под прицелом) или стоит от неё
@@ -41,6 +49,8 @@ func _ready() -> void:
 	_shadow.stretch_mode = TextureRect.STRETCH_SCALE
 	_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_shadow)
+	# Подпись мини-карты лежит на её общем пятне — своё рисовало бы пятно в пятне.
+	_shadow.visible = style != Style.MAP
 
 	_row = HBoxContainer.new()
 	_row.name = "Row"
@@ -48,11 +58,11 @@ func _ready() -> void:
 	_row.add_theme_constant_override("separation", 1)
 	add_child(_row)
 
-	var prefix := "HudControls" if small else "Hud"
-	_open = _add_label(prefix + "KeyBracket", "[")
-	_key = _add_label(prefix + "Key", "")
-	_close = _add_label(prefix + "KeyBracket", "]")
-	_text = _add_label("HudControls" if small else "HudThought", "")
+	var variations: Array = _VARIATIONS[style]
+	_open = _add_label(variations[0], "[")
+	_key = _add_label(variations[1], "")
+	_close = _add_label(variations[0], "]")
+	_text = _add_label(variations[2], "")
 	set_line("", "")
 
 
@@ -83,6 +93,12 @@ func plain_text() -> String:
 	if _key.visible:
 		return "[%s]%s" % [_key.text, _text.text]
 	return _text.text
+
+
+## Ширина строки на экране — чтобы поставить следующую рядом.
+func width() -> float:
+	_layout()
+	return _row.size.x
 
 
 ## Фаза эха — разводит соседние строки управления.
