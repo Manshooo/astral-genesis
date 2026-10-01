@@ -17,8 +17,20 @@ const RADIUS := 22.0
 ## строка под прицелом не упиралась в шкалу.
 const SWEEP_DEG := 280.0
 const START_DEG := 130.0
-## Шаг ломаной, градусы: мельче — не видно разницы, крупнее — видны изломы.
-const STEP_DEG := 3.0
+## Шаг ломаной, градусы: на виток жгута приходится ~20 точек — мельче не видно
+## разницы, крупнее спираль ломается в зигзаг.
+const STEP_DEG := 2.0
+## Жгут: основная линия и её эхо вьются двойной спиралью вдоль дуги.
+## Длина витка вдоль дуги, px, и сколько витков в секунду пробегает к концу.
+const WAVE_PX := 16.0
+const WAVE_RATE := 0.8
+## Радиус витка, px: база плюс прибавка от смятения — первое тело вьётся
+## размашисто, к шестому спокойнее.
+const HELIX_PX := 0.9
+const HELIX_TURMOIL_PX := 0.8
+## Нить эха и задние куски обеих нитей — тусклее.
+const ECHO_ALPHA := 0.45
+const BACK_ALPHA := 0.45
 ## Сколько держать дугу после заметного изменения.
 const HOLD_SECONDS := 1.4
 ## Заметное изменение: столько доли за окно.
@@ -124,27 +136,36 @@ func _draw() -> void:
 	var alpha := _alpha * (0.6 + 0.4 * beat if danger else 1.0)
 
 	_draw_track(center, radius, alpha)
-	var echo := _arc(center, radius + 1.3, active, amp * 1.5, seed * 1.4 + 3.2)
-	_stroke(echo, _with_alpha(color, 0.35 * alpha), 1.0)
-	var main := _arc(center, radius, active, amp, seed)
-	_stroke(main, _with_alpha(color, alpha), 2.0 + 0.8 * beat if danger else 2.0)
+	var helix := HELIX_PX + HELIX_TURMOIL_PX * turmoil
+	var main := _strand(center, radius + 0.65, active, amp, seed, t, helix, 0.0)
+	var echo := _strand(center, radius + 0.65, active, amp, seed, t, helix, PI)
+	_draw_braid(
+		main, _with_alpha(color, alpha), 2.0 + 0.8 * beat if danger else 2.0,
+		echo, _with_alpha(color, ECHO_ALPHA * alpha), 1.0
+	)
 
 	var over := not _vitals.body_pocket and _vitals.overflow > 0.0
-	if not main.is_empty():
-		draw_circle(main[-1], 1.8, _with_alpha(UI_HudMood.OVER if over else color, alpha))
+	var main_points: PackedVector2Array = main.points
+	if not main_points.is_empty():
+		draw_circle(main_points[-1], 1.8, _with_alpha(UI_HudMood.OVER if over else color, alpha))
 	if over:
-		_draw_overflow(center, radius, amp, seed, t, alpha)
+		_draw_overflow(center, radius, amp, seed, t, alpha, helix)
 
 
 ## Излишек — внешней дугой, а не растяжкой шкалы: «полный» остаётся там же, где
 ## был, а сверху видно, сколько принесено из тела. Искры уходят наружу —
 ## излишек утекает быстрее (lifespan_overflow_leak), и это должно читаться.
-func _draw_overflow(center: Vector2, radius: float, amp: float, seed: float, t: float, alpha: float) -> void:
+func _draw_overflow(
+	center: Vector2, radius: float, amp: float, seed: float, t: float, alpha: float, helix: float
+) -> void:
 	var extra := _vitals.overflow
-	_stroke(_arc(center, radius + 7.0, extra, amp * 0.8, seed + 5.1), _with_alpha(UI_HudMood.OVER, alpha), 1.3)
-	_stroke(
-		_arc(center, radius + 8.5, extra, amp * 1.6, seed * 1.3 + 6.3),
-		_with_alpha(UI_HudMood.OVER, 0.35 * alpha), 1.0
+	# Свой жгут, свита в другую сторону: два жгута, бегущие одинаково, сливались
+	# бы в одну широкую ленту.
+	_draw_braid(
+		_strand(center, radius + 7.75, extra, amp * 0.8, seed + 5.1, -t, helix, 0.0),
+		_with_alpha(UI_HudMood.OVER, alpha), 1.3,
+		_strand(center, radius + 7.75, extra, amp * 0.8, seed + 5.1, -t, helix, PI),
+		_with_alpha(UI_HudMood.OVER, ECHO_ALPHA * alpha), 1.0
 	)
 	for i in 5:
 		var phase := fmod(t * 0.55 + i / 5.0, 1.0)
@@ -172,28 +193,67 @@ func _draw_track(center: Vector2, radius: float, alpha: float) -> void:
 		draw_multiline(segments, color, 1.0)
 
 
-## Ломаная дуги с рваным радиусом. Доля ≤ 0.002 — пусто: точка-огрызок на
-## нуле читалась бы как «ещё немного есть».
-func _arc(center: Vector2, radius: float, fraction: float, amp: float, seed: float) -> PackedVector2Array:
+## Одна нить жгута: рваная средняя линия дуги плюс виток вокруг неё. Две нити
+## с фазами 0 и π — двойная спираль. Виток бежит вдоль дуги от начала к концу,
+## поэтому дуга не стоит, а течёт. depth — косинус витка: > 0 — нить спереди.
+## Доля ≤ 0.002 — пусто: точка-огрызок на нуле читалась бы как «ещё немного
+## есть».
+func _strand(
+	center: Vector2, radius: float, fraction: float, amp: float, seed: float,
+	t: float, helix: float, phase: float
+) -> Dictionary:
 	var points := PackedVector2Array()
-	if fraction <= 0.002:
-		return points
-	var count := maxi(2, floori(SWEEP_DEG * fraction / STEP_DEG) + 1)
-	for i in count + 1:
-		var angle := deg_to_rad(START_DEG + SWEEP_DEG * fraction * i / count)
-		var r := radius + amp * UI_HudMood.noise(angle, seed)
-		points.append(center + Vector2.from_angle(angle) * r)
-	return points
+	var depth := PackedFloat32Array()
+	if fraction > 0.002:
+		var count := maxi(2, floori(SWEEP_DEG * fraction / STEP_DEG) + 1)
+		var start := deg_to_rad(START_DEG)
+		for i in count + 1:
+			var angle := start + deg_to_rad(SWEEP_DEG * fraction) * i / count
+			var turn := TAU * ((angle - start) * radius / WAVE_PX - t * WAVE_RATE) + phase
+			var r := radius + amp * UI_HudMood.noise(angle, seed) + helix * sin(turn)
+			points.append(center + Vector2.from_angle(angle) * r)
+			depth.append(cos(turn))
+	return {points = points, depth = depth}
 
 
-## Скруглённые концы: у draw_polyline их нет, а рубленый торец на 2 px толщины
-## выглядит прибором, а не ощущением.
-func _stroke(points: PackedVector2Array, color: Color, width: float) -> void:
-	if points.size() < 2:
-		return
-	draw_polyline(points, color, width, true)
-	draw_circle(points[0], width / 2.0, color)
-	draw_circle(points[-1], width / 2.0, color)
+## Две нити жгута, переплетённые: сначала задние куски обеих, тусклее, потом
+## передние поверх. Порядок и тусклость и дают объём — одной толщиной спираль
+## читалась бы плоской волной.
+func _draw_braid(a: Dictionary, a_color: Color, a_width: float, b: Dictionary, b_color: Color, b_width: float) -> void:
+	for front: bool in [false, true]:
+		for strand: Array in [[a, a_color, a_width], [b, b_color, b_width]]:
+			var color: Color = strand[1]
+			if not front:
+				color.a *= BACK_ALPHA
+			# Скруглённые концы — рубленый торец на 2 px выглядит прибором, — но
+			# только настоящие концы нити: кружок на каждом стыке переднего и
+			# заднего куска ложился бы поверх нити светлой бусиной.
+			var ends: PackedVector2Array = strand[0].points
+			for run in _runs(strand[0], front):
+				draw_polyline(run, color, strand[2], true)
+				for cap: Vector2 in [run[0], run[-1]]:
+					if cap == ends[0] or cap == ends[-1]:
+						draw_circle(cap, strand[2] / 2.0, color)
+
+
+## Куски нити, лежащие целиком спереди (или сзади). Граница — где виток уходит
+## за соседку; точку на границе получают оба куска, чтобы нить не рвалась.
+static func _runs(strand: Dictionary, front: bool) -> Array[PackedVector2Array]:
+	var points: PackedVector2Array = strand.points
+	var depth: PackedFloat32Array = strand.depth
+	var runs: Array[PackedVector2Array] = []
+	var run := PackedVector2Array()
+	for i in points.size() - 1:
+		if ((depth[i] + depth[i + 1]) > 0.0) == front:
+			if run.is_empty():
+				run.append(points[i])
+			run.append(points[i + 1])
+		elif not run.is_empty():
+			runs.append(run)
+			run = PackedVector2Array()
+	if run.size() >= 2:
+		runs.append(run)
+	return runs
 
 
 static func _with_alpha(color: Color, alpha: float) -> Color:
