@@ -1,7 +1,8 @@
 extends "res://dev/check_harness.gd"
 ## Проверка экрана карты комплекса (карточка «Экран карты комплекса»): правило
 ## видимости по уровням улучшения, сам экран на сгенерированном графе, путь
-## открытия через UIManager и терминал в хабе на настоящем забеге.
+## открытия через UIManager, мини-карта по Tab и терминал в хабе на настоящем
+## забеге.
 ##
 ## Ломается здесь всё тихо. Уровень, открывший чужой слой раньше времени, просто
 ## показывает лишнее — и улучшение Архитектора обесценено; уровень 1, видящий
@@ -22,6 +23,7 @@ const KEYS: Array[String] = [
 	"MAP_LAYER_CLOSED", "MAP_HERE", "MAP_FLOOR", "MAP_ROOM", "MAP_CORRIDOR", "MAP_VISITED",
 	"MAP_UNEXPLORED", "MAP_PORTAL_UP", "MAP_PORTAL_DOWN", "MAP_PORTAL_TARGET", "MAP_LOCKED",
 	"MAP_HINT", "MAP_UNIQUE_HUB", "MAP_UNIQUE_EXIT", "MAP_UNIQUE_ARCHITECT",
+	"HUD_MAP_HIDE", "HUD_MAP_FULL", "ACTION_MAP_MINI", "MAP_TERMINAL_ONLY",
 ]
 
 var _save_backup := PackedByteArray()
@@ -62,15 +64,17 @@ func _ready() -> void:
 
 
 func _check_input_and_texts() -> void:
-	_check("действие map есть в InputMap и переназначается",
-		InputMap.has_action(&"map") and SettingsManager.REBINDABLE_ACTIONS.has(&"map"), "")
-	var map_code := SettingsManager._first_code_of(&"map")
-	var clashes: Array[String] = []
-	for action: StringName in InputMap.get_actions():
-		if action != &"map" and not String(action).begins_with("ui_") and SettingsManager._first_code_of(action) == map_code:
-			clashes.append(String(action))
-	_check("клавиша карты не занята другим действием", map_code != "" and clashes.is_empty(),
-		"код %s, занят: %s" % [map_code, clashes])
+	for map_action: StringName in [&"map", &"map_mini"]:
+		_check("действие %s есть в InputMap и переназначается" % map_action,
+			InputMap.has_action(map_action) and SettingsManager.REBINDABLE_ACTIONS.has(map_action), "")
+		var map_code := SettingsManager._first_code_of(map_action)
+		var clashes: Array[String] = []
+		for action: StringName in InputMap.get_actions():
+			if action != map_action and not String(action).begins_with("ui_") \
+					and SettingsManager._first_code_of(action) == map_code:
+				clashes.append(String(action))
+		_check("клавиша %s не занята другим действием" % map_action, map_code != "" and clashes.is_empty(),
+			"код %s, занят: %s" % [map_code, clashes])
 	var missing: Array[String] = []
 	for key in KEYS:
 		if tr(key) == key:
@@ -269,7 +273,51 @@ func _check_run() -> void:
 		UIManager._stack.is_empty() and message != null and message.text == tr("MAP_NO_LINK"),
 		"стек %d, сообщение %s" % [UIManager._stack.size(), message.text if message else "нет"])
 
+	var hud: CanvasLayer = (load("res://src/ui/hud/hud.tscn") as PackedScene).instantiate()
+	add_child(hud)
+	var mini := hud.get_node(^"Hud/MiniMap") as UI_MiniMap
+	if message:
+		message.text = ""
+	_press(KEY_TAB)
+	await get_tree().process_frame
+	# show_on ставит новый компонент, а не пишет в старый.
+	message = player.get_component(C_ScreenMessage) as C_ScreenMessage if player else null
+	_check("уровень 0: мини-карта не открывается, игрок получает строку «нет связи»",
+		mini != null and not mini.is_open and not mini.visible and message != null and message.text == tr("MAP_NO_LINK"),
+		"сообщение %s" % (message.text if message else "нет"))
+
 	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = 2
+	await _check_mini_map(mini)
+	_press(KEY_TAB)
+	await get_tree().process_frame
+	_check("ниже последнего ранга подсказки «[M] Вся карта» нет", mini._hint_hide.visible and not mini._hint_full.visible, "")
+	if player:
+		player.remove_component(C_ScreenMessage)
+	_press_map()
+	await get_tree().process_frame
+	message = player.get_component(C_ScreenMessage) as C_ScreenMessage if player else null
+	_check("ниже последнего ранга M карту не открывает, а отсылает к терминалу",
+		UIManager._stack.is_empty() and not get_tree().paused and mini.is_open
+		and message != null and message.text == tr("MAP_TERMINAL_ONLY"),
+		"стек %d, сообщение %s" % [UIManager._stack.size(), message.text if message else "нет"])
+
+	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = ArchitectStats.MAP_LEVEL_MAX
+	await get_tree().process_frame
+	_check("на последнем ранге подсказка зовёт и к полной карте",
+		mini._hint_full.visible and mini._hint_full.plain_text() == "[M] %s" % tr("HUD_MAP_FULL"), mini._hint_full.plain_text())
+	_press_map()
+	await get_tree().process_frame
+	_check("полная карта сворачивает мини-карту", _top_map() != null and not mini.is_open, "")
+	_press_map()
+	await get_tree().process_frame
+	_press(KEY_TAB)
+	UIManager.push_screen(Control.new(), true)
+	_press(KEY_TAB)
+	_check("поверх экрана Tab мини-карту не трогает", mini.is_open, "")
+	UIManager.close_all()
+	_press(KEY_TAB)
+	hud.queue_free()
+
 	_press_map()
 	await get_tree().process_frame
 	var screen := _top_map()
@@ -312,10 +360,13 @@ func _check_run() -> void:
 		visual != null and not geometries.is_empty()
 			and geometries.all(func(g: Node) -> bool: return g == visual or visual.is_ancestor_of(g)),
 		str(geometries.map(func(g): return terminal.get_path_to(g))))
+	# С первого ранга: терминал — то место, где карту целиком смотрят до
+	# последнего ранга, клавиша M в забеге ему не замена.
+	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = MapKnowledge.LEVEL_VISITED
 	if terminal:
 		terminal.interact()
 	await get_tree().process_frame
-	_check("касание терминала открывает экран карты", _top_map() != null, "")
+	_check("касание терминала открывает экран карты уже на первом ранге", _top_map() != null, "")
 	UIManager.close_all()
 	UIManager.enabled = false
 	RunManager._end_run()
@@ -377,10 +428,134 @@ func _top_map() -> UI_ComplexMap:
 	return UIManager._stack.back().screen as UI_ComplexMap
 
 
+## Мини-карта по Tab в забеге: не экран и не пауза, видит текущий этаж, волна
+## прорисовки идёт от текущего узла, та же клавиша растворяет её.
+func _check_mini_map(mini: UI_MiniMap) -> void:
+	_press(KEY_TAB)
+	await get_tree().process_frame
+	_check("Tab открывает мини-карту без паузы и мимо стека экранов",
+		mini.is_open and mini.visible and not get_tree().paused and UIManager._stack.is_empty(), "")
+	var view := mini.build_view()
+	var here := RunManager.current_node_id
+	_check("мини-карта показывает текущий узел", mini.shows(here), str(view.keys()))
+	var later := &""
+	for node_id: StringName in mini._start_at:
+		if mini._start_at[node_id] > 0.0:
+			later = node_id
+	var at := mini._opened_at + UI_MiniMap.CONTOUR_SECONDS
+	_check("контур текущего узла прорисован раньше соседей",
+		later != &"" and mini.progress_of(here, at) == 1.0 and mini.progress_of(later, at) < 1.0,
+		"соседний %s" % later)
+
+	# Коридор — квадратами по клеткам, проступающими от входа волны по одному.
+	var chain := {}
+	for branch in mini.branches:
+		var ranks: Array[int] = []
+		for cell in mini.tiles_of(branch.id):
+			ranks.append(mini._tile_rank.get(cell, -1))
+		if ranks.max() > 0:
+			chain = {"branch": branch.id, "tiles": mini.tiles_of(branch.id), "ranks": ranks}
+			break
+	var in_order := false
+	if not chain.is_empty():
+		var first: Vector2i = chain.tiles[chain.ranks.find(0)]
+		var last: Vector2i = chain.tiles[chain.ranks.find(chain.ranks.max())]
+		var moment: float = mini._opened_at + mini._starts_at(chain.branch) + UI_MiniMap.TILE_FADE
+		in_order = mini.tile_progress(chain.branch, first, moment) == 1.0 \
+			and mini.tile_progress(chain.branch, last, moment) < 1.0
+	_check("квадраты коридора проступают по очереди, у каждой клетки свой номер",
+		in_order and not chain.ranks.has(-1), str(chain.get("ranks", [])))
+	var reached_through := true
+	for branch in mini.branches:
+		for conn: RS_LevelConnection in RunManager.current_graph.get_node_data(branch.id).connections:
+			var target := conn.target_node_id
+			if mini.shows(target) and mini._starts_at(target) > mini._starts_at(branch.id):
+				var length := 0
+				for cell in mini.tiles_of(branch.id):
+					length = maxi(length, mini._tile_rank.get(cell, 0) + 1)
+				reached_through = reached_through and mini._starts_at(target) + 0.0001 >= \
+					mini._starts_at(branch.id) + length * UI_MiniMap.TILE_DELAY
+	_check("узел за коридором начинается, когда до него дошла цепочка", reached_through, "")
+
+	var step_before := mini._target_step
+	mini._target_step = step_before * 0.5
+	mini._ease_scale(0.016)
+	_check("новый размер этажа перетекает, а не прыгает",
+		mini._step < step_before and mini._step > step_before * 0.5, "%.2f → %.2f" % [step_before, mini._step])
+	mini._dirty = true
+	await get_tree().process_frame
+
+	# Узнали новый узел при открытой карте: он прорисовывается с этого момента,
+	# а показанное не начинает рисоваться заново.
+	var starts_before := mini._start_at.duplicate()
+	for node_data in mini.rooms + mini.branches:
+		if not WorldSave.save.visited_node_ids.has(node_data.id):
+			WorldSave.save.visited_node_ids.append(node_data.id)
+			break
+	var marked := UI_HudMood.now() - mini._opened_at
+	mini._dirty = true
+	await get_tree().process_frame
+	var newcomer := &""
+	var kept := true
+	for node_data in mini.rooms + mini.branches:
+		if not starts_before.has(node_data.id):
+			newcomer = node_data.id
+		else:
+			kept = kept and is_equal_approx(mini._starts_at(node_data.id), starts_before[node_data.id])
+	_check("узнанный при открытой карте узел прорисовывается с этого момента, а не возникает",
+		newcomer != &"" and mini._starts_at(newcomer) >= marked and kept,
+		"новый %s, старт %.2f при %.2f, прежние на месте: %s" % [newcomer, mini._starts_at(newcomer), marked, kept])
+
+	var floor_text: String = tr("MAP_FLOOR") % (mini.floor_index + 1)
+	_check("ранг 2: заголовок называет слой и этаж, стрелок ещё нет",
+		mini._title.text.contains(floor_text) and mini._title.text.contains(tr("MAP_LAYER") % view.depth)
+		and not mini.shows_arrows(), mini._title.text)
+	_check("подсказка: «[Tab] Свернуть»", mini._hint_hide.plain_text() == "[Tab] %s" % tr("HUD_MAP_HIDE"),
+		mini._hint_hide.plain_text())
+	var frame := mini.frame_rect()
+	var outline := mini._frame_outline(UI_HudMood.now())
+	var ragged_inside := frame.grow(3.0).has_point(outline[outline.size() / 3]) \
+		and not frame.grow(-3.0).has_point(outline[outline.size() / 3])
+	_check("рамка обводит и заголовок, и план, и подсказку, а рвётся у самого края",
+		frame.has_point(mini._title.position) and frame.encloses(Rect2(Vector2.ZERO, mini.size))
+		and frame.has_point(mini._hint_hide.position + Vector2(0.0, UI_MiniMap.HINT_HEIGHT - 1.0))
+		and outline[0].is_equal_approx(outline[outline.size() - 1]) and ragged_inside,
+		"%s" % frame)
+	_check("мини-карта мышь не ловит", mini.mouse_filter == Control.MOUSE_FILTER_IGNORE, "")
+	_press(KEY_TAB)
+	await get_tree().process_frame
+	_check("та же клавиша закрывает: растворяется, а не пропадает", not mini.is_open and mini.visible, "")
+	await get_tree().create_timer(UI_MiniMap.CLOSE_SECONDS + 0.1).timeout
+	_check("и через %.2f с её нет" % UI_MiniMap.CLOSE_SECONDS, not mini.visible, "")
+
+	# Что ранги добавляют мини-карте: глубину — второй, стрелки связей — третий.
+	var rank_before: int = ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL]
+	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = MapKnowledge.LEVEL_VISITED
+	_press(KEY_TAB)
+	await get_tree().process_frame
+	# process_frame приходит до _process узлов — пересборка мини-карты кадром позже.
+	await get_tree().process_frame
+	_check("ранг 1: заголовок — только этаж, без глубины, стрелок нет",
+		mini.is_open and mini.title_text() == tr("MAP_FLOOR") % (mini.floor_index + 1) and not mini.shows_arrows(),
+		mini.title_text())
+	_press(KEY_TAB)
+	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = MapKnowledge.LEVEL_COMPLEX
+	_press(KEY_TAB)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check("ранг 3: стрелки лестниц и порталов есть", mini.is_open and mini.shows_arrows(), "")
+	_press(KEY_TAB)
+	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = rank_before
+
+
 ## Нажатие клавиши карты тем же путём, что живое: событие в _unhandled_input.
 func _press_map() -> void:
+	_press(KEY_M)
+
+
+func _press(keycode: Key) -> void:
 	var key := InputEventKey.new()
-	key.physical_keycode = KEY_M
+	key.physical_keycode = keycode
 	key.pressed = true
 	UIManager._unhandled_input(key)
 

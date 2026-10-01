@@ -22,7 +22,7 @@ ARCHITECT_ESSENCE_FEW,эссенции,essence
 ARCHITECT_ESSENCE_MANY,эссенций,essence
 ARCHITECT_BRANCH_KNOWLEDGE,Знание,Knowledge
 ARCHITECT_MAP,Карта комплекса,Complex map
-ARCHITECT_MAP_DESC,"Архитектор делится планом комплекса. Каждый ранг открывает следующий уровень карты: посещённое на слое, весь слой, все слои, содержимое комнат.","The Architect shares the plan of the complex. Each rank opens the next map level: visited rooms of the layer, the whole layer, all layers, room contents."
+ARCHITECT_MAP_DESC,"Архитектор делится планом комплекса. Каждый ранг открывает следующий уровень карты: посещённое на слое, весь слой, все слои, содержимое комнат. Карта целиком — на терминале в хабе, с последним рангом — по клавише где угодно.","The Architect shares the plan of the complex. Each rank opens the next map level: visited rooms of the layer, the whole layer, all layers, room contents. The full map is at the hub terminal; with the last rank, on a key press anywhere."
 MAP_TITLE,Карта комплекса,Complex map
 MAP_TERMINAL_PROMPT,Карта комплекса,Complex map
 MAP_NO_LINK,Нет связи с Архитектором: карта недоступна,No link to the Architect: the map is unavailable
@@ -73,3 +73,7 @@ KEY_MOUSE_4,Мышь 4,Mouse 4
 KEY_MOUSE_5,Мышь 5,Mouse 5
 KEY_MOUSE_N,Мышь %d,Mouse %d
 KEY_SPACE,Пробел,Space
+HUD_MAP_HIDE,Свернуть,Hide
+HUD_MAP_FULL,Вся карта,Full map
+ACTION_MAP_MINI,Мини-карта,Mini-map
+MAP_TERMINAL_ONLY,Карта целиком — на терминале в хабе,The full map is at the hub terminal

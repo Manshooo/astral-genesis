@@ -56,7 +56,7 @@ func _ready() -> void:
 
 func _add_line() -> UI_ThoughtLine:
 	var line := UI_ThoughtLine.new()
-	line.small = true
+	line.style = UI_ThoughtLine.Style.CONTROLS
 	line.centered = false
 	line.shadow_margin = Vector2(30.0, 8.0)
 	add_child(line)

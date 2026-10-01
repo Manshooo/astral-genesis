@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
 [ext_resource type="Script" path="res://src/ui/hud/thought_line.gd" id="11_line"]
 [ext_resource type="Script" path="res://src/ui/hud/thought_label.gd" id="12_label"]
+[ext_resource type="Script" uid="uid://01ionly7qqo5" path="res://src/ui/hud/mini_map.gd" id="13_minimap"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_warp"]
 noise_type = 0
@@ -174,3 +175,17 @@ texture = ExtResource("10_save_icon")
 expand_mode = 1
 stretch_mode = 5
 script = ExtResource("9_save")
+
+[node name="MiniMap" type="Control" parent="Hud" unique_id=1700000009]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -537.0
+offset_top = 162.0
+offset_right = -117.0
+offset_bottom = 462.0
+grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("13_minimap")
