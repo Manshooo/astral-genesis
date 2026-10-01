@@ -1,0 +1,221 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Concept_B.dc.html": {
+      "h": 720,
+      "page": "concepts",
+      "title": "B · Шрам — отклонён",
+      "w": 1497,
+      "x": 1577,
+      "y": 0
+    },
+    "Concept_C.dc.html": {
+      "h": 720,
+      "page": "concepts",
+      "title": "C · Плоть — отклонён",
+      "w": 1497,
+      "x": 3154,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 720,
+      "page": "concepts",
+      "title": "A · Отголосок — выбран",
+      "w": 1497,
+      "x": 0,
+      "y": 0
+    },
+    "Prototype.dc.html": {
+      "h": 980,
+      "is_interactive": true,
+      "page": "proto",
+      "title": "Прототип: всё вместе, живьём",
+      "w": 1497,
+      "x": 0,
+      "y": 0
+    },
+    "Spec.dc.html": {
+      "expand": "fill",
+      "h": 8000,
+      "is_interactive": true,
+      "page": "spec",
+      "title": "Спека для Godot",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "State_01_Calm.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "01 · Вне тела, спокойно",
+      "w": 1497,
+      "x": 0,
+      "y": 0
+    },
+    "State_02_Decay.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "02 · Распад у порога (7 %)",
+      "w": 1497,
+      "x": 1577,
+      "y": 0
+    },
+    "State_03_BodyFull.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "03 · Во плоти, запас тела полный (дуга гаснет)",
+      "w": 1497,
+      "x": 3154,
+      "y": 0
+    },
+    "State_04_BodyLow.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "04 · Распад тела у порога (запас тела 7 %)",
+      "w": 1497,
+      "x": 0,
+      "y": 840
+    },
+    "State_05_Hit.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "05 · Удар по телу при HP 30 %: кровь по краю",
+      "w": 1497,
+      "x": 1577,
+      "y": 840
+    },
+    "State_06_PromptItem.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "06 · Подсказка над предметом",
+      "w": 1497,
+      "x": 3154,
+      "y": 840
+    },
+    "State_07_PromptBody.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "07 · Над телом для захвата — только прицел",
+      "w": 1497,
+      "x": 0,
+      "y": 1680
+    },
+    "State_08_Message.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "08 · Сообщение «Заперто…»",
+      "w": 1497,
+      "x": 1577,
+      "y": 1680
+    },
+    "State_09_Controls.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "09 · Управление после вселения",
+      "w": 1497,
+      "x": 3154,
+      "y": 1680
+    },
+    "State_10_Legless.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "10 · Безногое тело: только «Ход»",
+      "w": 1497,
+      "x": 0,
+      "y": 2520
+    },
+    "State_11_Overflow.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "11 · Выход из тела: излишек выше максимума",
+      "w": 1497,
+      "x": 1577,
+      "y": 2520
+    },
+    "State_12_MiniMap.dc.html": {
+      "h": 720,
+      "page": "states",
+      "title": "12 · Мини-карта по кнопке [Tab], поверх игры",
+      "w": 1497,
+      "x": 3154,
+      "y": 2520
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-01T12:43:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "page": "concepts",
+    "view": "canvas"
+  },
+  "notes": {
+    "tConcepts": {
+      "kind": "title1",
+      "maxW": 4651,
+      "page": "concepts",
+      "text": "Три языка HUD — выбран A «Отголосок»",
+      "w": 240,
+      "x": 0,
+      "y": -320
+    },
+    "tProto": {
+      "kind": "title1",
+      "maxW": 1497,
+      "page": "proto",
+      "text": "Прототип — нажмите Play",
+      "w": 240,
+      "x": 0,
+      "y": -320
+    },
+    "tStates": {
+      "kind": "title1",
+      "maxW": 4651,
+      "page": "states",
+      "text": "Состояния в языке A «Отголосок»",
+      "w": 240,
+      "x": 0,
+      "y": -320
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Concept_B.dc.html",
+    "Concept_C.dc.html",
+    "State_01_Calm.dc.html",
+    "State_02_Decay.dc.html",
+    "State_03_BodyFull.dc.html",
+    "State_04_BodyLow.dc.html",
+    "State_05_Hit.dc.html",
+    "State_06_PromptItem.dc.html",
+    "State_07_PromptBody.dc.html",
+    "State_08_Message.dc.html",
+    "State_09_Controls.dc.html",
+    "State_10_Legless.dc.html",
+    "State_11_Overflow.dc.html",
+    "State_12_MiniMap.dc.html",
+    "Prototype.dc.html",
+    "Spec.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "concepts",
+      "name": "Концепты"
+    },
+    {
+      "id": "states",
+      "name": "Состояния (A)"
+    },
+    {
+      "id": "proto",
+      "name": "Прототип"
+    },
+    {
+      "id": "spec",
+      "name": "Спека"
+    }
+  ],
+  "title": "HUD Astral Genesis"
+}
