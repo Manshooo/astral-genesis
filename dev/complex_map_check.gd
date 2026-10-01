@@ -230,7 +230,7 @@ func _check_screen() -> void:
 	_check("уровень 4: выход назван выходом", screen.describe(exit_id).begins_with(tr("MAP_UNIQUE_EXIT")),
 		screen.describe(exit_id))
 	_check("уровень 4: запертый портал называет ключ",
-		screen.describe(interlayer.id).contains(A_TravelThroughDoor.KEY_NAMES[&"level_access_key"]),
+		screen.describe(interlayer.id).contains(tr(A_TravelThroughDoor.KEY_NAMES[&"level_access_key"])),
 		screen.describe(interlayer.id))
 	var letters := {}
 	for id: StringName in [hub, exit_id, _architect_id()]:

@@ -70,7 +70,7 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 	# «сюда это тело не влезет», и тратить на него попытку нечестно.
 	var form := E_Body.form_of(body)
 	if not _fits(soul, body, form):
-		C_ScreenMessage.show_on(soul, "Тело здесь не поместится", cmd)
+		C_ScreenMessage.show_on(soul, "HUD_MSG_NO_ROOM", cmd)
 		return
 
 	var chance := C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_CHANCE, bs.capture_success_chance)

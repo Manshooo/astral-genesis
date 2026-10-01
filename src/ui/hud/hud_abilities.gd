@@ -2,48 +2,66 @@
 ## Раскладка управления «на сейчас»: что риг умеет ПРЯМО СЕЙЧАС, а не полный
 ## список действий игры. Ход/полёт показываем всегда (движение доступно в любом
 ## состоянии, меняется только его смысл), прыжок и бег — только пока на риге
-## есть C_Jump/C_Sprint: у безногого тела строка исчезает, а не гаснет серым.
+## есть C_Jump/C_Sprint: у безногого тела строки нет вовсе, а не серая.
+##
+## Видна не всегда (§6 «HUD — спека»): несколько секунд после того, как набор
+## сменился — вселение, выход, пересадка, тело без ног, — потом гаснет. Набор
+## знаком игроку через пару секунд, и висящий список стал бы частью экрана,
+## которую перестают видеть. Смена клавиши в настройках переписывает строки,
+## но заново их не показывает: набор-то тот же.
 ##
 ## Клавиши прыжка и бега резолвятся из InputMap по C_Jump.action_name и
 ## C_Sprint.action_name тем же приёмом, что и подсказка взаимодействия
-## (hud_prompt.gd) — после переназначения строка обновится сама, без правки
-## этого файла.
+## (hud_prompt.gd) — после переназначения строка обновится сама.
 ##
-## Реагируем на component_added/component_removed, а не поллим каждый кадр
-## (ср. hud_vitals.gd): набор возможностей — дискретное состояние, меняющееся
-## на вселении/выходе/пересадке, а не непрерывное число.
+## Реагируем на component_added/component_removed, а не поллим каждый кадр:
+## набор возможностей — дискретное состояние, а не непрерывное число.
 ##
-## Скрипт — на ПОДЛОЖКЕ (PanelContainer), а не на списке строк: та же причина,
-## что у hud_prompt.gd и hud_message.gd.
+## Строки строятся кодом (UI_ThoughtLine), раскладка — тоже: строки въезжают
+## по одной со сдвигом, а контейнер переставлял бы их обратно.
 class_name UI_HudAbilities
-extends PanelContainer
+extends Control
 
-@onready var _abilities: VBoxContainer = $Margin/Abilities
-@onready var _move_label: Label = $Margin/Abilities/MoveLabel
-@onready var _jump_label: Label = $Margin/Abilities/JumpLabel
-@onready var _sprint_label: Label = $Margin/Abilities/SprintLabel
+const APPEAR := 0.35
+## Строки появляются не разом, а с шагом — список «проговаривается».
+const STAGGER := 0.09
+const HOLD_UNTIL := 4.0
+const FADE := 1.0
+const SLIDE := -6.0
+## Шаг строк, px, и высота последней: низ последней строки стоит на точке узла.
+const LINE_STEP := 28.0
+const LINE_HEIGHT := 22.0
 
-## Строки-способности и разделители между ними — СОБРАНЫ ИЗ ДЕТЕЙ, а не
-## перечислены по именам: авторишь третью строку (сцена) — разделители сами
-## подхватят её, без правки этого файла. Порядок в обоих массивах — порядок
-## детей: _separators[i] лежит МЕЖДУ _rows[i] и _rows[i+1] (сцена авторится
-## строго чередованием Label/HSeparator, см. hud.tscn).
-var _rows: Array[Control] = []
-var _separators: Array[Control] = []
+var _move: UI_ThoughtLine
+var _jump: UI_ThoughtLine
+var _sprint: UI_ThoughtLine
+## Время, когда набор сменился в последний раз; -INF — показывать нечего.
+var _started := -INF
+## Набор, который сейчас показан: «полёт/ход, прыжок?, бег?». Сравниваем его, а
+## не сам факт события: снятие и добавление того же компонента набор не меняет.
+var _signature := ""
 
 
 func _ready() -> void:
-	for child in _abilities.get_children():
-		if child is HSeparator:
-			_separators.append(child)
-		else:
-			_rows.append(child)
-
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_move = _add_line()
+	_jump = _add_line()
+	_sprint = _add_line()
 	if ECS.world:
 		_connect_world_signals(ECS.world)
 	ECS.world_changed.connect(_on_world_changed)
 	SettingsManager.settings_changed.connect(_on_settings_changed)
 	_render()
+
+
+func _add_line() -> UI_ThoughtLine:
+	var line := UI_ThoughtLine.new()
+	line.small = true
+	line.centered = false
+	line.shadow_margin = Vector2(30.0, 8.0)
+	add_child(line)
+	line.set_echo_phase(get_child_count())
+	return line
 
 
 func _on_world_changed(world: World) -> void:
@@ -60,8 +78,7 @@ func _connect_world_signals(world: World) -> void:
 
 
 ## Один обработчик на оба события: нас интересует не факт «добавили/сняли», а
-## что после него сменился набор возможностей рига — перерисовать дешевле, чем
-## различать направление.
+## что после него сменился набор возможностей рига.
 func _on_component_changed(_entity: Entity, component: Variant) -> void:
 	if (
 		component is C_Walk
@@ -73,7 +90,7 @@ func _on_component_changed(_entity: Entity, component: Variant) -> void:
 		_render()
 
 
-## Переназначили клавишу — прыжок обязан показать новую немедленно, а не после
+## Переназначили клавишу — строка обязана показать новую немедленно, а не после
 ## следующей пересадки.
 func _on_settings_changed(_settings: RS_Settings) -> void:
 	_render()
@@ -82,48 +99,59 @@ func _on_settings_changed(_settings: RS_Settings) -> void:
 func _render() -> void:
 	var player := E_Player.find()
 	if player == null:
-		hide()
+		_signature = ""
+		_started = -INF
 		return
-	show()
 
-	_move_label.visible = true
-	_move_label.text = "Полёт" if player.has_component(C_Flight) else "Ходьба"
+	var flying := player.has_component(C_Flight)
+	_move.set_line("", tr("HUD_CTRL_FLIGHT" if flying else "HUD_CTRL_MOVE"))
 
 	var jump := player.get_component(C_Jump) as C_Jump
-	_jump_label.visible = jump != null
+	_jump.visible = jump != null
 	if jump != null:
-		var key := SettingsManager.action_display_name(jump.action_name)
-		_jump_label.text = "[%s] Прыжок" % key if key != "" else "Прыжок"
+		_jump.set_line(SettingsManager.action_display_name(jump.action_name), tr("HUD_CTRL_JUMP"))
 
 	var sprint := player.get_component(C_Sprint) as C_Sprint
-	_sprint_label.visible = sprint != null
+	_sprint.visible = sprint != null
 	if sprint != null:
-		var sprint_key := SettingsManager.action_display_name(sprint.action_name)
-		_sprint_label.text = "[%s] Бег" % sprint_key if sprint_key != "" else "Бег"
+		_sprint.set_line(SettingsManager.action_display_name(sprint.action_name), tr("HUD_CTRL_SPRINT"))
 
-	_sync_separators()
-
-	# Подложка — под столько строк, сколько видно СЕЙЧАС, а не под их
-	# наибольшее возможное число: сброс размера заставляет Godot заново
-	# посчитать его от текущего минимума VBoxContainer (Control никогда не
-	# опускает size ниже get_combined_minimum_size, но и сам никогда не
-	# УМЕНЬШАЕТ его обратно — сброс в ZERO и есть тот самый пересчёт).
-	size = Vector2.ZERO
+	var signature := "%s|%s|%s|%s" % [flying, jump != null, sprint != null, player.has_component(C_Embodied)]
+	if signature != _signature:
+		_signature = signature
+		_started = UI_HudMood.now()
 
 
-## Разделитель — не украшение само по себе, а знак «до этой точки была видимая
-## строка, и после неё тоже будет». Прячем ВСЕ разделители и зажигаем ровно по
-## одному на каждый переход между двумя видимыми строками — даже если между
-## ними есть скрытые: две видимые строки через одну скрытую всё равно должны
-## разделяться ровно одной чертой, а не двумя (или ни одной).
-func _sync_separators() -> void:
-	for separator in _separators:
-		separator.visible = false
+## Видимые строки — что сейчас показано игроку, по одной на строку. Для проверок.
+func visible_lines() -> PackedStringArray:
+	var lines := PackedStringArray()
+	for line in _lines():
+		lines.append(line.plain_text())
+	return lines
 
-	var last_visible := -1
-	for i in _rows.size():
-		if not _rows[i].visible:
-			continue
-		if last_visible >= 0:
-			_separators[last_visible].visible = true
-		last_visible = i
+
+## Идёт ли показ (а не догорел ли он).
+func is_showing() -> bool:
+	return UI_HudMood.now() - _started < HOLD_UNTIL + FADE + STAGGER * 2.0
+
+
+func _lines() -> Array[UI_ThoughtLine]:
+	var lines: Array[UI_ThoughtLine] = []
+	for line: UI_ThoughtLine in [_move, _jump, _sprint]:
+		if line.visible:
+			lines.append(line)
+	return lines
+
+
+func _process(_delta: float) -> void:
+	var elapsed := UI_HudMood.now() - _started
+	var lines := _lines()
+	var top := -((lines.size() - 1) * LINE_STEP + LINE_HEIGHT)
+	for i in lines.size():
+		var e := elapsed - i * STAGGER
+		var alpha := 0.0
+		if e >= 0.0 and e < HOLD_UNTIL + FADE:
+			alpha = clampf(e / APPEAR, 0.0, 1.0) * clampf((HOLD_UNTIL + FADE - e) / FADE, 0.0, 1.0)
+		var slide := SLIDE * (1.0 - clampf(e / APPEAR, 0.0, 1.0))
+		lines[i].modulate.a = alpha
+		lines[i].position = Vector2(slide, top + i * LINE_STEP)

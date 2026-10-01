@@ -1,0 +1,9 @@
+[gd_resource type="FontVariation" format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/GolosText-VariableFont_wght.ttf" id="1_nh23h"]
+
+[resource]
+base_font = ExtResource("1_nh23h")
+variation_opentype = {
+2003265652: 500
+}

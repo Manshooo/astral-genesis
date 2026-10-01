@@ -29,7 +29,7 @@ metadata/_custom_type_script = "uid://bi6krwy7ber7m"
 
 [sub_resource type="Resource" id="SkillTreePrompt"]
 script = ExtResource("9_interactable")
-prompt_text = "Древо навыков"
+prompt_text = "HUD_PROMPT_SKILL_TREE"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="BoxShape3D" id="IncubatorShape"]
