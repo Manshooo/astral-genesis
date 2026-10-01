@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>01 · Вне тела, спокойно</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Spectral:ital,wght@1,300;1,400&amp;display=swap">
+<style>
+body{margin:0;background:#0b0a0d}
+
+@keyframes ag-breathe{0%,100%{opacity:.82}50%{opacity:1}}
+@keyframes ag-beat{0%,100%{opacity:.55}7%{opacity:1}16%{opacity:.62}24%{opacity:.95}40%{opacity:.6}}
+@keyframes ag-echo{0%,100%{transform:translate(2px,0)}35%{transform:translate(1.2px,.6px)}70%{transform:translate(2.8px,-.4px)}}
+@keyframes ag-ring{0%{opacity:.6;transform:scale(.6)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes ag-leak{0%{opacity:.8;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--lx),var(--ly))}}
+@keyframes ag-draw{0%{stroke-dashoffset:1;opacity:0}4%{opacity:1}16%{stroke-dashoffset:0}84%{opacity:1;stroke-dashoffset:0}94%{opacity:0}100%{opacity:0;stroke-dashoffset:0}}
+@keyframes ag-fadeloop{0%{opacity:0}14%{opacity:0}22%{opacity:1}84%{opacity:1}94%{opacity:0}100%{opacity:0}}
+@keyframes ag-cursor{0%,49%{opacity:1}50%,100%{opacity:0}}
+.ag-breathe{animation:ag-breathe 3.2s ease-in-out infinite}
+.ag-beat{animation:ag-beat .8s linear infinite}
+.ag-echo{animation:ag-echo 1.9s ease-in-out infinite}
+.ag-ring{transform-box:fill-box;transform-origin:center;animation:ag-ring 1.6s ease-out infinite}
+.ag-leak{animation:ag-leak 1.8s ease-out infinite}
+.ag-draw{animation:ag-draw 4.6s ease-out infinite}
+.ag-fadeloop{animation:ag-fadeloop 4.6s ease-out infinite}
+.ag-cursor{animation:ag-cursor 1s steps(1) infinite}
+
+</style>
+</helmet>
+<div style="position:relative;width:1497px;height:720px;overflow:hidden;background:#0b0c0c"><svg width="1497" height="720" viewBox="0 0 1497 720" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0"><defs><filter id="s1-fx" x="0" y="0" width="1497" height="720" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency=".006 .012" numOctaves="2" seed="3" result="n"></feTurbulence><feDisplacementMap in="SourceGraphic" in2="n" scale="0.00" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap><feColorMatrix in="d" type="saturate" values="0.850" result="s"></feColorMatrix><feColorMatrix in="s" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"></feColorMatrix><feOffset in="r" dx="0.00" dy="0" result="ro"></feOffset><feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="gb"></feColorMatrix><feBlend in="ro" in2="gb" mode="screen"></feBlend></filter></defs><g filter="url(#s1-fx)"><defs>
+<radialGradient id="s1-fog" cx="748" cy="330" r="420" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#55605c" stop-opacity=".55"></stop><stop offset=".45" stop-color="#2b3331" stop-opacity=".25"></stop><stop offset="1" stop-color="#000" stop-opacity="0"></stop></radialGradient>
+<linearGradient id="s1-floor" x1="0" y1="430" x2="0" y2="720" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2a302e"></stop><stop offset="1" stop-color="#121414"></stop></linearGradient>
+<linearGradient id="s1-lw" x1="0" y1="0" x2="618" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#151918"></stop><stop offset="1" stop-color="#2c3432"></stop></linearGradient>
+<linearGradient id="s1-rw" x1="1497" y1="0" x2="878" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#121615"></stop><stop offset="1" stop-color="#29302e"></stop></linearGradient>
+<filter id="s1-grain" x="0" y="0" width="1497" height="720" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 .55"></feColorMatrix></filter>
+<filter id="s1-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"></feGaussianBlur></filter>
+</defs>
+<rect x="0" y="0" width="1497" height="720" fill="#0e1110"></rect>
+<polygon points="0.0,0.0 1497.0,0.0 878.0,238.0 618.0,238.0" fill="#101312"></polygon>
+<polygon points="0.0,720.0 1497.0,720.0 878.0,430.0 618.0,430.0" fill="url(#s1-floor)"></polygon>
+<polygon points="0.0,0.0 618.0,238.0 618.0,430.0 0.0,720.0" fill="url(#s1-lw)"></polygon>
+<polygon points="1497.0,0.0 878.0,238.0 878.0,430.0 1497.0,720.0" fill="url(#s1-rw)"></polygon>
+<rect x="618" y="238" width="260" height="192" fill="#2a312f"></rect>
+<line x1="197.8" y1="76.2" x2="197.8" y2="627.2" stroke="#0b0d0d" stroke-width="2.4" opacity=".7"></line>
+<line x1="1298.9" y1="76.2" x2="1298.9" y2="627.2" stroke="#0b0d0d" stroke-width="2.4" opacity=".7"></line>
+<line x1="197.8" y1="627.2" x2="1298.9" y2="627.2" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="321.4" y1="123.8" x2="321.4" y2="569.2" stroke="#0b0d0d" stroke-width="2.0" opacity=".7"></line>
+<line x1="1175.1" y1="123.8" x2="1175.1" y2="569.2" stroke="#0b0d0d" stroke-width="2.0" opacity=".7"></line>
+<line x1="321.4" y1="569.2" x2="1175.1" y2="569.2" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="401.7" y1="154.7" x2="401.7" y2="531.5" stroke="#0b0d0d" stroke-width="1.7" opacity=".7"></line>
+<line x1="1094.7" y1="154.7" x2="1094.7" y2="531.5" stroke="#0b0d0d" stroke-width="1.7" opacity=".7"></line>
+<line x1="401.7" y1="531.5" x2="1094.7" y2="531.5" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="460.4" y1="177.3" x2="460.4" y2="503.9" stroke="#0b0d0d" stroke-width="1.5" opacity=".7"></line>
+<line x1="1035.8" y1="177.3" x2="1035.8" y2="503.9" stroke="#0b0d0d" stroke-width="1.5" opacity=".7"></line>
+<line x1="460.4" y1="503.9" x2="1035.8" y2="503.9" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="503.7" y1="194.0" x2="503.7" y2="483.6" stroke="#0b0d0d" stroke-width="1.4" opacity=".7"></line>
+<line x1="992.5" y1="194.0" x2="992.5" y2="483.6" stroke="#0b0d0d" stroke-width="1.4" opacity=".7"></line>
+<line x1="503.7" y1="483.6" x2="992.5" y2="483.6" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="534.6" y1="205.9" x2="534.6" y2="469.1" stroke="#0b0d0d" stroke-width="1.3" opacity=".7"></line>
+<line x1="961.6" y1="205.9" x2="961.6" y2="469.1" stroke="#0b0d0d" stroke-width="1.3" opacity=".7"></line>
+<line x1="534.6" y1="469.1" x2="961.6" y2="469.1" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<polygon points="0.0,64.0 618.0,255.2 618.0,259.2 0.0,80.0" fill="#232a28"></polygon>
+<line x1="0.0" y1="66.0" x2="618.0" y2="255.7" stroke="#3b4542" stroke-width="1.2" opacity=".6"></line>
+<polygon points="0.0,117.9 618.0,268.6 618.0,272.6 0.0,126.9" fill="#232a28"></polygon>
+<line x1="0.0" y1="119.9" x2="618.0" y2="269.1" stroke="#3b4542" stroke-width="1.2" opacity=".6"></line>
+<polygon points="679.0,23.8 817.0,23.8 810.0,47.6 686.0,47.6" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="701.4,100.0 794.6,100.0 790.4,114.2 705.6,114.2" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="715.4,147.6 780.6,147.6 777.8,157.1 718.2,157.1" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="723.8,176.1 772.2,176.1 770.5,182.1 725.5,182.1" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="728.7,192.8 767.3,192.8 766.2,196.3 729.8,196.3" fill="#8a7650" opacity=".45"></polygon>
+<ellipse cx="748" cy="610" rx="260" ry="40" fill="#6f6448" opacity=".07"></ellipse>
+<rect x="703" y="290" width="90" height="140" fill="#1a1f1e" stroke="#3c4542" stroke-width="2"></rect>
+<line x1="748" y1="292" x2="748" y2="428" stroke="#0f1212" stroke-width="2"></line>
+<rect x="696" y="282" width="104" height="8" fill="#202624"></rect>
+<circle cx="748" cy="276" r="3" fill="#b0453a" opacity=".8"></circle>
+<circle cx="748" cy="276" r="10" fill="#b0453a" opacity=".12"></circle>
+<rect x="0" y="0" width="1497" height="720" fill="url(#s1-fog)"></rect>
+<rect x="0" y="0" width="1497" height="720" filter="url(#s1-grain)" opacity=".07"></rect></g></svg><div style="position:absolute;left:0;top:0;width:1497px;height:720px;pointer-events:none;background:radial-gradient(ellipse 72% 78% at 50% 50%, rgba(18,10,30,0) 38%, rgba(18,10,30,.97) 100%);opacity:0.12"></div><svg width="1497" height="720" viewBox="0 0 1497 720" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none"><circle cx="748.5" cy="360.0" r="2" fill="#F2EEF7" opacity=".85"></circle></svg></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1497,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
