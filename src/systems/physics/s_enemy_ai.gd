@@ -81,7 +81,10 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 			_attack(entity, target, ai)
 		else:
 			# Только что довернулись к цели (look_at выше) — вперёд для тела
-			# и есть «к цели», как договорено для взгляда всех тел (−Z).
+			# и есть «к цели», как договорено для взгляда всех тел (−Z). Но
+			# только в МИРОВОМ базисе: look_at ставит глобальный поворот, и
+			# S_Walk переводит «вперёд» через global_transform — родитель врага
+			# (комната) бывает повёрнут.
 			inp.move_direction = Vector3.FORWARD
 
 

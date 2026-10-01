@@ -33,6 +33,7 @@ func _ready() -> void:
 	_check_determinism(config)
 	_check_home_depth(config)
 	_check_unique_chance(config)
+	_check_apart_from_entry(config)
 	_check_snapshot()
 
 	_finish()
@@ -181,6 +182,41 @@ func _check_home_depth(config: RS_WorldGenConfig) -> void:
 	_check("HOME_DEPTH совпадает с глубиной хаба из конфига",
 		entry != null and entry.depth == RS_LevelGraph.HOME_DEPTH,
 		"хаб на L%d, HOME_DEPTH=%d" % [entry.depth if entry else -1, RS_LevelGraph.HOME_DEPTH])
+
+
+## Комнаты «не на этаже входа» (Архитектор с 01.10): стоят в своём диапазоне
+## глубин, ровно сколько обещано, и ни одна — на этаже хаба. Второй прогон —
+## с конфигом в один этаж на слой: у слоя хаба этаж всё равно обязан быть второй,
+## иначе гарантированной комнате не нашлось бы узла и она молча пропала бы.
+func _check_apart_from_entry(config: RS_WorldGenConfig) -> void:
+	var apart: Array[RS_UniqueRoom] = []
+	for unique: RS_UniqueRoom in config.unique_rooms:
+		if unique and unique.apart_from_entry:
+			apart.append(unique)
+	_check("в конфиге есть комната «не на этаже входа» (Архитектор)", not apart.is_empty(), "")
+
+	var one_floor := config.duplicate() as RS_WorldGenConfig
+	one_floor.floor_count_min = 1
+	one_floor.floor_count_max = 1
+	for variant: Array in [["конфиг игры", config], ["один этаж на слой", one_floor]]:
+		var problems: Array[String] = []
+		for s in SEEDS:
+			var graph := RS_LevelGraph.new().generate_run(s, _library, variant[1])
+			var entry := graph.get_node_data(graph.entry_node_id)
+			for unique in apart:
+				var found := 0
+				for node: RS_LevelNode in graph.nodes.values():
+					if node.room_scene_path != unique.preset.scene.resource_path:
+						continue
+					found += 1
+					if not unique.covers_depth(node.depth):
+						problems.append("сид %d: %s на L%d" % [s, node.id, node.depth])
+					elif node.depth == entry.depth and node.floor_index == entry.floor_index:
+						problems.append("сид %d: %s на этаже хаба" % [s, node.id])
+				if unique.chance >= 1.0 and found != unique.count:
+					problems.append("сид %d: «%s» встала %d раз из %d" % [s, unique.preset.display_name, found, unique.count])
+		_check("комната «не на этаже входа» на своём слое, но не на этаже хаба — %s (%d сидов)" % [variant[0], SEEDS],
+			problems.is_empty(), ", ".join(problems.slice(0, 4)))
 
 
 ## Уникальная комната «как Архитектор»: шанс 0 — её нет нигде, в том числе

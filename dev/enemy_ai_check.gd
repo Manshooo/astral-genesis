@@ -8,7 +8,9 @@ extends "res://dev/check_harness.gd"
 ## обязан ходить через C_EnemyInput, а НЕ C_PlayerInput — второй такой
 ## компонент в мире ломает добрый десяток мест (RunManager.travel_to,
 ## S_InteractionDetector, HUD), которые находят «игрока» просто по наличию
-## C_PlayerInput. Запускать: godot --headless dev/enemy_ai_check.tscn
+## C_PlayerInput. И второй такой регресс: враг под комнатой, повёрнутой на любую
+## четверть оборота, идёт к цели, а не мимо неё (базис хода в S_Walk — мировой).
+## Запускать: godot --headless dev/enemy_ai_check.tscn
 
 const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
@@ -131,6 +133,8 @@ func _run(world: World) -> void:
 		"было %.2f м, стало %.2f м" % [dist_start, dist_after]
 	)
 
+	await _check_rotated_room(world, player_node)
+
 	# --- 5. В упор — бьёт с кулдауном, а не каждый кадр ----------------------
 	var health := player.get_component(C_Health) as C_Health
 	health.current = health.effective_maximum(player)
@@ -169,6 +173,51 @@ func _run(world: World) -> void:
 		player.has_component(C_Flight),
 		""
 	)
+
+
+## Враг — ребёнок комнаты, а комнаты с 27.09 повёрнуты на случайную четверть
+## оборота. Погоня из блока 4 этого не видит: там враг висит в корне мира, где
+## базис родителя единичный. Баг из живого прогона в хабе: S_Walk брал базис
+## хода из transform (относительно родителя), а скорость CharacterBody3D —
+## мировая, и враг шёл мимо цели на −turns · 90°: вбок или прочь.
+func _check_rotated_room(world: World, player_node: Node3D) -> void:
+	for turns in 4:
+		var room := Node3D.new()
+		room.name = "RotatedRoom%d" % turns
+		room.position = Vector3(60.0, 0.0, 0.0)
+		room.rotation.y = turns * PI * 0.5
+		add_child(room)
+		var enemy := (load(ENEMY_SCENE) as PackedScene).instantiate() as E_Enemy
+		# Не в центре комнаты: ошибка базиса не должна маскироваться нулевым
+		# локальным смещением.
+		(enemy as Node as Node3D).position = Vector3(2.0, 0.0, 1.0)
+		room.add_child(enemy)
+		world.add_entity(enemy)
+		await get_tree().process_frame
+
+		var ai := enemy.get_component(C_EnemyAI) as C_EnemyAI
+		var enemy_node := enemy as Node as Node3D
+		# Цель не по оси комнаты — чтобы поворот на 180° не совпал с верным
+		# ответом случайно ни при каком turns.
+		var offset := Vector3(1.0, 0.0, 2.0).normalized() * (ai.aggro_range + ai.attack_range) * 0.5
+		player_node.position = enemy_node.global_position + offset
+		await _physics(1)
+
+		var vel := (enemy.get_component(C_Velocity) as C_Velocity).velocity
+		var wish := Vector2(vel.x, vel.z)
+		var to_target := Vector2(
+			player_node.global_position.x - enemy_node.global_position.x,
+			player_node.global_position.z - enemy_node.global_position.z
+		)
+		_check(
+			"враг в комнате, повёрнутой на %d/4 оборота, идёт к цели, а не вбок" % turns,
+			ai.state == C_EnemyAI.State.CHASING and wish.length() > 0.1 and wish.normalized().dot(to_target.normalized()) > 0.99,
+			"state=%s скорость %s, к цели %s" % [ai.state, wish, to_target]
+		)
+
+		world.remove_entity(enemy)
+		room.queue_free()
+		await get_tree().process_frame
 
 
 ## Слои коллизий игрока и врага (см. [[Конвенции проекта]], §2). Всё здесь

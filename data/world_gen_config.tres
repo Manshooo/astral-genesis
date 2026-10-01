@@ -25,9 +25,9 @@ map_name = "MAP_UNIQUE_EXIT"
 [sub_resource type="Resource" id="Resource_architect"]
 script = ExtResource("2_unique")
 preset = ExtResource("5_architect")
-depth_min = 1
-depth_max = 4
-excluded_depths = Array[int]([3])
+depth_min = 3
+depth_max = 3
+apart_from_entry = true
 map_name = "MAP_UNIQUE_ARCHITECT"
 
 [resource]
