@@ -57,4 +57,4 @@ func _swallow(entities: Array[Entity], _components: Array, _delta: float) -> voi
 		inp.jump_pressed = false
 
 		if entity.has_component(C_Embodied):
-			C_ScreenMessage.show_on(entity, "Этому телу нечем прыгать", cmd)
+			C_ScreenMessage.show_on(entity, "HUD_MSG_NO_JUMP", cmd)

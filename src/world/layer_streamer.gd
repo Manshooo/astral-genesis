@@ -25,18 +25,18 @@ const NO_DEPTH := -1
 ## поэтому prompt_text проставляем здесь, а не в пресете комнаты (в сценах он у
 ## дверей пустой). Игрок должен отличать рабочую дверь от запертой и от
 ## запечатанного проёма ДО нажатия — иначе непонятно, декор это или баг.
-const DOOR_PROMPT_OPEN := "Пройти"
-const DOOR_PROMPT_LOCKED := "Заперто"
-const DOOR_PROMPT_SEALED := "Прохода нет"
+const DOOR_PROMPT_OPEN := "HUD_PROMPT_PASS"
+const DOOR_PROMPT_LOCKED := "HUD_PROMPT_LOCKED"
+const DOOR_PROMPT_SEALED := "HUD_PROMPT_SEALED"
 ## Дверь в коридор: она не переносит, а открывается (коридорная раскладка).
-const DOOR_PROMPT_UNSEAL := "Открыть"
+const DOOR_PROMPT_UNSEAL := "HUD_PROMPT_UNSEAL"
 
 ## Подсказки на вертикальных порталах. Вверх/вниз считаем по глубине цели, а не
 ## по знаку depth_delta: у слоёв номер РАСТЁТ вглубь, и знак читается наоборот.
-const PORTAL_PROMPT_UP := "Подняться"
-const PORTAL_PROMPT_DOWN := "Спуститься"
-const PORTAL_PROMPT_LOCKED := "Портал заблокирован"
-const PORTAL_PROMPT_DEAD := "Портал мёртв"
+const PORTAL_PROMPT_UP := "HUD_PROMPT_UP"
+const PORTAL_PROMPT_DOWN := "HUD_PROMPT_DOWN"
+const PORTAL_PROMPT_LOCKED := "HUD_PROMPT_PORTAL_LOCKED"
+const PORTAL_PROMPT_DEAD := "HUD_PROMPT_PORTAL_DEAD"
 
 
 ## Одна заспавненная комната слоя. Вложенные сущности держим отдельно от самой

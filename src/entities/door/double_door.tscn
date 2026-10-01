@@ -13,7 +13,7 @@ script = ExtResource("4_travel")
 
 [sub_resource type="Resource" id="Interactable"]
 script = ExtResource("4_interactable")
-prompt_text = "Пройти"
+prompt_text = "HUD_PROMPT_PASS"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="Resource" id="Slot"]

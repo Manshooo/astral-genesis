@@ -10,10 +10,10 @@ extends RS_InteractionAction
 ## другой слой (см. A_UsePortal, он лишь переопределяет тексты).
 ## Назначается на Entity через E_InteractableObject.actions в редакторе.
 
-## Человекочитаемые имена ключей для сообщения. Инвентаря ключей ещё нет, так
+## Имена ключей для сообщения — ключи перевода. Инвентаря ключей ещё нет, так
 ## что locked_by пока всегда level_access_key.
 const KEY_NAMES := {
-	&"level_access_key": "ключ доступа к уровню",
+	&"level_access_key": "ITEM_LEVEL_ACCESS_KEY",
 }
 
 
@@ -42,11 +42,12 @@ func execute(entity: Entity, _interactor: Node = null) -> void:
 
 
 func _sealed_message() -> String:
-	return "Прохода нет: проём заварен"
+	return tr("HUD_MSG_SEALED")
 
 
 func _locked_message(key: StringName) -> String:
-	return "Заперто. Нужен %s" % _key_name(key)
+	# tr() до подстановки: перевод узнаёт только строку-шаблон, а не собранную.
+	return tr("HUD_MSG_LOCKED_NEEDS") % _key_name(key)
 
 
 func _class_label() -> String:
@@ -54,7 +55,7 @@ func _class_label() -> String:
 
 
 func _key_name(key: StringName) -> String:
-	return KEY_NAMES.get(key, str(key))
+	return tr(KEY_NAMES.get(key, str(key)))
 
 
 ## Строка игроку. Прямая правка, без буфера, законна: interact() зовётся из

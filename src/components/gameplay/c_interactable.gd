@@ -2,6 +2,8 @@ class_name C_Interactable
 extends Component
 
 @export var action_name: StringName = &"interact"
+## Подпись подсказки — ключ перевода (`assets/locale/ui.csv`): переводит её
+## подсказка HUD, потому что клавиша вклеивается рядом уже после перевода.
 @export var prompt_text: String
 @export var enabled: bool = true
 ## Показывать ли в подсказке клавишу действия ("[F] Пройти"). false — для

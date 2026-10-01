@@ -354,7 +354,7 @@ func _run(world: World) -> void:
 	var msg := player.get_component(C_ScreenMessage) as C_ScreenMessage
 	_check(
 		"безногому телу отвечают явно, а не тишиной",
-		msg != null and msg.text == "Этому телу нечем прыгать",
+		msg != null and msg.text == "HUD_MSG_NO_JUMP",
 		str(msg.text) if msg else "нет C_ScreenMessage"
 	)
 
@@ -371,7 +371,7 @@ func _run(world: World) -> void:
 	var sprint_msg := player.get_component(C_ScreenMessage) as C_ScreenMessage
 	_check(
 		"телу без бега отвечают явно, а не тишиной",
-		sprint_msg != null and sprint_msg.text == "Это тело не умеет бегать",
+		sprint_msg != null and sprint_msg.text == "HUD_MSG_NO_SPRINT",
 		str(sprint_msg.text) if sprint_msg else "нет C_ScreenMessage"
 	)
 	_check(
@@ -400,29 +400,24 @@ func _run(world: World) -> void:
 	)
 
 	# --- 9. HUD-раскладка: что риг умеет ПРЯМО СЕЙЧАС -----------------------
-	# Не по script напрямую (у него @onready-узлы), а инстансом настоящей сцены —
-	# иначе проверка прошла бы, ничего не проверяя про реальную разметку.
+	# Инстансом настоящей сцены, а не скриптом: иначе проверка прошла бы, ничего
+	# не проверяя про реальную разметку. Строки сверяются с переводом ключа, а не
+	# с литералом: язык прогона — язык системы.
 	var hud := (load("res://src/ui/hud/hud.tscn") as PackedScene).instantiate()
 	add_child(hud)
-	var abilities_panel := hud.get_node("Hud/AbilitiesPanel") as Control
-	var move_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/MoveLabel") as Label
-	var separator := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/HSeparator") as Control
-	var jump_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/JumpLabel") as Label
-	var sprint_label := hud.get_node("Hud/AbilitiesPanel/Margin/Abilities/SprintLabel") as Label
+	var abilities := hud.get_node("Hud/Abilities") as UI_HudAbilities
 	await get_tree().process_frame
 
-	_check("HUD: призрак — «Полёт»", move_label.text == "Полёт", move_label.text)
-	_check("HUD: у призрака нет строки прыжка", not jump_label.visible, "")
-	_check("HUD: у призрака нет строки бега", not sprint_label.visible, "")
+	var flight_line := tr("HUD_CTRL_FLIGHT")
+	var move_line := tr("HUD_CTRL_MOVE")
+	var jump_line := tr("HUD_CTRL_JUMP")
+	var sprint_line := tr("HUD_CTRL_SPRINT")
+	_check("HUD: ключи управления переведены", flight_line != "HUD_CTRL_FLIGHT" and move_line != "HUD_CTRL_MOVE", flight_line)
 	_check(
-		"HUD: у одинокого «Ход» разделителя нет",
-		not separator.visible,
-		"строк без прыжка не должно ничего разделять"
+		"HUD: призрак — одна строка «Полёт», без прыжка и бега",
+		abilities.visible_lines() == PackedStringArray([flight_line]),
+		str(abilities.visible_lines())
 	)
-
-	# Подложка размером под контент, а не фиксированной коробкой: одна видимая
-	# строка обязана дать меньшую высоту, чем три.
-	var size_one_row := abilities_panel.size.y
 
 	var walker4 := _spawn_body(world, WALKER_SCENE, Vector3(-6.0, 0.0, 6.0))
 	await get_tree().physics_frame
@@ -431,29 +426,17 @@ func _run(world: World) -> void:
 	await _physics(1)
 	await get_tree().process_frame
 
-	_check("HUD: во плоти на ходячем теле — «Ходьба»", move_label.text == "Ходьба", move_label.text)
+	var hud_lines := abilities.visible_lines()
+	var jump_key := SettingsManager.action_display_name(&"jump")
+	_check("HUD: во плоти на ходячем теле — три строки", hud_lines.size() == 3, str(hud_lines))
+	_check("HUD: первая строка — «Ход» без клавиши", hud_lines.size() > 0 and hud_lines[0] == move_line, str(hud_lines))
 	_check(
-		"HUD: у прыгучего тела строка прыжка есть и содержит клавишу",
-		jump_label.visible and jump_label.text.contains("Прыжок"),
-		jump_label.text
+		"HUD: строка прыжка несёт клавишу из настроек, а не из макета",
+		hud_lines.size() > 1 and hud_lines[1] == "[%s] %s" % [jump_key, jump_line],
+		str(hud_lines)
 	)
-	_check(
-		"HUD: у бегающего тела строка бега есть и содержит клавишу",
-		sprint_label.visible and sprint_label.text.contains("Бег"),
-		sprint_label.text
-	)
-	_check(
-		"HUD: между Ход и Прыжок появился разделитель",
-		separator.visible,
-		"две видимые строки — разделителю пора появиться"
-	)
-
-	var size_all_rows := abilities_panel.size.y
-	_check(
-		"HUD: подложка выросла под появившиеся строки, а не осталась под одну",
-		size_all_rows > size_one_row,
-		"%.1f против %.1f" % [size_all_rows, size_one_row]
-	)
+	_check("HUD: строка бега есть", hud_lines.size() > 2 and hud_lines[2].ends_with(sprint_line), str(hud_lines))
+	_check("HUD: смена тела показывает управление заново", abilities.is_showing(), "тело %s" % walker4)
 
 	var crawler3 := _spawn_body(world, CRAWLER_SCENE, Vector3(0.0, 0.0, 12.0))
 	await get_tree().physics_frame
@@ -463,107 +446,28 @@ func _run(world: World) -> void:
 	await get_tree().process_frame
 
 	_check(
-		"HUD: у безногого тела строка прыжка пропадает, а не гаснет",
-		not jump_label.visible,
-		"тело %s" % crawler3
-	)
-	_check(
-		"HUD: у безногого тела строка бега пропадает вместе со строкой прыжка",
-		not sprint_label.visible,
-		"тело %s" % crawler3
-	)
-	_check(
-		"HUD: у безногого тела разделитель пропадает вместе с прыжком",
-		not separator.visible,
-		""
+		"HUD: у безногого тела строк прыжка и бега нет вовсе, а не серые",
+		abilities.visible_lines() == PackedStringArray([move_line]),
+		"тело %s: %s" % [crawler3, abilities.visible_lines()]
 	)
 
-	_check(
-		"HUD: подложка сжалась обратно, потеряв прыжок и бег",
-		is_equal_approx(abilities_panel.size.y, size_one_row) and abilities_panel.size.y < size_all_rows,
-		"%.1f (одна строка была %.1f, полный набор — %.1f)"
-		% [abilities_panel.size.y, size_one_row, size_all_rows]
-	)
-
-	# --- 9б. Разделители между N строк, не только между двумя -------------
-	# Правило разделителей общее, и проверять его надо на случае с ДЫРОЙ: если
-	# строк три и СРЕДНЯЯ скрыта, разделитель между первой и третьей обязан
-	# остаться ОДИН, а не задвоиться и не пропасть. В боевой сцене такое
-	# состояние сегодня не собрать (нет тела с бегом, но без прыжка), поэтому
-	# панель здесь синтетическая.
-	# Собираем синтетическую панель той же формы (Margin/Abilities/…), чтобы
-	# дёрнуть _sync_separators() в изоляции от реального состояния игрока.
-	var synthetic := UI_HudAbilities.new()
-	var syn_margin := MarginContainer.new()
-	syn_margin.name = "Margin"
-	synthetic.add_child(syn_margin)
-	var syn_abilities := VBoxContainer.new()
-	syn_abilities.name = "Abilities"
-	syn_margin.add_child(syn_abilities)
-	var row_a := Label.new()
-	row_a.name = "MoveLabel"  # имя обязано совпасть с @onready-путём _move_label
-	var sep_ab := HSeparator.new()
-	var row_b := Label.new()
-	row_b.name = "JumpLabel"  # аналогично для _jump_label
-	var sep_bc := HSeparator.new()
-	var row_c := Label.new()
-	# Каждая строка, на которую у UI_HudAbilities есть @onready, обязана здесь
-	# найтись: синтетическая панель проходит тот же _ready(), и недостающий узел
-	# уронил бы её ещё до первой проверки разделителей.
-	row_c.name = "SprintLabel"
-	for node in [row_a, sep_ab, row_b, sep_bc, row_c]:
-		syn_abilities.add_child(node)
-	add_child(synthetic)
-	await get_tree().process_frame  # даёт _ready() собрать _rows/_separators
-
-	row_a.visible = true
-	row_b.visible = false  # средняя строка скрыта — ровно тот случай с «дырой»
-	row_c.visible = true
-	synthetic.call("_sync_separators")
-
-	_check(
-		"HUD: разделитель вокруг скрытой средней строки — ровно один",
-		sep_ab.visible != sep_bc.visible,
-		"sep_ab=%s sep_bc=%s (должен быть виден ровно один)" % [sep_ab.visible, sep_bc.visible]
-	)
-
-	row_b.visible = true
-	synthetic.call("_sync_separators")
-	_check(
-		"HUD: три видимые строки подряд — оба разделителя на месте",
-		sep_ab.visible and sep_bc.visible,
-		"sep_ab=%s sep_bc=%s" % [sep_ab.visible, sep_bc.visible]
-	)
-
-	row_a.visible = false
-	row_b.visible = false
-	synthetic.call("_sync_separators")
-	_check(
-		"HUD: одна видимая строка из трёх — разделителей нет вовсе",
-		not sep_ab.visible and not sep_bc.visible,
-		"sep_ab=%s sep_bc=%s" % [sep_ab.visible, sep_bc.visible]
-	)
-	synthetic.queue_free()
-
-	# --- 10. Подложки у подсказок появляются только при сообщении ----------
-	# Раньше PanelContainer-обёртка не имела скрипта и висела на экране пустой
-	# плашкой независимо от того, есть ли что показывать. Скрипт теперь на
-	# самой подложке (см. hud_prompt.gd/hud_message.gd), и hide()/show() self
-	# прячет ЕЁ целиком, а не только текст внутри.
-	var prompt_panel := hud.get_node("Hud/PromptPanel") as Control
-	var message_panel := hud.get_node("Hud/MessagePanel") as Control
-	_check("HUD: подложка подсказки скрыта, пока подсказывать нечего", not prompt_panel.visible, "")
-	_check("HUD: подложка сообщения скрыта, пока сообщений нет", not message_panel.visible, "")
-
+	# --- 10. Сообщение появляется мыслью и само растворяется ----------------
+	var message := hud.get_node("Hud/Message") as UI_HudMessage
+	var prompt := hud.get_node("Hud/Prompt") as UI_HudPrompt
+	_check("HUD: подсказки нет, пока смотреть не на что", not prompt.is_shown(), "")
 	if player.has_component(C_ScreenMessage):
 		player.remove_component(player.get_component(C_ScreenMessage))
+	await get_tree().process_frame
+	_check("HUD: без сообщения строка сообщения пуста", message.shown_text() == "", message.shown_text())
 	inp.jump_pressed = true
 	await _physics(1)
+	await get_tree().process_frame
 	_check(
-		"HUD: подложка сообщения появляется вместе с сообщением",
-		message_panel.visible,
-		str(player.get_component(C_ScreenMessage))
+		"HUD: отказ безногого тела виден строкой, переведённой из ключа",
+		message.shown_text() == tr("HUD_MSG_NO_JUMP") and message.shown_text() != "HUD_MSG_NO_JUMP",
+		message.shown_text()
 	)
+	hud.queue_free()
 
 
 func _spawn_body(world: World, path: String, at: Vector3) -> Entity:

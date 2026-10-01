@@ -111,7 +111,7 @@ func describe(node_id: StringName) -> String:
 			portal += " " + tr("MAP_PORTAL_TARGET") % [target.depth, target.floor_index + 1]
 		parts.append(portal)
 		if _level >= MapKnowledge.LEVEL_CONTENTS and conn.is_locked():
-			parts.append(tr("MAP_LOCKED") % A_TravelThroughDoor.KEY_NAMES.get(conn.locked_by, String(conn.locked_by)))
+			parts.append(tr("MAP_LOCKED") % tr(A_TravelThroughDoor.KEY_NAMES.get(conn.locked_by, String(conn.locked_by))))
 	return " · ".join(parts)
 
 

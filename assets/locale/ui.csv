@@ -44,3 +44,32 @@ MAP_HINT,"Наведите на комнату, чтобы узнать о не�
 MAP_UNIQUE_HUB,Хаб,Hub
 MAP_UNIQUE_EXIT,Выход,Exit
 MAP_UNIQUE_ARCHITECT,Архитектор,Architect
+HUD_PROMPT_PASS,Пройти,Go through
+HUD_PROMPT_UNSEAL,Открыть,Open
+HUD_PROMPT_LOCKED,Заперто,Locked
+HUD_PROMPT_SEALED,Прохода нет,No way through
+HUD_PROMPT_UP,Подняться,Go up
+HUD_PROMPT_DOWN,Спуститься,Go down
+HUD_PROMPT_PORTAL_LOCKED,Портал заблокирован,The portal is blocked
+HUD_PROMPT_PORTAL_DEAD,Портал мёртв,The portal is dead
+HUD_PROMPT_SKILL_TREE,Древо навыков,Skill tree
+HUD_PROMPT_NEEDS_BODY,Нужно тело: %s,Needs a body: %s
+HUD_MSG_LOCKED_NEEDS,Заперто. Нужен %s,Locked. Requires %s
+HUD_MSG_SEALED,Прохода нет: проём заварен,No way through: the doorway is welded shut
+HUD_MSG_NO_JUMP,Этому телу нечем прыгать,This body has nothing to jump with
+HUD_MSG_NO_SPRINT,Это тело не умеет бегать,This body can't run
+HUD_MSG_NO_ROOM,Тело здесь не поместится,The body won't fit here
+ITEM_LEVEL_ACCESS_KEY,ключ доступа к уровню,a level access key
+HUD_CTRL_MOVE,Ход,Move
+HUD_CTRL_FLIGHT,Полёт,Flight
+HUD_CTRL_JUMP,Прыжок,Jump
+HUD_CTRL_SPRINT,Бег,Sprint
+KEY_MOUSE_LEFT,ЛКМ,LMB
+KEY_MOUSE_RIGHT,ПКМ,RMB
+KEY_MOUSE_MIDDLE,СКМ,MMB
+KEY_WHEEL_UP,Колесо вверх,Wheel up
+KEY_WHEEL_DOWN,Колесо вниз,Wheel down
+KEY_MOUSE_4,Мышь 4,Mouse 4
+KEY_MOUSE_5,Мышь 5,Mouse 5
+KEY_MOUSE_N,Мышь %d,Mouse %d
+KEY_SPACE,Пробел,Space

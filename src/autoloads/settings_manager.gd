@@ -29,15 +29,16 @@ const REBINDABLE_ACTIONS := {
 	&"map": "Карта",
 }
 
-## Человекочитаемые имена кнопок мыши: OS.get_keycode_string умеет только клавиши.
+## Имена кнопок мыши — ключи перевода: OS.get_keycode_string умеет только
+## клавиши. Прочие кнопки — KEY_MOUSE_N с номером.
 const MOUSE_BUTTON_NAMES := {
-	MOUSE_BUTTON_LEFT: "ЛКМ",
-	MOUSE_BUTTON_RIGHT: "ПКМ",
-	MOUSE_BUTTON_MIDDLE: "СКМ",
-	MOUSE_BUTTON_WHEEL_UP: "Колесо вверх",
-	MOUSE_BUTTON_WHEEL_DOWN: "Колесо вниз",
-	MOUSE_BUTTON_XBUTTON1: "Мышь 4",
-	MOUSE_BUTTON_XBUTTON2: "Мышь 5",
+	MOUSE_BUTTON_LEFT: "KEY_MOUSE_LEFT",
+	MOUSE_BUTTON_RIGHT: "KEY_MOUSE_RIGHT",
+	MOUSE_BUTTON_MIDDLE: "KEY_MOUSE_MIDDLE",
+	MOUSE_BUTTON_WHEEL_UP: "KEY_WHEEL_UP",
+	MOUSE_BUTTON_WHEEL_DOWN: "KEY_WHEEL_DOWN",
+	MOUSE_BUTTON_XBUTTON1: "KEY_MOUSE_4",
+	MOUSE_BUTTON_XBUTTON2: "KEY_MOUSE_5",
 }
 
 ## Эмитится каждый раз, когда settings меняются (загрузка, Apply, Reset) —
@@ -169,9 +170,17 @@ func action_display_name(action: StringName) -> String:
 func code_display_name(code: String) -> String:
 	var event := code_to_event(code)
 	if event is InputEventKey:
+		# Клавиатурные имена движок отдаёт по-английски, и для букв и Shift это
+		# и есть надпись на клавише. Пробел — единственная частая клавиша, чьё имя
+		# игрок читает словом, поэтому переводим только его.
+		if event.physical_keycode == KEY_SPACE:
+			return tr("KEY_SPACE")
 		return OS.get_keycode_string(event.physical_keycode)
 	if event is InputEventMouseButton:
-		return MOUSE_BUTTON_NAMES.get(event.button_index, "Мышь %d" % event.button_index)
+		var button: int = event.button_index
+		if MOUSE_BUTTON_NAMES.has(button):
+			return tr(MOUSE_BUTTON_NAMES[button])
+		return tr("KEY_MOUSE_N") % button
 	return "—"
 
 

@@ -90,4 +90,4 @@ func _swallow(entities: Array[Entity], _components: Array, _delta: float) -> voi
 		# бежать» содержательная причина отказа, а призраку текст про тело был бы
 		# враньём, тела у него как раз и нет.
 		if entity.has_component(C_Embodied):
-			C_ScreenMessage.show_on(entity, "Это тело не умеет бегать", cmd)
+			C_ScreenMessage.show_on(entity, "HUD_MSG_NO_SPRINT", cmd)
