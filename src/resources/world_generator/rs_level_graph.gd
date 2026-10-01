@@ -23,10 +23,11 @@ extends Resource
 ## default_room сравнян с cross_a (карточка «Баг — default_room почти не
 ## выпадает в забеге»); 4 — комнаты этажа разбросаны, а не стоят решёткой, и
 ## этажи слоя связаны лестницей, а не порталами (карточка «Хаос раскладки
-## этажа»). Все — v0.7.0. Веса пресетов в снимок ручек
-## не входят, поэтому их правка меняет мир и начатого забега — отсюда и подъём
-## версии.
-const GENERATOR_VERSION := 4
+## этажа»); 5 — Архитектор на слое хаба, но не на его этаже, и у такого слоя
+## минимум два этажа (карточка «Артефакт „Архитектор“», решения 01.10). Все —
+## v0.7.0. Веса пресетов в снимок ручек не входят, поэтому их правка меняет мир
+## и начатого забега — отсюда и подъём версии.
+const GENERATOR_VERSION := 5
 
 ## Глубина -> план раскладки слоя. Считается при генерации, а не по запросу:
 ## рёбра «дверь → ветка» граф берёт из раскладки, и план — её же результат, а не
@@ -148,7 +149,12 @@ func _generate(
 	for depth: int in DEPTHS:
 		var floors: Array = []
 		var index := 0
-		for f in rng.randi_range(config.floor_count_min, config.floor_count_max):
+		var floor_count := rng.randi_range(config.floor_count_min, config.floor_count_max)
+		# Поправка после броска, а не диапазоном броска: rng тратится одинаково, и
+		# слои, которых поправка не касается, остаются прежними.
+		if _needs_second_floor(config, depth):
+			floor_count = maxi(floor_count, 2)
+		for f in floor_count:
 			var floor_rooms: Array[RS_LevelNode] = []
 			for i in config.rooms_per_floor:
 				var id := StringName("L%d_F%d_room_%d" % [depth, f, i])
@@ -278,12 +284,18 @@ func _place_unique_rooms(
 			# — прежние сиды дают прежний комплекс.
 			var depths := unique.allowed_depths()
 			var depth_index := rng.randi_range(0, maxi(depths.size() - 1, 0))
+			var entry_node: RS_LevelNode = null
+			if unique.apart_from_entry and entry_node_id != &"":
+				entry_node = get_node_data(entry_node_id)
 			var pool: Array[RS_LevelNode] = []
 			if not depths.is_empty():
 				for floor_rooms: Array in floors_by_depth.get(depths[depth_index], []):
 					for node: RS_LevelNode in floor_rooms:
-						if not reserved.has(node.id):
-							pool.append(node)
+						if reserved.has(node.id):
+							continue
+						if entry_node and node.depth == entry_node.depth and node.floor_index == entry_node.floor_index:
+							continue
+						pool.append(node)
 			var pick := rng.randi_range(0, maxi(pool.size() - 1, 0))
 			# Все глубины вычеркнуты — конфиг невалиден (RS_WorldGenConfig.validate()).
 			# Раньше комната молча вставала на depth_min — то есть ровно туда, куда
@@ -311,6 +323,22 @@ func _place_unique_rooms(
 				node.add_tag_unique(EXIT_TAG)
 				exit_node_ids.append(node.id)
 	return presets
+
+
+## Нужен ли слою второй этаж: на нём может встать вход, а с ним комната, которой
+## на этаж входа нельзя (RS_UniqueRoom.apart_from_entry). С одним этажом такой
+## комнате не нашлось бы узла, и гарантированный Архитектор молча не вставал бы.
+## Решается до розыгрыша, поэтому по глубинам, где обе МОГУТ встать, а не по
+## тому, где встали.
+static func _needs_second_floor(config: RS_WorldGenConfig, depth: int) -> bool:
+	var entry_here := false
+	var apart_here := false
+	for unique: RS_UniqueRoom in config.unique_rooms:
+		if unique == null or not unique.covers_depth(depth):
+			continue
+		entry_here = entry_here or unique.entry
+		apart_here = apart_here or unique.apart_from_entry
+	return entry_here and apart_here
 
 
 ## Этажи одного слоя связывает портал, если лестницы в ручках нет (иначе —

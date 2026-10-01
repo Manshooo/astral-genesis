@@ -93,6 +93,13 @@ func validate() -> Array[String]:
 			entries += 1
 			if unique.count != 1 or unique.chance < 1.0:
 				problems.append("вход обязан быть ровно один и гарантированный")
+		elif unique.apart_from_entry and entries == 0:
+			# Розыгрыш идёт по порядку списка: до входа его этаж ещё не известен, и
+			# «не на этаже входа» молча не сработало бы.
+			problems.append(
+				"уникальная комната «%s» не должна вставать на этаж входа, но стоит в списке раньше него"
+				% unique.preset.display_name
+			)
 	if entries != 1:
 		problems.append("входов среди уникальных комнат %d, нужен ровно один" % entries)
 	problems.append_array(_validate_stairs())

@@ -6,7 +6,7 @@ extends "res://dev/check_harness.gd"
 ## Всё здесь ломается тихо. Улучшение, крутящее стат души, а не мира, ничего не
 ## меняет — ArchitectManager его никуда не применяет. Награда без отметки в сейве
 ## забега выдаётся заново после каждой загрузки. Ключ перевода с опечаткой
-## показывает игроку «ARCHITECT_MAP» вместо названия. Комната, выпавшая на слой
+## показывает игроку «ARCHITECT_MAP» вместо названия. Комната, выпавшая на этаж
 ## хаба или не выпавшая вовсе, выглядит просто неудачным сидом.
 ##
 ## Сейвы подменяются на время прогона и возвращаются: встреча пишет и в сейв
@@ -17,8 +17,9 @@ extends "res://dev/check_harness.gd"
 const SEEDS := 30
 const CONFIG_PATH := "res://data/world_gen_config.tres"
 const ROOM_SCENE := "res://src/levels/procedural/rooms/architect/architect_room.tscn"
-## Глубины, на которых Архитектор обязан встречаться: все, кроме хаба и поверхности.
-const EXPECTED_DEPTHS: Array[int] = [1, 2, 4]
+## Глубины, на которых Архитектор обязан встречаться: с 01.10 только слой хаба,
+## но не этаж хаба (карточка «Артефакт „Архитектор“», решения 01.10).
+const EXPECTED_DEPTHS: Array[int] = [3]
 const NODE_ID := &"L2_F0_room_3"
 ## Лучи по полу — только статика, как у игрока под ногами.
 const GEOMETRY_MASK := 1
@@ -207,8 +208,8 @@ func _check_generation() -> void:
 	for unique in config.unique_rooms:
 		if unique and unique.preset and unique.preset.scene and unique.preset.scene.resource_path == ROOM_SCENE:
 			architect = unique
-	_check("Архитектор разыгрывается на всех слоях, кроме хаба и поверхности",
-		architect != null and architect.allowed_depths() == EXPECTED_DEPTHS,
+	_check("Архитектор разыгрывается на слое хаба и не на его этаже",
+		architect != null and architect.allowed_depths() == EXPECTED_DEPTHS and architect.apart_from_entry,
 		str(architect.allowed_depths()) if architect else "нет записи")
 	if architect == null:
 		return
@@ -219,6 +220,7 @@ func _check_generation() -> void:
 	var seen_depths := {}
 	for s in SEEDS:
 		var graph := RS_LevelGraph.new().generate_run(s, library, config)
+		var entry := graph.get_node_data(graph.entry_node_id)
 		var found: Array[RS_LevelNode] = []
 		for node: RS_LevelNode in graph.nodes.values():
 			if node.room_scene_path == ROOM_SCENE:
@@ -229,6 +231,8 @@ func _check_generation() -> void:
 			seen_depths[node.depth] = true
 			if not EXPECTED_DEPTHS.has(node.depth):
 				wrong_depth.append("сид %d: слой %d" % [s, node.depth])
+			elif node.depth == entry.depth and node.floor_index == entry.floor_index:
+				wrong_depth.append("сид %d: этаж хаба %d" % [s, node.floor_index])
 			var vertical := false
 			for conn: RS_LevelConnection in node.connections:
 				var target := graph.get_node_data(conn.target_node_id)
@@ -237,7 +241,7 @@ func _check_generation() -> void:
 					or graph.exit_node_ids.has(node.id):
 				wrong_wiring.append("сид %d: %s" % [s, node.id])
 	_check("Архитектор в каждом забеге ровно один", wrong_count.is_empty(), ", ".join(wrong_count))
-	_check("и никогда на слое хаба или поверхности", wrong_depth.is_empty(), ", ".join(wrong_depth))
+	_check("и всегда на слое хаба, но никогда на этаже хаба", wrong_depth.is_empty(), ", ".join(wrong_depth.slice(0, 4)))
 	var seen: Array[int] = []
 	for depth: int in seen_depths:
 		seen.append(depth)

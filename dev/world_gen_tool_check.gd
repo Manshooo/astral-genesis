@@ -165,11 +165,16 @@ func _check_corridors(library: RS_RoomPresetLibrary, host: ViewportHost) -> void
 		if plan.node_by_cell[cell] == branch.id:
 			tile = cell
 			break
-	var above := plan.embedding.cell_origin(tile) + Vector3(0.0, 50.0, 0.0)
+	# Луч — из-под этажа выше, а не с высоты: у слоя хаба этажей бывает несколько
+	# (с 01.10 — всегда, Архитектор стоит не на этаже хаба), и сверху клик
+	# законно берёт верхний этаж. Между потолком коробки пикинга (AABB_ABOVE) и
+	# полом коробки этажа выше (клетка минус AABB_BELOW).
+	var lift := Vector3(0.0, (Picker.AABB_ABOVE + plan.embedding.cell_size - Picker.AABB_BELOW) * 0.5, 0.0)
+	var above := plan.embedding.cell_origin(tile) + lift
 	_check("коридоры: клик по тайлу выделяет его ветку",
 		Picker.pick(above, Vector3.DOWN, layer_nodes, plan) == branch.id, str(tile))
 	var room_id := graph.entry_node_id
-	var over_room := plan.position_of(room_id) + Vector3(0.0, 50.0, 0.0)
+	var over_room := plan.position_of(room_id) + lift
 	_check("коридоры: клик по комнате выделяет комнату, а не огибающий её коридор",
 		Picker.pick(over_room, Vector3.DOWN, layer_nodes, plan) == room_id, "")
 
