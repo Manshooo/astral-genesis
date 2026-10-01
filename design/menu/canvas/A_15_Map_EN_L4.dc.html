@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Карта EN · уровень 4: подписи уникальных комнат, только что пройден портал</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#0B0A0D}
+.ag{font-family:'Golos Text',sans-serif;color:#ECE8F2;-webkit-font-smoothing:antialiased}
+.ag button{font-family:inherit;-webkit-tap-highlight-color:transparent}
+@keyframes ag-in{0%{opacity:0;filter:blur(6px);transform:translateY(4px)}100%{opacity:1;filter:blur(0);transform:none}}
+@keyframes ag-echo{0%,100%{transform:translate(2px,0)}35%{transform:translate(1.2px,.6px)}70%{transform:translate(2.8px,-.4px)}}
+@keyframes ag-cursor{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes ag-ring{0%{opacity:.85;transform:scale(.5)}100%{opacity:0;transform:scale(2.4)}}
+@keyframes ag-draw{0%{stroke-dashoffset:1}100%{stroke-dashoffset:0}}
+@keyframes ag-breathe{0%,100%{opacity:.7;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes ag-dust-l{0%{transform:translate(0,0);opacity:0}15%{opacity:.8}100%{transform:translate(-26px,-130px);opacity:0}}
+@keyframes ag-dust-r{0%{transform:translate(0,0);opacity:0}15%{opacity:.8}100%{transform:translate(22px,-110px);opacity:0}}
+.ag-dust-l{animation:ag-dust-l 7s linear infinite}
+.ag-dust-r{animation:ag-dust-r 8.5s linear infinite}
+@keyframes ag-lamp{0%,100%{opacity:1}46%{opacity:1}47%{opacity:.55}48%{opacity:1}71%{opacity:.85}}
+.ag-lamp{animation:ag-lamp 5.3s linear infinite}
+@keyframes ag-fade-up{0%{opacity:0;transform:translateY(6px)}20%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+@keyframes ag-flash{0%{color:#F1E8FF;text-shadow:0 0 14px rgba(201,168,242,.9)}100%{color:inherit;text-shadow:none}}
+@keyframes ag-loader{0%{stroke-dashoffset:1}60%{stroke-dashoffset:0}100%{stroke-dashoffset:-1}}
+@keyframes ag-wisp{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:.75;transform:translateY(-6px)}}
+.ag-screen{animation:ag-in .26s cubic-bezier(.2,.7,.2,1) both}
+.ag-cursor{animation:ag-cursor 1s steps(1) infinite}
+.ag-breathe{transform-box:fill-box;transform-origin:center;animation:ag-breathe 3.2s ease-in-out infinite}
+.ag-wisp{animation:ag-wisp 5s ease-in-out infinite}
+
+/* Подпись-шёпот: заголовок экрана, подзаголовки */
+.ag-label{font-size:13px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:#C9A8F2;white-space:nowrap}
+.ag-caption{font-size:13px;line-height:18px;color:#B4ADC0}
+
+/* Эхо: копия строки сиреневым, со сдвигом 2 px, дрожит (T = 0.6) */
+.ag-title{position:relative;font-size:46px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;line-height:56px;white-space:nowrap;color:#ECE8F2}
+.ag-title::after{content:attr(data-text);position:absolute;left:0;top:0;color:rgba(201,168,242,.32);filter:blur(.4px);animation:ag-echo 1.9s ease-in-out infinite;pointer-events:none}
+
+/* Кнопка-мысль: без рамки и подложки */
+.ag-item{position:relative;display:inline-flex;align-items:baseline;gap:14px;min-height:44px;box-sizing:border-box;padding:6px 18px 8px 30px;background:none;border:0;color:rgba(236,232,242,.74);font-size:24px;font-weight:500;line-height:30px;text-align:left;white-space:nowrap;cursor:pointer;outline:none;transition:color .14s}
+.ag-item.sm{font-size:19px;line-height:26px;padding:6px 14px 8px 26px}
+.ag-item.center{align-self:center}
+.ag-item::before{content:'';position:absolute;left:10px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#C9A8F2;box-shadow:0 0 0 5px rgba(201,168,242,.14);opacity:0;transform:scale(.4);transition:opacity .12s,transform .12s}
+.ag-item.sm::before{left:8px;width:5px;height:5px;margin-top:-2.5px}
+.ag-item::after{content:attr(data-text);position:absolute;left:30px;top:6px;color:rgba(201,168,242,.30);opacity:0;filter:blur(.3px);pointer-events:none;transition:opacity .14s}
+.ag-item.sm::after{left:26px}
+.ag-rag{position:absolute;left:30px;right:18px;bottom:4px;height:6px;overflow:visible;pointer-events:none}
+.ag-item.sm .ag-rag{left:26px;right:14px}
+.ag-rag path{fill:none;stroke:#C9A8F2;stroke-width:1.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.85;transition:stroke-dashoffset .22s ease-out}
+.ag-item:hover,.ag-item.is-hover{color:#ECE8F2}
+.ag-item:hover::after,.ag-item.is-hover::after{opacity:1;animation:ag-echo 1.9s ease-in-out infinite}
+.ag-item:hover .ag-rag path,.ag-item.is-hover .ag-rag path{stroke-dashoffset:0;opacity:.55}
+.ag-item:focus-visible,.ag-item.is-focus{color:#ECE8F2}
+.ag-item:focus-visible::before,.ag-item.is-focus::before{opacity:1;transform:none}
+.ag-item:focus-visible::after,.ag-item.is-focus::after{opacity:1;animation:ag-echo 1.9s ease-in-out infinite}
+.ag-item:focus-visible .ag-rag path,.ag-item.is-focus .ag-rag path{stroke-dashoffset:0;opacity:1}
+.ag-item:active,.ag-item.is-press{color:#C9A8F2;transform:translateY(1px)}
+.ag-item:active::after,.ag-item.is-press::after{opacity:.9;animation:none;transform:translate(0,0)}
+.ag-item:disabled,.ag-item.is-disabled{color:rgba(236,232,242,.28);cursor:default;transform:none}
+.ag-item:disabled::after,.ag-item.is-disabled::after{opacity:0;animation:none}
+.ag-item:disabled .ag-rag path,.ag-item.is-disabled .ag-rag path{stroke:#ECE8F2;opacity:.22;stroke-dasharray:.006 .018;stroke-dashoffset:0}
+.ag-item:disabled.is-focus::before,.ag-item.is-disabled.is-focus::before{opacity:.5;background:#B4ADC0;box-shadow:none}
+.ag-aside{font-size:13px;font-weight:400;letter-spacing:.02em;color:#B4ADC0;opacity:.8}
+.ag-item.is-saved{color:#C9A8F2}
+.ag-item.is-saved::after{opacity:1}
+
+/* Вкладки */
+.ag-tab{position:relative;min-height:44px;padding:6px 14px 10px 26px;background:none;border:0;color:rgba(236,232,242,.5);font-size:19px;font-weight:500;line-height:26px;white-space:nowrap;cursor:pointer;outline:none}
+.ag-tab::before{content:'';position:absolute;left:9px;top:50%;width:5px;height:5px;margin-top:-4px;border-radius:50%;background:#C9A8F2;box-shadow:0 0 0 5px rgba(201,168,242,.14);opacity:0}
+.ag-tab::after{content:attr(data-text);position:absolute;left:26px;top:6px;color:rgba(201,168,242,.3);opacity:0;pointer-events:none}
+.ag-tab .ag-rag{left:26px;right:14px;bottom:6px}
+.ag-tab:hover,.ag-tab.is-hover{color:rgba(236,232,242,.85)}
+.ag-tab:hover .ag-rag path,.ag-tab.is-hover .ag-rag path{stroke-dashoffset:0;opacity:.35}
+.ag-tab.is-sel{color:#ECE8F2}
+.ag-tab.is-sel::after{opacity:1;animation:ag-echo 1.9s ease-in-out infinite}
+.ag-tab.is-sel .ag-rag path{stroke-dashoffset:0;opacity:1}
+.ag-tab:focus-visible::before,.ag-tab.is-focus::before{opacity:1}
+.ag-tab:focus-visible,.ag-tab.is-focus{color:#ECE8F2}
+.ag-tab:active,.ag-tab.is-press{color:#C9A8F2}
+
+/* Строка настройки */
+.ag-row{display:grid;grid-template-columns:340px 1fr;align-items:center;min-height:46px;position:relative}
+.ag-row-label{font-size:16px;line-height:21px;color:#DCD6E4;padding-left:4px;transition:color .14s}
+.ag-row.is-active .ag-row-label{color:#ECE8F2}
+.ag-row.is-disabled .ag-row-label{color:rgba(220,214,228,.34)}
+.ag-val{font-size:16px;font-weight:500;color:#ECE8F2;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:120px}
+.ag-row.is-disabled .ag-val{color:rgba(236,232,242,.3)}
+
+/* Выпадающий список: значение + шеврон, раскрытие — список на тени мысли */
+.ag-drop{position:relative;display:inline-flex;align-items:center;gap:10px;min-height:40px;padding:4px 10px 6px 24px;background:none;border:0;color:#ECE8F2;font-size:16px;font-weight:500;cursor:pointer;outline:none;white-space:nowrap}
+.ag-drop::before{content:'';position:absolute;left:8px;top:50%;width:5px;height:5px;margin-top:-3px;border-radius:50%;background:#C9A8F2;box-shadow:0 0 0 5px rgba(201,168,242,.14);opacity:0}
+.ag-drop svg{stroke:#C9A8F2;opacity:.6;transition:transform .14s,opacity .14s}
+.ag-drop .ag-rag{left:24px;right:30px;bottom:2px}
+.ag-drop:hover .ag-rag path,.ag-drop.is-hover .ag-rag path{stroke-dashoffset:0;opacity:.45}
+.ag-drop:hover svg,.ag-drop.is-hover svg{opacity:1}
+.ag-drop:focus-visible::before,.ag-row.is-focus .ag-drop::before{opacity:1}
+.ag-drop:focus-visible .ag-rag path,.ag-row.is-focus .ag-drop .ag-rag path{stroke-dashoffset:0;opacity:1}
+.ag-drop.is-open svg{transform:rotate(180deg);opacity:1}
+.ag-drop:disabled{color:rgba(236,232,242,.3);cursor:default}
+.ag-drop:disabled svg{stroke:#ECE8F2;opacity:.2}
+.ag-pop{position:absolute;left:0;top:42px;z-index:5;display:flex;flex-direction:column;min-width:220px;padding:10px 0 12px}
+.ag-pop::before{content:'';position:absolute;left:-46px;right:-46px;top:-16px;bottom:-16px;background:radial-gradient(closest-side,rgba(6,5,9,.92),rgba(6,5,9,.75) 60%,rgba(6,5,9,0));z-index:-1}
+.ag-opt{position:relative;min-height:36px;padding:4px 12px 4px 24px;background:none;border:0;color:rgba(236,232,242,.7);font-size:16px;text-align:left;white-space:nowrap;cursor:pointer;outline:none}
+.ag-opt::before{content:'';position:absolute;left:8px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:#C9A8F2;opacity:0}
+.ag-opt:hover,.ag-opt.is-hover{color:#ECE8F2;text-shadow:2px 0 0 rgba(201,168,242,.3)}
+.ag-opt.is-sel{color:#C9A8F2}
+.ag-opt.is-sel::before{opacity:.6}
+.ag-opt:focus-visible::before,.ag-opt.is-focus::before{opacity:1;box-shadow:0 0 0 5px rgba(201,168,242,.14)}
+.ag-opt:focus-visible,.ag-opt.is-focus{color:#ECE8F2}
+
+/* Слайдер: пунктир 1:3 как пустой трек дуги, заполненная часть — сиреневая, бегунок — точка прицела */
+.ag-range{-webkit-appearance:none;appearance:none;width:320px;height:24px;margin:0;background-repeat:no-repeat;background-position:0 50%;background-size:100% 2px;cursor:pointer;outline:none}
+.ag-range::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:#F2EEF7;box-shadow:0 0 0 6px rgba(242,238,247,.10);transition:box-shadow .14s}
+.ag-range::-moz-range-thumb{width:9px;height:9px;border:0;border-radius:50%;background:#F2EEF7;box-shadow:0 0 0 6px rgba(242,238,247,.10)}
+.ag-range::-moz-range-track{background:transparent}
+.ag-range:hover::-webkit-slider-thumb,.ag-row.is-hover .ag-range::-webkit-slider-thumb{box-shadow:0 0 0 8px rgba(201,168,242,.22)}
+.ag-range:focus-visible::-webkit-slider-thumb,.ag-row.is-focus .ag-range::-webkit-slider-thumb{background:#C9A8F2;box-shadow:0 0 0 4px rgba(11,10,13,.9),0 0 0 6px #C9A8F2}
+.ag-range:active::-webkit-slider-thumb,.ag-row.is-press .ag-range::-webkit-slider-thumb{transform:scale(1.25);background:#F1E8FF}
+.ag-range:disabled{opacity:.3;cursor:default}
+
+/* Флажок: кольцо, внутри точка души */
+.ag-check{position:relative;display:inline-flex;align-items:center;gap:12px;min-height:40px;padding:4px 10px 4px 0;background:none;border:0;color:#ECE8F2;font-size:16px;font-weight:500;cursor:pointer;outline:none}
+.ag-box{position:relative;width:16px;height:16px;box-sizing:border-box;border-radius:50%;border:1.5px solid rgba(236,232,242,.6);display:inline-flex;align-items:center;justify-content:center;transition:border-color .14s}
+.ag-tick{width:7px;height:7px;border-radius:50%;background:#C9A8F2;box-shadow:0 0 8px rgba(201,168,242,.8)}
+.ag-check:hover .ag-box,.ag-check.is-hover .ag-box{border-color:#ECE8F2}
+.ag-check:focus-visible .ag-box,.ag-row.is-focus .ag-box{border-color:#C9A8F2;box-shadow:0 0 0 5px rgba(201,168,242,.16)}
+.ag-check:active .ag-box,.ag-row.is-press .ag-box{transform:scale(.88)}
+.ag-check.is-off{color:rgba(236,232,242,.55)}
+
+/* Перепривязка: [ клавиша ] в духе подсказки HUD */
+.ag-key-row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:40px;box-sizing:border-box;padding:4px 8px 4px 24px;background:none;border:0;color:#DCD6E4;font-size:16px;text-align:left;cursor:pointer;outline:none}
+.ag-key-row::before{content:'';position:absolute;left:8px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:#C9A8F2;box-shadow:0 0 0 5px rgba(201,168,242,.14);opacity:0}
+.ag-key-row:hover,.ag-key-row.is-hover{color:#ECE8F2}
+.ag-key-row:hover .k,.ag-key-row.is-hover .k{text-shadow:2px 0 0 rgba(201,168,242,.35)}
+.ag-key-row:focus-visible::before,.ag-key-row.is-focus::before{opacity:1}
+.ag-key-row:focus-visible,.ag-key-row.is-focus{color:#ECE8F2}
+.ag-key-row:active .k,.ag-key-row.is-press .k{color:#F1E8FF}
+.ag-key-row.is-wait{color:#ECE8F2}
+.ag-key-row.is-wait::before{opacity:1;animation:ag-cursor 1s steps(1) infinite}
+.ag-key-row.is-swapped .k{animation:ag-flash 1.2s ease-out}
+.ag-kh{display:inline-flex;align-items:baseline;gap:2px;font-size:17px;white-space:nowrap}
+.ag-kh .br{color:rgba(212,184,247,.5)}
+.ag-kh .k{color:#D4B8F7;font-weight:600;padding:0 2px;min-width:12px;text-align:center}
+.ag-wait{font-size:13px;color:#B4ADC0;margin-left:8px}
+
+/* Подсказка клавиши в углу экрана */
+.ag-esc{display:inline-flex;align-items:baseline;gap:8px;min-height:40px;padding:6px 10px;background:none;border:0;color:#DCD6E4;font-size:15px;cursor:pointer;outline:none}
+.ag-esc .br{color:rgba(212,184,247,.5)}
+.ag-esc .k{color:#D4B8F7;font-weight:600}
+.ag-esc:hover,.ag-esc.is-hover{color:#ECE8F2}
+.ag-esc:focus-visible{outline:none;text-decoration:underline;text-decoration-color:#C9A8F2;text-underline-offset:6px}
+
+/* Итоги */
+.ag-death{position:relative;margin:14px 0 0;font-size:42px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;line-height:52px;white-space:nowrap;color:#ECE8F2}
+.ag-death::before,.ag-death::after{content:attr(data-text);position:absolute;left:0;top:0;pointer-events:none}
+.ag-death::before{color:rgba(201,168,242,.30);transform:translate(4px,1px);filter:blur(.5px);animation:ag-echo 2.4s ease-in-out infinite}
+.ag-death::after{color:rgba(201,168,242,.12);transform:translate(10px,-2px);filter:blur(1.4px)}
+.ag-stat{display:flex;align-items:baseline;gap:10px;min-height:34px}
+.ag-stat .l{flex:none;font-size:16px;color:#B4ADC0}
+.ag-stat .d{flex:1;min-width:24px;height:1px;align-self:center;margin-top:6px;background:repeating-linear-gradient(to right,rgba(236,232,242,.28) 0 1px,transparent 1px 4px)}
+.ag-stat .v{flex:none;max-width:300px;font-size:17px;font-weight:500;color:#ECE8F2;text-align:right;font-variant-numeric:tabular-nums}
+.ag-loader path{fill:none;stroke:#C9A8F2;stroke-width:1.2;stroke-dasharray:1;animation:ag-loader 1.4s ease-in-out infinite}
+
+/* Навыки: нейрон */
+.ag-node{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;padding:0;background:none;border:0;border-radius:50%;cursor:pointer;outline:none;color:#ECE8F2}
+.ag-node svg{position:absolute;left:0;top:0;overflow:visible}
+.ag-node .core{fill:#0B0A0D;stroke:rgba(236,232,242,.7);stroke-width:1.5}
+.ag-node .ron{fill:none;stroke:#C9A8F2;stroke-width:2;stroke-linecap:round}
+.ag-node .roff{fill:none;stroke:rgba(236,232,242,.32);stroke-width:1.2;stroke-dasharray:1 3}
+.ag-node .halo{fill:rgba(201,168,242,.0)}
+.ag-nl{position:absolute;top:2px;display:flex;flex-direction:column;gap:1px;white-space:nowrap;pointer-events:none;text-align:left}
+.ag-nl.r{left:48px}
+.ag-nl.l{right:48px;text-align:right;align-items:flex-end}
+.ag-nl .nm{font-size:15px;font-weight:500;color:#DCD6E4;line-height:19px}
+.ag-nl .rk{font-size:12px;color:#B4ADC0;font-variant-numeric:tabular-nums;line-height:16px}
+.n-part .core,.n-max .core{fill:#C9A8F2;stroke:#C9A8F2}
+.n-max .halo{fill:rgba(201,168,242,.14)}
+.n-avail .core{stroke:#ECE8F2}
+.n-avail.is-can .core{stroke:#C9A8F2;stroke-dasharray:2 2}
+.n-lock .core{stroke:rgba(236,232,242,.28);stroke-dasharray:1 3}
+.n-lock .nm{color:rgba(220,214,228,.4)}
+.n-ph{cursor:default}
+.n-ph .core{stroke:rgba(236,232,242,.22);stroke-dasharray:1 3}
+.n-ph .nm{color:rgba(180,173,192,.45);font-style:normal}
+.ag-node:hover .nm,.ag-node.is-hover .nm{color:#ECE8F2;text-shadow:2px 0 0 rgba(201,168,242,.3)}
+.ag-node:hover .core,.ag-node.is-hover .core{stroke:#ECE8F2}
+.ag-node.is-sel .nm{color:#F1E8FF;text-shadow:2px 0 0 rgba(201,168,242,.4)}
+.ag-node.is-sel .halo{fill:rgba(201,168,242,.16)}
+.ag-node:focus-visible .focusring,.ag-node.is-focus .focusring{opacity:1}
+.ag-node .focusring{fill:none;stroke:#C9A8F2;stroke-width:1;stroke-dasharray:2 3;opacity:0}
+.ag-node:active .core,.ag-node.is-press .core{transform:scale(.85);transform-origin:22px 22px}
+.ag-pulse{position:absolute;left:2px;top:2px;width:40px;height:40px;border-radius:50%;border:1.5px solid #C9A8F2;animation:ag-ring 1s ease-out 2 both;pointer-events:none}
+.ag-node.is-flash .nm{animation:ag-flash 1.2s ease-out}
+.ag-fresh{fill:none;stroke:#F1E8FF;stroke-width:2.2;stroke-dasharray:1;animation:ag-draw .6s ease-out both}
+.ag-wallet{font-size:40px;font-weight:600;line-height:46px;font-variant-numeric:tabular-nums;color:#ECE8F2;position:relative}
+.ag-wallet.is-flash{animation:ag-flash 1.2s ease-out}
+.ag-pip{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;box-sizing:border-box}
+.ag-pip.on{background:#C9A8F2}
+.ag-pip.off{border:1px dashed rgba(236,232,242,.4)}
+.ag-req{display:flex;align-items:center;gap:10px;font-size:15px;line-height:22px}
+.ag-req.met{color:#DCD6E4}
+.ag-req.unmet{color:rgba(220,214,228,.5)}
+.ag-toast{font-size:15px;color:#C9A8F2;animation:ag-fade-up 1.4s ease-out both}
+
+/* Карта */
+.ag-layer{position:absolute;box-sizing:border-box;padding:0;background:none;border:0;cursor:pointer;outline:none;text-align:left;color:#DCD6E4}
+.ag-layer .ln{position:absolute;left:0;top:2px;font-size:15px;font-weight:600;letter-spacing:.06em;color:rgba(236,232,242,.7)}
+.ag-layer .ls{position:absolute;left:34px;top:4px;font-size:12px;color:#B4ADC0}
+.ag-layer .lsep{position:absolute;left:0;right:0;bottom:0;height:1px;background:repeating-linear-gradient(to right,rgba(236,232,242,.16) 0 1px,transparent 1px 4px)}
+.ag-layer svg{position:absolute;left:0;top:0;overflow:visible}
+.ag-layer .fl{fill:none;stroke:rgba(236,232,242,.12);stroke-width:1}
+.ag-layer .tk{fill:none;stroke:#C9A8F2;stroke-width:3;opacity:.75}
+.ag-layer .td{fill:none;stroke:rgba(236,232,242,.4);stroke-width:3}
+.ag-layer.is-unknown .ln{color:rgba(236,232,242,.3)}
+.ag-layer.is-unknown .fog{opacity:1}
+.ag-layer .fog{position:absolute;left:46px;right:0;top:22px;bottom:8px;opacity:0;background:repeating-linear-gradient(-28deg,rgba(236,232,242,.05) 0 1px,transparent 1px 7px)}
+.ag-layer:hover .ln,.ag-layer.is-hover .ln{color:#ECE8F2}
+.ag-layer.is-sel .ln{color:#F1E8FF;text-shadow:2px 0 0 rgba(201,168,242,.45)}
+.ag-layer.is-sel .fl{stroke:rgba(236,232,242,.3)}
+.ag-layer.is-sel::before{content:'';position:absolute;left:-14px;top:9px;width:5px;height:5px;border-radius:50%;background:#C9A8F2}
+.ag-layer:focus-visible .ln,.ag-layer.is-focus .ln{text-decoration:underline;text-decoration-color:#C9A8F2;text-underline-offset:5px}
+.ag-room{position:absolute;box-sizing:border-box;padding:0;border:1px solid rgba(236,232,242,.42);background:rgba(11,10,13,.35);cursor:default;outline:none;color:#DCD6E4;font-size:11px;font-family:inherit}
+.ag-room.r-vis{border-color:rgba(236,232,242,.75);background:rgba(201,168,242,.10)}
+.ag-room.r-unx{border-style:dashed;border-color:rgba(236,232,242,.30)}
+.ag-room.r-stairs{background-image:repeating-linear-gradient(90deg,rgba(236,232,242,.28) 0 1px,transparent 1px 5px)}
+.ag-room.r-uniq{border-color:#D4B8F7}
+.ag-room .u{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:11px;font-weight:600;letter-spacing:.04em;color:#D4B8F7;white-space:nowrap;overflow:hidden}
+.ag-room:hover,.ag-room.is-hover{border-color:#C9A8F2;box-shadow:0 0 0 3px rgba(201,168,242,.16)}
+.ag-room:focus-visible,.ag-room.is-focus{border-color:#C9A8F2;box-shadow:0 0 0 2px #0B0A0D,0 0 0 3px #C9A8F2}
+.ag-portal{position:absolute;width:22px;height:22px;padding:0;border:1px solid #C9A8F2;border-radius:50%;background:#0B0A0D;cursor:pointer;outline:none;display:flex;align-items:center;justify-content:center}
+.ag-portal svg{stroke:#C9A8F2}
+.ag-portal:hover,.ag-portal.is-hover{box-shadow:0 0 0 5px rgba(201,168,242,.22);background:#1a1422}
+.ag-portal.is-pinned{animation:ag-flash 1.2s ease-out;box-shadow:0 0 0 6px rgba(201,168,242,.3)}
+.ag-portal:focus-visible,.ag-portal.is-focus{box-shadow:0 0 0 2px #0B0A0D,0 0 0 3px #F1E8FF}
+.ag-here{position:absolute;width:24px;height:24px;pointer-events:none}
+
+/* Полоса прототипа (не часть игры) */
+.pr{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pr span{font-size:12px;color:#8f879b;margin:0 4px 0 10px;font-family:'IBM Plex Mono',monospace}
+.pr button{min-height:30px;padding:0 10px;border-radius:3px;border:1px solid #3a3440;background:transparent;color:#B4ADC0;font:12px 'IBM Plex Mono',monospace;cursor:pointer}
+.pr button.on{border-color:#C9A8F2;color:#F1E8FF;background:rgba(201,168,242,.14)}
+.pr button:focus-visible{outline:2px solid #C9A8F2;outline-offset:2px}
+
+</style>
+</helmet>
+<div class="ag" style="position:relative;width:1497px;height:{{rootH}}px;background:#0B0A0D;overflow:hidden">
+<div style="position:relative;width:1497px;height:720px;overflow:hidden;background:#0B0A0D">
+
+<sc-if value="{{inRun}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;top:0;width:1497px;height:720px"><svg width="1497" height="720" viewBox="0 0 1497 720" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0"><defs><filter id="gm-fx" x="0" y="0" width="1497" height="720" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency=".006 .012" numOctaves="2" seed="3" result="n"></feTurbulence><feDisplacementMap in="SourceGraphic" in2="n" scale="0.00" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap><feColorMatrix in="d" type="saturate" values="0.850" result="s"></feColorMatrix><feColorMatrix in="s" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"></feColorMatrix><feOffset in="r" dx="0.00" dy="0" result="ro"></feOffset><feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="gb"></feColorMatrix><feBlend in="ro" in2="gb" mode="screen"></feBlend></filter></defs><g filter="url(#gm-fx)"><defs>
+<radialGradient id="gm-fog" cx="748" cy="330" r="420" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#55605c" stop-opacity=".55"></stop><stop offset=".45" stop-color="#2b3331" stop-opacity=".25"></stop><stop offset="1" stop-color="#000" stop-opacity="0"></stop></radialGradient>
+<linearGradient id="gm-floor" x1="0" y1="430" x2="0" y2="720" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2a302e"></stop><stop offset="1" stop-color="#121414"></stop></linearGradient>
+<linearGradient id="gm-lw" x1="0" y1="0" x2="618" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#151918"></stop><stop offset="1" stop-color="#2c3432"></stop></linearGradient>
+<linearGradient id="gm-rw" x1="1497" y1="0" x2="878" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#121615"></stop><stop offset="1" stop-color="#29302e"></stop></linearGradient>
+<filter id="gm-grain" x="0" y="0" width="1497" height="720" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 .55"></feColorMatrix></filter>
+<filter id="gm-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"></feGaussianBlur></filter>
+</defs>
+<rect x="0" y="0" width="1497" height="720" fill="#0e1110"></rect>
+<polygon points="0.0,0.0 1497.0,0.0 878.0,238.0 618.0,238.0" fill="#101312"></polygon>
+<polygon points="0.0,720.0 1497.0,720.0 878.0,430.0 618.0,430.0" fill="url(#gm-floor)"></polygon>
+<polygon points="0.0,0.0 618.0,238.0 618.0,430.0 0.0,720.0" fill="url(#gm-lw)"></polygon>
+<polygon points="1497.0,0.0 878.0,238.0 878.0,430.0 1497.0,720.0" fill="url(#gm-rw)"></polygon>
+<rect x="618" y="238" width="260" height="192" fill="#2a312f"></rect>
+<line x1="197.8" y1="76.2" x2="197.8" y2="627.2" stroke="#0b0d0d" stroke-width="2.4" opacity=".7"></line>
+<line x1="1298.9" y1="76.2" x2="1298.9" y2="627.2" stroke="#0b0d0d" stroke-width="2.4" opacity=".7"></line>
+<line x1="197.8" y1="627.2" x2="1298.9" y2="627.2" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="321.4" y1="123.8" x2="321.4" y2="569.2" stroke="#0b0d0d" stroke-width="2.0" opacity=".7"></line>
+<line x1="1175.1" y1="123.8" x2="1175.1" y2="569.2" stroke="#0b0d0d" stroke-width="2.0" opacity=".7"></line>
+<line x1="321.4" y1="569.2" x2="1175.1" y2="569.2" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="401.7" y1="154.7" x2="401.7" y2="531.5" stroke="#0b0d0d" stroke-width="1.7" opacity=".7"></line>
+<line x1="1094.7" y1="154.7" x2="1094.7" y2="531.5" stroke="#0b0d0d" stroke-width="1.7" opacity=".7"></line>
+<line x1="401.7" y1="531.5" x2="1094.7" y2="531.5" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="460.4" y1="177.3" x2="460.4" y2="503.9" stroke="#0b0d0d" stroke-width="1.5" opacity=".7"></line>
+<line x1="1035.8" y1="177.3" x2="1035.8" y2="503.9" stroke="#0b0d0d" stroke-width="1.5" opacity=".7"></line>
+<line x1="460.4" y1="503.9" x2="1035.8" y2="503.9" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="503.7" y1="194.0" x2="503.7" y2="483.6" stroke="#0b0d0d" stroke-width="1.4" opacity=".7"></line>
+<line x1="992.5" y1="194.0" x2="992.5" y2="483.6" stroke="#0b0d0d" stroke-width="1.4" opacity=".7"></line>
+<line x1="503.7" y1="483.6" x2="992.5" y2="483.6" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<line x1="534.6" y1="205.9" x2="534.6" y2="469.1" stroke="#0b0d0d" stroke-width="1.3" opacity=".7"></line>
+<line x1="961.6" y1="205.9" x2="961.6" y2="469.1" stroke="#0b0d0d" stroke-width="1.3" opacity=".7"></line>
+<line x1="534.6" y1="469.1" x2="961.6" y2="469.1" stroke="#0d0f0f" stroke-width="1.5" opacity=".6"></line>
+<polygon points="0.0,64.0 618.0,255.2 618.0,259.2 0.0,80.0" fill="#232a28"></polygon>
+<line x1="0.0" y1="66.0" x2="618.0" y2="255.7" stroke="#3b4542" stroke-width="1.2" opacity=".6"></line>
+<polygon points="0.0,117.9 618.0,268.6 618.0,272.6 0.0,126.9" fill="#232a28"></polygon>
+<line x1="0.0" y1="119.9" x2="618.0" y2="269.1" stroke="#3b4542" stroke-width="1.2" opacity=".6"></line>
+<polygon points="679.0,23.8 817.0,23.8 810.0,47.6 686.0,47.6" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="701.4,100.0 794.6,100.0 790.4,114.2 705.6,114.2" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="715.4,147.6 780.6,147.6 777.8,157.1 718.2,157.1" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="723.8,176.1 772.2,176.1 770.5,182.1 725.5,182.1" fill="#8a7650" opacity=".45"></polygon>
+<polygon points="728.7,192.8 767.3,192.8 766.2,196.3 729.8,196.3" fill="#8a7650" opacity=".45"></polygon>
+<ellipse cx="748" cy="610" rx="260" ry="40" fill="#6f6448" opacity=".07"></ellipse>
+<rect x="703" y="290" width="90" height="140" fill="#1a1f1e" stroke="#3c4542" stroke-width="2"></rect>
+<line x1="748" y1="292" x2="748" y2="428" stroke="#0f1212" stroke-width="2"></line>
+<rect x="696" y="282" width="104" height="8" fill="#202624"></rect>
+<circle cx="748" cy="276" r="3" fill="#b0453a" opacity=".8"></circle>
+<circle cx="748" cy="276" r="10" fill="#b0453a" opacity=".12"></circle>
+<rect x="0" y="0" width="1497" height="720" fill="url(#gm-fog)"></rect>
+<rect x="0" y="0" width="1497" height="720" filter="url(#gm-grain)" opacity=".07"></rect></g></svg></div>
+</sc-if>
+<sc-if value="{{overGame}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;top:0;width:1497px;height:720px;background:rgba(11,10,13,.66);backdrop-filter:blur(3px) grayscale(.7)"></div>
+<div style="position:absolute;left:0;top:0;width:1497px;height:720px;background:radial-gradient(ellipse 72% 78% at 50% 50%, rgba(18,10,30,0) 30%, rgba(18,10,30,.95) 100%)"></div>
+</sc-if>
+
+<sc-if value="{{isGame}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none"><circle cx="748.5" cy="360" r="2" fill="#F2EEF7" opacity=".85"></circle></svg>
+<div style="position:absolute;left:28px;bottom:26px;display:flex;flex-direction:column;gap:2px">
+<button class="ag-esc" onClick="{{pause}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.HINT_PAUSE}}</span></button>
+<button class="ag-esc" onClick="{{openSkills}}"><span class="br">[</span><span class="k">K</span><span class="br">]</span><span>{{t.HINT_SKILLS}}</span></button>
+<button class="ag-esc" onClick="{{openMap}}"><span class="br">[</span><span class="k">M</span><span class="br">]</span><span>{{t.HINT_MAP}}</span></button>
+<button class="ag-esc" onClick="{{die}}"><span class="br">[</span><span class="k">—</span><span class="br">]</span><span>{{t.HINT_DIE}}</span></button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isMenu}}" hint-placeholder-val="{{ true }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0"><defs><linearGradient id="ma-floor" x1="0" y1="470" x2="0" y2="720" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1d2221"></stop><stop offset="1" stop-color="#0c0e0e"></stop></linearGradient><linearGradient id="ma-lw" x1="0" y1="0" x2="840" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0a0c0c"></stop><stop offset="1" stop-color="#1a1f1e"></stop></linearGradient><linearGradient id="ma-rw" x1="1497" y1="0" x2="1240" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0b0d0d"></stop><stop offset="1" stop-color="#1a1f1e"></stop></linearGradient><linearGradient id="ma-cone" x1="0" y1="172" x2="0" y2="620" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E8ECEA" stop-opacity=".20"></stop><stop offset="1" stop-color="#E8ECEA" stop-opacity="0"></stop></linearGradient><linearGradient id="ma-sheet" x1="0" y1="510" x2="0" y2="585" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#a7afab" stop-opacity=".62"></stop><stop offset="1" stop-color="#39403e" stop-opacity=".9"></stop></linearGradient><radialGradient id="ma-tank" cx="725" cy="440" r="70" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#C9A8F2" stop-opacity=".42"></stop><stop offset="1" stop-color="#C9A8F2" stop-opacity="0"></stop></radialGradient><radialGradient id="ma-pool" cx="1040" cy="600" r="300" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#d9dfdc" stop-opacity=".10"></stop><stop offset="1" stop-color="#d9dfdc" stop-opacity="0"></stop></radialGradient><radialGradient id="ma-fog" cx="1040" cy="380" r="560" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2b3331" stop-opacity=".35"></stop><stop offset="1" stop-color="#000" stop-opacity="0"></stop></radialGradient><filter id="ma-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"></feGaussianBlur></filter><filter id="ma-grain" x="0" y="0" width="1497" height="720" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 .55"></feColorMatrix></filter></defs><rect x="0" y="0" width="1497" height="720" fill="#0a0b0b"></rect><polygon points="0,0 1497,0 1240,190 840,190" fill="#0c0e0e"></polygon><polygon points="0,720 1497,720 1240,470 840,470" fill="url(#ma-floor)"></polygon><polygon points="0,0 840,190 840,470 0,720" fill="url(#ma-lw)"></polygon><polygon points="1497,0 1240,190 1240,470 1497,720" fill="url(#ma-rw)"></polygon><rect x="840" y="190" width="400" height="280" fill="#161a19"></rect><rect x="930" y="250" width="220" height="82" fill="#0b0e0d" stroke="#2a312f" stroke-width="2"></rect><line x1="1040" y1="250" x2="1040" y2="332" stroke="#2a312f" stroke-width="2"></line><polygon points="940,260 990,260 960,322 940,322" fill="#E8ECEA" opacity=".03"></polygon><line x1="840" y1="470" x2="320" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="890" y1="470" x2="500" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="940" y1="470" x2="680" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="990" y1="470" x2="860" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="1040" y1="470" x2="1040" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="1090" y1="470" x2="1220" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="1140" y1="470" x2="1400" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="1190" y1="470" x2="1580" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="1240" y1="470" x2="1760" y2="720" stroke="#0a0c0c" stroke-width="1.4" opacity=".8"></line><line x1="766" y1="492" x2="1263" y2="492" stroke="#0a0c0c" stroke-width="1.2" opacity=".7"></line><line x1="665" y1="522" x2="1293" y2="522" stroke="#0a0c0c" stroke-width="1.2" opacity=".7"></line><line x1="517" y1="566" x2="1339" y2="566" stroke="#0a0c0c" stroke-width="1.2" opacity=".7"></line><line x1="296" y1="632" x2="1407" y2="632" stroke="#0a0c0c" stroke-width="1.2" opacity=".7"></line><line x1="13" y1="716" x2="1493" y2="716" stroke="#0a0c0c" stroke-width="1.2" opacity=".7"></line><polygon points="1497,96 1240,236 1240,242 1497,112" fill="#1f2524"></polygon><polygon points="1497,140 1240,258 1240,262 1497,150" fill="#1b201f"></polygon><ellipse cx="1040" cy="600" rx="300" ry="64" fill="url(#ma-pool)"></ellipse><g class="ag-lamp"><polygon points="1000,172 1080,172 1300,620 780,620" fill="url(#ma-cone)"></polygon><line x1="1040" y1="0" x2="1040" y2="150" stroke="#1a1f1e" stroke-width="2"></line><polygon points="1010,150 1070,150 1086,172 994,172" fill="#1c2120"></polygon><ellipse cx="1040" cy="173" rx="34" ry="6" fill="#F2EEF7" opacity=".55" filter="url(#ma-blur)"></ellipse><ellipse cx="1040" cy="172" rx="16" ry="2.5" fill="#F7F5F2" opacity=".9"></ellipse></g><rect x="688" y="372" width="74" height="12" fill="#232928"></rect><rect x="694" y="384" width="62" height="128" rx="5" fill="#0f1312" stroke="#46514e" stroke-width="1.6"></rect><rect x="696" y="420" width="58" height="90" rx="4" fill="url(#ma-tank)"></rect><line x1="702" y1="392" x2="702" y2="500" stroke="#E8ECEA" stroke-width="1.5" opacity=".08"></line><rect x="682" y="512" width="86" height="14" fill="#1a1f1e"></rect><line x1="725" y1="526" x2="725" y2="660" stroke="#121615" stroke-width="5"></line><path d="M760 470 C800 478 832 498 858 530" fill="none" stroke="#2b3231" stroke-width="2"></path><path d="M756 488 C796 500 830 520 860 540" fill="none" stroke="#252b2a" stroke-width="1.6"></path><path class="ag-wisp" style="animation-delay:-0.0s" d="M712.0 372.0 L709.3 363.0 L701.9 354.0 L699.5 345.0 L706.7 336.0 L713.0 327.0 L714.3 318.0 L718.9 309.0 L724.5 300.0 L720.9 291.0 L711.9 282.0 L708.4 273.0 L707.1 264.0 L701.7 255.0" fill="none" stroke="#C9A8F2" stroke-width="1.1" stroke-linecap="round" opacity=".5"></path><path class="ag-wisp" style="animation-delay:-1.4s" d="M733.8 372.0 L730.4 363.0 L728.5 354.0 L730.2 345.0 L726.2 336.0 L718.8 327.0 L719.0 318.0 L723.6 309.0 L723.5 300.0 L723.7 291.0 L730.4 282.0 L734.7 273.0 L730.5 264.0 L726.9 255.0" fill="none" stroke="#C9A8F2" stroke-width="1.1" stroke-linecap="round" opacity=".5"></path><path class="ag-wisp" style="animation-delay:-2.8s" d="M734.1 372.0 L736.3 363.0 L742.9 354.0 L743.4 345.0 L740.9 336.0 L743.6 327.0 L745.5 318.0 L739.8 309.0 L735.2 300.0 L737.7 291.0 L738.6 282.0 L735.1 273.0 L737.1 264.0 L743.9 255.0" fill="none" stroke="#C9A8F2" stroke-width="1.1" stroke-linecap="round" opacity=".5"></path><polygon points="850,520 1230,520 1290,585 790,585" fill="#202625"></polygon><rect x="790" y="585" width="500" height="12" fill="#141817"></rect><line x1="822" y1="597" x2="824" y2="700" stroke="#0e1111" stroke-width="4"></line><line x1="1258" y1="597" x2="1256" y2="700" stroke="#0e1111" stroke-width="4"></line><line x1="884" y1="597" x2="886" y2="668" stroke="#0e1111" stroke-width="4"></line><line x1="1196" y1="597" x2="1194" y2="668" stroke="#0e1111" stroke-width="4"></line><path d="M824 574 C850 540 892 524 944 530 C986 516 1042 512 1100 524 C1152 518 1214 530 1262 572 Z" fill="url(#ma-sheet)"></path><ellipse cx="884" cy="534" rx="38" ry="20" fill="#9aa29e" opacity=".55"></ellipse><path d="M824 574 C900 566 1000 570 1100 566 C1170 564 1230 568 1262 572" fill="none" stroke="#0f1212" stroke-width="1.4" opacity=".6"></path><circle class="ag-dust-r" style="animation-delay:-5.2s" cx="977" cy="305" r="0.9" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-0.5s" cx="1053" cy="370" r="1.2" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-r" style="animation-delay:-0.6s" cx="873" cy="390" r="0.9" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-1.0s" cx="1013" cy="508" r="1.0" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-r" style="animation-delay:-4.6s" cx="1086" cy="544" r="1.1" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-6.9s" cx="1211" cy="274" r="1.0" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-r" style="animation-delay:-2.5s" cx="912" cy="295" r="1.5" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-5.1s" cx="925" cy="434" r="1.1" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-r" style="animation-delay:-0.5s" cx="1057" cy="279" r="1.0" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-2.5s" cx="1105" cy="388" r="1.3" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-r" style="animation-delay:-6.4s" cx="1023" cy="350" r="1.4" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-4.2s" cx="948" cy="432" r="1.5" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-r" style="animation-delay:-7.8s" cx="1123" cy="346" r="0.9" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-1.2s" cx="1011" cy="487" r="1.2" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-r" style="animation-delay:-6.1s" cx="874" cy="460" r="1.3" fill="#F2EEF7" opacity=".7"></circle><circle class="ag-dust-l" style="animation-delay:-5.6s" cx="1175" cy="354" r="1.3" fill="#F2EEF7" opacity=".7"></circle><rect x="0" y="0" width="1497" height="720" fill="url(#ma-fog)"></rect><rect x="0" y="0" width="1497" height="720" filter="url(#ma-grain)" opacity=".06"></rect><rect x="0" y="0" width="1497" height="720" fill="none"></rect></svg><div style="position:absolute;left:0;top:0;width:1497px;height:720px;pointer-events:none;background:radial-gradient(ellipse 70% 80% at 62% 50%, rgba(18,10,30,0) 40%, rgba(18,10,30,.9) 100%)"></div>
+<div style="position:absolute;left:0;top:0;width:760px;height:720px;background:radial-gradient(ellipse 62% 74% at 14% 52%, rgba(6,5,9,.86), rgba(6,5,9,.5) 55%, rgba(6,5,9,0))"></div>
+<div style="position:absolute;left:112px;top:156px">
+<div class="ag-title" data-text="{{t.MENU_TITLE}}">{{t.MENU_TITLE}}</div>
+</div>
+<nav style="position:absolute;left:82px;top:318px;display:flex;flex-direction:column;align-items:flex-start;gap:6px">
+<button class="ag-item {{cl.menu_new}}" data-text="{{t.MENU_NEW_GAME}}" onClick="{{newGame}}">{{t.MENU_NEW_GAME}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item {{cl.menu_load}}" data-text="{{t.MENU_LOAD}}" disabled="{{noSave}}" onClick="{{load}}">{{t.MENU_LOAD}}<sc-if value="{{noSave}}" hint-placeholder-val="{{ false }}"><span class="ag-aside">{{t.MENU_LOAD_EMPTY}}</span></sc-if><svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item {{cl.menu_set}}" data-text="{{t.MENU_SETTINGS}}" onClick="{{openSettingsMenu}}">{{t.MENU_SETTINGS}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item {{cl.menu_quit}}" data-text="{{t.MENU_QUIT}}" onClick="{{quit}}">{{t.MENU_QUIT}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+</nav>
+<div style="position:absolute;right:24px;bottom:18px;font-size:12px;color:rgba(180,173,192,.55);font-variant-numeric:tabular-nums;letter-spacing:.02em">{{build}}</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isPause}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<div style="position:absolute;left:448px;top:150px;width:600px;height:420px;background:radial-gradient(closest-side, rgba(6,5,9,.7), rgba(6,5,9,0))"></div>
+<div style="position:absolute;left:0;top:200px;width:1497px;display:flex;flex-direction:column;align-items:center;gap:4px">
+<div class="ag-label" style="margin-bottom:22px">{{t.PAUSE_TITLE}}</div>
+<button class="ag-item center {{cl.pause_resume}}" data-text="{{t.PAUSE_CONTINUE}}" onClick="{{resume}}">{{t.PAUSE_CONTINUE}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item center {{cl.pause_save}} {{savedCls}}" data-text="{{saveLabel}}" onClick="{{doSave}}">{{saveLabel}}<sc-if value="{{saved}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A8F2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="align-self:center"><path pathLength="1" class="ag-fresh" style="stroke:#C9A8F2;stroke-width:1.6" d="M4.5 4.5h11l4 4v11a1 1 0 0 1-1 1h-14a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1z"></path><path d="M8 4.5v5h6v-5"></path><path d="M7 20.5v-6h10v6"></path></svg></sc-if><svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item center {{cl.pause_set}}" data-text="{{t.MENU_SETTINGS}}" onClick="{{openSettingsPause}}">{{t.MENU_SETTINGS}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item center {{cl.pause_menu}}" data-text="{{t.PAUSE_TO_MENU}}" onClick="{{toMenu}}">{{t.PAUSE_TO_MENU}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSettings}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<sc-if value="{{outRun}}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;top:0;width:1497px;height:720px;background:radial-gradient(ellipse 80% 90% at 30% 40%, #15121b, #0B0A0D 70%)"></div></sc-if>
+<div class="ag-label" style="position:absolute;left:112px;top:52px">{{t.SETTINGS_TITLE}}</div>
+<div style="position:absolute;right:40px;top:36px">
+<button class="ag-esc" onClick="{{cancel}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.HINT_BACK}}</span></button>
+</div>
+<nav style="position:absolute;left:86px;top:80px;display:flex;gap:18px">
+<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="3">
+<button class="ag-tab {{tb.cls}}" data-text="{{tb.label}}" aria-pressed="{{tb.sel}}" onClick="{{tb.pick}}">{{tb.label}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+</sc-for>
+</nav>
+<div style="position:absolute;left:112px;top:150px;width:880px;display:flex;flex-direction:column;gap:0">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<div class="ag-row {{r.cls}}" onMouseEnter="{{r.mark}}" onFocus="{{r.mark}}">
+<div class="ag-row-label">{{r.label}}</div>
+<div style="display:flex;align-items:center;gap:18px;position:relative">
+<sc-if value="{{r.isDrop}}" hint-placeholder-val="{{ false }}">
+<div style="position:relative">
+<button class="ag-drop {{r.openCls}}" disabled="{{r.disabled}}" aria-expanded="{{r.open}}" onClick="{{r.toggle}}"><span>{{r.valueText}}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg><svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<sc-if value="{{r.open}}" hint-placeholder-val="{{ false }}">
+<div class="ag-pop">
+<sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3">
+<button class="ag-opt {{o.cls}}" onClick="{{o.pick}}">{{o.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{r.isSlider}}" hint-placeholder-val="{{ false }}">
+<input type="range" class="ag-range" aria-label="{{r.label}}" min="{{r.min}}" max="{{r.max}}" step="{{r.step}}" value="{{r.val}}" disabled="{{r.disabled}}" onInput="{{r.onInput}}" onChange="{{r.onInput}}" style="background-image: {{r.trackBg}}">
+<span class="ag-val">{{r.valueText}}</span>
+</sc-if>
+<sc-if value="{{r.isCheck}}" hint-placeholder-val="{{ false }}">
+<button class="ag-check {{r.checkCls}}" aria-pressed="{{r.on}}" onClick="{{r.toggle}}"><span class="ag-box"><sc-if value="{{r.on}}" hint-placeholder-val="{{ true }}"><span class="ag-tick"></span></sc-if></span><span>{{r.valueText}}</span></button>
+</sc-if>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{isControls}}" hint-placeholder-val="{{ false }}">
+<div class="ag-label" style="margin:30px 0 10px 4px;color:#B4ADC0">{{t.SETTINGS_KEYS}}</div>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));column-gap:56px;margin-left:-20px">
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{binds1}}" as="b" hint-placeholder-count="5">
+<button class="ag-key-row {{b.cls}}" onClick="{{b.start}}" onKeyDown="{{b.key_down}}" onMouseDown="{{b.mouse_down}}"><span>{{b.label}}</span><span class="ag-kh"><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="ag-wait">{{waitText}}</span></sc-if><span class="br">[</span><sc-if value="{{b.idle}}" hint-placeholder-val="{{ true }}"><span class="k">{{b.key}}</span></sc-if><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="k ag-cursor">_</span></sc-if><span class="br">]</span></span></button>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{binds2}}" as="b" hint-placeholder-count="5">
+<button class="ag-key-row {{b.cls}}" onClick="{{b.start}}" onKeyDown="{{b.key_down}}" onMouseDown="{{b.mouse_down}}"><span>{{b.label}}</span><span class="ag-kh"><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="ag-wait">{{waitText}}</span></sc-if><span class="br">[</span><sc-if value="{{b.idle}}" hint-placeholder-val="{{ true }}"><span class="k">{{b.key}}</span></sc-if><sc-if value="{{b.waiting}}" hint-placeholder-val="{{ false }}"><span class="k ag-cursor">_</span></sc-if><span class="br">]</span></span></button>
+</sc-for>
+</div>
+</div>
+<div class="ag-caption" style="margin:12px 0 0 4px;min-height:18px">
+<sc-if value="{{anyWaiting}}" hint-placeholder-val="{{ false }}"><span>{{cancelText}}</span></sc-if>
+<sc-if value="{{hasSwap}}" hint-placeholder-val="{{ false }}"><span style="color:#D4B8F7">{{swapText}}</span></sc-if>
+</div>
+</sc-if>
+</div>
+<div style="position:absolute;left:1060px;top:162px;width:330px">
+<div style="font-size:15px;font-weight:600;color:#ECE8F2;margin-bottom:8px">{{hintTitle}}</div>
+<div class="ag-caption" style="font-size:14px;line-height:20px">{{hintText}}</div>
+</div>
+<div style="position:absolute;right:96px;bottom:40px;display:flex;align-items:center;gap:22px">
+<sc-if value="{{dirty}}" hint-placeholder-val="{{ false }}"><span class="ag-caption" style="margin-right:10px">{{t.SETTINGS_DIRTY}}</span></sc-if>
+<button class="ag-item sm {{cl.set_cancel}}" data-text="{{t.SETTINGS_CANCEL}}" onClick="{{cancel}}">{{t.SETTINGS_CANCEL}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item sm {{cl.set_reset}}" data-text="{{t.SETTINGS_RESET}}" onClick="{{reset}}">{{t.SETTINGS_RESET}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<button class="ag-item sm {{cl.set_apply}}" data-text="{{t.SETTINGS_APPLY}}" disabled="{{applyOff}}" onClick="{{apply}}">{{t.SETTINGS_APPLY}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSummary}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<div style="position:absolute;left:0;top:0;width:1497px;height:720px;background:radial-gradient(ellipse 60% 70% at 50% 28%, #17131f, #0B0A0D 72%)"></div><svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none"><circle class="ag-dust-r" style="animation-delay:-7.9s" cx="703" cy="458" r="1.5" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-1.6s" cx="758" cy="473" r="1.6" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-0.8s" cx="877" cy="586" r="1.3" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-5.9s" cx="349" cy="595" r="1.0" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-5.6s" cx="1223" cy="681" r="1.7" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-4.5s" cx="414" cy="158" r="1.0" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-0.3s" cx="446" cy="283" r="1.5" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-4.4s" cx="692" cy="613" r="1.7" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-3.9s" cx="750" cy="514" r="1.3" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-7.1s" cx="1238" cy="698" r="1.8" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-2.5s" cx="569" cy="276" r="1.0" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-7.2s" cx="1011" cy="370" r="1.4" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-0.0s" cx="1199" cy="616" r="1.2" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-8.3s" cx="1152" cy="408" r="1.4" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-6.6s" cx="332" cy="496" r="1.3" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-8.2s" cx="345" cy="333" r="1.9" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-0.9s" cx="376" cy="286" r="1.0" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-4.8s" cx="1041" cy="248" r="1.5" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-1.1s" cx="447" cy="553" r="1.7" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-1.8s" cx="374" cy="381" r="1.3" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-2.6s" cx="1212" cy="592" r="2.1" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-7.3s" cx="466" cy="367" r="1.7" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-1.8s" cx="358" cy="694" r="1.2" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-2.5s" cx="1017" cy="331" r="1.0" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-2.1s" cx="348" cy="471" r="1.7" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-8.2s" cx="624" cy="399" r="1.5" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-1.6s" cx="823" cy="627" r="1.1" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-2.1s" cx="1150" cy="600" r="1.1" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-1.7s" cx="985" cy="667" r="2.1" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-3.6s" cx="1125" cy="482" r="1.0" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-2.0s" cx="298" cy="679" r="1.8" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-5.1s" cx="512" cy="603" r="1.3" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-r" style="animation-delay:-0.6s" cx="432" cy="546" r="1.2" fill="#C9A8F2" opacity=".6"></circle><circle class="ag-dust-l" style="animation-delay:-5.2s" cx="808" cy="619" r="1.3" fill="#C9A8F2" opacity=".6"></circle></svg>
+<div style="position:absolute;left:0;top:96px;width:1497px;display:flex;flex-direction:column;align-items:center">
+<div class="ag-label">{{t.RUN_SUMMARY_HEADING}}</div>
+<h1 class="ag-death" data-text="{{t.RUN_SUMMARY_TITLE_DEATH}}">{{t.RUN_SUMMARY_TITLE_DEATH}}</h1>
+<p style="margin:10px 0 0;max-width:640px;text-align:center;font-size:17px;line-height:24px;color:#DCD6E4">{{t.RUN_SUMMARY_SUBTITLE_DEATH}}</p>
+<div style="width:560px;margin-top:34px;display:flex;flex-direction:column">
+<sc-for list="{{stats}}" as="st" hint-placeholder-count="7">
+<div class="ag-stat"><span class="l">{{st.label}}</span><span class="d"></span><span class="v">{{st.value}}</span></div>
+</sc-for>
+</div>
+<div style="margin-top:34px;display:flex;flex-direction:column;align-items:center">
+<button class="ag-item center {{cl.revive}}" data-text="{{reviveLabel}}" disabled="{{reviving}}" onClick="{{revive}}">{{reviveLabel}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+<sc-if value="{{reviving}}" hint-placeholder-val="{{ false }}">
+<svg class="ag-loader" width="180" height="8" viewBox="0 0 100 6" preserveAspectRatio="none" style="margin-top:2px"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSkills}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<div class="ag-label" style="position:absolute;left:112px;top:52px">{{t.SKILL_TITLE}}</div>
+<nav style="position:absolute;left:86px;top:80px;display:flex;gap:18px">
+<sc-for list="{{treeTabs}}" as="tb" hint-placeholder-count="2">
+<button class="ag-tab {{tb.cls}}" data-text="{{tb.label}}" aria-pressed="{{tb.sel}}" onClick="{{tb.pick}}">{{tb.label}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+</sc-for>
+</nav>
+<div style="position:absolute;right:40px;top:36px">
+<button class="ag-esc" onClick="{{closeOverlay}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.HINT_BACK}}</span></button>
+</div>
+<div style="position:absolute;left:740px;top:70px;display:flex;flex-direction:column;align-items:flex-start">
+<div class="ag-caption">{{walletLabel}}</div>
+<div class="ag-wallet {{walletCls}}">{{walletValue}}</div>
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="ag-toast">{{toast}}</div></sc-if>
+</div>
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none">
+<path d="{{extraD}}" fill="none" stroke="rgba(236,232,242,.07)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="{{linkLock}}" fill="none" stroke="rgba(236,232,242,.22)" stroke-width="1" stroke-dasharray="1 3" stroke-linecap="round"></path>
+<path d="{{linkAvail}}" fill="none" stroke="rgba(236,232,242,.45)" stroke-width="1.2" stroke-linecap="round"></path>
+<path d="{{linkLit}}" fill="none" stroke="#C9A8F2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".85"></path>
+<sc-if value="{{hasFresh}}" hint-placeholder-val="{{ false }}"><path class="ag-fresh" pathLength="1" d="{{linkFresh}}"></path></sc-if>
+</svg>
+<sc-for list="{{branches}}" as="br" hint-placeholder-count="3">
+<div class="ag-label" style="position:absolute;left: {{br.x}}px;top: {{br.y}}px;font-size:11px;letter-spacing:.32em;color:rgba(201,168,242,.62)">{{br.label}}</div>
+</sc-for>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="11">
+<button class="ag-node {{n.cls}}" style="left: {{n.x}}px; top: {{n.y}}px" aria-label="{{n.name}}" onClick="{{n.pick}}">
+<svg width="44" height="44" viewBox="0 0 44 44"><circle class="halo" cx="22" cy="22" r="21"></circle><circle class="focusring" cx="22" cy="22" r="21.5"></circle><path class="roff" d="{{n.ringOff}}"></path><path class="ron" d="{{n.ringOn}}"></path><circle class="core" cx="22" cy="22" r="7"></circle></svg>
+<sc-if value="{{n.flash}}" hint-placeholder-val="{{ false }}"><span class="ag-pulse"></span></sc-if>
+<span class="ag-nl {{n.side}}"><span class="nm">{{n.name}}</span><span class="rk">{{n.rankText}}</span></span>
+</button>
+</sc-for>
+<div style="position:absolute;left:1060px;top:150px;width:340px;display:flex;flex-direction:column;align-items:flex-start">
+<div class="ag-label" style="font-size:11px;letter-spacing:.32em;color:rgba(201,168,242,.62)">{{det.branch}}</div>
+<div class="ag-title" data-text="{{det.name}}" style="font-size:26px;line-height:32px;letter-spacing:.02em;text-transform:none;white-space:normal;margin-top:8px">{{det.name}}</div>
+<div style="display:flex;align-items:center;gap:12px;margin-top:10px">
+<span style="display:inline-flex"><sc-for list="{{det.pips}}" as="p" hint-placeholder-count="3"><span class="ag-pip {{p.cls}}"></span></sc-for></span>
+<span class="ag-caption" style="font-variant-numeric:tabular-nums">{{det.rank}}</span>
+</div>
+<p style="margin:16px 0 0;font-size:16px;line-height:23px;color:#DCD6E4">{{det.desc}}</p>
+<div style="display:flex;gap:10px;align-items:baseline;margin-top:18px">
+<span class="ag-caption">{{det.costLabel}}</span><span style="font-size:17px;font-weight:600;color:#ECE8F2;font-variant-numeric:tabular-nums">{{det.cost}}</span>
+</div>
+<div class="ag-caption" style="margin-top:14px">{{det.reqLabel}}</div>
+<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">
+<sc-for list="{{det.reqs}}" as="q" hint-placeholder-count="1">
+<div class="ag-req {{q.cls}}"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="{{q.fill}}" stroke="{{q.stroke}}" stroke-dasharray="{{q.dash}}"></circle></svg><span>{{q.text}}</span></div>
+</sc-for>
+</div>
+<button class="ag-item sm {{det.btnCls}}" data-text="{{det.btn}}" disabled="{{det.cannot}}" onClick="{{unlock}}" style="margin:22px 0 0 -26px">{{det.btn}}<svg class="ag-rag" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" vector-effect="non-scaling-stroke" d="M0 3.2 L6 2.4 L12 3.6 L19 2.9 L27 3.8 L34 2.6 L41 3.3 L49 2.2 L57 3.5 L64 2.8 L72 3.9 L80 2.7 L87 3.4 L94 2.5 L100 3.1"></path></svg></button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isMap}}" hint-placeholder-val="{{ false }}">
+<div class="ag-screen" style="position:absolute;left:0;top:0;width:1497px;height:720px">
+<div class="ag-label" style="position:absolute;left:112px;top:52px">{{t.MAP_TITLE}}</div>
+<div style="position:absolute;right:40px;top:36px">
+<button class="ag-esc" onClick="{{closeOverlay}}"><span class="br">[</span><span class="k">Esc</span><span class="br">]</span><span>{{t.MAP_CLOSE}}</span></button>
+</div>
+<sc-if value="{{mapNoLink}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;top:330px;width:1497px;display:flex;justify-content:center">
+<div class="ag-title" data-text="{{t.MAP_NO_LINK}}" style="font-size:20px;line-height:28px;letter-spacing:.02em;text-transform:none;font-weight:500;color:#DCD6E4">{{t.MAP_NO_LINK}}</div>
+</div>
+</sc-if>
+<sc-if value="{{mapOk}}" hint-placeholder-val="{{ true }}">
+<div class="ag-caption" style="position:absolute;left:112px;top:84px;letter-spacing:.2em;text-transform:uppercase;font-size:11px">{{t.MAP_SLICE}}</div>
+<sc-for list="{{layers}}" as="ly" hint-placeholder-count="6">
+<button class="ag-layer {{ly.cls}}" style="left:112px;top: {{ly.top}}px;width:364px;height: {{ly.h}}px" aria-label="{{ly.label}}" onClick="{{ly.pick}}">
+<span class="ln">{{ly.label}}</span><span class="ls">{{ly.sub}}</span>
+<span class="fog"></span>
+<svg width="364" height="{{ly.h}}" viewBox="0 0 364 {{ly.h}}"><path class="fl" d="{{ly.lines}}"></path><path class="td" d="{{ly.tdim}}"></path><path class="tk" d="{{ly.ticks}}"></path>
+<sc-if value="{{ly.hereMark}}" hint-placeholder-val="{{ false }}"><circle class="ag-breathe" cx="{{ly.px}}" cy="{{ly.py}}" r="7" fill="rgba(242,238,247,.14)"></circle><circle cx="{{ly.px}}" cy="{{ly.py}}" r="3.2" fill="#F2EEF7"></circle></sc-if>
+</svg>
+<span class="lsep"></span>
+</button>
+</sc-for>
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none"><path d="{{sliceLinks}}" fill="none" stroke="#C9A8F2" stroke-width="1.2" stroke-dasharray="2 3" opacity=".7"></path></svg>
+<div class="ag-caption" style="position:absolute;left:112px;top:660px;font-variant-numeric:tabular-nums">{{mapLevelText}}</div>
+<div style="position:absolute;left:560px;top:84px;font-size:15px;font-weight:600;letter-spacing:.06em;color:#ECE8F2">{{selTitle}}</div>
+<sc-if value="{{selUnknown}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:560px;top:280px;width:840px;text-align:center;font-size:18px;color:rgba(220,214,228,.5)">{{t.MAP_LAYER_CLOSED}}</div>
+</sc-if>
+<svg width="1497" height="720" viewBox="0 0 1497 720" style="position:absolute;left:0;top:0;pointer-events:none">
+<path d="{{corrU}}" fill="none" stroke="rgba(236,232,242,.2)" stroke-width="2" stroke-dasharray="3 4"></path>
+<path d="{{corrK}}" fill="none" stroke="rgba(236,232,242,.5)" stroke-width="2.4" stroke-linecap="round"></path>
+</svg>
+<sc-for list="{{floors}}" as="fl" hint-placeholder-count="2">
+<div class="ag-caption" style="position:absolute;left: {{fl.gx}}px;top: {{fl.ly}}px;letter-spacing:.14em;text-transform:uppercase;font-size:11px">{{fl.label}}</div>
+<sc-for list="{{fl.rooms}}" as="rm" hint-placeholder-count="6">
+<button class="ag-room {{rm.cls}}" style="left: {{rm.left}}px; top: {{rm.top}}px; width: {{rm.w}}px; height: {{rm.h}}px" aria-label="{{rm.name}}" onMouseEnter="{{rm.enter}}" onMouseLeave="{{rm.leave}}" onFocus="{{rm.enter}}" onBlur="{{rm.leave}}"><sc-if value="{{rm.uniq}}" hint-placeholder-val="{{ false }}"><span class="u">{{rm.uniqText}}</span></sc-if></button>
+</sc-for>
+<sc-for list="{{fl.portals}}" as="pt" hint-placeholder-count="1">
+<button class="ag-portal {{pt.cls}}" style="left: {{pt.left}}px; top: {{pt.top}}px" aria-label="{{pt.label}}" onMouseEnter="{{pt.enter}}" onMouseLeave="{{pt.leave}}" onFocus="{{pt.enter}}" onBlur="{{pt.leave}}" onClick="{{pt.jump}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{pt.arrow}}"></path></svg></button>
+</sc-for>
+<sc-if value="{{fl.here}}" hint-placeholder-val="{{ false }}">
+<svg class="ag-here" style="left: {{fl.hl}}px; top: {{fl.ht}}px" width="24" height="24" viewBox="0 0 24 24"><circle class="ag-breathe" cx="12" cy="12" r="10" fill="rgba(242,238,247,.16)"></circle><circle cx="12" cy="12" r="4.2" fill="#F2EEF7"></circle></svg>
+</sc-if>
+</sc-for>
+<div style="position:absolute;left:560px;top:620px;width:840px;font-size:15px;line-height:22px;color:#DCD6E4">
+<span class="{{mapInfoCls}}">{{mapInfo}}</span>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{fx}}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;top:0;width:1497px;height:720px;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, rgba(201,168,242,.06), rgba(11,10,13,.35))"></div></sc-if>
+</div>
+
+<sc-if value="{{live}}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;left:0;top:720px;width:1497px;height:80px;box-sizing:border-box;padding:10px 18px;background:#121015;border-top:1px solid #2a2530;display:flex;flex-direction:column;justify-content:center;gap:6px"><div class="pr"><span style="margin-left:0;color:#D8D2E0">Прототип A «Отголосок» · экран</span><sc-for list="{{protoScreens}}" as="p" hint-placeholder-count="7"><button class="{{p.cls}}" onClick="{{p.pick}}">{{p.label}}</button></sc-for><span>язык</span><sc-for list="{{protoLangs}}" as="p" hint-placeholder-count="2"><button class="{{p.cls}}" onClick="{{p.pick}}">{{p.label}}</button></sc-for><span>сейв</span><sc-for list="{{protoSave}}" as="p" hint-placeholder-count="2"><button class="{{p.cls}}" onClick="{{p.pick}}">{{p.label}}</button></sc-for><span>уровень карты</span><sc-for list="{{protoLevels}}" as="p" hint-placeholder-count="5"><button class="{{p.cls}}" onClick="{{p.pick}}">{{p.label}}</button></sc-for></div><div class="pr"><span style="margin-left:0">Tab — фокус с клавиатуры · Настройки → Управление: клик по клавише ждёт новую (Esc — отмена, мышь тоже ловится) · Навыки: выберите узел и откройте ранг · Карта: наведение на комнату, клик по порталу</span></div></div>
+</sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1497,"height":720}}'>
+var STYLE = "A";
+var STR = {"ru": {"MENU_TITLE": "Astral Genesis", "MENU_TAGLINE": "Комплекс X-16 · терминал доступа", "MENU_NEW_GAME": "Новая игра", "MENU_LOAD": "Загрузить", "MENU_LOAD_EMPTY": "нет сохранений", "MENU_SETTINGS": "Настройки", "MENU_QUIT": "Выйти", "MENU_BUILD": "сборка %s", "PAUSE_TITLE": "Пауза", "PAUSE_TITLE_TERMINAL": "Сеанс приостановлен", "PAUSE_CONTINUE": "Продолжить", "PAUSE_SAVE": "Сохранить", "PAUSE_SAVED": "Сохранено", "PAUSE_SAVE_NOTHING": "Сохранять нечего", "PAUSE_TO_MENU": "В меню", "SETTINGS_TITLE": "Настройки", "SETTINGS_TAB_GRAPHICS": "Графика", "SETTINGS_TAB_AUDIO": "Звук", "SETTINGS_TAB_CONTROLS": "Управление", "SETTINGS_PRESET": "Пресет графики", "SETTINGS_PRESET_LOW": "Низкий", "SETTINGS_PRESET_MEDIUM": "Средний", "SETTINGS_PRESET_HIGH": "Высокий", "SETTINGS_PRESET_CUSTOM": "Собственный", "SETTINGS_RES_SCALE": "Масштаб разрешения", "SETTINGS_SHADOWS": "Тени", "SETTINGS_SHADOW_RES": "Разрешение теней", "SETTINGS_AA": "Сглаживание", "SETTINGS_AA_OFF": "Выкл", "SETTINGS_VSYNC": "Вертикальная синхронизация", "SETTINGS_FOV": "Поле зрения", "SETTINGS_FPS_LIMIT": "Ограничение FPS", "SETTINGS_FPS_UNLIMITED": "без ограничения", "SETTINGS_VOLUME_MASTER": "Общая громкость", "SETTINGS_MOUSE_SENS": "Чувствительность мыши", "SETTINGS_KEYS": "Клавиши", "SETTINGS_ON": "Вкл", "SETTINGS_OFF": "Выкл", "SETTINGS_REBIND_WAIT": "нажмите клавишу", "SETTINGS_REBIND_CANCEL": "%s — отмена", "SETTINGS_REBIND_SWAPPED": "«%s» и «%s» поменялись клавишами", "SETTINGS_CANCEL": "Отмена", "SETTINGS_RESET": "Сброс", "SETTINGS_APPLY": "Применить", "SETTINGS_DIRTY": "есть непримененные изменения", "SETTINGS_HINT_PRESET": "Задаёт масштаб, тени и сглаживание разом. Ручная правка любого из них переводит пресет в «Собственный».", "SETTINGS_HINT_RES_SCALE": "Доля разрешения окна, в которой рисуется 3D. Интерфейс остаётся чётким.", "SETTINGS_HINT_SHADOW_RES": "Чёткость теней. Недоступно, пока тени выключены.", "SETTINGS_HINT_FPS": "0 — без ограничения.", "SETTINGS_HINT_KEYS": "Клик по клавише — ждёт новую. Занятая клавиша меняется местами.", "ACTION_MOVE_FORWARD": "Вперёд", "ACTION_MOVE_BACKWARD": "Назад", "ACTION_MOVE_LEFT": "Влево", "ACTION_MOVE_RIGHT": "Вправо", "ACTION_JUMP": "Прыжок", "ACTION_SPRINT": "Бег", "ACTION_INTERACT": "Взаимодействие", "ACTION_SNATCH_BODY": "Захват тела", "ACTION_LEAVE_BODY": "Покинуть тело", "ACTION_MAP": "Карта", "KEY_SPACE": "Пробел", "KEY_LMB": "ЛКМ", "KEY_RMB": "ПКМ", "KEY_MMB": "СКМ", "RUN_SUMMARY_TITLE_DEATH": "Сознание угасло", "RUN_SUMMARY_SUBTITLE_DEATH": "БФЖ распался, не найдя нового тела.", "RUN_SUMMARY_TITLE_EVAC": "Выход найден", "RUN_SUMMARY_TITLE_FINAL": "Комплекс отпустил", "RUN_SUMMARY_HEADING": "Итоги забега", "RUN_SUMMARY_REVIVE": "Возродиться", "RUN_SUMMARY_REVIVING": "Возрождение…", "RUN_STAT_TIME": "Время забега", "RUN_STAT_ROOMS": "Комнат пройдено", "RUN_STAT_BODIES": "Тел занято", "RUN_STAT_BODY_LIST": "Какие тела", "RUN_STAT_DAMAGE_TAKEN": "Урона получено", "RUN_STAT_DAMAGE_DEALT": "Урона нанесено", "RUN_STAT_SKILL_POINTS": "Очков навыков получено", "BODY_WALKER": "Ходок", "BODY_CRAWLER": "Ползун", "BODY_HOUND": "Гончая", "SKILL_TITLE": "Навыки", "SKILL_TAB_SOUL": "Душа", "SKILL_TAB_ARCHITECT": "Архитектор", "SKILL_POINTS": "Очки навыков", "ARCHITECT_ESSENCE": "Эссенция", "SKILL_THOUSANDS": "%s тыс.", "SKILL_BRANCH_POSSESSION": "Захват", "SKILL_BRANCH_SURVIVAL": "Выживание", "SKILL_BRANCH_EMBODIMENT": "Тело", "ARCHITECT_BRANCH_KNOWLEDGE": "Знание", "ARCHITECT_BRANCH_FUTURE": "ветвь мира", "SKILL_RANK": "Ранг %d из %d", "SKILL_COST": "Цена ранга", "SKILL_REQUIRES": "Требуется", "SKILL_REQ_RANK": "«%s», ранг %d", "SKILL_NO_REQ": "без требований", "SKILL_UNLOCK": "Открыть ранг %d", "SKILL_NO_POINTS": "Не хватает очков", "SKILL_NO_ESSENCE": "Не хватает эссенции", "SKILL_LOCKED": "Сначала выполните требования", "SKILL_MAXED": "Освоено полностью", "SKILL_UNLOCKED": "Ранг %d открыт", "SKILL_BODY_SNATCH_NAME": "Захват тела", "SKILL_BODY_SNATCH_DESC": "Позволяет управлять трупами.", "SKILL_CAPTURE_PRECISION_NAME": "Точная хватка", "SKILL_CAPTURE_PRECISION_DESC": "Повышает шанс успешного захвата тела.", "SKILL_LIFESPAN_NAME": "Длительность жизни", "SKILL_LIFESPAN_DESC": "Увеличивает запас жизни души — дольше вне тела и в теле.", "SKILL_DECAY_CAPACITY_NAME": "Крепкая плоть", "SKILL_DECAY_CAPACITY_DESC": "Увеличивает запас распада захваченного тела.", "SKILL_GRACEFUL_EXIT_NAME": "Чистый выход", "SKILL_GRACEFUL_EXIT_DESC": "Больше остатка запаса тела достаётся душе при добровольном выходе.", "SKILL_OVERFLOW_CONTROL_NAME": "Контроль избытка", "SKILL_OVERFLOW_CONTROL_DESC": "Снижает потери излишка запаса души сверх собственного максимума.", "SKILL_LAST_BREATH_NAME": "Последний вдох", "SKILL_LAST_BREATH_DESC": "Больше запаса души сохраняется при гибели захваченного тела.", "SKILL_STEADY_LEGS_NAME": "Твёрдая поступь", "SKILL_STEADY_LEGS_DESC": "Увеличивает скорость ходьбы в захваченном теле.", "SKILL_SPRING_STEP_NAME": "Пружинный шаг", "SKILL_SPRING_STEP_DESC": "Увеличивает силу прыжка в захваченном теле.", "SKILL_RESILIENT_FLESH_NAME": "Живучесть", "SKILL_RESILIENT_FLESH_DESC": "Увеличивает запас прочности захваченного тела.", "SKILL_SECOND_WIND_NAME": "Второе дыхание", "SKILL_SECOND_WIND_DESC": "Увеличивает скорость бега в захваченном теле.", "ARCHITECT_MAP": "Карта комплекса", "ARCHITECT_MAP_DESC": "Архитектор делится планом комплекса. Каждый ранг открывает следующий уровень карты: посещённое на слое, весь слой, все слои, содержимое комнат.", "MAP_TITLE": "Карта комплекса", "MAP_SLICE": "Срез", "MAP_LEVEL": "Уровень карты: %d из %d", "MAP_CLOSE": "Закрыть", "MAP_LAYER": "L%d", "MAP_LAYER_SURFACE": "поверхность", "MAP_LAYER_DEPTH": "глубина", "MAP_LAYER_CLOSED": "нет данных", "MAP_HERE": "вы здесь", "MAP_FLOOR": "Этаж %d", "MAP_FLOORS": "этажей: %d", "MAP_ROOM": "Комната", "MAP_CORRIDOR": "Коридор", "MAP_STAIRS": "Лестница", "MAP_VISITED": "посещено", "MAP_UNEXPLORED": "не исследовано", "MAP_PORTAL_UP": "портал вверх", "MAP_PORTAL_DOWN": "портал вниз", "MAP_PORTAL_TARGET": "→ L%d, этаж %d", "MAP_HINT": "Наведите на комнату, чтобы узнать о ней. Клик по порталу переносит к его второму концу.", "MAP_NO_LINK": "Нет связи с Архитектором: карта недоступна", "MAP_UNIQUE_HUB": "Хаб", "MAP_UNIQUE_EXIT": "Выход", "MAP_UNIQUE_ARCHITECT": "Архитектор", "HINT_BACK": "Назад", "HINT_PAUSE": "Пауза", "HINT_SKILLS": "Навыки", "HINT_MAP": "Карта", "HINT_DIE": "Угаснуть"}, "en": {"MENU_TITLE": "Astral Genesis", "MENU_TAGLINE": "Complex X-16 · access terminal", "MENU_NEW_GAME": "New game", "MENU_LOAD": "Load game", "MENU_LOAD_EMPTY": "no saved run", "MENU_SETTINGS": "Settings", "MENU_QUIT": "Quit", "MENU_BUILD": "build %s", "PAUSE_TITLE": "Paused", "PAUSE_TITLE_TERMINAL": "Session suspended", "PAUSE_CONTINUE": "Resume", "PAUSE_SAVE": "Save", "PAUSE_SAVED": "Saved", "PAUSE_SAVE_NOTHING": "Nothing to save", "PAUSE_TO_MENU": "Quit to main menu", "SETTINGS_TITLE": "Settings", "SETTINGS_TAB_GRAPHICS": "Graphics", "SETTINGS_TAB_AUDIO": "Audio", "SETTINGS_TAB_CONTROLS": "Controls", "SETTINGS_PRESET": "Graphics preset", "SETTINGS_PRESET_LOW": "Low", "SETTINGS_PRESET_MEDIUM": "Medium", "SETTINGS_PRESET_HIGH": "High", "SETTINGS_PRESET_CUSTOM": "Custom", "SETTINGS_RES_SCALE": "Resolution scale", "SETTINGS_SHADOWS": "Shadows", "SETTINGS_SHADOW_RES": "Shadow resolution", "SETTINGS_AA": "Anti-aliasing", "SETTINGS_AA_OFF": "Off", "SETTINGS_VSYNC": "Vertical synchronization", "SETTINGS_FOV": "Field of view", "SETTINGS_FPS_LIMIT": "Frame rate limit", "SETTINGS_FPS_UNLIMITED": "unlimited", "SETTINGS_VOLUME_MASTER": "Master volume", "SETTINGS_MOUSE_SENS": "Mouse sensitivity", "SETTINGS_KEYS": "Key bindings", "SETTINGS_ON": "On", "SETTINGS_OFF": "Off", "SETTINGS_REBIND_WAIT": "press a key", "SETTINGS_REBIND_CANCEL": "%s to cancel", "SETTINGS_REBIND_SWAPPED": "“%s” and “%s” swapped keys", "SETTINGS_CANCEL": "Cancel", "SETTINGS_RESET": "Reset to defaults", "SETTINGS_APPLY": "Apply", "SETTINGS_DIRTY": "unapplied changes", "SETTINGS_HINT_PRESET": "Sets scale, shadows and anti-aliasing at once. Changing any of them by hand switches the preset to “Custom”.", "SETTINGS_HINT_RES_SCALE": "Share of the window resolution the 3D view is drawn at. The interface stays sharp.", "SETTINGS_HINT_SHADOW_RES": "Shadow sharpness. Unavailable while shadows are off.", "SETTINGS_HINT_FPS": "0 means unlimited.", "SETTINGS_HINT_KEYS": "Click a key to wait for a new one. A taken key swaps places.", "ACTION_MOVE_FORWARD": "Move forward", "ACTION_MOVE_BACKWARD": "Move backward", "ACTION_MOVE_LEFT": "Strafe left", "ACTION_MOVE_RIGHT": "Strafe right", "ACTION_JUMP": "Jump", "ACTION_SPRINT": "Sprint", "ACTION_INTERACT": "Interact", "ACTION_SNATCH_BODY": "Possess a body", "ACTION_LEAVE_BODY": "Leave the body", "ACTION_MAP": "Map", "KEY_SPACE": "Space", "KEY_LMB": "LMB", "KEY_RMB": "RMB", "KEY_MMB": "MMB", "RUN_SUMMARY_TITLE_DEATH": "Consciousness faded", "RUN_SUMMARY_SUBTITLE_DEATH": "The incorporeal one decayed, finding no new body.", "RUN_SUMMARY_TITLE_EVAC": "A way out", "RUN_SUMMARY_TITLE_FINAL": "The complex let go", "RUN_SUMMARY_HEADING": "Run summary", "RUN_SUMMARY_REVIVE": "Revive", "RUN_SUMMARY_REVIVING": "Reviving…", "RUN_STAT_TIME": "Run time", "RUN_STAT_ROOMS": "Rooms visited", "RUN_STAT_BODIES": "Bodies taken", "RUN_STAT_BODY_LIST": "Which bodies", "RUN_STAT_DAMAGE_TAKEN": "Damage taken", "RUN_STAT_DAMAGE_DEALT": "Damage dealt", "RUN_STAT_SKILL_POINTS": "Skill points earned", "BODY_WALKER": "Walker", "BODY_CRAWLER": "Crawler", "BODY_HOUND": "Hound", "SKILL_TITLE": "Skills", "SKILL_TAB_SOUL": "Soul", "SKILL_TAB_ARCHITECT": "Architect", "SKILL_POINTS": "Skill points", "ARCHITECT_ESSENCE": "Essence", "SKILL_THOUSANDS": "%sk", "SKILL_BRANCH_POSSESSION": "Possession", "SKILL_BRANCH_SURVIVAL": "Survival", "SKILL_BRANCH_EMBODIMENT": "Body", "ARCHITECT_BRANCH_KNOWLEDGE": "Knowledge", "ARCHITECT_BRANCH_FUTURE": "world branch", "SKILL_RANK": "Rank %d of %d", "SKILL_COST": "Rank cost", "SKILL_REQUIRES": "Requires", "SKILL_REQ_RANK": "“%s”, rank %d", "SKILL_NO_REQ": "no requirements", "SKILL_UNLOCK": "Unlock rank %d", "SKILL_NO_POINTS": "Not enough points", "SKILL_NO_ESSENCE": "Not enough essence", "SKILL_LOCKED": "Meet the requirements first", "SKILL_MAXED": "Fully mastered", "SKILL_UNLOCKED": "Rank %d unlocked", "SKILL_BODY_SNATCH_NAME": "Body snatch", "SKILL_BODY_SNATCH_DESC": "Lets you take control of corpses.", "SKILL_CAPTURE_PRECISION_NAME": "Precise grip", "SKILL_CAPTURE_PRECISION_DESC": "Raises the chance that a capture succeeds.", "SKILL_LIFESPAN_NAME": "Lifespan", "SKILL_LIFESPAN_DESC": "Raises the soul’s lifespan — longer outside a body and inside one.", "SKILL_DECAY_CAPACITY_NAME": "Hardy flesh", "SKILL_DECAY_CAPACITY_DESC": "Raises the decay reserve of a captured body.", "SKILL_GRACEFUL_EXIT_NAME": "Clean exit", "SKILL_GRACEFUL_EXIT_DESC": "More of the body’s remaining reserve goes to the soul when you leave it by choice.", "SKILL_OVERFLOW_CONTROL_NAME": "Overflow control", "SKILL_OVERFLOW_CONTROL_DESC": "Reduces the loss of soul reserve held above its own maximum.", "SKILL_LAST_BREATH_NAME": "Last breath", "SKILL_LAST_BREATH_DESC": "More of the soul’s reserve survives when the captured body dies.", "SKILL_STEADY_LEGS_NAME": "Steady stride", "SKILL_STEADY_LEGS_DESC": "Raises walking speed in a captured body.", "SKILL_SPRING_STEP_NAME": "Spring step", "SKILL_SPRING_STEP_DESC": "Raises jump strength in a captured body.", "SKILL_RESILIENT_FLESH_NAME": "Resilience", "SKILL_RESILIENT_FLESH_DESC": "Raises the durability of a captured body.", "SKILL_SECOND_WIND_NAME": "Second wind", "SKILL_SECOND_WIND_DESC": "Raises sprint speed in a captured body.", "ARCHITECT_MAP": "Complex map", "ARCHITECT_MAP_DESC": "The Architect shares the plan of the complex. Each rank opens the next map level: visited rooms of the layer, the whole layer, all layers, room contents.", "MAP_TITLE": "Complex map", "MAP_SLICE": "Cross-section", "MAP_LEVEL": "Map level: %d of %d", "MAP_CLOSE": "Close", "MAP_LAYER": "L%d", "MAP_LAYER_SURFACE": "surface", "MAP_LAYER_DEPTH": "the depths", "MAP_LAYER_CLOSED": "no data", "MAP_HERE": "you are here", "MAP_FLOOR": "Floor %d", "MAP_FLOORS": "floors: %d", "MAP_ROOM": "Room", "MAP_CORRIDOR": "Corridor", "MAP_STAIRS": "Stairs", "MAP_VISITED": "visited", "MAP_UNEXPLORED": "unexplored", "MAP_PORTAL_UP": "portal up", "MAP_PORTAL_DOWN": "portal down", "MAP_PORTAL_TARGET": "→ L%d, floor %d", "MAP_HINT": "Hover a room to learn about it. Clicking a portal takes you to its other end.", "MAP_NO_LINK": "No link to the Architect: the map is unavailable", "MAP_UNIQUE_HUB": "Hub", "MAP_UNIQUE_EXIT": "Exit", "MAP_UNIQUE_ARCHITECT": "Architect", "HINT_BACK": "Back", "HINT_PAUSE": "Pause", "HINT_SKILLS": "Skills", "HINT_MAP": "Map", "HINT_DIE": "Fade out"}};
+var BOOT = {"screen": "map", "lang": "en", "mapLevel": 4, "mapLayer": 2, "pinned": "P2u", "force": {"focus": ["layer_3"]}, "bare": true};
+var MAPDATA = {"cols": 12, "rows": 8, "layers": [{"idx": 0, "floors": [{"rooms": [{"id": "L0F0R0", "x": 0, "y": 6, "w": 1, "h": 2, "kind": "room", "visited": true}, {"id": "L0F0R1", "x": 2, "y": 0, "w": 1, "h": 1, "kind": "hub", "visited": true}, {"id": "L0F0R2", "x": 3, "y": 4, "w": 1, "h": 1, "kind": "room", "visited": true}, {"id": "L0F0R3", "x": 4, "y": 0, "w": 1, "h": 2, "kind": "room", "visited": true}, {"id": "L0F0R4", "x": 5, "y": 3, "w": 1, "h": 2, "kind": "stairs", "visited": true}, {"id": "L0F0R5", "x": 4, "y": 6, "w": 3, "h": 2, "kind": "room", "visited": true}, {"id": "L0F0R6", "x": 7, "y": 0, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L0F0R7", "x": 10, "y": 3, "w": 2, "h": 1, "kind": "room", "visited": true}], "corr": [[0.5, 7.0, 2.5, 7.0, 1], [2.5, 7.0, 2.5, 0.5, 1], [2.5, 0.5, 3.5, 0.5, 1], [3.5, 0.5, 3.5, 4.5, 1], [3.5, 4.5, 4.5, 4.5, 1], [4.5, 4.5, 4.5, 1.0, 1], [4.5, 1.0, 5.5, 1.0, 1], [5.5, 1.0, 5.5, 4.0, 1], [5.5, 4.0, 5.5, 4.0, 1], [5.5, 4.0, 5.5, 7.0, 1], [5.5, 7.0, 8.0, 7.0, 1], [8.0, 7.0, 8.0, 0.5, 1], [8.0, 0.5, 11.0, 0.5, 1], [11.0, 0.5, 11.0, 3.5, 1]], "portals": []}, {"rooms": [{"id": "L0F1R0", "x": 0, "y": 6, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L0F1R1", "x": 1, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L0F1R2", "x": 1, "y": 4, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L0F1R3", "x": 5, "y": 3, "w": 1, "h": 2, "kind": "stairs", "visited": true}, {"id": "L0F1R4", "x": 5, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L0F1R5", "x": 6, "y": 6, "w": 2, "h": 2, "kind": "room", "visited": true}, {"id": "L0F1R6", "x": 7, "y": 4, "w": 1, "h": 1, "kind": "room", "visited": true}, {"id": "L0F1R7", "x": 10, "y": 1, "w": 1, "h": 2, "kind": "room", "visited": true}], "corr": [[1.0, 6.5, 2.0, 6.5, 1], [2.0, 6.5, 2.0, 1.5, 1], [2.0, 1.5, 2.0, 1.5, 1], [2.0, 1.5, 2.0, 4.5, 1], [2.0, 4.5, 5.5, 4.5, 1], [5.5, 4.5, 5.5, 4.0, 1], [5.5, 4.0, 6.0, 4.0, 1], [6.0, 4.0, 6.0, 1.5, 1], [6.0, 1.5, 7.0, 1.5, 1], [7.0, 1.5, 7.0, 7.0, 1], [7.0, 7.0, 7.5, 7.0, 1], [7.5, 7.0, 7.5, 4.5, 1], [7.5, 4.5, 10.5, 4.5, 1], [10.5, 4.5, 10.5, 2.0, 1]], "portals": [{"id": "P0d", "pair": "P1u", "x": 10, "y": 1, "dir": "down", "to": [1, 0], "visited": true}]}]}, {"idx": 1, "floors": [{"rooms": [{"id": "L1F0R0", "x": 1, "y": 4, "w": 1, "h": 1, "kind": "room", "visited": true}, {"id": "L1F0R1", "x": 1, "y": 1, "w": 1, "h": 2, "kind": "room", "visited": true}, {"id": "L1F0R2", "x": 5, "y": 2, "w": 1, "h": 2, "kind": "room", "visited": true}, {"id": "L1F0R3", "x": 4, "y": 6, "w": 3, "h": 2, "kind": "room", "visited": true}, {"id": "L1F0R4", "x": 7, "y": 3, "w": 1, "h": 2, "kind": "stairs", "visited": true}, {"id": "L1F0R5", "x": 7, "y": 1, "w": 1, "h": 1, "kind": "room", "visited": true}, {"id": "L1F0R6", "x": 9, "y": 7, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L1F0R7", "x": 10, "y": 5, "w": 2, "h": 1, "kind": "room", "visited": true}], "corr": [[1.5, 4.5, 1.5, 4.5, 1], [1.5, 4.5, 1.5, 2.0, 1], [1.5, 2.0, 5.5, 2.0, 1], [5.5, 2.0, 5.5, 3.0, 1], [5.5, 3.0, 5.5, 3.0, 1], [5.5, 3.0, 5.5, 7.0, 1], [5.5, 7.0, 7.5, 7.0, 1], [7.5, 7.0, 7.5, 4.0, 1], [7.5, 4.0, 7.5, 4.0, 1], [7.5, 4.0, 7.5, 1.5, 1], [7.5, 1.5, 10.0, 1.5, 1], [10.0, 1.5, 10.0, 7.5, 1], [10.0, 7.5, 11.0, 7.5, 1], [11.0, 7.5, 11.0, 5.5, 1]], "portals": [{"id": "P1u", "pair": "P0d", "x": 1, "y": 4, "dir": "up", "to": [0, 1], "visited": true}]}, {"rooms": [{"id": "L1F1R0", "x": 0, "y": 3, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L1F1R1", "x": 3, "y": 3, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L1F1R2", "x": 3, "y": 0, "w": 3, "h": 2, "kind": "room", "visited": true}, {"id": "L1F1R3", "x": 5, "y": 4, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L1F1R4", "x": 7, "y": 3, "w": 1, "h": 2, "kind": "stairs", "visited": true}, {"id": "L1F1R5", "x": 9, "y": 6, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L1F1R6", "x": 10, "y": 3, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L1F1R7", "x": 10, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": false}], "corr": [[1.0, 3.5, 3.5, 3.5, 0], [3.5, 3.5, 3.5, 3.5, 0], [3.5, 3.5, 4.5, 3.5, 0], [4.5, 3.5, 4.5, 1.0, 0], [4.5, 1.0, 5.5, 1.0, 0], [5.5, 1.0, 5.5, 4.5, 0], [5.5, 4.5, 7.5, 4.5, 0], [7.5, 4.5, 7.5, 4.0, 0], [7.5, 4.0, 10.0, 4.0, 0], [10.0, 4.0, 10.0, 6.5, 0], [10.0, 6.5, 11.0, 6.5, 0], [11.0, 6.5, 11.0, 3.5, 0], [11.0, 3.5, 11.0, 3.5, 0], [11.0, 3.5, 11.0, 1.5, 0]], "portals": []}, {"rooms": [{"id": "L1F2R0", "x": 1, "y": 6, "w": 2, "h": 2, "kind": "room", "visited": true}, {"id": "L1F2R1", "x": 2, "y": 1, "w": 1, "h": 1, "kind": "room", "visited": true}, {"id": "L1F2R2", "x": 2, "y": 3, "w": 1, "h": 1, "kind": "room", "visited": true}, {"id": "L1F2R3", "x": 6, "y": 0, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L1F2R4", "x": 6, "y": 6, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L1F2R5", "x": 7, "y": 3, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L1F2R6", "x": 9, "y": 3, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L1F2R7", "x": 10, "y": 6, "w": 1, "h": 2, "kind": "room", "visited": false}], "corr": [[2.0, 7.0, 2.5, 7.0, 1], [2.5, 7.0, 2.5, 1.5, 1], [2.5, 1.5, 2.5, 1.5, 1], [2.5, 1.5, 2.5, 3.5, 1], [2.5, 3.5, 7.0, 3.5, 0], [7.0, 3.5, 7.0, 0.5, 0], [7.0, 0.5, 7.0, 0.5, 0], [7.0, 0.5, 7.0, 6.5, 0], [7.0, 6.5, 7.5, 6.5, 0], [7.5, 6.5, 7.5, 4.0, 0], [7.5, 4.0, 9.5, 4.0, 0], [9.5, 4.0, 9.5, 3.5, 0], [9.5, 3.5, 10.5, 3.5, 0], [10.5, 3.5, 10.5, 7.0, 0]], "portals": [{"id": "P1d", "pair": "P2u", "x": 10, "y": 6, "dir": "down", "to": [2, 0], "visited": false}]}]}, {"idx": 2, "floors": [{"rooms": [{"id": "L2F0R0", "x": 1, "y": 2, "w": 1, "h": 2, "kind": "room", "visited": true}, {"id": "L2F0R1", "x": 2, "y": 0, "w": 1, "h": 1, "kind": "room", "visited": true}, {"id": "L2F0R2", "x": 3, "y": 2, "w": 1, "h": 2, "kind": "stairs", "visited": true}, {"id": "L2F0R3", "x": 2, "y": 6, "w": 3, "h": 2, "kind": "room", "visited": true}, {"id": "L2F0R4", "x": 5, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": true}, {"id": "L2F0R5", "x": 8, "y": 0, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L2F0R6", "x": 8, "y": 4, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L2F0R7", "x": 11, "y": 0, "w": 1, "h": 1, "kind": "room", "visited": false}], "corr": [[1.5, 3.0, 2.5, 3.0, 1], [2.5, 3.0, 2.5, 0.5, 1], [2.5, 0.5, 3.5, 0.5, 1], [3.5, 0.5, 3.5, 3.0, 1], [3.5, 3.0, 3.5, 3.0, 1], [3.5, 3.0, 3.5, 7.0, 1], [3.5, 7.0, 6.0, 7.0, 1], [6.0, 7.0, 6.0, 1.5, 1], [6.0, 1.5, 8.5, 1.5, 0], [8.5, 1.5, 8.5, 0.5, 0], [8.5, 0.5, 8.5, 0.5, 0], [8.5, 0.5, 8.5, 5.0, 0], [8.5, 5.0, 11.5, 5.0, 0], [11.5, 5.0, 11.5, 0.5, 0]], "portals": [{"id": "P2u", "pair": "P1d", "x": 1, "y": 2, "dir": "up", "to": [1, 2], "visited": true}]}, {"rooms": [{"id": "L2F1R0", "x": 0, "y": 5, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L2F1R1", "x": 0, "y": 2, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L2F1R2", "x": 2, "y": 0, "w": 2, "h": 1, "kind": "arch", "visited": false}, {"id": "L2F1R3", "x": 3, "y": 2, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L2F1R4", "x": 5, "y": 3, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L2F1R5", "x": 5, "y": 5, "w": 3, "h": 2, "kind": "room", "visited": false}, {"id": "L2F1R6", "x": 6, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L2F1R7", "x": 10, "y": 6, "w": 2, "h": 1, "kind": "room", "visited": false}], "corr": [[0.5, 6.0, 1.0, 6.0, 0], [1.0, 6.0, 1.0, 2.5, 0], [1.0, 2.5, 3.0, 2.5, 0], [3.0, 2.5, 3.0, 0.5, 0], [3.0, 0.5, 3.5, 0.5, 0], [3.5, 0.5, 3.5, 3.0, 0], [3.5, 3.0, 6.0, 3.0, 0], [6.0, 3.0, 6.0, 3.5, 0], [6.0, 3.5, 6.5, 3.5, 0], [6.5, 3.5, 6.5, 6.0, 0], [6.5, 6.0, 7.0, 6.0, 0], [7.0, 6.0, 7.0, 1.5, 0], [7.0, 1.5, 11.0, 1.5, 0], [11.0, 1.5, 11.0, 6.5, 0]], "portals": [{"id": "P2d", "pair": "P3u", "x": 10, "y": 6, "dir": "down", "to": [3, 0], "visited": false}]}]}, {"idx": 3, "floors": [{"rooms": [{"id": "L3F0R0", "x": 0, "y": 5, "w": 3, "h": 2, "kind": "room", "visited": false}, {"id": "L3F0R1", "x": 2, "y": 2, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L3F0R2", "x": 4, "y": 4, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L3F0R3", "x": 4, "y": 0, "w": 3, "h": 2, "kind": "room", "visited": false}, {"id": "L3F0R4", "x": 6, "y": 4, "w": 2, "h": 2, "kind": "room", "visited": false}, {"id": "L3F0R5", "x": 10, "y": 2, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L3F0R6", "x": 10, "y": 5, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L3F0R7", "x": 10, "y": 0, "w": 2, "h": 1, "kind": "room", "visited": false}], "corr": [[1.5, 6.0, 2.5, 6.0, 0], [2.5, 6.0, 2.5, 3.0, 0], [2.5, 3.0, 4.5, 3.0, 0], [4.5, 3.0, 4.5, 5.0, 0], [4.5, 5.0, 5.5, 5.0, 0], [5.5, 5.0, 5.5, 1.0, 0], [5.5, 1.0, 7.0, 1.0, 0], [7.0, 1.0, 7.0, 5.0, 0], [7.0, 5.0, 10.5, 5.0, 0], [10.5, 5.0, 10.5, 3.0, 0], [10.5, 3.0, 11.0, 3.0, 0], [11.0, 3.0, 11.0, 5.5, 0], [11.0, 5.5, 11.0, 5.5, 0], [11.0, 5.5, 11.0, 0.5, 0]], "portals": [{"id": "P3u", "pair": "P2d", "x": 0, "y": 5, "dir": "up", "to": [2, 1], "visited": false}]}, {"rooms": [{"id": "L3F1R0", "x": 0, "y": 3, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L3F1R1", "x": 1, "y": 0, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L3F1R2", "x": 1, "y": 7, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L3F1R3", "x": 4, "y": 4, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L3F1R4", "x": 6, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L3F1R5", "x": 6, "y": 5, "w": 3, "h": 2, "kind": "room", "visited": false}, {"id": "L3F1R6", "x": 10, "y": 1, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L3F1R7", "x": 10, "y": 5, "w": 2, "h": 1, "kind": "room", "visited": false}], "corr": [[0.5, 3.5, 1.5, 3.5, 0], [1.5, 3.5, 1.5, 1.0, 0], [1.5, 1.0, 2.0, 1.0, 0], [2.0, 1.0, 2.0, 7.5, 0], [2.0, 7.5, 4.5, 7.5, 0], [4.5, 7.5, 4.5, 5.0, 0], [4.5, 5.0, 7.0, 5.0, 0], [7.0, 5.0, 7.0, 1.5, 0], [7.0, 1.5, 7.5, 1.5, 0], [7.5, 1.5, 7.5, 6.0, 0], [7.5, 6.0, 10.5, 6.0, 0], [10.5, 6.0, 10.5, 1.5, 0], [10.5, 1.5, 11.0, 1.5, 0], [11.0, 1.5, 11.0, 5.5, 0]], "portals": []}, {"rooms": [{"id": "L3F2R0", "x": 0, "y": 6, "w": 3, "h": 2, "kind": "room", "visited": false}, {"id": "L3F2R1", "x": 2, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L3F2R2", "x": 4, "y": 4, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L3F2R3", "x": 6, "y": 2, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L3F2R4", "x": 6, "y": 6, "w": 3, "h": 2, "kind": "room", "visited": false}, {"id": "L3F2R5", "x": 9, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L3F2R6", "x": 9, "y": 3, "w": 2, "h": 2, "kind": "room", "visited": false}, {"id": "L3F2R7", "x": 10, "y": 6, "w": 2, "h": 2, "kind": "room", "visited": false}], "corr": [[1.5, 7.0, 3.0, 7.0, 0], [3.0, 7.0, 3.0, 1.5, 0], [3.0, 1.5, 4.5, 1.5, 0], [4.5, 1.5, 4.5, 5.0, 0], [4.5, 5.0, 7.0, 5.0, 0], [7.0, 5.0, 7.0, 2.5, 0], [7.0, 2.5, 7.5, 2.5, 0], [7.5, 2.5, 7.5, 7.0, 0], [7.5, 7.0, 10.0, 7.0, 0], [10.0, 7.0, 10.0, 1.5, 0], [10.0, 1.5, 10.0, 1.5, 0], [10.0, 1.5, 10.0, 4.0, 0], [10.0, 4.0, 11.0, 4.0, 0], [11.0, 4.0, 11.0, 7.0, 0]], "portals": [{"id": "P3d", "pair": "P4u", "x": 10, "y": 6, "dir": "down", "to": [4, 0], "visited": false}]}]}, {"idx": 4, "floors": [{"rooms": [{"id": "L4F0R0", "x": 0, "y": 1, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F0R1", "x": 1, "y": 5, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L4F0R2", "x": 3, "y": 3, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F0R3", "x": 4, "y": 0, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F0R4", "x": 7, "y": 6, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F0R5", "x": 7, "y": 0, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L4F0R6", "x": 8, "y": 2, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L4F0R7", "x": 9, "y": 5, "w": 2, "h": 2, "kind": "room", "visited": false}], "corr": [[0.5, 1.5, 1.5, 1.5, 0], [1.5, 1.5, 1.5, 6.0, 0], [1.5, 6.0, 3.5, 6.0, 0], [3.5, 6.0, 3.5, 3.5, 0], [3.5, 3.5, 4.5, 3.5, 0], [4.5, 3.5, 4.5, 0.5, 0], [4.5, 0.5, 7.5, 0.5, 0], [7.5, 0.5, 7.5, 6.5, 0], [7.5, 6.5, 8.0, 6.5, 0], [8.0, 6.5, 8.0, 0.5, 0], [8.0, 0.5, 8.5, 0.5, 0], [8.5, 0.5, 8.5, 3.0, 0], [8.5, 3.0, 10.0, 3.0, 0], [10.0, 3.0, 10.0, 6.0, 0]], "portals": [{"id": "P4u", "pair": "P3d", "x": 0, "y": 1, "dir": "up", "to": [3, 2], "visited": false}]}, {"rooms": [{"id": "L4F1R0", "x": 1, "y": 3, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F1R1", "x": 3, "y": 3, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L4F1R2", "x": 4, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L4F1R3", "x": 7, "y": 5, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F1R4", "x": 8, "y": 2, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L4F1R5", "x": 9, "y": 6, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F1R6", "x": 9, "y": 0, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L4F1R7", "x": 10, "y": 3, "w": 2, "h": 1, "kind": "room", "visited": false}], "corr": [[1.5, 3.5, 3.5, 3.5, 0], [3.5, 3.5, 3.5, 4.0, 0], [3.5, 4.0, 5.0, 4.0, 0], [5.0, 4.0, 5.0, 1.5, 0], [5.0, 1.5, 7.5, 1.5, 0], [7.5, 1.5, 7.5, 5.5, 0], [7.5, 5.5, 8.5, 5.5, 0], [8.5, 5.5, 8.5, 3.0, 0], [8.5, 3.0, 9.5, 3.0, 0], [9.5, 3.0, 9.5, 6.5, 0], [9.5, 6.5, 9.5, 6.5, 0], [9.5, 6.5, 9.5, 0.5, 0], [9.5, 0.5, 11.0, 0.5, 0], [11.0, 0.5, 11.0, 3.5, 0]], "portals": [{"id": "P4d", "pair": "P5u", "x": 10, "y": 3, "dir": "down", "to": [5, 0], "visited": false}]}]}, {"idx": 5, "floors": [{"rooms": [{"id": "L5F0R0", "x": 0, "y": 4, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L5F0R1", "x": 2, "y": 1, "w": 3, "h": 2, "kind": "room", "visited": false}, {"id": "L5F0R2", "x": 3, "y": 5, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L5F0R3", "x": 6, "y": 3, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L5F0R4", "x": 7, "y": 7, "w": 1, "h": 1, "kind": "room", "visited": false}, {"id": "L5F0R5", "x": 8, "y": 0, "w": 2, "h": 2, "kind": "room", "visited": false}, {"id": "L5F0R6", "x": 8, "y": 3, "w": 2, "h": 2, "kind": "room", "visited": false}, {"id": "L5F0R7", "x": 11, "y": 5, "w": 1, "h": 2, "kind": "room", "visited": false}], "corr": [[1.0, 4.5, 3.5, 4.5, 0], [3.5, 4.5, 3.5, 2.0, 0], [3.5, 2.0, 4.0, 2.0, 0], [4.0, 2.0, 4.0, 5.5, 0], [4.0, 5.5, 6.5, 5.5, 0], [6.5, 5.5, 6.5, 4.0, 0], [6.5, 4.0, 7.5, 4.0, 0], [7.5, 4.0, 7.5, 7.5, 0], [7.5, 7.5, 9.0, 7.5, 0], [9.0, 7.5, 9.0, 1.0, 0], [9.0, 1.0, 9.0, 1.0, 0], [9.0, 1.0, 9.0, 4.0, 0], [9.0, 4.0, 11.5, 4.0, 0], [11.5, 4.0, 11.5, 6.0, 0]], "portals": [{"id": "P5u", "pair": "P4d", "x": 0, "y": 4, "dir": "up", "to": [4, 1], "visited": false}]}, {"rooms": [{"id": "L5F1R0", "x": 1, "y": 6, "w": 1, "h": 2, "kind": "room", "visited": false}, {"id": "L5F1R1", "x": 3, "y": 1, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L5F1R2", "x": 3, "y": 5, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L5F1R3", "x": 6, "y": 3, "w": 1, "h": 2, "kind": "stairs", "visited": false}, {"id": "L5F1R4", "x": 7, "y": 7, "w": 1, "h": 1, "kind": "exit", "visited": false}, {"id": "L5F1R5", "x": 9, "y": 4, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L5F1R6", "x": 9, "y": 6, "w": 2, "h": 1, "kind": "room", "visited": false}, {"id": "L5F1R7", "x": 10, "y": 0, "w": 2, "h": 1, "kind": "room", "visited": false}], "corr": [[1.5, 7.0, 4.0, 7.0, 0], [4.0, 7.0, 4.0, 1.5, 0], [4.0, 1.5, 4.0, 1.5, 0], [4.0, 1.5, 4.0, 5.5, 0], [4.0, 5.5, 6.5, 5.5, 0], [6.5, 5.5, 6.5, 4.0, 0], [6.5, 4.0, 7.5, 4.0, 0], [7.5, 4.0, 7.5, 7.5, 0], [7.5, 7.5, 10.0, 7.5, 0], [10.0, 7.5, 10.0, 4.5, 0], [10.0, 4.5, 10.0, 4.5, 0], [10.0, 4.5, 10.0, 6.5, 0], [10.0, 6.5, 11.0, 6.5, 0], [11.0, 6.5, 11.0, 0.5, 0]], "portals": []}]}], "layerLinks": [[0, 10], [1, 10], [2, 10], [3, 10], [4, 10]], "here": {"layer": 2, "floor": 0, "room": "L2F0R4"}};
+var LAYOUT = {"A": {"skills": {"soul": {"nodes": {"body_snatch": [520, 390, "r"], "capture_precision": [520, 215, "r"], "lifespan": [720, 470, "r"], "decay_capacity": [860, 372, "r"], "graceful_exit": [890, 545, "r"], "overflow_control": [700, 628, "r"], "last_breath": [880, 650, "r"], "steady_legs": [320, 470, "l"], "spring_step": [200, 372, "l"], "resilient_flesh": [170, 560, "l"], "second_wind": [330, 640, "r"]}, "branches": [["possession", 470, 150], ["survival", 760, 414], ["embodiment", 180, 428]], "extra": ""}, "arch": {"nodes": {"map_level": [324, 313, "l"], "future_1": [716, 313, "r"], "future_2": [381, 529, "l"]}, "branches": [["knowledge", 196, 262], ["future", 720, 262], ["future", 230, 580]], "extra": "M520.0 163.4 V348.2 M328.6 313.0 H711.4 M304.4 273.4 L344.0 348.2 M735.6 273.4 L696.0 348.2 M520.0 330.6 C515.6 418.6 456.2 475.8 381.4 533.0 M520.0 330.6 C524.4 418.6 583.8 475.8 658.6 533.0 M346.2 497.8 L416.6 568.2 M693.8 497.8 L623.4 568.2"}}, "map": {"x0": 560, "y0": 110, "w": 840, "h": 490, "gap": 28, "maxCell": 34, "slice": {"x0": 112, "y0": 110, "w": 364, "band": 90, "lx": 46}}}, "B": {"cellW": 230, "cellH": 52, "skills": {"soul": {"nodes": {"body_snatch": [382, 128, "r", "root"], "capture_precision": [112, 236, "r"], "lifespan": [382, 236, "r"], "decay_capacity": [382, 314, "r"], "graceful_exit": [382, 392, "r"], "overflow_control": [382, 470, "r"], "last_breath": [382, 548, "r"], "steady_legs": [652, 236, "r"], "spring_step": [652, 314, "r"], "resilient_flesh": [652, 392, "r"], "second_wind": [652, 470, "r"]}, "branches": [["possession", 112, 212], ["survival", 382, 212], ["embodiment", 652, 212]], "extra": ""}, "arch": {"nodes": {"map_level": [112, 236, "r"], "future_1": [382, 236, "r"], "future_2": [652, 236, "r"]}, "branches": [["knowledge", 112, 212], ["future", 382, 212], ["future", 652, 212]], "extra": ""}}, "map": {"x0": 396, "y0": 78, "w": 1005, "h": 548, "gap": 16, "maxCell": 40}}};
+var CL_IDS = ["menu_load", "menu_new", "menu_quit", "menu_set", "pause_menu", "pause_resume", "pause_save", "pause_set", "revive", "set_apply", "set_cancel", "set_reset"];
+var BUILD = '0.7.0-dev.142+41f9239';
+
+var DEF = { preset: 'high', scale: 100, shadows: true, shadowRes: '4096', aa: 'msaa2', vsync: true, fov: 90, fps: 0, volume: 80, sens: 2.0, binds: {} };
+var PRESETS = {
+  low: { scale: 70, shadows: false, shadowRes: '1024', aa: 'off' },
+  medium: { scale: 85, shadows: true, shadowRes: '2048', aa: 'fxaa' },
+  high: { scale: 100, shadows: true, shadowRes: '4096', aa: 'msaa2' }
+};
+var PRESET_FIELDS = ['scale', 'shadows', 'shadowRes', 'aa'];
+var ACTIONS = [
+  ['move_forward', 'ACTION_MOVE_FORWARD', 'KeyW'], ['move_backward', 'ACTION_MOVE_BACKWARD', 'KeyS'],
+  ['move_left', 'ACTION_MOVE_LEFT', 'KeyA'], ['move_right', 'ACTION_MOVE_RIGHT', 'KeyD'],
+  ['jump', 'ACTION_JUMP', 'Space'], ['sprint', 'ACTION_SPRINT', 'ShiftLeft'],
+  ['interact', 'ACTION_INTERACT', 'KeyF'], ['snatch_body', 'ACTION_SNATCH_BODY', 'Mouse0'],
+  ['leave_body', 'ACTION_LEAVE_BODY', 'KeyQ'], ['map', 'ACTION_MAP', 'KeyM']
+];
+var SOUL = [
+  { id: 'body_snatch', br: 'possession', max: 1, cost: [1], req: [] },
+  { id: 'capture_precision', br: 'possession', max: 3, cost: [1, 2, 3], req: [['body_snatch', 1]] },
+  { id: 'lifespan', br: 'survival', max: 3, cost: [1, 2, 3], req: [['body_snatch', 1]] },
+  { id: 'decay_capacity', br: 'survival', max: 3, cost: [1, 2, 3], req: [['lifespan', 1]] },
+  { id: 'graceful_exit', br: 'survival', max: 3, cost: [1, 2, 3], req: [['lifespan', 1]] },
+  { id: 'overflow_control', br: 'survival', max: 2, cost: [2, 3], req: [['lifespan', 2]] },
+  { id: 'last_breath', br: 'survival', max: 2, cost: [2, 3], req: [['lifespan', 2]] },
+  { id: 'steady_legs', br: 'embodiment', max: 3, cost: [1, 2, 3], req: [['body_snatch', 1]] },
+  { id: 'spring_step', br: 'embodiment', max: 3, cost: [1, 2, 3], req: [['steady_legs', 1]] },
+  { id: 'resilient_flesh', br: 'embodiment', max: 3, cost: [1, 2, 3], req: [['steady_legs', 1]] },
+  { id: 'second_wind', br: 'embodiment', max: 3, cost: [1, 2, 3], req: [['steady_legs', 1]] }
+];
+var ARCH = [
+  { id: 'map_level', br: 'knowledge', max: 4, cost: [1000, 1000, 2000, 2000], req: [], name: 'ARCHITECT_MAP', desc: 'ARCHITECT_MAP_DESC' },
+  { id: 'future_1', br: 'future', ph: true, max: 1, cost: [0], req: [] },
+  { id: 'future_2', br: 'future', ph: true, max: 1, cost: [0], req: [] }
+];
+var BRANCH_KEY = { possession: 'SKILL_BRANCH_POSSESSION', survival: 'SKILL_BRANCH_SURVIVAL', embodiment: 'SKILL_BRANCH_EMBODIMENT', knowledge: 'ARCHITECT_BRANCH_KNOWLEDGE', future: 'ARCHITECT_BRANCH_FUTURE' };
+
+var INIT = {
+  screen: 'menu', from: 'menu', lang: 'ru', hasSave: true, saved: false, tab: 'graphics',
+  applied: DEF, draft: DEF, dd: '', waiting: '', swap: null, hintRow: 'preset', reviving: false,
+  tree: 'soul', points: 3, essence: 12400,
+  ranks: { body_snatch: 1, capture_precision: 1, lifespan: 2, steady_legs: 1 }, aranks: { map_level: 2 },
+  sel: 'decay_capacity', asel: 'map_level', flash: '', toast: '',
+  mapLevel: 3, mapLayer: 2, hover: '', pinned: '', fx: 0, force: {}, bare: false
+};
+
+function tr(t, key) {
+  var s = t[key] != null ? t[key] : key, i = 2, a = arguments;
+  return s.replace(/%[sd]/g, function () { return a[i] != null ? String(a[i++]) : ''; });
+}
+function keyName(code, t) {
+  if (!code) return '—';
+  if (code.indexOf('Key') === 0) return code.slice(3);
+  if (code.indexOf('Digit') === 0) return code.slice(5);
+  if (code === 'Space') return t.KEY_SPACE;
+  if (code === 'Mouse0') return t.KEY_LMB;
+  if (code === 'Mouse1') return t.KEY_MMB;
+  if (code === 'Mouse2') return t.KEY_RMB;
+  if (code.indexOf('Shift') === 0) return 'Shift';
+  if (code.indexOf('Control') === 0) return 'Ctrl';
+  if (code.indexOf('Alt') === 0) return 'Alt';
+  var arrows = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
+  if (arrows[code]) return arrows[code];
+  return code.replace('Numpad', 'Num ');
+}
+function nz(a, s) { return Math.sin(3 * a + s) * 0.5 + Math.sin(7 * a + 1.7 + s * 1.3) * 0.3 + Math.sin(13 * a + 0.4 + s * 0.7) * 0.2; }
+function rag(x1, y1, x2, y2, seed, amp) {
+  var dx = x2 - x1, dy = y2 - y1, L = Math.sqrt(dx * dx + dy * dy) || 1, n = Math.max(3, Math.round(L / 9));
+  var px = -dy / L, py = dx / L, out = [];
+  for (var i = 0; i <= n; i++) {
+    var k = i / n, w = Math.sin(Math.PI * k), o = amp * w * nz(k * 6.3, seed);
+    out.push((x1 + dx * k + px * o).toFixed(1) + ' ' + (y1 + dy * k + py * o).toFixed(1));
+  }
+  return 'M' + out.join(' L');
+}
+// Связь в схеме B: от корня — колено сверху вниз, внутри колонки — шина слева от ячеек.
+function elbow(a, b, W, H) {
+  if (a[3] !== 'root') return 'M' + a[0] + ' ' + (a[1] + H / 2) + ' H' + (a[0] - 16) + ' V' + (b[1] + H / 2) + ' H' + b[0];
+  var x1 = a[0] + W / 2, y1 = a[1] + H, x2 = b[0] + W / 2, y2 = b[1], my = Math.round(y1 + (y2 - y1) / 2);
+  return 'M' + x1 + ' ' + y1 + ' V' + my + ' H' + x2 + ' V' + y2;
+}
+function arcSeg(cx, cy, r, a0, a1) {
+  var p = function (a) { var rad = (a - 90) * Math.PI / 180; return (cx + r * Math.cos(rad)).toFixed(2) + ' ' + (cy + r * Math.sin(rad)).toFixed(2); };
+  return 'M' + p(a0) + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + p(a1);
+}
+function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+function fmtK(v, lang, t) {
+  var x = v / 1000, s = (Math.round(x * 10) / 10).toString();
+  if (lang === 'ru') s = s.replace('.', ',');
+  return tr(t, 'SKILL_THOUSANDS', s);
+}
+
+class Component extends DCLogic {
+  S() { return Object.assign({}, INIT, BOOT, this.state || {}); }
+
+  set(o) { this.setState(o); }
+
+  go(screen, extra) {
+    var self = this, o = Object.assign({ screen: screen, dd: '', waiting: '', hover: '', fx: (this.S().fx || 0) + 1 }, extra || {});
+    this.setState(o);
+    clearTimeout(this._fxT);
+    this._fxT = setTimeout(function () { self.setState({ fx: 0 }); }, 260);
+  }
+
+  componentWillUnmount() { clearTimeout(this._fxT); clearTimeout(this._saveT); clearTimeout(this._revT); clearTimeout(this._flashT); }
+
+  renderVals() {
+    var self = this, s = this.S(), t = STR[s.lang], f = s.force || {};
+    var has = function (k, id) { return (f[k] || []).indexOf(id) >= 0; };
+    var mod = function (id) { return (has('hover', id) ? ' is-hover' : '') + (has('focus', id) ? ' is-focus' : '') + (has('press', id) ? ' is-press' : ''); };
+    var cl = {};
+    CL_IDS.forEach(function (id) { cl[id] = mod(id); });
+    var go = function (scr, extra) { return function () { self.go(scr, extra); }; };
+    var L = LAYOUT[STYLE];
+
+    // --- Экраны ---
+    var v = {
+      t: t, cl: cl, bare: !!s.bare, live: !s.bare, fx: !!s.fx, build: tr(t, 'MENU_BUILD', BUILD), rootH: s.bare ? 720 : 800,
+      buildNo: BUILD, sessionNo: '0147',
+      isMenu: s.screen === 'menu', isGame: s.screen === 'game', isPause: s.screen === 'pause',
+      isSettings: s.screen === 'settings', isSummary: s.screen === 'summary', isSkills: s.screen === 'skills', isMap: s.screen === 'map',
+      inRun: ['game', 'pause', 'skills', 'map'].indexOf(s.screen) >= 0 || (s.screen === 'settings' && s.from === 'pause'),
+      overGame: ['pause', 'skills', 'map'].indexOf(s.screen) >= 0 || (s.screen === 'settings' && s.from === 'pause'),
+      outRun: s.screen === 'menu' || s.screen === 'summary' || (s.screen === 'settings' && s.from === 'menu'),
+      noSave: !s.hasSave, hasSave: !!s.hasSave,
+      newGame: go('game'), load: function () { if (s.hasSave) self.go('game'); },
+      openSettingsMenu: go('settings', { from: 'menu', draft: s.applied, tab: 'graphics', swap: null }),
+      openSettingsPause: go('settings', { from: 'pause', draft: s.applied, tab: 'graphics', swap: null }),
+      quit: function () {}, resume: go('game'), toMenu: go('menu'), pause: go('pause'), die: go('summary', { reviving: false }),
+      openSkills: go('skills'), openMap: go('map'), closeOverlay: go('game')
+    };
+
+    // --- Пауза: сохранение подтверждается на самой кнопке ---
+    v.saved = !!s.saved; v.notSaved = !s.saved;
+    v.saveLabel = s.saved ? t.PAUSE_SAVED : t.PAUSE_SAVE;
+    v.savedCls = s.saved ? 'is-saved' : '';
+    v.doSave = function () {
+      if (self.S().saved) return;
+      self.setState({ saved: true, hasSave: true });
+      clearTimeout(self._saveT);
+      self._saveT = setTimeout(function () { self.setState({ saved: false }); }, 1500);
+    };
+
+    // --- Настройки ---
+    var d = s.draft, binds = Object.assign({}, d.binds);
+    var setField = function (id, val) {
+      var cur = self.S().draft, nd = Object.assign({}, cur);
+      nd[id] = val;
+      if (id === 'preset' && PRESETS[val]) Object.assign(nd, PRESETS[val]);
+      if (PRESET_FIELDS.indexOf(id) >= 0) nd.preset = 'custom';
+      self.setState({ draft: nd, dd: '' });
+    };
+    var opt = function (k) { return t[k] != null ? t[k] : k; };
+    var ROWS = {
+      graphics: [
+        { id: 'preset', type: 'drop', label: 'SETTINGS_PRESET', hint: 'SETTINGS_HINT_PRESET', opts: [['low', 'SETTINGS_PRESET_LOW'], ['medium', 'SETTINGS_PRESET_MEDIUM'], ['high', 'SETTINGS_PRESET_HIGH'], ['custom', 'SETTINGS_PRESET_CUSTOM']] },
+        { id: 'scale', type: 'slider', label: 'SETTINGS_RES_SCALE', hint: 'SETTINGS_HINT_RES_SCALE', min: 50, max: 100, step: 5, fmt: function (x) { return x + ' %'; } },
+        { id: 'shadows', type: 'check', label: 'SETTINGS_SHADOWS' },
+        { id: 'shadowRes', type: 'drop', label: 'SETTINGS_SHADOW_RES', hint: 'SETTINGS_HINT_SHADOW_RES', opts: [['1024', '1024'], ['2048', '2048'], ['4096', '4096']], off: !d.shadows },
+        { id: 'aa', type: 'drop', label: 'SETTINGS_AA', opts: [['off', 'SETTINGS_AA_OFF'], ['fxaa', 'FXAA'], ['msaa2', 'MSAA 2×'], ['msaa4', 'MSAA 4×']] },
+        { id: 'vsync', type: 'check', label: 'SETTINGS_VSYNC' },
+        { id: 'fov', type: 'slider', label: 'SETTINGS_FOV', min: 60, max: 110, step: 1, fmt: function (x) { return x + '°'; } },
+        { id: 'fps', type: 'slider', label: 'SETTINGS_FPS_LIMIT', hint: 'SETTINGS_HINT_FPS', min: 0, max: 240, step: 10, fmt: function (x) { return x === 0 ? t.SETTINGS_FPS_UNLIMITED : String(x); } }
+      ],
+      audio: [
+        { id: 'volume', type: 'slider', label: 'SETTINGS_VOLUME_MASTER', min: 0, max: 100, step: 1, fmt: function (x) { return x + ' %'; } }
+      ],
+      controls: [
+        { id: 'sens', type: 'slider', label: 'SETTINGS_MOUSE_SENS', hint: 'SETTINGS_HINT_KEYS', min: 0.1, max: 5, step: 0.1, fmt: function (x) { return Number(x).toFixed(1); } }
+      ]
+    };
+    v.rows = ROWS[s.tab].map(function (r) {
+      var val = d[r.id], disabled = !!r.off, rid = 'set_' + r.id;
+      var o = {
+        id: r.id, label: t[r.label], disabled: disabled, enabled: !disabled,
+        isDrop: r.type === 'drop', isSlider: r.type === 'slider', isCheck: r.type === 'check',
+        cls: mod(rid) + (disabled ? ' is-disabled' : '') + (s.hintRow === r.id ? ' is-active' : ''),
+        mark: function () { if (self.S().hintRow !== r.id) self.setState({ hintRow: r.id }); }
+      };
+      if (r.type === 'drop') {
+        var cur = r.opts.filter(function (p) { return p[0] === val; })[0];
+        o.valueText = cur ? opt(cur[1]) : String(val);
+        o.open = s.dd === r.id && !disabled; o.closed = !o.open; o.openCls = o.open ? 'is-open' : '';
+        o.toggle = function () { if (!disabled) self.setState({ dd: self.S().dd === r.id ? '' : r.id, hintRow: r.id }); };
+        o.opts = r.opts.map(function (p) {
+          var oid = 'opt_' + r.id + '_' + p[0];
+          return { label: opt(p[1]), sel: p[0] === val, cls: mod(oid) + (p[0] === val ? ' is-sel' : ''), pick: function () { setField(r.id, p[0]); } };
+        });
+      } else if (r.type === 'slider') {
+        o.val = val; o.min = r.min; o.max = r.max; o.step = r.step;
+        o.pct = (((val - r.min) / (r.max - r.min)) * 100).toFixed(1) + '%';
+        o.valueText = r.fmt(val);
+        o.trackBg = STYLE === 'A'
+          ? 'linear-gradient(to right, #C9A8F2 0 ' + o.pct + ', transparent ' + o.pct + '), repeating-linear-gradient(to right, rgba(236,232,242,.34) 0 1px, transparent 1px 4px)'
+          : 'repeating-linear-gradient(to right, transparent 0 9px, #0D0F0F 9px 12px), linear-gradient(to right, #D8DBD6 0 ' + o.pct + ', #2E3231 ' + o.pct + ')';
+        o.onInput = function (e) { setField(r.id, Number(e.target.value)); };
+      } else {
+        o.on = !!val; o.offv = !val; o.valueText = val ? t.SETTINGS_ON : t.SETTINGS_OFF; o.checkCls = val ? 'is-on' : 'is-off';
+        o.toggle = function () { setField(r.id, !self.S().draft[r.id]); };
+      }
+      return o;
+    });
+    var hintSrc = ROWS[s.tab].filter(function (r) { return r.id === s.hintRow; })[0] || ROWS[s.tab][0];
+    v.hintTitle = t[hintSrc.label];
+    v.hintText = hintSrc.hint ? t[hintSrc.hint] : '';
+    v.tabs = [['graphics', 'SETTINGS_TAB_GRAPHICS'], ['audio', 'SETTINGS_TAB_AUDIO'], ['controls', 'SETTINGS_TAB_CONTROLS']].map(function (p) {
+      return { label: t[p[1]], cls: mod('tab_' + p[0]) + (s.tab === p[0] ? ' is-sel' : ''), sel: s.tab === p[0], pick: function () { self.setState({ tab: p[0], dd: '', waiting: '', hintRow: ROWS[p[0]][0].id }); } };
+    });
+    v.isControls = s.tab === 'controls';
+    var codeOf = function (id) { var a = ACTIONS.filter(function (x) { return x[0] === id; })[0]; return binds[id] || a[2]; };
+    var nameOf = function (id) { var a = ACTIONS.filter(function (x) { return x[0] === id; })[0]; return t[a[1]]; };
+    var assign = function (id, code) {
+      var cur = self.S().draft, nb = Object.assign({}, cur.binds), prev = nb[id] || ACTIONS.filter(function (x) { return x[0] === id; })[0][2], other = null;
+      ACTIONS.forEach(function (a) { if (a[0] !== id && (nb[a[0]] || a[2]) === code) other = a[0]; });
+      nb[id] = code;
+      if (other) nb[other] = prev;
+      self._assignedAt = Date.now();
+      self.setState({ draft: Object.assign({}, cur, { binds: nb }), waiting: '', swap: other ? [id, other] : null });
+    };
+    v.binds = ACTIONS.map(function (a, i) {
+      var id = a[0], w = s.waiting === id, bid = 'bind_' + id;
+      return {
+        label: t[a[1]], key: keyName(codeOf(id), t), waiting: w, idle: !w, col2: i >= 5,
+        cls: mod(bid) + (w ? ' is-wait' : '') + (s.swap && s.swap.indexOf(id) >= 0 ? ' is-swapped' : ''),
+        start: function () {
+          if (Date.now() - (self._assignedAt || 0) < 350) return;
+          self.setState({ waiting: self.S().waiting === id ? '' : id, swap: null, hintRow: 'sens' });
+        },
+        key_down: function (e) {
+          if (self.S().waiting !== id) return;
+          e.preventDefault(); e.stopPropagation();
+          if (e.code === 'Escape') { self.setState({ waiting: '' }); return; }
+          assign(id, e.code);
+        },
+        mouse_down: function (e) {
+          if (self.S().waiting !== id) return;
+          e.preventDefault();
+          assign(id, 'Mouse' + e.button);
+        }
+      };
+    });
+    v.binds1 = v.binds.filter(function (b) { return !b.col2; });
+    v.binds2 = v.binds.filter(function (b) { return b.col2; });
+    v.waitText = t.SETTINGS_REBIND_WAIT;
+    v.cancelText = tr(t, 'SETTINGS_REBIND_CANCEL', 'Esc');
+    v.anyWaiting = !!s.waiting;
+    v.swapText = s.swap ? tr(t, 'SETTINGS_REBIND_SWAPPED', nameOf(s.swap[0]), nameOf(s.swap[1])) : '';
+    v.hasSwap = !!s.swap;
+    var dirty = !same(s.draft, s.applied);
+    v.dirty = dirty; v.clean = !dirty; v.applyOff = !dirty;
+    v.apply = function () { var st = self.S(); self.setState({ applied: st.draft, dd: '', swap: null }); };
+    v.reset = function () { self.setState({ draft: DEF, dd: '', waiting: '', swap: null }); };
+    v.cancel = function () { var st = self.S(); self.go(st.from, { draft: st.applied, swap: null }); };
+
+    // --- Итоги забега ---
+    var bodies = t.BODY_WALKER + ' ×2, ' + t.BODY_CRAWLER + ', ' + t.BODY_HOUND;
+    v.stats = [
+      ['RUN_STAT_TIME', '14:32'], ['RUN_STAT_ROOMS', '23'], ['RUN_STAT_BODIES', '4'], ['RUN_STAT_BODY_LIST', bodies],
+      ['RUN_STAT_DAMAGE_TAKEN', '312'], ['RUN_STAT_DAMAGE_DEALT', '540'], ['RUN_STAT_SKILL_POINTS', '+3']
+    ].map(function (p) { return { label: t[p[0]], value: p[1], long: p[1].length > 8 }; });
+    v.reviving = !!s.reviving; v.notReviving = !s.reviving;
+    v.reviveLabel = s.reviving ? t.RUN_SUMMARY_REVIVING : t.RUN_SUMMARY_REVIVE;
+    v.revive = function () {
+      if (self.S().reviving) return;
+      self.setState({ reviving: true });
+      clearTimeout(self._revT);
+      self._revT = setTimeout(function () { self.go('game', { reviving: false }); }, 2400);
+    };
+
+    // --- Навыки ---
+    var arch = s.tree === 'arch', defs = arch ? ARCH : SOUL, ranks = arch ? s.aranks : s.ranks;
+    var wallet = arch ? s.essence : s.points, lay = L.skills[arch ? 'arch' : 'soul'];
+    var rk = function (id) { return ranks[id] || 0; };
+    var costText = function (c) { return arch ? fmtK(c, s.lang, t) : String(c); };
+    var info = {};
+    defs.forEach(function (df) {
+      var r = rk(df.id), met = df.req.every(function (q) { return rk(q[0]) >= q[1]; });
+      var cost = r < df.max ? df.cost[r] : 0;
+      info[df.id] = { r: r, met: met, cost: cost, can: !df.ph && met && r < df.max && wallet >= cost };
+    });
+    var selId = arch ? s.asel : s.sel;
+    v.nodes = defs.map(function (df, i) {
+      var p = lay.nodes[df.id], inf = info[df.id], r = inf.r, st;
+      if (df.ph) st = 'ph'; else if (r >= df.max) st = 'max'; else if (r > 0) st = 'part'; else if (inf.met) st = 'avail'; else st = 'lock';
+      var seg = 360 / df.max, gap = df.max > 1 ? 16 : 0, on = '', off = '';
+      for (var k = 0; k < df.max; k++) {
+        var dd = arcSeg(22, 22, 17, k * seg + gap / 2, (k + 1) * seg - gap / 2 - (df.max === 1 ? 0.01 : 0));
+        if (k < r) on += dd + ' '; else off += dd + ' ';
+      }
+      var pips = [];
+      for (var q = 0; q < df.max; q++) pips.push({ on: q < r, off: q >= r, cls: q < r ? 'on' : 'off' });
+      return {
+        id: df.id, x: p[0], y: p[1], lx: p[2] || 'r',
+        name: df.ph ? t.ARCHITECT_BRANCH_FUTURE : t[df.name || ('SKILL_' + df.id.toUpperCase() + '_NAME')],
+        rankText: df.ph ? '' : r + '/' + df.max, pips: df.ph ? [] : pips,
+        costText: df.ph || r >= df.max ? '' : costText(inf.cost),
+        ringOn: on || 'M0 0', ringOff: off || 'M0 0',
+        cls: ' n-' + st + (selId === df.id ? ' is-sel' : '') + (s.flash === df.id ? ' is-flash' : '') + (inf.can ? ' is-can' : '') + mod('node_' + df.id),
+        labelLeft: p[2] === 'l', labelRight: p[2] !== 'l', side: p[2] === 'l' ? 'l' : 'r',
+        pos: 'left:' + p[0] + 'px;top:' + p[1] + 'px', stCls: 'n-' + st,
+        flash: s.flash === df.id, ph: !!df.ph, real: !df.ph,
+        pick: function () { if (!df.ph) self.setState(arch ? { asel: df.id } : { sel: df.id }); }
+      };
+    });
+    var lit = '', av = '', lk = '', fresh = '';
+    defs.forEach(function (df, i) {
+      df.req.forEach(function (q) {
+        var a = lay.nodes[q[0]], b = lay.nodes[df.id];
+        var dpath = STYLE === 'A' ? rag(a[0], a[1], b[0], b[1], i * 1.7 + 0.3, 3.2) : elbow(a, b, L.cellW, L.cellH);
+        if (s.flash === df.id && rk(df.id) === 1) fresh = dpath;
+        if (rk(df.id) > 0) lit += dpath + ' ';
+        else if (info[df.id].met) av += dpath + ' ';
+        else lk += dpath + ' ';
+      });
+    });
+    v.linkLit = lit || 'M0 0'; v.linkAvail = av || 'M0 0'; v.linkLock = lk || 'M0 0'; v.linkFresh = fresh || 'M0 0'; v.hasFresh = !!fresh;
+    v.extraD = lay.extra || 'M0 0';
+    v.branches = lay.branches.map(function (b) { return { label: t[BRANCH_KEY[b[0]]], x: b[1], y: b[2], dim: b[0] === 'future' }; });
+    v.arch = arch; v.soul = !arch;
+    v.treeTabs = [['soul', 'SKILL_TAB_SOUL'], ['arch', 'SKILL_TAB_ARCHITECT']].map(function (p) {
+      return { label: t[p[1]], sel: s.tree === p[0], cls: mod('tree_' + p[0]) + (s.tree === p[0] ? ' is-sel' : ''), pick: function () { self.setState({ tree: p[0], flash: '', toast: '' }); } };
+    });
+    v.walletLabel = arch ? t.ARCHITECT_ESSENCE : t.SKILL_POINTS;
+    v.walletValue = arch ? fmtK(s.essence, s.lang, t) : String(s.points);
+    v.walletFlash = !!s.flash; v.walletCls = s.flash ? 'is-flash' : '';
+    var sd = defs.filter(function (x) { return x.id === selId; })[0] || defs[0], si = info[sd.id];
+    var sp = [];
+    for (var q2 = 0; q2 < sd.max; q2++) sp.push({ on: q2 < si.r, off: q2 >= si.r, cls: q2 < si.r ? 'on' : 'off' });
+    var reason = '';
+    if (si.r >= sd.max) reason = t.SKILL_MAXED;
+    else if (!si.met) reason = t.SKILL_LOCKED;
+    else if (wallet < si.cost) reason = arch ? t.SKILL_NO_ESSENCE : t.SKILL_NO_POINTS;
+    v.det = {
+      name: t[sd.name || ('SKILL_' + sd.id.toUpperCase() + '_NAME')], desc: t[sd.desc || ('SKILL_' + sd.id.toUpperCase() + '_DESC')],
+      branch: t[BRANCH_KEY[sd.br]], rank: tr(t, 'SKILL_RANK', si.r, sd.max), pips: sp,
+      costLabel: t.SKILL_COST, cost: si.r >= sd.max ? '—' : costText(si.cost),
+      reqLabel: t.SKILL_REQUIRES,
+      reqs: (sd.req.length ? sd.req.map(function (q) { var nm = t['SKILL_' + q[0].toUpperCase() + '_NAME']; return { text: tr(t, 'SKILL_REQ_RANK', nm, q[1]), met: rk(q[0]) >= q[1] }; }) : [{ text: t.SKILL_NO_REQ, met: true }]).map(function (q) {
+        return { text: q.text, met: q.met, unmet: !q.met, cls: q.met ? 'met' : 'unmet', mark: q.met ? '■' : '□',
+          fill: q.met ? '#C9A8F2' : 'none', stroke: q.met ? '#C9A8F2' : 'rgba(236,232,242,.5)', dash: q.met ? '0' : '1 2' };
+      }),
+      can: si.can, cannot: !si.can, btn: si.can ? tr(t, 'SKILL_UNLOCK', si.r + 1) : reason,
+      btnCls: mod('unlock') + (si.can ? '' : ' is-disabled')
+    };
+    v.toast = s.toast; v.hasToast = !!s.toast;
+    v.unlock = function () {
+      var st = self.S(), isA = st.tree === 'arch', dfs = isA ? ARCH : SOUL, id = isA ? st.asel : st.sel;
+      var df = dfs.filter(function (x) { return x.id === id; })[0], rr = (isA ? st.aranks : st.ranks)[id] || 0;
+      var ok = df.req.every(function (q) { return ((isA ? st.aranks : st.ranks)[q[0]] || 0) >= q[1]; });
+      var w = isA ? st.essence : st.points;
+      if (df.ph || rr >= df.max || !ok || w < df.cost[rr]) return;
+      var nr = Object.assign({}, isA ? st.aranks : st.ranks); nr[id] = rr + 1;
+      var o = { flash: id, toast: tr(STR[st.lang], 'SKILL_UNLOCKED', rr + 1) };
+      if (isA) { o.aranks = nr; o.essence = w - df.cost[rr]; if (id === 'map_level') o.mapLevel = Math.max(st.mapLevel, rr + 1); }
+      else { o.ranks = nr; o.points = w - df.cost[rr]; }
+      self.setState(o);
+      clearTimeout(self._flashT);
+      self._flashT = setTimeout(function () { self.setState({ flash: '', toast: '' }); }, 1400);
+    };
+
+    // --- Карта ---
+    var lvl = s.mapLevel, here = MAPDATA.here, M = L.map;
+    v.mapNoLink = lvl <= 0; v.mapOk = lvl > 0;
+    v.mapLevelText = tr(t, 'MAP_LEVEL', Math.max(0, lvl), 4);
+    var known = function (li) { return lvl >= 3 || li === here.layer; };
+    var selLayer = s.mapLayer;
+    v.layers = MAPDATA.layers.map(function (ly) {
+      var k = known(ly.idx), sub = ly.idx === 0 ? t.MAP_LAYER_SURFACE : ly.idx === MAPDATA.layers.length - 1 ? t.MAP_LAYER_DEPTH : '';
+      var o = {
+        idx: ly.idx, label: tr(t, 'MAP_LAYER', ly.idx), sub: sub, hasSub: !!sub, known: k, unknown: !k,
+        closedText: t.MAP_LAYER_CLOSED, here: ly.idx === here.layer, floorsText: tr(t, 'MAP_FLOORS', ly.floors.length),
+        cls: mod('layer_' + ly.idx) + (ly.idx === selLayer ? ' is-sel' : '') + (k ? '' : ' is-unknown') + (ly.idx === here.layer ? ' is-here' : ''),
+        pick: function () { self.setState({ mapLayer: ly.idx, hover: '', pinned: '' }); }
+      };
+      if (M.slice) {
+        // Срез: координаты локальные, от левого верхнего угла полосы слоя.
+        var sl = M.slice, top = sl.y0 + ly.idx * sl.band, H = sl.band - 4, fh = (H - 24) / Math.max(1, ly.floors.length), lines = '', ticks = '', tdim = '';
+        var sx = function (c) { return sl.lx + c * (sl.w - sl.lx - 8) / MAPDATA.cols; };
+        ly.floors.forEach(function (fl, fi) {
+          var y = 24 + fh * (fi + 0.6);
+          lines += 'M' + sl.lx + ' ' + y.toFixed(1) + ' H' + sl.w + ' ';
+          fl.rooms.forEach(function (rm) {
+            var x = sx(rm.x), w = Math.max(3, sx(rm.x + rm.w) - x - 3);
+            var seg = 'M' + x.toFixed(1) + ' ' + y.toFixed(1) + ' h' + w.toFixed(1) + ' ';
+            if (!k || !(lvl >= 2 || rm.visited)) return;
+            if (rm.visited) ticks += seg; else tdim += seg;
+          });
+          if (ly.idx === here.layer && fi === here.floor) {
+            var hr = fl.rooms.filter(function (rm) { return rm.id === here.room; })[0];
+            o.px = sx(hr.x + hr.w / 2).toFixed(1); o.py = (y - 8).toFixed(1); o.hereMark = true;
+          }
+        });
+        o.top = top; o.h = H; o.lines = k ? lines : 'M0 0'; o.ticks = ticks || 'M0 0'; o.tdim = tdim || 'M0 0';
+        o.hereMark = !!o.hereMark;
+      }
+      return o;
+    });
+    if (M.slice) {
+      var sl2 = M.slice, pl = '';
+      MAPDATA.layerLinks.forEach(function (lnk) {
+        if (!(known(lnk[0]) && known(lnk[0] + 1))) return;
+        var x = sl2.x0 + sl2.lx + (lnk[1] + 0.5) * (sl2.w - sl2.lx - 8) / MAPDATA.cols;
+        pl += 'M' + x.toFixed(1) + ' ' + (sl2.y0 + lnk[0] * sl2.band + sl2.band - 18) + ' V' + (sl2.y0 + (lnk[0] + 1) * sl2.band + 20) + ' ';
+      });
+      v.sliceLinks = pl || 'M0 0';
+      v.hereLayer = v.layers[here.layer];
+    }
+    var LY = MAPDATA.layers[selLayer], selKnown = known(selLayer);
+    v.selKnown = selKnown && lvl > 0; v.selUnknown = !selKnown && lvl > 0;
+    v.selTitle = tr(t, 'MAP_LAYER', selLayer) + (selLayer === 0 ? ' · ' + t.MAP_LAYER_SURFACE : selLayer === MAPDATA.layers.length - 1 ? ' · ' + t.MAP_LAYER_DEPTH : '');
+    // Этажи раскладываются сеткой: число колонок выбирается так, чтобы клетка плана была крупнее.
+    var nF = LY.floors.length, best = null;
+    for (var c = 1; c <= nF; c++) {
+      var rws = Math.ceil(nF / c), cw = (M.w - M.gap * (c - 1)) / c, ch = (M.h - M.gap * (rws - 1)) / rws;
+      var ce = Math.min(M.maxCell, (cw - 20) / MAPDATA.cols, (ch - 44) / MAPDATA.rows);
+      if (!best || ce > best.cell + 0.01) best = { c: c, pw: cw, ph: ch, cell: ce };
+    }
+    var pw = best.pw, ph = best.ph, cell = Math.floor(best.cell);
+    var corrK = '', corrU = '', infoText = '';
+    var roomName = function (rm) {
+      if (lvl >= 4 && rm.kind === 'hub') return t.MAP_UNIQUE_HUB;
+      if (lvl >= 4 && rm.kind === 'exit') return t.MAP_UNIQUE_EXIT;
+      if (lvl >= 4 && rm.kind === 'arch') return t.MAP_UNIQUE_ARCHITECT;
+      if (rm.kind === 'stairs') return t.MAP_STAIRS;
+      return t.MAP_ROOM;
+    };
+    v.floors = LY.floors.map(function (fl, fi) {
+      var px = M.x0 + (fi % best.c) * (pw + M.gap), py = M.y0 + Math.floor(fi / best.c) * (ph + M.gap);
+      var gw = cell * MAPDATA.cols, gh = cell * MAPDATA.rows;
+      var ox = Math.round(px + (pw - gw) / 2), oy = Math.round(py + 34 + (ph - 34 - gh) / 2);
+      var vis = function (rm) { return selKnown && (lvl >= 2 || rm.visited); };
+      fl.corr.forEach(function (c) {
+        var seg = 'M' + (ox + c[0] * cell).toFixed(1) + ' ' + (oy + c[1] * cell).toFixed(1) + ' L' + (ox + c[2] * cell).toFixed(1) + ' ' + (oy + c[3] * cell).toFixed(1) + ' ';
+        if (!selKnown) return;
+        if (c[4]) corrK += seg; else if (lvl >= 2) corrU += seg;
+      });
+      var rooms = fl.rooms.filter(vis).map(function (rm) {
+        var rid = rm.id, hov = s.hover === rid;
+        if (hov) infoText = roomName(rm) + ' · ' + (rm.visited ? t.MAP_VISITED : t.MAP_UNEXPLORED) + (rid === here.room ? ' · ' + t.MAP_HERE : '');
+        var uniq = lvl >= 4 && (rm.kind === 'hub' || rm.kind === 'exit' || rm.kind === 'arch');
+        return {
+          left: (ox + rm.x * cell + 2).toFixed(1), top: (oy + rm.y * cell + 2).toFixed(1), w: (rm.w * cell - 4).toFixed(1), h: (rm.h * cell - 4).toFixed(1),
+          name: roomName(rm), uniq: uniq, uniqText: uniq ? roomName(rm) : '',
+          cls: mod('room_' + rid) + (rm.visited ? ' r-vis' : ' r-unx') + (rm.kind === 'stairs' ? ' r-stairs' : '') + (uniq ? ' r-uniq' : '') + (hov ? ' is-hover' : '') + (rid === here.room ? ' r-here' : ''),
+          enter: function () { self.setState({ hover: rid }); }, leave: function () { if (self.S().hover === rid) self.setState({ hover: '' }); }
+        };
+      });
+      var portals = fl.portals.filter(function (p) { return selKnown && (lvl >= 2 || p.visited); }).map(function (p) {
+        var pid = p.id, hov = s.hover === pid || s.pinned === pid, up = p.dir === 'up';
+        var lbl = (up ? t.MAP_PORTAL_UP : t.MAP_PORTAL_DOWN) + ' ' + tr(t, 'MAP_PORTAL_TARGET', p.to[0], p.to[1] + 1);
+        if (hov) infoText = lbl;
+        return {
+          left: (ox + (p.x + 0.5) * cell - 11).toFixed(1), top: (oy + (p.y + 0.5) * cell - 11).toFixed(1), up: up, down: !up, label: lbl,
+          arrow: up ? 'M12 19V5 M6 11l6-6 6 6' : 'M12 5v14 M6 13l6 6 6-6',
+          cls: mod('portal_' + pid) + (hov ? ' is-hover' : '') + (s.pinned === pid ? ' is-pinned' : ''),
+          enter: function () { self.setState({ hover: pid }); }, leave: function () { if (self.S().hover === pid) self.setState({ hover: '' }); },
+          jump: function () { self.setState({ mapLayer: p.to[0], pinned: p.pair, hover: '' }); }
+        };
+      });
+      var hr = selLayer === here.layer && fi === here.floor ? fl.rooms.filter(function (rm) { return rm.id === here.room; })[0] : null;
+      return {
+        label: tr(t, 'MAP_FLOOR', fi + 1), x: px.toFixed(1), y: py.toFixed(1), w: pw.toFixed(1), h: ph.toFixed(1), ly: py.toFixed(1), cell: cell,
+        gx: ox, gy: oy, gw: gw, gh: gh,
+        rooms: rooms, portals: portals, here: !!hr,
+        hx: hr ? (ox + (hr.x + hr.w / 2) * cell).toFixed(1) : 0, hy: hr ? (oy + (hr.y + hr.h / 2) * cell).toFixed(1) : 0,
+        hl: hr ? (ox + (hr.x + hr.w / 2) * cell - 12).toFixed(1) : 0, ht: hr ? (oy + (hr.y + hr.h / 2) * cell - 12).toFixed(1) : 0
+      };
+    });
+    v.corrK = corrK || 'M0 0'; v.corrU = corrU || 'M0 0';
+    v.mapInfo = infoText || t.MAP_HINT; v.mapHasInfo = !!infoText; v.mapInfoCls = infoText ? 'is-info' : 'is-hint';
+
+    // --- Полоса прототипа ---
+    var scr = [['menu', 'Меню'], ['game', 'Игра'], ['pause', 'Пауза'], ['settings', 'Настройки'], ['summary', 'Итоги'], ['skills', 'Навыки'], ['map', 'Карта']];
+    v.protoScreens = scr.map(function (p) {
+      return { label: p[1], on: s.screen === p[0], cls: s.screen === p[0] ? 'on' : '', pick: function () { self.go(p[0], p[0] === 'settings' ? { from: 'menu', draft: self.S().applied } : (p[0] === 'summary' ? { reviving: false } : {})); } };
+    });
+    v.protoLangs = [['ru', 'RU'], ['en', 'EN']].map(function (p) { return { label: p[1], cls: s.lang === p[0] ? 'on' : '', pick: function () { self.setState({ lang: p[0] }); } }; });
+    v.protoSave = [[true, 'есть'], [false, 'пусто']].map(function (p) { return { label: p[1], cls: s.hasSave === p[0] ? 'on' : '', pick: function () { self.setState({ hasSave: p[0] }); } }; });
+    v.protoLevels = [0, 1, 2, 3, 4].map(function (n) { return { label: String(n), cls: s.mapLevel === n ? 'on' : '', pick: function () { self.setState({ mapLevel: n, aranks: Object.assign({}, self.S().aranks, { map_level: n }) }); } }; });
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>
