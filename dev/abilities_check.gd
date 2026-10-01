@@ -5,6 +5,15 @@ extends "res://dev/check_harness.gd"
 ##
 ## Берём НАСТОЯЩИЙ e_player.tscn: возможности души авторены в его сцене
 ## (component_resources), и на заглушке-Entity проверять было бы нечего.
+##
+## Проверка ПИШЕТ в user://skills.tres, хотя про навыки в ней ни слова:
+## добровольный выход из тела, выжатого на половину и больше, — это «Чистый
+## выход» (O_ExpelFromBody._settle_lifespan), и он начисляет очко через
+## SkillManager.add_skill_points, который сразу сохраняет. Так выходит из тела
+## раздел 6: трейты там надеваются в обход on_worn, C_BodyDecay.remaining
+## остаётся нулём, и выход считается выжатым до дна. Поэтому сейв навыков на
+## время прогона подменяется копией, а файл в конце возвращается байт в байт —
+## как сейв мира в run_stats_check.
 
 const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 ## Ростовое тело: ходит и прыгает.
@@ -12,8 +21,23 @@ const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 ## Тело другой высоты — им проверяется пересадка тело→тело.
 const CRAWLER_SCENE := "res://src/entities/body/e_body_crawler.tscn"
 
+## Сейв навыков разработчика на момент старта: и объект в памяти, и байты файла.
+## Объект — чтобы очко не осело в SkillManager на остаток процесса, байты — чтобы
+## файл вернулся ровно тем же, а не пересохранённым заново.
+var _original_skill_save: PlayerSkillSave
+var _skill_save_backup := PackedByteArray()
+var _had_skill_save := false
+
 
 func _ready() -> void:
+	# ДО мира и систем: любое начисление после этой точки уже писало бы на диск.
+	_skill_save_backup = FileAccess.get_file_as_bytes(SkillManager.SAVE_PATH)
+	_had_skill_save = not _skill_save_backup.is_empty()
+	_original_skill_save = SkillManager.save
+	SkillManager.save = _original_skill_save.duplicate()
+	# duplicate() не копирует Dictionary — без этого ранги остались бы общими.
+	SkillManager.save.ranks = _original_skill_save.ranks.duplicate()
+
 	var world := _new_world()
 
 	# Полный набор систем группы "physics", как в world.tscn: проверка про то,
@@ -34,8 +58,23 @@ func _ready() -> void:
 
 	await _run(world)
 	_check_blocked_input()
+	_restore_skill_save()
 
 	_finish()
+
+
+## Возвращает сейв навыков разработчика ровно таким, каким он был до прогона.
+func _restore_skill_save() -> void:
+	SkillManager.save = _original_skill_save
+	if _had_skill_save:
+		var file := FileAccess.open(SkillManager.SAVE_PATH, FileAccess.WRITE)
+		if file:
+			file.store_buffer(_skill_save_backup)
+			file.close()
+	else:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SkillManager.SAVE_PATH))
+	_check("сейв навыков разработчика возвращён на место",
+		FileAccess.get_file_as_bytes(SkillManager.SAVE_PATH) == _skill_save_backup, "")
 
 
 ## Под блокирующим экраном (C_UIBlocked) «ничего не нажато» держит сам источник
