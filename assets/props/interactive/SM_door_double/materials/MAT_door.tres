@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://hyoi2hv5bou6"]
+
+[ext_resource type="Texture2D" uid="uid://cou5yqgoxp8n2" path="res://assets/props/interactive/SM_door_double/textures/T_Door_albedo.png" id="1_ma58y"]
+[ext_resource type="Texture2D" uid="uid://y44nx50pdo7h" path="res://assets/props/interactive/SM_door_double/textures/T_Door_orm.png" id="2_m0pht"]
+[ext_resource type="Texture2D" uid="uid://oft4xmhjxlot" path="res://assets/props/interactive/SM_door_double/textures/T_Door_n.png" id="3_bx35v"]
+
+[resource]
+resource_name = "MAT_door"
+albedo_texture = ExtResource("1_ma58y")
+metallic = 1.0
+metallic_texture = ExtResource("2_m0pht")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_m0pht")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_bx35v")

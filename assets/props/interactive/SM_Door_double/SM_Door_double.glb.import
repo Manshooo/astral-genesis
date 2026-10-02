@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://f5ldfehxs744"
-path="res://.godot/imported/SM_Door_double.glb-83fd738208a35b5b72a1f6f41bebb4e1.scn"
+uid="uid://djmjulnyrgth6"
+path="res://.godot/imported/SM_door_double.glb-b0b800a1e8327a669936c77412fd3571.scn"
 
 [deps]
 
-source_file="res://assets/props/interactive/SM_Door_double/SM_Door_double.glb"
-dest_files=["res://.godot/imported/SM_Door_double.glb-83fd738208a35b5b72a1f6f41bebb4e1.scn"]
+source_file="res://assets/props/interactive/SM_door_double/SM_door_double.glb"
+dest_files=["res://.godot/imported/SM_door_double.glb-b0b800a1e8327a669936c77412fd3571.scn"]
 
 [params]
 
@@ -36,15 +36,15 @@ animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
 import_script/path="res://addons/godot_pipeline/collision_post_import.gd"
-materials/extract=1
+materials/extract=0
 materials/extract_format=0
-materials/extract_path="res://assets/materials"
+materials/extract_path=""
 _subresources={
 "materials": {
-"MAT_building": {
+"MAT_door": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://assets/materials/MAT_building.tres",
-"use_external/path": "uid://dajpdmo30j0th"
+"use_external/fallback_path": "res://assets/props/interactive/SM_door_double/materials/MAT_door.tres",
+"use_external/path": "res://assets/props/interactive/SM_door_double/materials/MAT_door.tres"
 }
 }
 }

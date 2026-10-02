@@ -38,7 +38,9 @@
       "generate_material_stubs": true,
       "link_external_materials": true,
       "copy_textures": true,
-      "texture_dir": "assets/textures"
+      "texture_dir": "assets/textures",
+      "cell_size": 0.0,
+      "cell_height": 0.0
     },
     {
       "name": "Level Chunk",
@@ -118,7 +120,9 @@
       "generate_material_stubs": true,
       "link_external_materials": true,
       "copy_textures": true,
-      "texture_dir": "assets/textures"
+      "texture_dir": "assets/textures",
+      "cell_size": 0.0,
+      "cell_height": 0.0
     },
     {
       "name": "Interactive",
@@ -157,7 +161,9 @@
       "generate_material_stubs": true,
       "link_external_materials": true,
       "copy_textures": true,
-      "texture_dir": "assets/textures"
+      "texture_dir": "assets/textures",
+      "cell_size": 0.0,
+      "cell_height": 0.0
     }
   ]
 }
