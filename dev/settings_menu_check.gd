@@ -16,28 +16,31 @@ extends "res://dev/check_harness.gd"
 
 const MENU_SCENE := "res://src/ui/settings_menu/settings_menu.tscn"
 
-## Порядок вкладок — часть договорённости: первая открыта по умолчанию.
-const TAB_ORDER: Array[String] = ["Графика", "Аудио", "Управление"]
+## Порядок вкладок — часть договорённости: первая открыта по умолчанию. Имена
+## страниц — ключи перевода: ярлыки TabContainer скрыты, их заменяют кнопки-
+## вкладки с теми же ключами.
+const TAB_ORDER: Array[String] = ["SETTINGS_TAB_GRAPHICS", "SETTINGS_TAB_AUDIO", "SETTINGS_TAB_CONTROLS"]
 
 ## Куда какая настройка легла. Ответ на развилку из карточки задачи:
 ## чувствительность мыши — про управление, а не про графику; FOV — про камеру.
 const EXPECTED_TAB := {
-	"fov": "Графика",
-	"max_fps": "Графика",
-	"graphics_preset_id": "Графика",
-	"render_scale": "Графика",
-	"shadows_enabled": "Графика",
-	"shadow_atlas_size": "Графика",
-	"aa_mode": "Графика",
-	"vsync_enabled": "Графика",
-	"master_volume": "Аудио",
-	"mouse_sensitivity": "Управление",
-	"keybinds": "Управление",
+	"fov": "SETTINGS_TAB_GRAPHICS",
+	"max_fps": "SETTINGS_TAB_GRAPHICS",
+	"graphics_preset_id": "SETTINGS_TAB_GRAPHICS",
+	"render_scale": "SETTINGS_TAB_GRAPHICS",
+	"shadows_enabled": "SETTINGS_TAB_GRAPHICS",
+	"shadow_atlas_size": "SETTINGS_TAB_GRAPHICS",
+	"aa_mode": "SETTINGS_TAB_GRAPHICS",
+	"vsync_enabled": "SETTINGS_TAB_GRAPHICS",
+	"master_volume": "SETTINGS_TAB_AUDIO",
+	"mouse_sensitivity": "SETTINGS_TAB_CONTROLS",
+	"keybinds": "SETTINGS_TAB_CONTROLS",
 }
 
-## Сколько места под содержимое даёт панель: объявленный минимум 620 минус поля
-## MarginContainer (16 сверху и снизу). Всё, что не влезло, вылезет за панель.
-const PANEL_INNER_HEIGHT := 620.0 - 32.0
+## Сколько места под страницы даёт экран: от y 150 до 100 px над низом базового
+## окна 1497×720 (там ряд «Отмена / Сброс / Применить»). Всё, что не влезло,
+## наехало бы на кнопки.
+const PAGES_HEIGHT := 720.0 - 150.0 - 100.0
 
 
 func _ready() -> void:
@@ -49,7 +52,7 @@ func _run() -> void:
 	var menu := (load(MENU_SCENE) as PackedScene).instantiate()
 	add_child(menu)
 
-	var tabs := menu.get_node("Panel/MarginContainer/VBox/Tabs") as TabContainer
+	var tabs := menu.get_node("%Pages") as TabContainer
 	_check("TabContainer на месте", tabs != null, "меню перестало быть вкладочным")
 	if tabs == null:
 		return
@@ -100,7 +103,7 @@ func _run() -> void:
 			"значение со скрытой вкладки не совпало с настройками",
 		)
 
-	var apply := menu.get_node("Panel/MarginContainer/VBox/Buttons/Apply") as Button
+	var apply := menu.get_node("%Apply") as Button
 	_check(
 		"свежеоткрытое меню не считает себя изменённым",
 		apply.disabled,
@@ -175,17 +178,13 @@ func _run() -> void:
 
 	# --- 6. Минимальный размер не растёт по самой длинной вкладке --------
 	# Знакомая грабля TabContainer: он запрашивает минимум по ВСЕМ вкладкам
-	# сразу, и «Управление» с восемью строками раскладки растянула бы окно и на
-	# «Аудио» с единственным ползунком. Прокрутка внутри вкладки эту связь рвёт.
-	# Спрашиваем VBox, а не саму панель: панель — не контейнер, её минимум всегда
-	# равен объявленному custom_minimum_size, и переполнение содержимым на нём
-	# никак не сказывается. Растёт именно требование содержимого.
-	var vbox := menu.get_node("Panel/MarginContainer/VBox") as VBoxContainer
-	var needed := vbox.get_combined_minimum_size().y
+	# сразу, и «Управление» с раскладкой растянула бы экран и на «Звуке» с
+	# единственным ползунком. Прокрутка внутри вкладки эту связь рвёт.
+	var needed := tabs.get_combined_minimum_size().y
 	_check(
-		"содержимое меню влезает в панель",
-		needed <= PANEL_INNER_HEIGHT,
-		"нужно %.0f px при доступных %.0f" % [needed, PANEL_INNER_HEIGHT],
+		"страницы влезают над рядом кнопок",
+		needed <= PAGES_HEIGHT,
+		"нужно %.0f px при доступных %.0f" % [needed, PAGES_HEIGHT],
 	)
 
 	# Ключевое: минимум вкладок НЕ равен минимуму самой длинной страницы. Пока
@@ -201,6 +200,38 @@ func _run() -> void:
 		"вкладкам нужно %.0f px — ровно по самой длинной странице (%.0f), прокрутка не работает" % [
 			tabs.get_combined_minimum_size().y, tallest],
 	)
+
+	# --- 7. Вкладки — кнопки над скрытыми ярлыками ------------------------
+	# Ярлыки TabContainer скрыты, страницы листают кнопки-мысли: разойдись их
+	# порядок со страницами — «Звук» открывал бы «Управление», и молча.
+	var buttons := menu.get_node("%TabButtons").get_children()
+	_check("кнопок-вкладок столько же, сколько страниц", buttons.size() == tabs.get_tab_count(),
+			"%d кнопок на %d страниц" % [buttons.size(), tabs.get_tab_count()])
+	for i in range(buttons.size() - 1, -1, -1):
+		(buttons[i] as BaseButton).pressed.emit()
+		_check("кнопка %d открывает страницу %d" % [i, i], tabs.current_tab == i,
+				"открыта %d" % tabs.current_tab)
+
+	# --- 8. Разрешение теней гаснет без теней -----------------------------
+	var shadows_control = by_key.get("shadows_enabled")
+	var atlas_row := menu.get_node("%ShadowAtlasRow") as UI_SettingRow
+	var atlas = by_key.get("shadow_atlas_size")
+	if shadows_control != null and atlas != null:
+		shadows_control.set_setting_value(false)
+		shadows_control.setting_changed.emit(shadows_control)
+		_check("без теней разрешение теней недоступно", not (atlas as Range).editable,
+				"слайдер разрешения теней остался в деле при выключенных тенях")
+		shadows_control.set_setting_value(true)
+		shadows_control.setting_changed.emit(shadows_control)
+		_check("с тенями — снова доступно", (atlas as Range).editable, "слайдер так и остался погашен")
+
+	# --- 9. Подсказка — в колонке, по строке, на которую смотрят ----------
+	atlas_row.looked_at.emit(atlas_row)
+	var hint_text := menu.get_node("%HintText") as Label
+	var hint_title := menu.get_node("%HintTitle") as Label
+	_check("колонка подсказки показывает строку", hint_title.text == atlas_row.title()
+			and hint_text.text == tr("SETTINGS_HINT_SHADOW_RES"),
+			"«%s» / «%s»" % [hint_title.text, hint_text.text])
 
 	# Настройки не трогались: правился только черновик меню, «Применить» не
 	# нажималась. Убираем меню, чтобы его _input не пережил проверку.

@@ -1,8 +1,21 @@
 [gd_scene format=3 uid="uid://bh8lmoc7bp0ej"]
 
 [ext_resource type="Script" uid="uid://b5na6n7med7u4" path="res://src/ui/pause_menu/pause_menu.gd" id="2_ejwgg"]
+[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="3_backdrop"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="4_echo_button"]
 
-[node name="PauseMenu" type="Control" unique_id=68340211]
+[sub_resource type="Gradient" id="Gradient_shadow"]
+colors = PackedColorArray(0.024, 0.02, 0.035, 0.7, 0.024, 0.02, 0.035, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+width = 128
+height = 128
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="PauseMenu" type="Control" unique_id=68340211 node_paths=PackedStringArray("first_focus", "content")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -10,58 +23,100 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_ejwgg")
+first_focus = NodePath("Content/Column/Continue")
+content = NodePath("Content")
 
-[node name="Panel" type="Panel" parent="." unique_id=2057447361]
-custom_minimum_size = Vector2(250, 200)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -125.0
-offset_top = -100.0
-offset_right = 125.0
-offset_bottom = 100.0
-grow_horizontal = 2
-grow_vertical = 2
-pivot_offset_ratio = Vector2(0.5, 0.5)
-
-[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=740551870]
+[node name="Backdrop" type="ColorRect" parent="." unique_id=2057447361]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 10
+mouse_filter = 2
+script = ExtResource("3_backdrop")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=717497255]
+[node name="ThoughtShadow" type="TextureRect" parent="." unique_id=740551870]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 150.0
+offset_right = 300.0
+offset_bottom = 570.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_shadow")
+expand_mode = 1
+
+[node name="Content" type="Control" parent="." unique_id=740551871]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Column" type="VBoxContainer" parent="Content" unique_id=717497255]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 200.0
+offset_bottom = 200.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Whisper" type="Label" parent="Content/Column" unique_id=717497256]
 layout_mode = 2
-size_flags_stretch_ratio = 6.0
-theme_override_constants/separation = 15
-alignment = 1
+size_flags_horizontal = 4
+theme_type_variation = &"MenuWhisper"
+text = "PAUSE_TITLE"
+uppercase = true
 
-[node name="Continue" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=295546092]
+[node name="WhisperGap" type="Control" parent="Content/Column" unique_id=717497257]
+custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
-text = "Продолжить"
+mouse_filter = 2
 
-[node name="Save" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=1832918090]
+[node name="Continue" type="Button" parent="Content/Column" unique_id=295546092]
 layout_mode = 2
-text = "Сохранить"
+size_flags_horizontal = 4
+theme_type_variation = &"EchoButton"
+text = "PAUSE_CONTINUE"
+alignment = 0
+script = ExtResource("4_echo_button")
 
-[node name="Settings" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=1688969471]
+[node name="Save" type="Button" parent="Content/Column" unique_id=1832918090]
+unique_name_in_owner = true
 layout_mode = 2
-text = "Настройки"
+size_flags_horizontal = 4
+theme_type_variation = &"EchoButton"
+text = "PAUSE_SAVE"
+alignment = 0
+icon_alignment = 2
+script = ExtResource("4_echo_button")
 
-[node name="Exit to menu" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=1850980152]
+[node name="Settings" type="Button" parent="Content/Column" unique_id=1688969471]
 layout_mode = 2
-text = "В меню"
+size_flags_horizontal = 4
+theme_type_variation = &"EchoButton"
+text = "MENU_SETTINGS"
+alignment = 0
+script = ExtResource("4_echo_button")
 
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Continue" to="." method="_on_continue_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Save" to="." method="_on_save_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Settings" to="." method="_on_settings_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Exit to menu" to="." method="_on_exit_to_menu_pressed"]
+[node name="ToMenu" type="Button" parent="Content/Column" unique_id=1850980152]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"EchoButton"
+text = "PAUSE_TO_MENU"
+alignment = 0
+script = ExtResource("4_echo_button")
+
+[connection signal="pressed" from="Content/Column/Continue" to="." method="_on_continue_pressed"]
+[connection signal="pressed" from="Content/Column/Save" to="." method="_on_save_pressed"]
+[connection signal="pressed" from="Content/Column/Settings" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="Content/Column/ToMenu" to="." method="_on_exit_to_menu_pressed"]

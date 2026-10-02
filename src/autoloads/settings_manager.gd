@@ -13,21 +13,21 @@ var DEFAULT_SETTINGS: RS_Settings
 const GRAPHICS_PRESETS_PATH := "res://data/graphics_presets.tres"
 var GRAPHICS_PRESETS: RS_GraphicsPresetLibrary
 
-## Действия, доступные для переназначения, в порядке показа в настройках.
+## Действия, доступные для переназначения, в порядке показа в настройках, и
+## ключи перевода их подписей.
 ## pause_game сюда НЕ входит намеренно: Esc — инвариант UI (им закрывается любой
 ## экран, включая сам экран настроек, где идёт захват клавиши).
 const REBINDABLE_ACTIONS := {
-	&"move_forward": "Вперёд",
-	&"move_backward": "Назад",
-	&"move_left": "Влево",
-	&"move_right": "Вправо",
-	&"jump": "Прыжок",
-	&"sprint": "Бег",
-	&"interact": "Взаимодействие",
-	&"snatch_body": "Захват тела",
-	&"leave_body": "Покинуть тело",
-	&"map": "Карта",
-	# Новые подписи — ключом перевода: Label экрана настроек переводит его сам.
+	&"move_forward": "ACTION_MOVE_FORWARD",
+	&"move_backward": "ACTION_MOVE_BACKWARD",
+	&"move_left": "ACTION_MOVE_LEFT",
+	&"move_right": "ACTION_MOVE_RIGHT",
+	&"jump": "ACTION_JUMP",
+	&"sprint": "ACTION_SPRINT",
+	&"interact": "ACTION_INTERACT",
+	&"snatch_body": "ACTION_SNATCH_BODY",
+	&"leave_body": "ACTION_LEAVE_BODY",
+	&"map": "ACTION_MAP",
 	&"map_mini": "ACTION_MAP_MINI",
 }
 
