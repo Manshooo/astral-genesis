@@ -13,6 +13,8 @@ enum AAMode {OFF, FXAA, MSAA_2X, MSAA_4X}
 ## Ключ пресета ("low"/"medium"/"high") — то, что хранится в
 ## RS_Settings.graphics_preset_id и в SettingsManager.preset_by_id().
 @export var id: StringName = &""
+## Ключ перевода названия в списке пресетов (SETTINGS_PRESET_*): пункт списка
+## переводится сам, данные хранят ключ, а не готовую строку.
 @export var display_name: String = ""
 
 @export_range(0.5, 1.5, 0.05) var render_scale: float = 1.0

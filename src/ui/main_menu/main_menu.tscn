@@ -1,105 +1,135 @@
 [gd_scene format=3 uid="uid://cnof4mx1fdwwd"]
 
 [ext_resource type="Script" uid="uid://cpw5p3egtmbik" path="res://src/ui/main_menu/main_menu.gd" id="1_01okb"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_label.gd" id="2_echo_label"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="3_echo_button"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_w4scp"]
-font_size = 24
-outline_size = 3
-outline_color = Color(0, 0, 0, 1)
-shadow_size = 6
-shadow_color = Color(0.65882355, 0.62352943, 0.5686275, 0.1254902)
-shadow_offset = Vector2(0, 3)
+[sub_resource type="Gradient" id="Gradient_shadow"]
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(0.024, 0.02, 0.035, 0.86, 0.024, 0.02, 0.035, 0.5, 0.024, 0.02, 0.035, 0)
 
-[node name="MainMenuUi" type="Control" unique_id=1993511987]
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+width = 128
+height = 128
+fill = 1
+fill_from = Vector2(0.14, 0.52)
+fill_to = Vector2(0.76, 0.52)
+
+[node name="MainMenuUi" type="Control" unique_id=1993511987 node_paths=PackedStringArray("first_focus", "content")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_01okb")
+first_focus = NodePath("Content/Items/NewGame")
+content = NodePath("Content")
 
-[node name="Panel" type="Panel" parent="." unique_id=1102133628]
-custom_minimum_size = Vector2(250, 200)
+[node name="ThoughtShadow" type="TextureRect" parent="." unique_id=1102133628]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -125.0
-offset_top = -100.0
-offset_right = 125.0
-offset_bottom = 100.0
-grow_horizontal = 2
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 760.0
 grow_vertical = 2
-pivot_offset_ratio = Vector2(0.5, 0.5)
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_shadow")
+expand_mode = 1
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=940365007]
+[node name="Content" type="Control" parent="." unique_id=940365007]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 10
+mouse_filter = 2
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=1205831937]
-layout_mode = 2
-alignment = 2
+[node name="Title" type="Label" parent="Content" unique_id=828718045]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 156.0
+offset_right = 112.0
+offset_bottom = 156.0
+theme_type_variation = &"MenuTitle"
+text = "MENU_TITLE"
+uppercase = true
+script = ExtResource("2_echo_label")
 
-[node name="Astral Genesis" type="Label" parent="Panel/MarginContainer/VBoxContainer2" unique_id=828718045]
-layout_mode = 2
-size_flags_vertical = 2
-text = "Astral Genesis"
-label_settings = SubResource("LabelSettings_w4scp")
-horizontal_alignment = 1
-vertical_alignment = 1
-metadata/_edit_use_anchors_ = true
+[node name="Items" type="VBoxContainer" parent="Content" unique_id=1612598280]
+layout_mode = 0
+offset_left = 82.0
+offset_top = 318.0
+offset_right = 82.0
+offset_bottom = 318.0
+theme_override_constants/separation = 6
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer2" unique_id=1612598280]
+[node name="NewGame" type="Button" parent="Content/Items" unique_id=351258722]
 layout_mode = 2
-size_flags_vertical = 8
-alignment = 1
+size_flags_horizontal = 0
+theme_type_variation = &"EchoButton"
+text = "MENU_NEW_GAME"
+alignment = 0
+script = ExtResource("3_echo_button")
 
-[node name="New Game" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=351258722]
+[node name="LoadRow" type="HBoxContainer" parent="Content/Items" unique_id=1205831937]
 layout_mode = 2
-text = "Новая игра"
+size_flags_horizontal = 0
+theme_override_constants/separation = 0
 
-[node name="Load" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1814265144]
+[node name="Load" type="Button" parent="Content/Items/LoadRow" unique_id=1814265144]
+unique_name_in_owner = true
 layout_mode = 2
-text = "Загрузить"
+theme_type_variation = &"EchoButton"
+text = "MENU_LOAD"
+alignment = 0
+script = ExtResource("3_echo_button")
 
-[node name="Settings" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=1574883533]
+[node name="LoadAside" type="Label" parent="Content/Items/LoadRow" unique_id=1574883534]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.8)
 layout_mode = 2
-text = "Настройки"
+theme_type_variation = &"MenuCaption"
+text = "MENU_LOAD_EMPTY"
 
-[node name="Exit" type="Button" parent="Panel/MarginContainer/VBoxContainer2/VBoxContainer" unique_id=772514705]
+[node name="Settings" type="Button" parent="Content/Items" unique_id=1574883533]
 layout_mode = 2
-text = "Выйти"
+size_flags_horizontal = 0
+theme_type_variation = &"EchoButton"
+text = "MENU_SETTINGS"
+alignment = 0
+script = ExtResource("3_echo_button")
+
+[node name="Exit" type="Button" parent="Content/Items" unique_id=772514705]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"EchoButton"
+text = "MENU_QUIT"
+alignment = 0
+script = ExtResource("3_echo_button")
 
 [node name="Version" type="Label" parent="." unique_id=1618033988]
 unique_name_in_owner = true
 auto_translate_mode = 2
-modulate = Color(1, 1, 1, 0.5)
+modulate = Color(1, 1, 1, 0.55)
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -12.0
-offset_top = -12.0
-offset_right = -12.0
-offset_bottom = -12.0
+offset_left = -24.0
+offset_top = -18.0
+offset_right = -24.0
+offset_bottom = -18.0
 grow_horizontal = 0
 grow_vertical = 0
+theme_type_variation = &"MenuSmall"
 horizontal_alignment = 2
 
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/New Game" to="." method="_on_new_game_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/Load" to="." method="_on_load_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/Settings" to="." method="_on_settings_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer2/VBoxContainer/Exit" to="." method="_on_exit_pressed"]
+[connection signal="pressed" from="Content/Items/NewGame" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="Content/Items/LoadRow/Load" to="." method="_on_load_pressed"]
+[connection signal="pressed" from="Content/Items/Settings" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="Content/Items/Exit" to="." method="_on_exit_pressed"]

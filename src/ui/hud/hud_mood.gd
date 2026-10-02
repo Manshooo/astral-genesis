@@ -141,12 +141,21 @@ static func approach(value: float, target: float, tau: float, delta: float) -> f
 ## статичные (2, 0); здесь — переопределение узла, а не своя тема сцены.
 ## [param phase] разводит строки, чтобы эхо управления не дрожало хором.
 static func apply_echo(label: Label, phase: float = 0.0) -> void:
+	var offset := echo_offset(turmoil(), phase)
+	label.add_theme_constant_override("shadow_offset_x", roundi(offset.x))
+	label.add_theme_constant_override("shadow_offset_y", roundi(offset.y))
+
+
+## Сдвиг эха от строки при смятении [param turmoil_now]. Одна формула на HUD и
+## меню («Меню — спека» §1): эхо меню обязано успокаиваться вместе с HUD, а две
+## копии формулы разошлись бы при первой же правке. При T = 0.6 даёт (1.2…2.8,
+## −0.4…0.6) — ровно амплитуду макетов меню.
+static func echo_offset(turmoil_now: float, phase: float = 0.0) -> Vector2:
 	var t := now()
-	var turmoil_now := turmoil()
-	var dx := 1.0 + 2.0 * turmoil_now + 1.2 * turmoil_now * noise(t * 9.0 + phase, 0.3)
-	var dy := 0.6 * turmoil_now * noise(t * 7.0 + phase, 1.9)
-	label.add_theme_constant_override("shadow_offset_x", roundi(dx))
-	label.add_theme_constant_override("shadow_offset_y", roundi(dy))
+	return Vector2(
+		1.0 + 2.0 * turmoil_now + 1.2 * turmoil_now * noise(t * 9.0 + phase, 0.3),
+		0.6 * turmoil_now * noise(t * 7.0 + phase, 1.9),
+	)
 
 
 ## Материал размытия строки-мысли для её CanvasGroup. Свой на каждую группу:

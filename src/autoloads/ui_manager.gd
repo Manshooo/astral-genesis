@@ -86,7 +86,7 @@ func close_top() -> void:
 	if _stack.is_empty():
 		return
 	var entry = _stack.pop_back()
-	entry.screen.queue_free()
+	_dismiss(entry.screen)
 
 	if entry.get("on_close") and entry.on_close.is_valid():
 		entry.on_close.call()
@@ -102,6 +102,25 @@ func close_top() -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+## Есть ли открытый экран. Фону меню (UI_MenuBackdrop): поверх другого экрана
+## мир уже заволочен, и заволакивать его заново с нуля — мигнуть чистым кадром.
+func has_screens() -> bool:
+	return not _stack.is_empty()
+
+
+## Убирает экран, уже снятый со стека. Экран меню «Отголосок» сначала гаснет
+## (UI_MenuScreen.play_exit), остальные удаляются сразу. Стек при этом уже
+## прежний — пауза снимается и курсор захватывается без ожидания угасания:
+## гаснущий экран — картинка, а не состояние.
+func _dismiss(screen: Control) -> void:
+	if screen.has_method(&"play_exit"):
+		screen.play_exit()
+	else:
+		screen.queue_free()
+
+
+## Без угасания, в отличие от close_top: зовут его перед сменой сцены, и экрану
+## незачем гаснуть поверх уже уходящего мира.
 func close_all() -> void:
 	var any_paused := false
 	for entry in _stack:

@@ -9,7 +9,7 @@ class_name GraphicsPresetSetting
 extends OptionSetting
 
 const CUSTOM_ID := &"custom"
-const CUSTOM_LABEL := "Собственный"
+const CUSTOM_LABEL := "SETTINGS_PRESET_CUSTOM"
 
 func _ready() -> void:
 	clear()

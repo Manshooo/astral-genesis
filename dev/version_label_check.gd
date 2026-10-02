@@ -29,13 +29,16 @@ func _ready() -> void:
 func _run() -> void:
 	var expected := "v%s" % DEV_VERSION
 
+	# В меню номер — строкой перевода («сборка %s»): угол меню говорит словами
+	# языка игры. Оверлей — инструмент разработчика и остаётся при «v».
+	var menu_expected := tr("MENU_BUILD") % DEV_VERSION
 	var menu: Control = MAIN_MENU_SCENE.instantiate()
 	add_child(menu)
 	var label: Label = menu.get_node("%Version")
 	_check(
 		"номер в углу главного меню — config/version",
-		label.text == expected,
-		"«%s», ожидалось «%s»" % [label.text, expected]
+		label.text == menu_expected,
+		"«%s», ожидалось «%s»" % [label.text, menu_expected]
 	)
 	_check("номер в меню виден", label.visible and label.modulate.a > 0.0, "подпись скрыта")
 	menu.queue_free()

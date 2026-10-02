@@ -14,7 +14,8 @@ func _ready() -> void:
 		RS_GraphicsPreset.AAMode.MSAA_2X,
 		RS_GraphicsPreset.AAMode.MSAA_4X,
 	]
-	add_item("Выкл")
+	# Ключом переводится только «Выкл»: FXAA и MSAA — имена, их не переводят.
+	add_item("SETTINGS_AA_OFF")
 	add_item("FXAA")
 	add_item("MSAA 2x")
 	add_item("MSAA 4x")

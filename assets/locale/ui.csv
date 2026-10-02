@@ -77,3 +77,62 @@ HUD_MAP_HIDE,Свернуть,Hide
 HUD_MAP_FULL,Вся карта,Full map
 ACTION_MAP_MINI,Мини-карта,Mini-map
 MAP_TERMINAL_ONLY,Карта целиком — на терминале в хабе,The full map is at the hub terminal
+MENU_TITLE,Astral Genesis,Astral Genesis
+MENU_NEW_GAME,Новая игра,New game
+MENU_LOAD,Загрузить,Load game
+MENU_LOAD_EMPTY,нет сохранений,no saved run
+MENU_SETTINGS,Настройки,Settings
+MENU_QUIT,Выйти,Quit
+MENU_BUILD,сборка %s,build %s
+PAUSE_TITLE,Пауза,Paused
+PAUSE_CONTINUE,Продолжить,Resume
+PAUSE_SAVE,Сохранить,Save
+PAUSE_SAVED,Сохранено,Saved
+PAUSE_SAVE_NOTHING,Сохранять нечего,Nothing to save
+PAUSE_TO_MENU,В меню,Quit to main menu
+SETTINGS_TITLE,Настройки,Settings
+SETTINGS_TAB_GRAPHICS,Графика,Graphics
+SETTINGS_TAB_AUDIO,Звук,Audio
+SETTINGS_TAB_CONTROLS,Управление,Controls
+SETTINGS_PRESET,Пресет графики,Graphics preset
+SETTINGS_PRESET_LOW,Низкий,Low
+SETTINGS_PRESET_MEDIUM,Средний,Medium
+SETTINGS_PRESET_HIGH,Высокий,High
+SETTINGS_PRESET_CUSTOM,Собственный,Custom
+SETTINGS_RES_SCALE,Масштаб разрешения,Resolution scale
+SETTINGS_SHADOWS,Тени,Shadows
+SETTINGS_SHADOW_RES,Разрешение теней,Shadow resolution
+SETTINGS_AA,Сглаживание,Anti-aliasing
+SETTINGS_AA_OFF,Выкл,Off
+SETTINGS_VSYNC,Вертикальная синхронизация,Vertical synchronization
+SETTINGS_FOV,Поле зрения,Field of view
+SETTINGS_FPS_LIMIT,Ограничение FPS,Frame rate limit
+SETTINGS_FPS_UNLIMITED,без ограничения,unlimited
+SETTINGS_VOLUME_MASTER,Общая громкость,Master volume
+SETTINGS_MOUSE_SENS,Чувствительность мыши,Mouse sensitivity
+SETTINGS_KEYS,Клавиши,Key bindings
+SETTINGS_ON,Вкл,On
+SETTINGS_OFF,Выкл,Off
+SETTINGS_REBIND_WAIT,нажмите клавишу,press a key
+SETTINGS_REBIND_CANCEL,%s — отмена,%s to cancel
+SETTINGS_REBIND_SWAPPED,«%s» и «%s» поменялись клавишами,“%s” and “%s” swapped keys
+SETTINGS_CANCEL,Отмена,Cancel
+SETTINGS_RESET,Сброс,Reset to defaults
+SETTINGS_APPLY,Применить,Apply
+SETTINGS_DIRTY,есть непримененные изменения,unapplied changes
+SETTINGS_HINT_PRESET,"Задаёт масштаб, тени и сглаживание разом. Ручная правка любого из них переводит пресет в «Собственный».","Sets scale, shadows and anti-aliasing at once. Changing any of them by hand switches the preset to “Custom”."
+SETTINGS_HINT_RES_SCALE,"Доля разрешения окна, в которой рисуется 3D. Интерфейс остаётся чётким.",Share of the window resolution the 3D view is drawn at. The interface stays sharp.
+SETTINGS_HINT_SHADOW_RES,"Чёткость теней. Недоступно, пока тени выключены.",Shadow sharpness. Unavailable while shadows are off.
+SETTINGS_HINT_FPS,0 — без ограничения.,0 means unlimited.
+SETTINGS_HINT_KEYS,Клик по клавише — ждёт новую. Занятая клавиша меняется местами.,Click a key to wait for a new one. A taken key swaps places.
+ACTION_MOVE_FORWARD,Вперёд,Move forward
+ACTION_MOVE_BACKWARD,Назад,Move backward
+ACTION_MOVE_LEFT,Влево,Strafe left
+ACTION_MOVE_RIGHT,Вправо,Strafe right
+ACTION_JUMP,Прыжок,Jump
+ACTION_SPRINT,Бег,Sprint
+ACTION_INTERACT,Взаимодействие,Interact
+ACTION_SNATCH_BODY,Захват тела,Possess a body
+ACTION_LEAVE_BODY,Покинуть тело,Leave the body
+ACTION_MAP,Карта,Map
+HINT_BACK,Назад,Back

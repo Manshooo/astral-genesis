@@ -1,25 +1,40 @@
-## Экран настроек: черновик + вкладки. Настройки разложены по вкладкам
-## («Графика», «Аудио», «Управление»), и меню про эту раскладку НИЧЕГО не знает —
-## контролы собираются рекурсивным обходом поддерева по утиному контракту
-## (setting_key + get/set_setting_value + сигнал setting_changed). Поэтому
-## перенести настройку на другую вкладку или завести новую — правка сцены, а не
-## этого скрипта.
+## Экран настроек языка «Отголосок» (§9 «Меню — спека»): черновик + три
+## вкладки. Настройки разложены по вкладкам («Графика», «Звук», «Управление»), и
+## меню про эту раскладку НИЧЕГО не знает — контролы собираются рекурсивным
+## обходом поддерева по утиному контракту (setting_key + get/set_setting_value +
+## сигнал setting_changed). Поэтому перенести настройку на другую вкладку или
+## завести новую — правка сцены, а не этого скрипта.
 ##
-## Содержимое вкладки лежит в ScrollContainer не ради прокрутки (её пока нет), а
-## ради минимального размера: TabContainer запрашивает его по ВСЕМ вкладкам
-## сразу, и самая длинная — «Управление» с восемью строками раскладки — иначе
-## растягивала бы окно и на «Аудио» с единственным ползунком.
+## Вкладки — ряд кнопок-мыслей над TabContainer со скрытыми ярлыками: ярлык
+## TabContainer не умеет ни эха, ни рваного штриха, ни точки фокуса (§5), а
+## кнопки умеют. Страницы по-прежнему держит TabContainer.
+##
+## Содержимое вкладки лежит в ScrollContainer не ради прокрутки, а ради
+## минимального размера: TabContainer запрашивает его по ВСЕМ вкладкам сразу, и
+## самая длинная — «Управление» с раскладкой — иначе растягивала бы экран и на
+## «Звуке» с единственным ползунком.
+##
+## Подсказка строки — в своей колонке справа, а не тултипом (§9): строка
+## (UI_SettingRow) сообщает, что на неё смотрят, экран показывает её название и
+## подсказку.
 ##
 ## Вкладка по умолчанию всегда первая и не зависит от того, откуда пришли (из
 ## главного меню или из паузы): экран один, и один и тот же экран, открывающийся
 ## по-разному, читался бы как две разные вещи.
-extends Control
+extends UI_MenuScreen
 
 var caller_node: Control = null
 
-@onready var apply_button: Button = $Panel/MarginContainer/VBox/Buttons/Apply
+@onready var apply_button: Button = %Apply
 ## Корень обхода, а не список: настройки лежат по вкладкам произвольной глубины.
-@onready var settings_list: Control = $Panel/MarginContainer/VBox
+@onready var settings_list: Control = %Pages
+@onready var _pages: TabContainer = %Pages
+@onready var _tab_buttons: HBoxContainer = %TabButtons
+@onready var _dirty_label: Label = %Dirty
+@onready var _hint_title: Label = %HintTitle
+@onready var _hint_text: Label = %HintText
+@onready var _keybinds: Control = %Keybinds
+@onready var _shadow_atlas_row: UI_SettingRow = %ShadowAtlasRow
 
 var _controls: Array = []
 
@@ -47,8 +62,51 @@ var _draft: RS_Settings
 var _baseline: Dictionary = {}
 
 func _ready() -> void:
+	super._ready()
 	_collect_controls(settings_list)
 	_load_values()
+	_connect_tabs()
+	_connect_hints(settings_list)
+	_show_hint("", "")
+
+
+## Кнопка-вкладка N открывает страницу N: порядок кнопок и страниц один.
+func _connect_tabs() -> void:
+	var i := 0
+	for button in _tab_buttons.get_children():
+		(button as BaseButton).pressed.connect(_pages.set_current_tab.bind(i))
+		i += 1
+	(_tab_buttons.get_child(0) as BaseButton).button_pressed = true
+	_pages.current_tab = 0
+
+
+func _connect_hints(node: Node) -> void:
+	for child in node.get_children():
+		if child is UI_SettingRow:
+			(child as UI_SettingRow).looked_at.connect(_on_row_looked_at)
+		_connect_hints(child)
+
+
+func _on_row_looked_at(row: UI_SettingRow) -> void:
+	_show_hint(row.title(), row.hint_key)
+
+
+func _show_hint(title: String, hint_key: String) -> void:
+	_hint_title.text = title
+	_hint_text.text = tr(hint_key) if hint_key != "" else ""
+
+
+## Раскладка — не строка настроек, а целый блок, и подсказку о ней показываем,
+## пока мышь или фокус внутри блока.
+func _process(_delta: float) -> void:
+	if not _keybinds.is_visible_in_tree():
+		return
+	var focus := get_viewport().gui_get_focus_owner()
+	var hovered := _keybinds.get_global_rect().has_point(_keybinds.get_global_mouse_position())
+	var focused := focus != null and _keybinds.is_ancestor_of(focus)
+	if (hovered or focused) and _hint_title.text != tr("SETTINGS_KEYS"):
+		_show_hint(tr("SETTINGS_KEYS"), "SETTINGS_HINT_KEYS")
+
 
 func _collect_controls(node: Node) -> void:
 	for child in node.get_children():
@@ -73,6 +131,13 @@ func _apply_draft_to_controls() -> void:
 		var key: String = control.setting_key
 		if key != "" and key in _draft:
 			control.set_setting_value(_draft.get(key))
+	_refresh_dependencies()
+
+
+## Разрешение теней без теней ничего не значит: строка гаснет, а её подсказка
+## говорит почему (§1 «недоступное объясняет себя»).
+func _refresh_dependencies() -> void:
+	_shadow_atlas_row.set_row_disabled(not _draft.shadows_enabled)
 
 func _capture_baseline() -> void:
 	_baseline.clear()
@@ -105,12 +170,12 @@ func _dicts_equal(a: Dictionary, b: Dictionary) -> bool:
 			return false
 	return true
 
-## disabled+flat по умолчанию ("невидимая" кнопка), становится обычной активной
-## кнопкой, как только черновик отличается от последнего применённого состояния.
+## «Применить» недоступна, пока черновик совпадает с применённым, — и строка
+## «есть непримененные изменения» рядом объясняет, когда она загорится.
 func _update_apply_button() -> void:
 	var dirty := _has_unsaved_changes()
 	apply_button.disabled = not dirty
-	apply_button.flat = not dirty
+	_dirty_label.visible = dirty
 
 func _on_any_setting_changed(control: Variant) -> void:
 	var key: String = control.setting_key
@@ -119,6 +184,7 @@ func _on_any_setting_changed(control: Variant) -> void:
 		_apply_preset_to_draft(control.get_setting_value())
 	elif key in GRAPHICS_PRESET_FIELDS:
 		_sync_preset_with_draft()
+	_refresh_dependencies()
 	_update_apply_button()
 
 ## Выбор пресета в списке раскатывает его значения на все поля черновика и
@@ -166,7 +232,7 @@ func _on_apply_pressed() -> void:
 
 func _on_back_pressed() -> void:
 	UIManager.close_top()
-	
+
 
 func _on_reset_pressed() -> void:
 	_draft = SettingsManager.default_settings()
