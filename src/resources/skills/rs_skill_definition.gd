@@ -2,7 +2,7 @@ class_name RS_SkillDefinition
 extends Resource
 ## Один навык дерева: чем он является для игрока, чего стоит и что меняет.
 ##
-## Место навыка в графе здесь НЕ задаётся — колонку и дорожку выводит
+## Место навыка в графе здесь НЕ задаётся — сектор и кольцо нейросети выводит
 ## SkillGraphLayout из ветки и требований. Иначе добавление навыка стоило бы
 ## ещё и ручной расстановки координат, а первая же вставка в середину цепочки
 ## заставила бы двигать всё, что правее.
@@ -10,7 +10,7 @@ extends Resource
 @export var id: StringName = &""            # "body_snatch", "lifespan"
 @export var display_name: String = ""
 @export var description: String = ""
-@export var branch: StringName = &"default"  ## "possession", "survival" — дорожка в графе
+@export var branch: StringName = &"default"  ## "possession", "survival" — сектор в графе
 @export var max_rank: int = 3
 @export var cost_per_rank: Array[int] = [1, 2, 3]   ## очков навыка за каждый ранг
 @export var requires: Array[RS_SkillRequirement] = []
@@ -20,7 +20,8 @@ extends Resource
 ## Величины задаются на ОДИН ранг — умножение на ранг делает свёртка.
 @export var modifiers: Array[RS_StatModifier] = []
 
-## Ручная строка внутри своей дорожки и колонки; -1 — «расставь сам».
+## Ручной слот по дуге своего кольца в секторе ветки (0 — крайний против
+## часовой стрелки); -1 — «расставь сам».
 ## Аварийный выход для случая, когда автораскладка развела соседей не так, как
 ## читается ветка. Оставлять -1 всюду, где не мешает: закреплённая строка не
 ## подвинется, когда рядом появится новый навык.

@@ -1,18 +1,18 @@
 extends "res://dev/check_harness.gd"
-## Проверка фоновых слоёв графа навыков — дорожек-категорий и связей-требований
-## (карточка Задачи/Карточки/Skill Tree.md): подложка ветки накрывает свои
-## карточки и не лезет на чужие, подпись берётся из данных ветки, ребро есть
-## ровно на каждое показанное требование и упирается в края карточек, а слои
-## лежат ПОД карточками.
+## Проверка слоёв нейросети навыков (§9 «Меню — спека»): подпись ветки видна
+## ровно там, где у ветки есть показанные нейроны, и берётся из данных; синапс
+## есть на каждое показанное требование и на каждый корень (от ядра), упирается
+## в края нейронов, а не в центры; синапсы лежат ПОД нейронами, подписи веток
+## не накрывают нейроны.
 ## Запускать: godot --headless dev/skill_layers_check.tscn
 ##
-## Как и skill_card_check, эта проверка создаёт узлы намеренно: и дорожка, и
-## связь — это геометрия в пикселях, посчитанная по показанным карточкам, и
-## ошибка в ней не падает, а тихо рисует полосу или линию не там. Раскладка в
-## клетках проверяется без экрана в skill_graph_check.tscn.
+## Как и skill_card_check, эта проверка создаёт узлы намеренно: синапс и подпись
+## — геометрия на полотне, посчитанная по показанным нейронам, и ошибка в ней не
+## падает, а тихо рисует линию или подпись не там. Раскладка без экрана
+## проверяется в skill_graph_check.tscn.
 ##
 ## SkillManager.save и SKILL_TREE на время проверки подменяются и возвращаются
-## на место: к геометрии дорожек прогресс игрока отношения не имеет.
+## на место: к геометрии сети прогресс игрока отношения не имеет.
 
 const GRAPH_SCENE := preload("res://src/ui/skill_tree/skill_graph_view.tscn")
 
@@ -33,14 +33,14 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	# Боевое дерево: три ветки, все с показанными карточками.
+	# Боевое дерево: три ветки, все с показанными нейронами.
 	await _check_layers("боевое дерево", _original_tree, {&"body_snatch": 1, &"lifespan": 1})
 
 	# Синтетическое: у ветки «Бета» показать нечего — её навык за требованием
-	# ранга 5, то есть не открыт и даже не в предпросмотре. Дорожка обязана
-	# спрятаться целиком: пустая полоса с подписью читается как «здесь что-то
-	# есть», хотя ветки для игрока ещё не существует.
-	await _check_layers("ветка без карточек", _tree_with_empty_branch(), {})
+	# ранга 5, то есть не открыт и даже не в предпросмотре. Подпись ветки обязана
+	# спрятаться: подпись над пустотой читается как «здесь что-то есть», хотя
+	# ветки для игрока ещё не существует.
+	await _check_layers("ветка без нейронов", _tree_with_empty_branch(), {})
 
 
 func _check_layers(state: String, tree: RS_SkillTree, ranks: Dictionary) -> void:
@@ -56,136 +56,82 @@ func _check_layers(state: String, tree: RS_SkillTree, ranks: Dictionary) -> void
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	_check(
-		"%s: дорожка заведена на каждую ветку раскладки" % state,
-		graph._lanes.size() == graph._layout.lanes.size(),
-		"дорожек %d при %d ветках" % [graph._lanes.size(), graph._layout.lanes.size()]
-	)
-
-	var missed := PackedStringArray()
-	var trespassed := PackedStringArray()
-	var wrong_label := PackedStringArray()
 	var shown_branches: Dictionary = {}
 	for id in graph._nodes:
 		shown_branches[tree.get_definition(id).branch] = true
 
-	for branch in graph._lanes:
-		var lane: UI_SkillLane = graph._lanes[branch]
-		if lane.visible != shown_branches.has(branch):
-			missed.append(
-				"%s → видна=%s при показанных карточках=%s"
-				% [branch, lane.visible, shown_branches.has(branch)]
-			)
-			continue
-		if not lane.visible:
-			continue
-
-		var label: Label = lane.get_node("%Name")
-		if label.text != tree.branch_display_name(branch):
+	var wrong_visibility := PackedStringArray()
+	var wrong_label := PackedStringArray()
+	var covering := PackedStringArray()
+	for label: Label in graph._labels_host.get_children():
+		var branch: StringName = label.get_meta(&"branch")
+		if label.visible != shown_branches.has(branch):
+			wrong_visibility.append("%s → видна=%s" % [branch, label.visible])
+		if label.text != tr(tree.branch_display_name(branch)):
 			wrong_label.append("%s → «%s»" % [branch, label.text])
-
-		var band := lane.get_global_rect()
+		if not label.visible:
+			continue
 		for id in graph._nodes:
-			var card: UI_SkillNode = graph._nodes[id]
-			var card_rect := card.get_global_rect()
-			if tree.get_definition(id).branch == branch:
-				if not band.grow(1.0).encloses(card_rect):
-					trespassed.append("%s → своя карточка %s снаружи" % [branch, id])
-			elif band.intersects(card_rect):
-				trespassed.append("%s → накрыла чужую карточку %s" % [branch, id])
-
-	_check(
-		"%s: дорожка видна ровно там, где есть карточки" % state,
-		missed.is_empty(),
-		", ".join(missed)
-	)
-	_check(
-		"%s: подложка держит свои карточки и не лезет на чужие" % state,
-		trespassed.is_empty(),
-		", ".join(trespassed)
-	)
-	_check(
-		"%s: подпись дорожки — имя ветки из данных" % state,
-		wrong_label.is_empty(),
-		", ".join(wrong_label)
-	)
+			var neuron: UI_SkillNeuron = graph._nodes[id]
+			if label.get_global_rect().intersects(neuron.get_global_rect()):
+				covering.append("%s → накрыла %s" % [branch, id])
+	_check("%s: подпись ветки видна ровно там, где есть нейроны" % state,
+			wrong_visibility.is_empty(), ", ".join(wrong_visibility))
+	_check("%s: подпись ветки — имя из данных" % state, wrong_label.is_empty(), ", ".join(wrong_label))
+	_check("%s: подпись ветки не накрывает нейроны" % state, covering.is_empty(), ", ".join(covering))
 
 	_check_links(state, tree, graph)
 
-	# Дорожки и связи — фон, и порядок в полотне это единственное, что держит их
-	# позади карточек: своего z_index у них нет.
-	var canvas := graph.get_node("%Canvas")
-	var lanes_index := canvas.get_children().find(graph._lanes_host)
-	var links_index := canvas.get_children().find(graph._links_host)
-	var first_card_index := canvas.get_child_count()
-	for id in graph._nodes:
-		first_card_index = mini(first_card_index, canvas.get_children().find(graph._nodes[id]))
+	var canvas := graph._nodes_host.get_parent()
 	_check(
-		"%s: дорожки под связями, связи под карточками" % state,
-		lanes_index < links_index and links_index < first_card_index,
-		"дорожки %d, связи %d, первая карточка %d" % [lanes_index, links_index, first_card_index]
+		"%s: синапсы лежат под нейронами" % state,
+		graph._links_host.get_index() < graph._nodes_host.get_index() and graph._links_host.get_parent() == canvas,
+		"синапсы рисуются поверх узлов"
 	)
 
 	graph.queue_free()
+	await get_tree().process_frame
 
 
-## Связи: ребро существует ровно там, где SkillManager проверяет требование
-## SKILL_RANK между двумя ПОКАЗАННЫМИ карточками, упирается в края этих карточек
-## и бледнеет, если ведёт в предпросмотр. Требование «сумма рангов в ветке»
-## рёбер не даёт намеренно — веер линий из всех узлов ветки сообщал бы не
-## структуру, а шум, и лишняя связь здесь так же плоха, как потерянная.
+## Синапс — на каждое требование SKILL_RANK, у которого показаны оба конца, и
+## на каждый показанный корень (от ядра). Лишний синапс — связь, которой не
+## проверяет менеджер; недостающий — требование, которого игрок не увидит.
 func _check_links(state: String, tree: RS_SkillTree, graph: UI_SkillGraph) -> void:
 	var expected: Dictionary = {}
 	for def in tree.skills:
-		if def == null or not graph._nodes.has(def.id):
+		if not graph._nodes.has(def.id):
 			continue
+		var has_parent := false
 		for req in def.requires:
-			if req == null or req.type != RS_SkillRequirement.Type.SKILL_RANK:
+			if req.type != RS_SkillRequirement.Type.SKILL_RANK:
 				continue
+			has_parent = true
 			if graph._nodes.has(req.target_skill):
 				expected["%s→%s" % [req.target_skill, def.id]] = true
+		if not has_parent:
+			expected["→%s" % def.id] = true
 
-	var missing := PackedStringArray()
-	for key in expected:
-		if not graph._links.has(key):
-			missing.append(key)
-	for key in graph._links:
-		if not expected.has(key):
-			missing.append("лишняя " + key)
-	_check(
-		"%s: связь на каждое показанное требование, и ни одной лишней" % state,
-		missing.is_empty(),
-		", ".join(missing)
-	)
+	var keys := graph._links.keys()
+	keys.sort()
+	var wanted := expected.keys()
+	wanted.sort()
+	_check("%s: синапс ровно на каждое показанное требование и корень" % state, keys == wanted,
+			"есть %s, ожидалось %s" % [keys, wanted])
 
-	var detached := PackedStringArray()
-	var not_dimmed := PackedStringArray()
-	for key in graph._links:
-		var link: UI_SkillLink = graph._links[key]
-		var ends: PackedStringArray = key.split("→")
-		var source: UI_SkillNode = graph._nodes[StringName(ends[0])]
-		var target: UI_SkillNode = graph._nodes[StringName(ends[1])]
-		var from := source.position + Vector2(graph.node_size.x, graph.node_size.y * 0.5)
-		var to := target.position + Vector2(0.0, graph.node_size.y * 0.5)
-		if not link.points[0].is_equal_approx(from) or not link.points[-1].is_equal_approx(to):
-			detached.append("%s → %s..%s" % [key, link.points[0], link.points[-1]])
-
-		# Бледность связи в предпросмотр — не украшение: она отличает «путь,
-		# которым можно пойти» от «пути, который только показан».
-		var dimmed := link.default_color.a < link.line_alpha
-		if dimmed != target.previewed:
-			not_dimmed.append("%s → бледная=%s при предпросмотре=%s" % [key, dimmed, target.previewed])
-
-	_check(
-		"%s: связь упирается в края своих карточек" % state,
-		detached.is_empty(),
-		", ".join(detached)
-	)
-	_check(
-		"%s: бледная ровно та связь, что ведёт в предпросмотр" % state,
-		not_dimmed.is_empty(),
-		", ".join(not_dimmed)
-	)
+	var off_edge := PackedStringArray()
+	for key: String in graph._links:
+		var link: UI_SkillSynapse = graph._links[key]
+		var line := link.points()
+		if line.size() < 2:
+			continue
+		var ends := key.split("→")
+		var from: Vector2 = graph._layout.positions.get(StringName(ends[0]), Vector2.ZERO)
+		var to: Vector2 = graph._layout.positions[StringName(ends[1])]
+		var start_gap := line[0].distance_to(from)
+		var end_gap := line[line.size() - 1].distance_to(to)
+		if absf(start_gap - UI_SkillSynapse.NEURON_RADIUS) > 1.0 or absf(end_gap - UI_SkillSynapse.NEURON_RADIUS) > 1.0:
+			off_edge.append("%s → %.1f / %.1f" % [key, start_gap, end_gap])
+	_check("%s: синапс упирается в края нейронов, а не в центры" % state, off_edge.is_empty(), ", ".join(off_edge))
 
 
 ## Две ветки, из которых во второй показывать нечего: её единственный навык

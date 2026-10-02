@@ -1,16 +1,16 @@
-[gd_scene load_steps=4 format=3 uid="uid://bs4mhbbdotjwg"]
+[gd_scene format=3 uid="uid://bs4mhbbdotjwg"]
 
 [ext_resource type="Script" uid="uid://hqbvgrlg6emm" path="res://src/ui/skill_tree/skill_tree_ui.gd" id="1_4ij35"]
 [ext_resource type="PackedScene" path="res://src/ui/skill_tree/skill_graph_view.tscn" id="2_graph"]
+[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="3_backdrop"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="4_echo"]
+[ext_resource type="Script" path="res://src/ui/menu/key_hint_button.gd" id="5_hint"]
+[ext_resource type="Script" path="res://src/ui/skill_tree/skill_card.gd" id="6_card"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_label.gd" id="7_echo_label"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_3owqy"]
-font_size = 32
+[sub_resource type="ButtonGroup" id="ButtonGroup_tabs"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_hint"]
-font_size = 13
-font_color = Color(0.72, 0.76, 0.84, 0.6)
-
-[node name="SkillTreeUI" type="Control" unique_id=577831709]
+[node name="SkillTreeUI" type="Control" unique_id=577831709 node_paths=PackedStringArray("content")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,62 +18,235 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_4ij35")
+content = NodePath("Content")
 
-[node name="Panel" type="Panel" parent="." unique_id=1017318689]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 48.0
-offset_top = 40.0
-offset_right = -48.0
-offset_bottom = -40.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=333464628]
+[node name="Backdrop" type="ColorRect" parent="." unique_id=1017318689]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 16
+mouse_filter = 2
+script = ExtResource("3_backdrop")
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=1270016367]
+[node name="Content" type="Control" parent="." unique_id=333464628]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Graph" parent="Content" unique_id=1270016367 instance=ExtResource("2_graph")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 9
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 80.0
+offset_top = 140.0
+offset_right = 1000.0
+offset_bottom = -20.0
+grow_horizontal = 1
+
+[node name="Title" type="Label" parent="Content" unique_id=757078304]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 52.0
+offset_right = 112.0
+offset_bottom = 52.0
+theme_type_variation = &"MenuWhisper"
+text = "SKILL_TITLE"
+uppercase = true
+
+[node name="TabButtons" type="HBoxContainer" parent="Content" unique_id=72798578]
+layout_mode = 0
+offset_left = 86.0
+offset_top = 80.0
+offset_right = 86.0
+offset_bottom = 80.0
+theme_override_constants/separation = 18
+
+[node name="TabSoul" type="Button" parent="Content/TabButtons" unique_id=72798579]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MenuTab"
+toggle_mode = true
+button_group = SubResource("ButtonGroup_tabs")
+text = "SKILL_TAB_SOUL"
+alignment = 0
+script = ExtResource("4_echo")
+
+[node name="TabArchitect" type="Button" parent="Content/TabButtons" unique_id=72798580]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MenuTab"
+toggle_mode = true
+button_group = SubResource("ButtonGroup_tabs")
+text = "SKILL_TAB_ARCHITECT"
+alignment = 0
+script = ExtResource("4_echo")
+
+[node name="Back" type="Button" parent="Content" unique_id=848668512]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 36.0
+grow_horizontal = 0
+script = ExtResource("5_hint")
+
+[node name="Wallet" type="VBoxContainer" parent="Content" unique_id=335534320]
+layout_mode = 0
+offset_left = 740.0
+offset_top = 70.0
+offset_right = 740.0
+offset_bottom = 70.0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="WalletLabel" type="Label" parent="Content/Wallet" unique_id=335534321]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuCaption"
+
+[node name="WalletValue" type="Label" parent="Content/Wallet" unique_id=335534322]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuWallet"
+
+[node name="Toast" type="Label" parent="Content/Wallet" unique_id=335534323]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuToast"
+
+[node name="Card" type="VBoxContainer" parent="Content" unique_id=335534330]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1060.0
+offset_top = 150.0
+offset_right = 1400.0
+offset_bottom = 150.0
+theme_override_constants/separation = 0
+script = ExtResource("6_card")
+
+[node name="Branch" type="Label" parent="Content/Card" unique_id=335534331]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuBranchLabel"
+uppercase = true
+
+[node name="CardTitle" type="Label" parent="Content/Card" unique_id=335534332]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuCardTitle"
+autowrap_mode = 3
+script = ExtResource("7_echo_label")
+
+[node name="RankRow" type="HBoxContainer" parent="Content/Card" unique_id=335534333]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=72798578]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBox/Header" unique_id=757078304]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Улучшения"
-label_settings = SubResource("LabelSettings_3owqy")
-
-[node name="PointsLabel" type="Label" parent="Panel/MarginContainer/VBox/Header" unique_id=335534320]
+[node name="Pips" type="Control" parent="Content/Card/RankRow" unique_id=335534334]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Очки: 0"
+size_flags_vertical = 4
+mouse_filter = 2
 
-[node name="CloseButton" type="Button" parent="Panel/MarginContainer/VBox/Header" unique_id=848668512]
-layout_mode = 2
-text = "Закрыть"
-
-[node name="Graph" parent="Panel/MarginContainer/VBox" instance=ExtResource("2_graph")]
+[node name="Rank" type="Label" parent="Content/Card/RankRow" unique_id=335534335]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+auto_translate_mode = 2
+theme_type_variation = &"MenuCaption"
 
-[node name="Hint" type="Label" parent="Panel/MarginContainer/VBox"]
+[node name="DescGap" type="Control" parent="Content/Card" unique_id=335534336]
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
-text = "Чтобы перетащить нажмите ЛКМ по пустому месту.\nДля изменения масштаба используйте колёсико мышки."
-label_settings = SubResource("LabelSettings_hint")
+mouse_filter = 2
 
-[connection signal="pressed" from="Panel/MarginContainer/VBox/Header/CloseButton" to="." method="_on_close_pressed"]
+[node name="Desc" type="Label" parent="Content/Card" unique_id=335534337]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuBody"
+autowrap_mode = 3
+
+[node name="CostGap" type="Control" parent="Content/Card" unique_id=335534338]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CostRow" type="HBoxContainer" parent="Content/Card" unique_id=335534339]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CostLabel" type="Label" parent="Content/Card/CostRow" unique_id=335534340]
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "SKILL_COST"
+
+[node name="Cost" type="Label" parent="Content/Card/CostRow" unique_id=335534341]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuStatValue"
+
+[node name="ReqGap" type="Control" parent="Content/Card" unique_id=335534342]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ReqLabel" type="Label" parent="Content/Card" unique_id=335534343]
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "SKILL_REQUIRES"
+
+[node name="Reqs" type="VBoxContainer" parent="Content/Card" unique_id=335534344]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="UnlockGap" type="Control" parent="Content/Card" unique_id=335534345]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="UnlockRow" type="MarginContainer" parent="Content/Card" unique_id=335534347]
+layout_mode = 2
+theme_override_constants/margin_left = -26
+
+[node name="Unlock" type="Button" parent="Content/Card/UnlockRow" unique_id=335534346]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"EchoButtonSmall"
+auto_translate_mode = 1
+alignment = 0
+script = ExtResource("4_echo")
+
+[node name="PanHint" type="Label" parent="Content" unique_id=335534350]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 112.0
+offset_top = -30.0
+offset_right = 112.0
+offset_bottom = -30.0
+grow_vertical = 0
+theme_type_variation = &"MenuCaption"
+text = "SKILL_HINT_PAN"
+
+[connection signal="pressed" from="Content/Back" to="." method="_on_close_pressed"]

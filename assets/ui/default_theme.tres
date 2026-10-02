@@ -305,6 +305,15 @@ opentype_features = {
 1953396077: 1
 }
 
+[sub_resource type="FontVariation" id="MenuFont_wallet"]
+base_font = ExtResource("m_ttf")
+variation_opentype = {
+2003265652: 600
+}
+opentype_features = {
+1953396077: 1
+}
+
 [sub_resource type="StyleBoxEmpty" id="Menu_none"]
 
 
@@ -627,6 +636,14 @@ MenuBody/constants/shadow_offset_y = 0
 MenuBody/constants/shadow_outline_size = 0
 MenuBody/font_sizes/font_size = 16
 MenuBody/fonts/font = ExtResource("3_h6wa6")
+MenuBranchLabel/base_type = &"Label"
+MenuBranchLabel/colors/font_color = Color(0.79, 0.66, 0.95, 0.62)
+MenuBranchLabel/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuBranchLabel/constants/shadow_offset_x = 2
+MenuBranchLabel/constants/shadow_offset_y = 0
+MenuBranchLabel/constants/shadow_outline_size = 0
+MenuBranchLabel/font_sizes/font_size = 11
+MenuBranchLabel/fonts/font = SubResource("MenuFont_whisper")
 MenuButton/styles/disabled = SubResource("StyleBoxFlat_3oi2e")
 MenuButton/styles/focus = SubResource("StyleBoxFlat_vivct")
 MenuButton/styles/hover = SubResource("StyleBoxFlat_6ut4k")
@@ -640,6 +657,14 @@ MenuCaption/constants/shadow_offset_y = 0
 MenuCaption/constants/shadow_outline_size = 0
 MenuCaption/font_sizes/font_size = 13
 MenuCaption/fonts/font = ExtResource("3_h6wa6")
+MenuCardTitle/base_type = &"Label"
+MenuCardTitle/colors/font_color = Color(0.93, 0.91, 0.95, 1.0)
+MenuCardTitle/colors/font_shadow_color = Color(0.79, 0.66, 0.95, 0.3)
+MenuCardTitle/constants/shadow_offset_x = 2
+MenuCardTitle/constants/shadow_offset_y = 0
+MenuCardTitle/constants/shadow_outline_size = 0
+MenuCardTitle/font_sizes/font_size = 26
+MenuCardTitle/fonts/font = ExtResource("2_ynviq")
 MenuDeathTitle/base_type = &"Label"
 MenuDeathTitle/colors/font_color = Color(0.93, 0.91, 0.95, 1.0)
 MenuDeathTitle/colors/font_shadow_color = Color(0.79, 0.66, 0.95, 0.3)
@@ -721,9 +746,25 @@ MenuKeyRow/styles/hover = SubResource("Menu_keyrow")
 MenuKeyRow/styles/hover_pressed = SubResource("Menu_keyrow")
 MenuKeyRow/styles/normal = SubResource("Menu_keyrow")
 MenuKeyRow/styles/pressed = SubResource("Menu_keyrow_pressed")
+MenuNodeName/base_type = &"Label"
+MenuNodeName/colors/font_color = Color(0.86, 0.84, 0.89, 1.0)
+MenuNodeName/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuNodeName/constants/shadow_offset_x = 2
+MenuNodeName/constants/shadow_offset_y = 0
+MenuNodeName/constants/shadow_outline_size = 0
+MenuNodeName/font_sizes/font_size = 15
+MenuNodeName/fonts/font = ExtResource("1_5puyx")
 MenuPages/base_type = &"TabContainer"
 MenuPages/styles/panel = SubResource("Menu_none")
 MenuPages/styles/tabbar_background = SubResource("Menu_none")
+MenuReq/base_type = &"Label"
+MenuReq/colors/font_color = Color(0.86, 0.84, 0.89, 1.0)
+MenuReq/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuReq/constants/shadow_offset_x = 2
+MenuReq/constants/shadow_offset_y = 0
+MenuReq/constants/shadow_outline_size = 0
+MenuReq/font_sizes/font_size = 15
+MenuReq/fonts/font = ExtResource("3_h6wa6")
 MenuRowLabel/base_type = &"Label"
 MenuRowLabel/colors/font_color = Color(0.86, 0.84, 0.89, 1.0)
 MenuRowLabel/colors/font_shadow_color = Color(0, 0, 0, 0)
@@ -780,6 +821,14 @@ MenuTitle/constants/shadow_offset_y = 0
 MenuTitle/constants/shadow_outline_size = 0
 MenuTitle/font_sizes/font_size = 46
 MenuTitle/fonts/font = SubResource("MenuFont_title")
+MenuToast/base_type = &"Label"
+MenuToast/colors/font_color = Color(0.79, 0.66, 0.95, 1.0)
+MenuToast/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuToast/constants/shadow_offset_x = 2
+MenuToast/constants/shadow_offset_y = 0
+MenuToast/constants/shadow_outline_size = 0
+MenuToast/font_sizes/font_size = 15
+MenuToast/fonts/font = ExtResource("3_h6wa6")
 MenuValue/base_type = &"Label"
 MenuValue/colors/font_color = Color(0.93, 0.91, 0.95, 1.0)
 MenuValue/colors/font_shadow_color = Color(0, 0, 0, 0)
@@ -788,6 +837,14 @@ MenuValue/constants/shadow_offset_y = 0
 MenuValue/constants/shadow_outline_size = 0
 MenuValue/font_sizes/font_size = 16
 MenuValue/fonts/font = SubResource("MenuFont_value")
+MenuWallet/base_type = &"Label"
+MenuWallet/colors/font_color = Color(0.93, 0.91, 0.95, 1.0)
+MenuWallet/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuWallet/constants/shadow_offset_x = 2
+MenuWallet/constants/shadow_offset_y = 0
+MenuWallet/constants/shadow_outline_size = 0
+MenuWallet/font_sizes/font_size = 40
+MenuWallet/fonts/font = SubResource("MenuFont_wallet")
 MenuWhisper/base_type = &"Label"
 MenuWhisper/colors/font_color = Color(0.79, 0.66, 0.95, 1.0)
 MenuWhisper/colors/font_shadow_color = Color(0, 0, 0, 0)
