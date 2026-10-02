@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/ui/skill_tree/skill_graph_view.gd" id="1_graph"]
 
@@ -15,20 +15,31 @@ script = ExtResource("1_graph")
 [node name="Canvas" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
 mouse_filter = 2
 
-[node name="Lanes" type="Control" parent="Canvas"]
+[node name="Sign" type="TextureRect" parent="Canvas"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
 mouse_filter = 2
+expand_mode = 1
 
 [node name="Links" type="Control" parent="Canvas"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="Core" type="Control" parent="Canvas"]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+
+[node name="BranchLabels" type="Control" parent="Canvas"]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+
+[node name="Nodes" type="Control" parent="Canvas"]
+unique_name_in_owner = true
+layout_mode = 0
 mouse_filter = 2

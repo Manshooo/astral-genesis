@@ -162,8 +162,8 @@ func _check_encounter() -> void:
 	var screen := _open_tree_screen()
 	_check(
 		"и открывает улучшения Архитектора, а не навыки",
-		screen != null and screen._skill_manager == ArchitectManager
-			and screen._tree_data == ArchitectManager.SKILL_TREE,
+		screen != null and screen._tabs[screen._tab].manager == ArchitectManager
+			and screen._tabs[screen._tab].tree == ArchitectManager.SKILL_TREE,
 		"экран %s" % screen,
 	)
 	UIManager.close_all()

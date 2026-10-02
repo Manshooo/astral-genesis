@@ -172,16 +172,14 @@ func _run() -> void:
 			WALK_EVENT, AudioManager.PROJECT_PATH],
 	)
 
-	# Спрашивается СТРОКА С КАРТОЧКИ, а не константа рядом: разойтись могут
+	# Спрашивается СТРОКА ЭКРАНА НАВЫКОВ, а не литерал рядом: разойтись могут
 	# только собранный проект и то, что просит механика, — а сверка литерала с
 	# самим собой зеленела бы всегда.
-	var card: Control = load("res://src/ui/skill_tree/skill_node_card.tscn").instantiate()
 	_check(
-		"карточка навыка просит событие, которое есть в проекте",
-		manager.get_event_description(card.unlock_event) != null,
-		"карточка просит «%s» — в собранном проекте такого события нет" % card.unlock_event
+		"экран навыков просит событие, которое есть в проекте",
+		manager.get_event_description(SkillTreeUI.UNLOCK_EVENT) != null,
+		"экран просит «%s» — в собранном проекте такого события нет" % SkillTreeUI.UNLOCK_EVENT
 	)
-	card.free()
 
 	if description == null:
 		return

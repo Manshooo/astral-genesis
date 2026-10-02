@@ -138,6 +138,25 @@ func reset() -> void:
 	skills_changed.emit()
 
 
+## Встреча с тем, кто даёт это дерево, состоялась (см. PlayerSkillSave.met).
+func mark_met() -> void:
+	if save.met:
+		return
+	save.met = true
+	_save()
+
+
+## Встречал ли игрок хозяина дерева. Сейв, записанный до поля met, встречу всё
+## равно помнит по следам: эссенция или ранги без встречи не появляются.
+func is_met() -> bool:
+	if save.met or save.skill_points > 0:
+		return true
+	for rank in save.ranks.values():
+		if int(rank) > 0:
+			return true
+	return false
+
+
 func add_skill_points(amount: int) -> void:
 	save.skill_points += amount
 	_save()

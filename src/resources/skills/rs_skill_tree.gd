@@ -6,7 +6,8 @@ extends Resource
 ## навыков (RS_SkillDefinition.requires). Это и есть ответ на «граф должен
 ## собираться гибко»: связь существует ровно там, где есть требование, и
 ## нарисовать ребро, которого не проверяет SkillManager, физически нечем.
-## Раскладка по колонкам и дорожкам тоже считается — см. SkillGraphLayout.
+## Раскладка нейросетью — ветки секторами, глубина кольцами — тоже считается,
+## см. SkillGraphLayout.
 
 const DEFAULT_POINTS_FORMAT := "Очки: %d"
 const DEFAULT_CURRENCY_FORMS: Array[String] = ["очко", "очка", "очков"]

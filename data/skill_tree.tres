@@ -9,19 +9,19 @@
 [sub_resource type="Resource" id="Resource_branch_possession"]
 script = ExtResource("5_branch")
 id = &"possession"
-display_name = "Захват"
+display_name = "SKILL_BRANCH_POSSESSION"
 color = Color(0.42, 0.72, 0.78, 1)
 
 [sub_resource type="Resource" id="Resource_branch_survival"]
 script = ExtResource("5_branch")
 id = &"survival"
-display_name = "Выживание"
+display_name = "SKILL_BRANCH_SURVIVAL"
 color = Color(0.78, 0.66, 0.42, 1)
 
 [sub_resource type="Resource" id="Resource_branch_embodiment"]
 script = ExtResource("5_branch")
 id = &"embodiment"
-display_name = "Тело"
+display_name = "SKILL_BRANCH_EMBODIMENT"
 color = Color(0.76, 0.5, 0.5, 1)
 
 [sub_resource type="Resource" id="Resource_mod_range"]
@@ -33,8 +33,8 @@ metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 [sub_resource type="Resource" id="Resource_11kxi"]
 script = ExtResource("2_ign7e")
 id = &"body_snatch"
-display_name = "Захват тела"
-description = "Позволяет управлять трупами"
+display_name = "SKILL_BODY_SNATCH_NAME"
+description = "SKILL_BODY_SNATCH_DESC"
 branch = &"possession"
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_range")])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
@@ -53,8 +53,8 @@ metadata/_custom_type_script = "uid://cf7n86al5ghfw"
 [sub_resource type="Resource" id="Resource_capture_precision"]
 script = ExtResource("2_ign7e")
 id = &"capture_precision"
-display_name = "Точная хватка"
-description = "Увеличивает шанс успешного захвата тела"
+display_name = "SKILL_CAPTURE_PRECISION_NAME"
+description = "SKILL_CAPTURE_PRECISION_DESC"
 branch = &"possession"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_chance")])
@@ -69,8 +69,8 @@ metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 [sub_resource type="Resource" id="Resource_o3xjp"]
 script = ExtResource("2_ign7e")
 id = &"lifespan"
-display_name = "Длительность жизни"
-description = "Увеличивает длительность времени, сколько можно находится в захваченном теле/вне лаборатории (?)"
+display_name = "SKILL_LIFESPAN_NAME"
+description = "SKILL_LIFESPAN_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_life")])
@@ -91,8 +91,8 @@ metadata/_custom_type_script = "uid://cf7n86al5ghfw"
 [sub_resource type="Resource" id="Resource_decay_capacity"]
 script = ExtResource("2_ign7e")
 id = &"decay_capacity"
-display_name = "Крепкая плоть"
-description = "Увеличивает запас распада захваченного тела"
+display_name = "SKILL_DECAY_CAPACITY_NAME"
+description = "SKILL_DECAY_CAPACITY_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_decay")])
@@ -108,8 +108,8 @@ metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 [sub_resource type="Resource" id="Resource_graceful_exit"]
 script = ExtResource("2_ign7e")
 id = &"graceful_exit"
-display_name = "Чистый выход"
-description = "Больше остатка запаса тела достаётся душе при добровольном выходе"
+display_name = "SKILL_GRACEFUL_EXIT_NAME"
+description = "SKILL_GRACEFUL_EXIT_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_leave_gain")])
@@ -131,8 +131,8 @@ metadata/_custom_type_script = "uid://cf7n86al5ghfw"
 [sub_resource type="Resource" id="Resource_overflow_control"]
 script = ExtResource("2_ign7e")
 id = &"overflow_control"
-display_name = "Контроль избытка"
-description = "Снижает потери излишка запаса души сверх собственного максимума"
+display_name = "SKILL_OVERFLOW_CONTROL_NAME"
+description = "SKILL_OVERFLOW_CONTROL_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan2")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_overflow")])
@@ -147,8 +147,8 @@ metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 [sub_resource type="Resource" id="Resource_last_breath"]
 script = ExtResource("2_ign7e")
 id = &"last_breath"
-display_name = "Последний вдох"
-description = "Больше запаса души сохраняется при гибели захваченного тела"
+display_name = "SKILL_LAST_BREATH_NAME"
+description = "SKILL_LAST_BREATH_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan2")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_death_keep")])
@@ -163,8 +163,8 @@ metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 [sub_resource type="Resource" id="Resource_steady_legs"]
 script = ExtResource("2_ign7e")
 id = &"steady_legs"
-display_name = "Твёрдая поступь"
-description = "Увеличивает скорость ходьбы в захваченном теле"
+display_name = "SKILL_STEADY_LEGS_NAME"
+description = "SKILL_STEADY_LEGS_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_walk")])
@@ -184,8 +184,8 @@ metadata/_custom_type_script = "uid://cf7n86al5ghfw"
 [sub_resource type="Resource" id="Resource_spring_step"]
 script = ExtResource("2_ign7e")
 id = &"spring_step"
-display_name = "Пружинный шаг"
-description = "Увеличивает силу прыжка в захваченном теле"
+display_name = "SKILL_SPRING_STEP_NAME"
+description = "SKILL_SPRING_STEP_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_jump")])
@@ -201,8 +201,8 @@ metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 [sub_resource type="Resource" id="Resource_resilient_flesh"]
 script = ExtResource("2_ign7e")
 id = &"resilient_flesh"
-display_name = "Живучесть"
-description = "Увеличивает запас прочности захваченного тела"
+display_name = "SKILL_RESILIENT_FLESH_NAME"
+description = "SKILL_RESILIENT_FLESH_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_body_health")])
@@ -217,8 +217,8 @@ metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 [sub_resource type="Resource" id="Resource_second_wind"]
 script = ExtResource("2_ign7e")
 id = &"second_wind"
-display_name = "Второе дыхание"
-description = "Увеличивает скорость бега в захваченном теле"
+display_name = "SKILL_SECOND_WIND_NAME"
+description = "SKILL_SECOND_WIND_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_sprint")])

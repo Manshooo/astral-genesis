@@ -136,3 +136,47 @@ ACTION_SNATCH_BODY,Захват тела,Possess a body
 ACTION_LEAVE_BODY,Покинуть тело,Leave the body
 ACTION_MAP,Карта,Map
 HINT_BACK,Назад,Back
+SKILL_TITLE,Навыки,Skills
+SKILL_TAB_SOUL,Душа,Soul
+SKILL_TAB_ARCHITECT,Архитектор,Architect
+SKILL_POINTS,Очки навыков,Skill points
+ARCHITECT_ESSENCE,Эссенция,Essence
+SKILL_THOUSANDS,%s тыс.,%sk
+SKILL_BRANCH_POSSESSION,Захват,Possession
+SKILL_BRANCH_SURVIVAL,Выживание,Survival
+SKILL_BRANCH_EMBODIMENT,Тело,Body
+SKILL_RANK,Ранг %d из %d,Rank %d of %d
+SKILL_COST,Цена ранга,Rank cost
+SKILL_REQUIRES,Требуется,Requires
+SKILL_REQ_RANK,"«%s», ранг %d","“%s”, rank %d"
+SKILL_NO_REQ,без требований,no requirements
+SKILL_UNLOCK,Открыть ранг %d,Unlock rank %d
+SKILL_NO_POINTS,Не хватает очков,Not enough points
+SKILL_NO_ESSENCE,Не хватает эссенции,Not enough essence
+SKILL_LOCKED,Сначала выполните требования,Meet the requirements first
+SKILL_MAXED,Освоено полностью,Fully mastered
+SKILL_UNLOCKED,Ранг %d открыт,Rank %d unlocked
+SKILL_BODY_SNATCH_NAME,Захват тела,Body snatch
+SKILL_BODY_SNATCH_DESC,Позволяет управлять трупами.,Lets you take control of corpses.
+SKILL_CAPTURE_PRECISION_NAME,Точная хватка,Precise grip
+SKILL_CAPTURE_PRECISION_DESC,Повышает шанс успешного захвата тела.,Raises the chance that a capture succeeds.
+SKILL_LIFESPAN_NAME,Длительность жизни,Lifespan
+SKILL_LIFESPAN_DESC,Увеличивает запас жизни души — дольше вне тела и в теле.,Raises the soul’s lifespan — longer outside a body and inside one.
+SKILL_DECAY_CAPACITY_NAME,Крепкая плоть,Hardy flesh
+SKILL_DECAY_CAPACITY_DESC,Увеличивает запас распада захваченного тела.,Raises the decay reserve of a captured body.
+SKILL_GRACEFUL_EXIT_NAME,Чистый выход,Clean exit
+SKILL_GRACEFUL_EXIT_DESC,Больше остатка запаса тела достаётся душе при добровольном выходе.,More of the body’s remaining reserve goes to the soul when you leave it by choice.
+SKILL_OVERFLOW_CONTROL_NAME,Контроль избытка,Overflow control
+SKILL_OVERFLOW_CONTROL_DESC,Снижает потери излишка запаса души сверх собственного максимума.,Reduces the loss of soul reserve held above its own maximum.
+SKILL_LAST_BREATH_NAME,Последний вдох,Last breath
+SKILL_LAST_BREATH_DESC,Больше запаса души сохраняется при гибели захваченного тела.,More of the soul’s reserve survives when the captured body dies.
+SKILL_STEADY_LEGS_NAME,Твёрдая поступь,Steady stride
+SKILL_STEADY_LEGS_DESC,Увеличивает скорость ходьбы в захваченном теле.,Raises walking speed in a captured body.
+SKILL_SPRING_STEP_NAME,Пружинный шаг,Spring step
+SKILL_SPRING_STEP_DESC,Увеличивает силу прыжка в захваченном теле.,Raises jump strength in a captured body.
+SKILL_RESILIENT_FLESH_NAME,Живучесть,Resilience
+SKILL_RESILIENT_FLESH_DESC,Увеличивает запас прочности захваченного тела.,Raises the durability of a captured body.
+SKILL_SECOND_WIND_NAME,Второе дыхание,Second wind
+SKILL_SECOND_WIND_DESC,Увеличивает скорость бега в захваченном теле.,Raises sprint speed in a captured body.
+SKILL_REQ_BRANCH,"Рангов в ветке «%s»: %d","Ranks in “%s”: %d"
+SKILL_HINT_PAN,"Тащите за пустое место, колесо — масштаб","Drag empty space to pan, wheel to zoom"

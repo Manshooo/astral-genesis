@@ -1,12 +1,13 @@
 extends "res://dev/check_harness.gd"
 ## Проверка graph-UI дерева навыков (карточка Задачи/Карточки/Skill Tree.md):
-## раскладка SkillGraphLayout и правило видимости SkillManager.is_revealed.
+## раскладка нейросетью SkillGraphLayout и правило видимости
+## SkillManager.is_revealed.
 ## Запускать: godot --headless dev/skill_graph_check.tscn
 ##
 ## Ни одного Control здесь не создаётся, и это не экономия: раскладка считается
-## в КЛЕТКАХ, а не в пикселях, именно затем, чтобы её можно было проверить без
-## экрана. Всё, что осталось за проверкой (панорама, зум, кривые связей), —
-## отрисовка, и ей место в ручном плейтесте.
+## в координатах полотна без единого узла именно затем, чтобы её можно было
+## проверить без экрана. Всё, что осталось за проверкой (панорама, зум, излом
+## синапсов), — отрисовка, и ей место в ручном плейтесте.
 ##
 ## SkillManager.save и SkillManager.SKILL_TREE НА ВРЕМЯ проверки подменяются
 ## заглушками (как в stat_modifiers_check.gd) и возвращаются на место в конце:
@@ -42,100 +43,92 @@ func _run() -> void:
 # --- 1. Раскладка боевого дерева ---------------------------------------------
 
 
-## Инварианты, без которых граф нельзя нарисовать: у каждого навыка есть клетка,
-## клетки не совпадают (иначе карточки лягут друг на друга), требование всегда
-## левее зависимого (иначе связь пойдёт назад и пересечёт всё по дороге), а
-## строка навыка лежит внутри дорожки его ветки.
+## Наименьшее расстояние между центрами нейронов: два ореола Ø44 не касаются, и
+## между ними остаётся место под синапс.
+const MIN_NEURON_GAP := 60.0
+
+
+## Инварианты, без которых сеть нельзя нарисовать: у каждого навыка есть место,
+## нейроны не налезают друг на друга, требование ближе к ядру, чем зависимый
+## навык (иначе синапс пойдёт к центру и пересечёт всё по дороге), и нейрон
+## лежит в секторе своей ветки.
 func _check_real_tree_layout() -> void:
 	var tree: RS_SkillTree = load("res://data/skill_tree.tres")
 	var layout := SkillGraphLayout.build(tree)
 
-	_check("раскладка: клетка есть у каждого навыка", layout.cells.size() == tree.skills.size())
+	_check("раскладка: место есть у каждого навыка", layout.positions.size() == tree.skills.size())
 
-	var occupied: Dictionary = {}
-	var overlaps := 0
-	for id in layout.cells:
-		var cell: Vector2i = layout.cells[id]
-		if occupied.has(cell):
-			overlaps += 1
-		occupied[cell] = id
-	_check("раскладка: две карточки не встают в одну клетку", overlaps == 0)
+	var closest := INF
+	var ids := layout.positions.keys()
+	for i in ids.size():
+		for j in range(i + 1, ids.size()):
+			closest = minf(closest, (layout.positions[ids[i]] as Vector2).distance_to(layout.positions[ids[j]]))
+	_check("раскладка: нейроны не налезают друг на друга", closest >= MIN_NEURON_GAP,
+			"ближайшие два — в %.0f px" % closest)
 
-	var backwards := 0
+	var inward := 0
 	for def in tree.skills:
 		for req in def.requires:
 			if req.type != RS_SkillRequirement.Type.SKILL_RANK:
 				continue
-			var source: Vector2i = layout.cells[req.target_skill]
-			var target: Vector2i = layout.cells[def.id]
-			if target.x <= source.x:
-				backwards += 1
-	_check("раскладка: требование всегда левее зависимого навыка", backwards == 0)
+			var source: Vector2 = layout.positions[req.target_skill]
+			var target: Vector2 = layout.positions[def.id]
+			if target.length() <= source.length():
+				inward += 1
+	_check("раскладка: требование ближе к ядру, чем зависимый навык", inward == 0)
 
-	var lane_branches: Array[StringName] = []
-	for lane in layout.lanes:
-		lane_branches.append(lane["branch"])
+	var sector_branches: Array[StringName] = []
+	for branch in layout.branches:
+		sector_branches.append(branch["branch"])
 	_check(
-		"дорожки: по одной на каждую ветку и в порядке ordered_branch_ids",
-		lane_branches == tree.ordered_branch_ids()
+		"секторы: по одному на каждую ветку и в порядке ordered_branch_ids",
+		sector_branches == tree.ordered_branch_ids()
 	)
 
 	var outside := 0
-	for lane in layout.lanes:
-		for def in tree.get_branch_skills(lane["branch"]):
-			var row: int = layout.cells[def.id].y
-			if row < int(lane["row"]) or row >= int(lane["row"]) + int(lane["height"]):
+	for branch in layout.branches:
+		for def in tree.get_branch_skills(branch["branch"]):
+			var angle := (layout.positions[def.id] as Vector2).angle()
+			if absf(wrapf(angle - float(branch["angle"]), -PI, PI)) > float(branch["half_width"]):
 				outside += 1
-	_check("дорожки: навык лежит в строках дорожки своей ветки", outside == 0)
-
-	_check(
-		"дорожки: не перекрываются между собой",
-		_lanes_disjoint(layout)
-	)
+	_check("секторы: нейрон лежит в секторе своей ветки", outside == 0)
 
 
-func _lanes_disjoint(layout: SkillGraphLayout) -> bool:
-	var previous_end := -1
-	for lane in layout.lanes:
-		if int(lane["row"]) <= previous_end:
-			return false
-		previous_end = int(lane["row"]) + int(lane["height"]) - 1
-	return true
-
-
-# --- 2. Ручное закрепление строки --------------------------------------------
+# --- 2. Ручное закрепление слота ---------------------------------------------
 
 
 ## graph_row — аварийный выход для автора дерева, и проверяются обе его стороны:
-## закрепление работает, а закрепление ДВУХ навыков на одну строку не кладёт их
-## друг на друга, а откатывает второго к автоматической строке.
+## закрепление работает (слот 0 — крайний против часовой стрелки, то есть с
+## наименьшим углом), а закрепление ДВУХ навыков на один слот не кладёт их друг
+## на друга, а откатывает второго к автоматическому.
 func _check_manual_row() -> void:
 	var pinned := _definition(&"pinned", &"b", 2)
 	var collided := _definition(&"collided", &"b", 2)
 	var plain := _definition(&"plain", &"b", -1)
 	var layout := SkillGraphLayout.build(_tree([pinned, collided, plain], []))
 
-	_check("graph_row: закреплённая строка соблюдена", layout.cells[&"pinned"].y == 2)
+	var angles := []
+	for id in [&"pinned", &"collided", &"plain"]:
+		angles.append((layout.positions[id] as Vector2).angle())
+	_check("graph_row: закреплённый слот соблюдён", angles[0] > angles[1] and angles[0] > angles[2])
 	_check(
-		"graph_row: спор за строку не кладёт карточки друг на друга",
-		layout.cells[&"collided"].y != layout.cells[&"pinned"].y
-			and layout.cells[&"plain"].y != layout.cells[&"pinned"].y
-			and layout.cells[&"collided"].y != layout.cells[&"plain"].y
+		"graph_row: спор за слот не кладёт нейроны друг на друга",
+		not is_equal_approx(angles[0], angles[1]) and not is_equal_approx(angles[1], angles[2])
 	)
 
 
 # --- 3. Ветка без описания ---------------------------------------------------
 
 
-## Опечатка в имени ветки не должна прятать навык от игрока: дорожка заводится
+## Опечатка в имени ветки не должна прятать навык от игрока: сектор заводится
 ## по факту существования навыка, а подпись берётся из id.
 func _check_unknown_branch() -> void:
 	var lonely := _definition(&"lonely", &"forgotten_branch")
 	var tree := _tree([lonely], [])
 	var layout := SkillGraphLayout.build(tree)
 
-	_check("неизвестная ветка: навык всё равно получил клетку", layout.cells.has(&"lonely"))
-	_check("неизвестная ветка: дорожка заведена", layout.lanes.size() == 1)
+	_check("неизвестная ветка: навык всё равно получил место", layout.positions.has(&"lonely"))
+	_check("неизвестная ветка: сектор заведён", layout.branches.size() == 1)
 	_check(
 		"неизвестная ветка: подпись собрана из id",
 		tree.branch_display_name(&"forgotten_branch") == "Forgotten Branch"
@@ -145,9 +138,8 @@ func _check_unknown_branch() -> void:
 # --- 4. Требование по сумме рангов в ветке -----------------------------------
 
 
-## Ветка, открывающаяся по сумме рангов чужой ветки, обязана встать ПРАВЕЕ всей
-## этой ветки: иначе «отдельная ветка, которая открывается после достижений»
-## нарисуется поперёк того, из чего она растёт.
+## Ветка, открывающаяся по сумме рангов чужой ветки, обязана встать ДАЛЬШЕ от
+## ядра, чем вся эта ветка: она растёт из достижений, а не рядом с ними.
 func _check_branch_requirement_column() -> void:
 	var root := _definition(&"root", &"core")
 	var leaf := _definition(&"leaf", &"core")
@@ -157,8 +149,8 @@ func _check_branch_requirement_column() -> void:
 
 	var layout := SkillGraphLayout.build(_tree([root, leaf, gated], []))
 	_check(
-		"сумма рангов: навык встал правее всей ветки-требования",
-		layout.cells[&"gated"].x > layout.cells[&"leaf"].x
+		"сумма рангов: навык встал дальше от ядра, чем вся ветка-требование",
+		(layout.positions[&"gated"] as Vector2).length() > (layout.positions[&"leaf"] as Vector2).length()
 	)
 
 
@@ -166,7 +158,7 @@ func _check_branch_requirement_column() -> void:
 
 
 ## Требование, замкнутое в кольцо, — ошибка данных, но она не должна вешать игру
-## на открытии дерева. Проверяем именно то, ради чего колонки считаются
+## на открытии дерева. Проверяем именно то, ради чего глубина считается
 ## релаксацией с потолком проходов: build() возвращается и расставляет всех.
 func _check_requirement_cycle() -> void:
 	var first := _definition(&"first", &"loop")
@@ -175,7 +167,7 @@ func _check_requirement_cycle() -> void:
 	second.requires = _requires([_requirement_skill(&"first", 1)])
 
 	var layout := SkillGraphLayout.build(_tree([first, second], []))
-	_check("цикл требований: раскладка досчиталась и не зациклилась", layout.cells.size() == 2)
+	_check("цикл требований: раскладка досчиталась и не зациклилась", layout.positions.size() == 2)
 
 
 # --- 6. Правило видимости ----------------------------------------------------
