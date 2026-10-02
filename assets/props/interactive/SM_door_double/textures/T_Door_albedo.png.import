@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cou5yqgoxp8n2"
-path.s3tc="res://.godot/imported/T_Door_albedo.png-fd120e75fce20c2520ec4362295ae0a3.s3tc.ctex"
+path.s3tc="res://.godot/imported/T_door_albedo.png-4b9a2ed6d8d07ed1b7e3dc8621382381.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/props/interactive/SM_door_double/textures/T_Door_albedo.png"
-dest_files=["res://.godot/imported/T_Door_albedo.png-fd120e75fce20c2520ec4362295ae0a3.s3tc.ctex"]
+source_file="res://assets/props/interactive/SM_door_double/textures/T_door_albedo.png"
+dest_files=["res://.godot/imported/T_door_albedo.png-4b9a2ed6d8d07ed1b7e3dc8621382381.s3tc.ctex"]
 
 [params]
 

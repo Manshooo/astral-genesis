@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://1d4bjood4d0l"]
+
+[ext_resource type="Script" uid="uid://bin0h22anh3cl" path="res://src/entities/incubator/e_incubator.gd" id="1_jjamn"]
+[ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="2_nijex"]
+[ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/a_open_skill_tree.gd" id="3_0scx7"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_0as6p"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qweb3"]
+[ext_resource type="PackedScene" uid="uid://c5r436og78ylb" path="res://assets/props/interactive/SM_incubator/SM_incubator.glb" id="6_nijex"]
+
+[sub_resource type="Resource" id="SkillTreeAction"]
+script = ExtResource("3_0scx7")
+metadata/_custom_type_script = "uid://bi6krwy7ber7m"
+
+[sub_resource type="Resource" id="SkillTreePrompt"]
+script = ExtResource("5_qweb3")
+prompt_text = "HUD_PROMPT_SKILL_TREE"
+requires_body = true
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="BoxShape3D" id="IncubatorShape"]
+size = Vector3(2.4349365, 3.2364502, 3.5)
+
+[node name="Incubator" type="Node3D" unique_id=522577828]
+script = ExtResource("1_jjamn")
+actions = Array[ExtResource("2_nijex")]([SubResource("SkillTreeAction")])
+component_resources = Array[ExtResource("4_0as6p")]([SubResource("SkillTreePrompt")])
+
+[node name="InteractBody" type="StaticBody3D" parent="." unique_id=1381715465]
+collision_layer = 8
+collision_mask = 15
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=1101708281]
+transform = Transform3D(0.98480785, 0, 0.17364821, 0, 1, 0, -0.17364821, 0, 0.98480785, -6.4292827, 1.6371216, -2.4181366)
+shape = SubResource("IncubatorShape")
+
+[node name="Visual" parent="." unique_id=1229026779 instance=ExtResource("6_nijex")]

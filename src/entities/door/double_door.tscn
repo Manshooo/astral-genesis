@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_interactable"]
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="4_travel"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_slot"]
-[ext_resource type="PackedScene" path="res://assets/props/interactive/SM_Door_double/SM_Door_double.glb" id="8_mesh"]
+[ext_resource type="PackedScene" uid="uid://djmjulnyrgth6" path="res://assets/props/interactive/SM_door_double/SM_door_double.glb" id="8_mesh"]
 
 [sub_resource type="Resource" id="Travel"]
 script = ExtResource("4_travel")

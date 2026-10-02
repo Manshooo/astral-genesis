@@ -44,7 +44,7 @@ _subresources={
 "MAT_door": {
 "use_external/enabled": true,
 "use_external/fallback_path": "res://assets/props/interactive/SM_door_double/materials/MAT_door.tres",
-"use_external/path": "res://assets/props/interactive/SM_door_double/materials/MAT_door.tres"
+"use_external/path": "uid://hyoi2hv5bou6"
 }
 }
 }
