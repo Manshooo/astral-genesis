@@ -15,6 +15,9 @@ extends HSlider
 ## [code]"%d%%"[/code]  -> Целое число со знаком процента (пример: 42%)[br]
 @export var display_format: String = "%.1f"
 @export var value_label_path: NodePath
+## Ключ перевода подписи на нуле — когда ноль значит не число, а режим
+## («Ограничение FPS: 0» — это «без ограничения»). Пусто — ноль как число.
+@export var zero_text_key: String = ""
 
 signal setting_changed(control: SliderSetting)
 
@@ -38,4 +41,7 @@ func _on_value_changed(_v: float) -> void:
 
 func _refresh_label() -> void:
 	if _value_label:
-		_value_label.text = display_format % value
+		if zero_text_key != "" and is_zero_approx(value):
+			_value_label.text = tr(zero_text_key)
+		else:
+			_value_label.text = display_format % value

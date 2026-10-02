@@ -6,8 +6,14 @@
 [ext_resource type="Script" path="res://src/ui/settings/checkbox_setting.gd" id="5_chkbx"]
 [ext_resource type="Script" path="res://src/ui/settings/graphics_preset_setting.gd" id="6_presetui"]
 [ext_resource type="Script" path="res://src/ui/settings/aa_mode_setting.gd" id="7_aaui"]
+[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="8_backdrop"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="9_echo"]
+[ext_resource type="Script" path="res://src/ui/menu/setting_row.gd" id="10_row"]
+[ext_resource type="Script" path="res://src/ui/menu/key_hint_button.gd" id="11_hint"]
 
-[node name="SettingsMenu" type="Control" unique_id=11110001]
+[sub_resource type="ButtonGroup" id="ButtonGroup_tabs"]
+
+[node name="SettingsMenu" type="Control" unique_id=11120001 node_paths=PackedStringArray("first_focus", "content")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,348 +21,477 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_sett")
+first_focus = NodePath("Content/TabButtons/Graphics")
+content = NodePath("Content")
 
-[node name="Panel" type="Panel" parent="." unique_id=11110002]
-custom_minimum_size = Vector2(460, 620)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -230.0
-offset_top = -310.0
-offset_right = 230.0
-offset_bottom = 310.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=11110003]
+[node name="Backdrop" type="ColorRect" parent="." unique_id=11120002]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 16
+mouse_filter = 2
+script = ExtResource("8_backdrop")
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=11110004]
+[node name="Content" type="Control" parent="." unique_id=11120003]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Content" unique_id=11120004]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 52.0
+offset_right = 112.0
+offset_bottom = 52.0
+theme_type_variation = &"MenuWhisper"
+text = "SETTINGS_TITLE"
+uppercase = true
+
+[node name="Back" type="Button" parent="Content" unique_id=11120005]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 36.0
+grow_horizontal = 0
+script = ExtResource("11_hint")
+
+[node name="TabButtons" type="HBoxContainer" parent="Content" unique_id=11120006]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 86.0
+offset_top = 80.0
+offset_right = 86.0
+offset_bottom = 80.0
+theme_override_constants/separation = 18
+
+[node name="Graphics" type="Button" parent="Content/TabButtons" unique_id=11120007]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_type_variation = &"MenuTab"
+toggle_mode = true
+button_group = SubResource("ButtonGroup_tabs")
+text = "SETTINGS_TAB_GRAPHICS"
+alignment = 0
+script = ExtResource("9_echo")
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBox" unique_id=11110005]
+[node name="Audio" type="Button" parent="Content/TabButtons" unique_id=11120008]
 layout_mode = 2
-text = "Настройки"
-horizontal_alignment = 1
+theme_type_variation = &"MenuTab"
+toggle_mode = true
+button_group = SubResource("ButtonGroup_tabs")
+text = "SETTINGS_TAB_AUDIO"
+alignment = 0
+script = ExtResource("9_echo")
 
-[node name="Tabs" type="TabContainer" parent="Panel/MarginContainer/VBox" unique_id=11110100]
+[node name="Controls" type="Button" parent="Content/TabButtons" unique_id=11120009]
 layout_mode = 2
-size_flags_vertical = 3
+theme_type_variation = &"MenuTab"
+toggle_mode = true
+button_group = SubResource("ButtonGroup_tabs")
+text = "SETTINGS_TAB_CONTROLS"
+alignment = 0
+script = ExtResource("9_echo")
 
-[node name="Графика" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110110]
+[node name="Pages" type="TabContainer" parent="Content" unique_id=11120010]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 92.0
+offset_top = 150.0
+offset_right = 992.0
+offset_bottom = -100.0
+grow_vertical = 2
+current_tab = 0
+theme_type_variation = &"MenuPages"
+tabs_visible = false
+
+[node name="SETTINGS_TAB_GRAPHICS" type="ScrollContainer" parent="Content/Pages" unique_id=11120011]
 layout_mode = 2
 horizontal_scroll_mode = 0
+metadata/_tab_index = 0
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика" unique_id=11110111]
+[node name="Margin" type="MarginContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS" unique_id=11120012]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 12
+theme_override_constants/margin_left = 20
 
-[node name="Preset" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Preset"]
+[node name="VBox" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin" unique_id=11120013]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Пресет"
-autowrap_mode = 0
+theme_override_constants/separation = 0
 
-[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Preset"]
+[node name="Preset" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120014]
 layout_mode = 2
-size_flags_horizontal = 3
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_PRESET"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Preset" unique_id=11120015]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_PRESET"
+
+[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Preset" unique_id=11120016]
+layout_mode = 2
+size_flags_vertical = 4
 script = ExtResource("6_presetui")
 setting_key = "graphics_preset_id"
 
-[node name="PresetSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="RenderScale" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120017]
 layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_RES_SCALE"
 
-[node name="RenderScale" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120018]
 layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_RES_SCALE"
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
+[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120019]
+custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Масштаб разрешения"
-autowrap_mode = 0
-
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
-layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 4
-min_value = 0.5
-max_value = 1.5
-step = 0.05
-value = 1.0
+min_value = 50.0
+max_value = 150.0
+step = 5.0
+value = 50.0
 script = ExtResource("3_kktd5")
 setting_key = "render_scale"
-display_format = "%.2f"
+display_multiplier = 100.0
+display_format = "%d %%"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/RenderScale"]
-custom_minimum_size = Vector2(44, 0)
+[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120020]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "1.00"
-horizontal_alignment = 2
-autowrap_mode = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
 
-[node name="Shadows" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="Shadows" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120021]
 layout_mode = 2
+script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Shadows"]
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120022]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Тени"
-autowrap_mode = 0
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_SHADOWS"
 
-[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Shadows"]
+[node name="CheckBox" type="CheckBox" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120023]
 layout_mode = 2
+size_flags_vertical = 4
 script = ExtResource("5_chkbx")
 setting_key = "shadows_enabled"
 
-[node name="ShadowAtlas" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="ShadowAtlasRow" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120024]
+unique_name_in_owner = true
 layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_SHADOW_RES"
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/ShadowAtlasRow" unique_id=11120025]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Разрешение теней"
-autowrap_mode = 0
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_SHADOW_RES"
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
+[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/ShadowAtlasRow" unique_id=11120026]
+custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 4
 min_value = 512.0
 max_value = 4096.0
 step = 512.0
-value = 2048.0
+value = 512.0
 rounded = true
 script = ExtResource("3_kktd5")
 setting_key = "shadow_atlas_size"
 display_format = "%d"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/ShadowAtlas"]
-custom_minimum_size = Vector2(44, 0)
+[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/ShadowAtlasRow" unique_id=11120027]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "2048"
-horizontal_alignment = 2
-autowrap_mode = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
 
-[node name="AA" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="AA" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120028]
 layout_mode = 2
+script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/AA"]
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/AA" unique_id=11120029]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Сглаживание"
-autowrap_mode = 0
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_AA"
 
-[node name="OptionButton" type="OptionButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/AA"]
+[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/AA" unique_id=11120030]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 4
 script = ExtResource("7_aaui")
 setting_key = "aa_mode"
 
-[node name="FOVSeparator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="Vsync" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120031]
 layout_mode = 2
+script = ExtResource("10_row")
 
-[node name="Vsync" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox"]
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Vsync" unique_id=11120032]
 layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_VSYNC"
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Vsync"]
+[node name="CheckBox" type="CheckBox" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Vsync" unique_id=11120033]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Vsync"
-autowrap_mode = 0
-
-[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Vsync"]
-layout_mode = 2
+size_flags_vertical = 4
 script = ExtResource("5_chkbx")
 setting_key = "vsync_enabled"
 
-[node name="FOV" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox" unique_id=11110040]
+[node name="FOV" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120034]
 layout_mode = 2
+script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/FOV" unique_id=11110041]
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120035]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "FOV"
-autowrap_mode = 0
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_FOV"
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/FOV" unique_id=11110042]
+[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120036]
+custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 4
 min_value = 60.0
 max_value = 120.0
-value = 90.0
+step = 1.0
+value = 60.0
 script = ExtResource("3_kktd5")
 setting_key = "fov"
+display_format = "%d°"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/FOV" unique_id=11110043]
-custom_minimum_size = Vector2(44, 0)
+[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120037]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "90"
-horizontal_alignment = 2
-autowrap_mode = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
 
-[node name="Max FPS" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox" unique_id=1474224488]
+[node name="MaxFPS" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120038]
 layout_mode = 2
-tooltip_text = "Если установлено значение 0, то ограничения не будет"
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_FPS"
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Max FPS" unique_id=148233911]
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120039]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Max FPS"
-autowrap_mode = 0
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_FPS_LIMIT"
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Max FPS" unique_id=758032795]
+[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120040]
+custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 4
+min_value = 0.0
 max_value = 144.0
-value = 60.0
+step = 1.0
+value = 0.0
 rounded = true
-tick_count = 5
-ticks_on_borders = true
-ticks_position = 3
 script = ExtResource("3_kktd5")
 setting_key = "max_fps"
 display_format = "%d"
 value_label_path = NodePath("../Value")
+zero_text_key = "SETTINGS_FPS_UNLIMITED"
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Графика/VBox/Max FPS" unique_id=539927681]
-custom_minimum_size = Vector2(44, 0)
+[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120041]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "60"
-horizontal_alignment = 2
-autowrap_mode = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
 
-[node name="Аудио" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110120]
-visible = false
+[node name="SETTINGS_TAB_AUDIO" type="ScrollContainer" parent="Content/Pages" unique_id=11120042]
 layout_mode = 2
 horizontal_scroll_mode = 0
+metadata/_tab_index = 1
+visible = false
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Аудио" unique_id=11110121]
+[node name="Margin" type="MarginContainer" parent="Content/Pages/SETTINGS_TAB_AUDIO" unique_id=11120043]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 12
+theme_override_constants/margin_left = 20
 
-[node name="Volume" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox" unique_id=11110080]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox/Volume" unique_id=11110081]
+[node name="VBox" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin" unique_id=11120044]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Общая громкость"
-autowrap_mode = 0
+theme_override_constants/separation = 0
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox/Volume" unique_id=11110082]
+[node name="Volume" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox" unique_id=11120045]
 layout_mode = 2
-size_flags_horizontal = 3
+script = ExtResource("10_row")
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120046]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_VOLUME_MASTER"
+
+[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120047]
+custom_minimum_size = Vector2(320, 24)
+layout_mode = 2
 size_flags_vertical = 4
+min_value = 0.0
 max_value = 100.0
-value = 100.0
+step = 1.0
+value = 0.0
 rounded = true
-tick_count = 5
-ticks_on_borders = true
-ticks_position = 3
 script = ExtResource("3_kktd5")
 setting_key = "master_volume"
 display_multiplier = 100.0
-display_format = "%d%%"
+display_format = "%d %%"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Аудио/VBox/Volume" unique_id=11110083]
-custom_minimum_size = Vector2(44, 0)
+[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120048]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "100%"
-horizontal_alignment = 2
-autowrap_mode = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
 
-[node name="Управление" type="ScrollContainer" parent="Panel/MarginContainer/VBox/Tabs" unique_id=11110130]
-visible = false
+[node name="SETTINGS_TAB_CONTROLS" type="ScrollContainer" parent="Content/Pages" unique_id=11120049]
 layout_mode = 2
 horizontal_scroll_mode = 0
+metadata/_tab_index = 2
+visible = false
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Управление" unique_id=11110131]
+[node name="Margin" type="MarginContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS" unique_id=11120050]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 12
+theme_override_constants/margin_left = 20
 
-[node name="Sensitivity" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox" unique_id=11110010]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox/Sensitivity" unique_id=11110011]
+[node name="VBox" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin" unique_id=11120051]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Чувствительность"
-autowrap_mode = 0
+theme_override_constants/separation = 0
 
-[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox/Sensitivity" unique_id=11110012]
+[node name="Sensitivity" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120052]
 layout_mode = 2
-size_flags_horizontal = 3
+script = ExtResource("10_row")
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120053]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_MOUSE_SENS"
+
+[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120054]
+custom_minimum_size = Vector2(320, 24)
+layout_mode = 2
 size_flags_vertical = 4
 min_value = 0.5
 max_value = 10.0
 step = 0.1
-value = 2.0
+value = 0.5
 script = ExtResource("3_kktd5")
 setting_key = "mouse_sensitivity"
 display_multiplier = 1000.0
+display_format = "%.1f"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox/Sensitivity" unique_id=11110013]
-custom_minimum_size = Vector2(44, 0)
+[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120055]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "2.0"
-horizontal_alignment = 2
-autowrap_mode = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
 
-[node name="Separator" type="HSeparator" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox" unique_id=11110132]
+[node name="KeysGap" type="Control" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120056]
+custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
+mouse_filter = 2
 
-[node name="Keybinds" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Tabs/Управление/VBox" unique_id=11110071]
+[node name="KeysTitle" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120057]
+layout_mode = 2
+theme_type_variation = &"MenuWhisper"
+text = "SETTINGS_KEYS"
+uppercase = true
+
+[node name="Keybinds" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120058]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 script = ExtResource("4_keybd")
 
-[node name="Buttons" type="HBoxContainer" parent="Panel/MarginContainer/VBox" unique_id=11110060]
-layout_mode = 2
+[node name="Hint" type="VBoxContainer" parent="Content" unique_id=11120059]
+layout_mode = 0
+offset_left = 1060.0
+offset_top = 162.0
+offset_right = 1390.0
+offset_bottom = 162.0
+mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="Back" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110061]
+[node name="HintTitle" type="Label" parent="Content/Hint" unique_id=11120060]
+unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Отмена"
+auto_translate_mode = 2
+theme_type_variation = &"MenuHintTitle"
+autowrap_mode = 3
 
-[node name="Reset" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110062]
+[node name="HintText" type="Label" parent="Content/Hint" unique_id=11120061]
+unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Сброс"
+auto_translate_mode = 2
+theme_type_variation = &"MenuHintText"
+autowrap_mode = 3
 
-[node name="Apply" type="Button" parent="Panel/MarginContainer/VBox/Buttons" unique_id=11110063]
+[node name="Footer" type="HBoxContainer" parent="Content" unique_id=11120062]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -96.0
+offset_top = -40.0
+offset_right = -96.0
+offset_bottom = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 22
+alignment = 2
+
+[node name="Dirty" type="Label" parent="Content/Footer" unique_id=11120063]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
-size_flags_horizontal = 3
+theme_type_variation = &"MenuCaption"
+text = "SETTINGS_DIRTY"
+
+[node name="Cancel" type="Button" parent="Content/Footer" unique_id=11120064]
+layout_mode = 2
+theme_type_variation = &"EchoButtonSmall"
+text = "SETTINGS_CANCEL"
+alignment = 0
+script = ExtResource("9_echo")
+
+[node name="Reset" type="Button" parent="Content/Footer" unique_id=11120065]
+layout_mode = 2
+theme_type_variation = &"EchoButtonSmall"
+text = "SETTINGS_RESET"
+alignment = 0
+script = ExtResource("9_echo")
+
+[node name="Apply" type="Button" parent="Content/Footer" unique_id=11120066]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"EchoButtonSmall"
 disabled = true
-text = "Применить"
-flat = true
+text = "SETTINGS_APPLY"
+alignment = 0
+script = ExtResource("9_echo")
 
-[connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Back" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Reset" to="." method="_on_reset_pressed"]
-[connection signal="pressed" from="Panel/MarginContainer/VBox/Buttons/Apply" to="." method="_on_apply_pressed"]
+[connection signal="pressed" from="Content/Back" to="." method="_on_back_pressed"]
+
+[connection signal="pressed" from="Content/Footer/Cancel" to="." method="_on_back_pressed"]
+
+[connection signal="pressed" from="Content/Footer/Reset" to="." method="_on_reset_pressed"]
+
+[connection signal="pressed" from="Content/Footer/Apply" to="." method="_on_apply_pressed"]

@@ -1,7 +1,9 @@
 # res://src/ui/settings/keybinds_setting.gd
-## Блок переназначения клавиш в меню настроек. Строки (действие + кнопка с
-## текущей привязкой) строятся в рантайме по SettingsManager.REBINDABLE_ACTIONS —
-## список действий живёт там, а не в сцене.
+## Блок переназначения клавиш в меню настроек. Строки (действие + «[ клавиша ]»)
+## строятся в рантайме по SettingsManager.REBINDABLE_ACTIONS — список действий
+## живёт там, а не в сцене. Раскладка — две колонки UI_KeyRow (§9 «Меню —
+## спека»), под ними строка-сообщение: как отменить ожидание и кто с кем
+## поменялся клавишами.
 ##
 ## Для settings_menu это ОДИН контрол: раз он реализует get/set_setting_value и
 ## сигнал setting_changed, _collect_controls внутрь не спускается, и весь словарь
@@ -14,39 +16,41 @@ extends VBoxContainer
 
 signal setting_changed(control: KeybindsSetting)
 
-## Что показывает кнопка, пока ждём нажатия.
-const CAPTURE_HINT := "жми клавишу"
+## Зазор между колонками (§4).
+const COLUMN_GAP := 56
+## Сколько держится сообщение об обмене клавишами.
+const SWAP_MESSAGE_SECONDS := 3.0
 
 ## Черновик переопределений: action → код события. Только ОТЛИЧИЯ от
 ## project.godot (см. RS_Settings.keybinds), поэтому пустой словарь = дефолт.
 var _codes: Dictionary[StringName, String] = {}
-var _buttons: Dictionary[StringName, Button] = {}
+var _rows: Dictionary[StringName, UI_KeyRow] = {}
 ## Действие, для которого сейчас ловим нажатие (&"" — не ловим).
 var _capturing: StringName = &""
+var _status: Label
+var _status_serial := 0
 
 
 func _ready() -> void:
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override(&"h_separation", COLUMN_GAP)
+	grid.add_theme_constant_override(&"v_separation", 0)
+	add_child(grid)
 	for action: StringName in SettingsManager.REBINDABLE_ACTIONS:
-		_buttons[action] = _build_row(action)
-	_refresh_buttons()
+		var row := UI_KeyRow.new()
+		grid.add_child(row)
+		row.set_action(tr(SettingsManager.REBINDABLE_ACTIONS[action]))
+		row.pressed.connect(_begin_capture.bind(action))
+		_rows[action] = row
 
-
-func _build_row(action: StringName) -> Button:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-
-	var label := Label.new()
-	label.text = SettingsManager.REBINDABLE_ACTIONS[action]
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(120, 0)
-	button.pressed.connect(_begin_capture.bind(action))
-	row.add_child(button)
-
-	add_child(row)
-	return button
+	_status = Label.new()
+	_status.theme_type_variation = &"MenuCaption"
+	_status.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_status.custom_minimum_size.y = 26.0
+	_status.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	add_child(_status)
+	_refresh_rows()
 
 
 # --- Контракт настройки (см. settings_menu._collect_controls) ---------------
@@ -64,7 +68,6 @@ func set_setting_value(v: Variant) -> void:
 		for action in (v as Dictionary):
 			_codes[StringName(action)] = String((v as Dictionary)[action])
 	_cancel_capture()
-	_refresh_buttons()
 
 
 # --- Захват нажатия --------------------------------------------------------
@@ -74,7 +77,8 @@ func _begin_capture(action: StringName) -> void:
 	if _capturing != &"":
 		return  # уже ловим другое действие
 	_capturing = action
-	_buttons[action].text = CAPTURE_HINT
+	_rows[action].set_waiting(true)
+	_show_status(tr("SETTINGS_REBIND_CANCEL") % "Esc", 0.0)
 
 
 ## Ловим в _input, а не в _unhandled_input: иначе Esc успеет дойти до
@@ -112,12 +116,21 @@ func _assign(action: StringName, code: String) -> void:
 		return
 
 	var previous := _code_of(action)
+	var swapped: StringName = &""
 	for other: StringName in SettingsManager.REBINDABLE_ACTIONS:
 		if other != action and _code_of(other) == code:
 			_set_code(other, previous)
+			swapped = other
 	_set_code(action, code)
 
 	_cancel_capture()
+	if swapped != &"":
+		_rows[swapped].flash()
+		_rows[action].flash()
+		_show_status(tr("SETTINGS_REBIND_SWAPPED") % [
+			tr(SettingsManager.REBINDABLE_ACTIONS[action]),
+			tr(SettingsManager.REBINDABLE_ACTIONS[swapped]),
+		], SWAP_MESSAGE_SECONDS)
 	setting_changed.emit(self)
 
 
@@ -137,10 +150,27 @@ func _code_of(action: StringName) -> String:
 
 
 func _cancel_capture() -> void:
+	if _capturing != &"" and _status:
+		_show_status("", 0.0)
 	_capturing = &""
-	_refresh_buttons()
+	_refresh_rows()
 
 
-func _refresh_buttons() -> void:
-	for action: StringName in _buttons:
-		_buttons[action].text = SettingsManager.code_display_name(_code_of(action))
+func _refresh_rows() -> void:
+	for action: StringName in _rows:
+		_rows[action].set_waiting(false)
+		_rows[action].set_key(SettingsManager.code_display_name(_code_of(action)))
+
+
+## Строка под колонками. [param seconds] > 0 — сама гаснет. Таймер с
+## process_always: в забеге настройки открыты поверх паузы. Номер вызова — чтобы
+## таймер старого сообщения не стёр новое.
+func _show_status(line: String, seconds: float) -> void:
+	_status_serial += 1
+	_status.text = line
+	if seconds <= 0.0:
+		return
+	var serial := _status_serial
+	await get_tree().create_timer(seconds, true).timeout
+	if is_instance_valid(_status) and serial == _status_serial:
+		_status.text = ""

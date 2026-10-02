@@ -1,8 +1,52 @@
-[gd_scene load_steps=2 format=3 uid="uid://ddth5cr33n01a"]
+[gd_scene format=3 uid="uid://ddth5cr33n01a"]
 
 [ext_resource type="Script" uid="uid://dgjcwsj5cku87" path="res://src/ui/death_screen/death_screen.gd" id="2_script"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_label.gd" id="3_echo_label"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="4_echo_button"]
 
-[node name="DeathScreen" type="Control"]
+[sub_resource type="Gradient" id="Gradient_glow"]
+colors = PackedColorArray(0.09, 0.075, 0.122, 1, 0.043, 0.039, 0.051, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_glow"]
+gradient = SubResource("Gradient_glow")
+width = 128
+height = 64
+fill = 1
+fill_from = Vector2(0.5, 0)
+fill_to = Vector2(1, 0)
+
+[sub_resource type="Gradient" id="Gradient_dot"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_dot"]
+gradient = SubResource("Gradient_dot")
+width = 8
+height = 8
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Gradient_fade"]
+offsets = PackedFloat32Array(0, 0.3, 1)
+colors = PackedColorArray(0.79, 0.66, 0.95, 0, 0.79, 0.66, 0.95, 0.8, 0.79, 0.66, 0.95, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_fade"]
+gradient = SubResource("Gradient_fade")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_fragments"]
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(748, 360, 1)
+direction = Vector3(0, -1, 0)
+spread = 25.0
+initial_velocity_min = 12.0
+initial_velocity_max = 30.0
+gravity = Vector3(0, 0, 0)
+scale_min = 0.25
+scale_max = 0.5
+color_ramp = SubResource("GradientTexture1D_fade")
+
+[node name="DeathScreen" type="Control" node_paths=PackedStringArray("first_focus", "content")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -10,75 +54,132 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_script")
+first_focus = NodePath("Content/Column/Revive")
+content = NodePath("Content")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Void" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.050708726, 0.025840001, 0.025840001, 0.85)
+mouse_filter = 2
+color = Color(0.043, 0.039, 0.051, 1)
 
-[node name="Panel" type="PanelContainer" parent="."]
-custom_minimum_size = Vector2(420, 0)
+[node name="Glow" type="TextureRect" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 420.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_glow")
+expand_mode = 1
+
+[node name="Fragments" type="GPUParticles2D" parent="."]
+position = Vector2(748, 360)
+amount = 40
+texture = SubResource("GradientTexture2D_dot")
+lifetime = 6.0
+preprocess = 6.0
+process_material = SubResource("ParticleProcessMaterial_fragments")
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
-layout_mode = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 24
+[node name="Column" type="VBoxContainer" parent="Content"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -320.0
+offset_top = 96.0
+offset_right = 320.0
+offset_bottom = 96.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+[node name="Heading" type="Label" parent="Content/Column"]
 layout_mode = 2
-theme_override_constants/separation = 12
+size_flags_horizontal = 4
+theme_type_variation = &"MenuWhisper"
+text = "RUN_SUMMARY_HEADING"
+uppercase = true
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="TitleBox" type="Control" parent="Content/Column"]
+custom_minimum_size = Vector2(0, 78)
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+mouse_filter = 2
+
+[node name="FarEcho" type="Label" parent="Content/Column/TitleBox"]
+modulate = Color(0.79, 0.66, 0.95, 0.12)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 12.0
+offset_right = 10.0
+offset_bottom = 64.0
+grow_horizontal = 2
+theme_type_variation = &"MenuDeathTitle"
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
 text = "RUN_SUMMARY_TITLE_DEATH"
 horizontal_alignment = 1
+uppercase = true
 
-[node name="Subtitle" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 0)
+[node name="Title" type="Label" parent="Content/Column/TitleBox"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 14.0
+offset_bottom = 66.0
+grow_horizontal = 2
+theme_type_variation = &"MenuDeathTitle"
+text = "RUN_SUMMARY_TITLE_DEATH"
+horizontal_alignment = 1
+uppercase = true
+script = ExtResource("3_echo_label")
+
+[node name="Subtitle" type="Label" parent="Content/Column"]
+custom_minimum_size = Vector2(640, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_type_variation = &"MenuBody"
 text = "RUN_SUMMARY_SUBTITLE_DEATH"
 horizontal_alignment = 1
-autowrap_mode = 2
+autowrap_mode = 3
 
-[node name="Separator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="StatsGap" type="Control" parent="Content/Column"]
+custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
+mouse_filter = 2
 
-[node name="Heading" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="StatRows" type="VBoxContainer" parent="Content/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(560, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "RUN_SUMMARY_HEADING"
-horizontal_alignment = 1
+size_flags_horizontal = 4
+theme_override_constants/separation = 0
 
-[node name="StatRows" type="GridContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="ReviveGap" type="Control" parent="Content/Column"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Revive" type="Button" parent="Content/Column"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/h_separation = 24
-theme_override_constants/v_separation = 6
-columns = 2
-
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-
-[node name="Revive" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"EchoButton"
 text = "RUN_SUMMARY_REVIVE"
+alignment = 0
+script = ExtResource("4_echo_button")
 
-[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/Revive" to="." method="_on_revive_pressed"]
+[connection signal="pressed" from="Content/Column/Revive" to="." method="_on_revive_pressed"]

@@ -328,13 +328,14 @@ func _check_screen() -> void:
 	add_child(screen)
 	await get_tree().process_frame
 
-	var grid := screen.get_node_or_null("%StatRows") as GridContainer
+	# Строка сводки — «показатель ···· значение» одним узлом (§9 «Меню — спека»).
+	var rows := screen.get_node_or_null("%StatRows") as VBoxContainer
 	var expected := catalog.visible_rows(stats).size()
-	_check("экран итогов нашёл свой контейнер строк", grid != null, "%StatRows")
+	_check("экран итогов нашёл свой контейнер строк", rows != null, "%StatRows")
 	_check(
-		"экран собрал ровно те строки, что выдал каталог (подпись + значение)",
-		grid != null and grid.get_child_count() == expected * 2,
-		"строк каталога %d, узлов в сетке %d" % [expected, grid.get_child_count() if grid else -1]
+		"экран собрал ровно те строки, что выдал каталог",
+		rows != null and rows.get_child_count() == expected,
+		"строк каталога %d, строк на экране %d" % [expected, rows.get_child_count() if rows else -1]
 	)
 
 	screen.queue_free()
