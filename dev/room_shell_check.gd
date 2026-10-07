@@ -6,13 +6,15 @@ extends "res://dev/check_harness.gd"
 ## повёрнутая не в ту сторону, ставит проём в глухую сторону. Ни одно из этого не
 ## падает с ошибкой.
 ##
-## Три части:
+## Четыре части:
 ##   1. все комнаты генератора — коробки, и коробка каждой = footprint × клетка;
 ##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5) и стоят
 ##      внутри стен коробки;
 ##   3. сборка на настоящих деталях каждого кита в игре (P, X): план с комнатой
 ##      2×2×1 и веткой, стены и торцы по маске — и лучи по коллизии, как у
-##      corridor_spawn_check.
+##      corridor_spawn_check; у коробки со стенами в меше — заглушки на
+##      невыбранных сокетах и ни одной стены поверх нарисованных;
+##   4. валидация пресета на такой коробке ловит то, что сборка молча стерпела бы.
 ##
 ## Запускать: godot --headless dev/room_shell_check.tscn
 
@@ -21,10 +23,13 @@ const CONFIG_PATH := "res://data/world_gen_config.tres"
 ## Эталонная коробка кита P без содержимого — на ней проверяется детектор зон.
 const KIT_P_ROOM := "res://src/levels/procedural/rooms/kit_p/room_p_2x2x1.tscn"
 ## Эталонные коробки китов, выгруженных в игру: сборка проверяется на каждой —
-## стиль рисуется поверх P, и стык, целый у P, у стиля может разойтись.
+## стиль рисуется поверх P, и стык, целый у P, у стиля может разойтись. Коробка
+## со стенами в меше — отдельной строкой: проём там рисует меш, а закрывает
+## заглушка, и стык у них свой.
 const KIT_ROOMS: Array[String] = [
 	KIT_P_ROOM,
 	"res://src/levels/procedural/rooms/kit_x/room_x_2x2x1.tscn",
+	"res://src/levels/procedural/rooms/kit_p/room_p_walled_2x2x1.tscn",
 ]
 ## Зона перед сокетом, свободная от пропов: 3 м вдоль стены, 2 м вглубь комнаты,
 ## от пола до верха рамки проёма (4.5 м) — [[Метрики и кит]] §2 п. 6, §3.
@@ -61,6 +66,7 @@ func _ready() -> void:
 	for kit_room in KIT_ROOMS:
 		for turns in [0, 1]:
 			await _check_assembly(kit_room, turns)
+	_check_walled_validation()
 	_finish()
 
 
@@ -258,13 +264,16 @@ func _check_assembly(kit_room: String, turns: int) -> void:
 		for child in tile.get_children():
 			caps += 1 if child.scene_file_path == kit.door_end.resource_path else 0
 
-	var door_walls := 0
-	var blank_walls := 0
-	for child in room.get_children():
-		door_walls += 1 if child.scene_file_path == walls.door_wall.resource_path else 0
-		blank_walls += 1 if child.scene_file_path == walls.blank_wall.resource_path else 0
-	_check("%s: стен по граням периметра — 2 с проёмом и 6 глухих" % tag, door_walls == 2 and blank_walls == 6,
-		"с проёмом %d, глухих %d" % [door_walls, blank_walls])
+	if RS_RoomLayout.shell_of(room).walls_in_shell:
+		_check_walled_pieces(room, room_node, plan, doors, tag)
+	else:
+		var door_walls := 0
+		var blank_walls := 0
+		for child in room.get_children():
+			door_walls += 1 if child.scene_file_path == walls.door_wall.resource_path else 0
+			blank_walls += 1 if child.scene_file_path == walls.blank_wall.resource_path else 0
+		_check("%s: стен по граням периметра — 2 с проёмом и 6 глухих" % tag, door_walls == 2 and blank_walls == 6,
+			"с проёмом %d, глухих %d" % [door_walls, blank_walls])
 	_check("%s: торец с проёмом — на каждый тайл перед дверью" % tag, caps == 2, "торцов %d" % caps)
 	var misplaced: Array[String] = []
 	for door: Node3D in doors:
@@ -281,6 +290,38 @@ func _check_assembly(kit_room: String, turns: int) -> void:
 	# Сразу, а не в конце кадра: следующая сборка встаёт на то же место, и её лучи
 	# не должны задеть коллизию этой.
 	root.free()
+
+
+## Коробка со стенами в меше: сборка не ставит ни одной стены — ни с проёмом, ни
+## глухой, иначе стена встала бы поверх нарисованной, — а каждый невыбранный
+## сокет закрыт заглушкой, повёрнутой к своей грани. Грань заглушки выводится из
+## того, куда она встала в мире, а не из плана: так ловится и заглушка, ушедшая
+## на соседнюю грань, и заглушка, развёрнутая не в ту сторону. Что она держит —
+## проверяют лучи (_check_assembly_rays).
+func _check_walled_pieces(room: Node3D, room_node: RS_LevelNode, plan: RS_LayerPlan, doors: Dictionary, tag: String) -> void:
+	var walls := RS_RoomLayout.shell_of(room).walls
+	var sockets := RS_RoomLayout.sockets_in_plan(room_node.room_scene_path, room_node.turns, plan.cells[room_node.id])
+	var door_faces: Dictionary = plan.door_faces[room_node.id]
+	var want: Array[Vector4i] = []
+	for face in sockets:
+		if not door_faces.has(face):
+			want.append(face)
+	var got: Array[Vector4i] = []
+	var stray: Array[String] = []
+	for child: Node in room.get_children():
+		if child.scene_file_path == walls.plug.resource_path:
+			var plug := child as Node3D
+			var cell := plan.embedding.cell_at(plug.global_position)
+			var facing := -plug.global_basis.z * plan.embedding.cell_size * 0.75
+			var side := plan.topology.side_toward(cell, plan.embedding.cell_at(plug.global_position + facing))
+			got.append(GridTopology.face(cell, side))
+		elif child.scene_file_path in [walls.door_wall.resource_path, walls.blank_wall.resource_path]:
+			stray.append(child.name)
+	_check("%s: стен поверх нарисованных нет" % tag, stray.is_empty(), ", ".join(stray))
+	want.sort()
+	got.sort()
+	_check("%s: заглушки — ровно на %d невыбранных сокетах из %d" % [tag, want.size(), sockets.size()],
+		got == want and doors.size() + want.size() == sockets.size(), "нужно %s, стоят %s" % [want, got])
 
 
 ## Лучи по коллизии деталей: глухая грань держит изнутри комнаты; через дверь луч
@@ -320,6 +361,51 @@ func _check_assembly_rays(plan: RS_LayerPlan, room_id: StringName, doors: Dictio
 func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3, exclude: Array[RID]) -> Dictionary:
 	var query := PhysicsRayQueryParameters3D.create(from, to, GEOMETRY_MASK, exclude)
 	return space.intersect_ray(query)
+
+
+# --- 4. Валидация пресета на коробке со стенами в меше ------------------------
+
+
+## Монолит ломается в данных тихо, и ловит это только валидация пресета: без
+## объявленных сокетов раскладка поведёт коридор в глухую стену меша, без
+## заглушки в ките невыбранный проём останется дырой.
+func _check_walled_validation() -> void:
+	var library := RS_RoomPresetLibrary.new()
+	var scene := load(KIT_ROOMS[-1]) as PackedScene
+	_check("эталон монолита с дверями 1..4 валиден", _walled_problems(library, scene, 4).is_empty(),
+		", ".join(_walled_problems(library, scene, 4)))
+
+	var no_sockets := _walled_variant(scene, func(shell: C_RoomShell) -> void: shell.door_sockets = [])
+	_check("монолит без объявленных сокетов ловится",
+		_walled_problems(library, no_sockets, 2).any(func(p: String) -> bool: return "сокеты не объявлены" in p), "")
+	var no_plug := _walled_variant(scene, func(shell: C_RoomShell) -> void:
+		shell.walls = shell.walls.duplicate()
+		shell.walls.plug = null)
+	_check("монолит без заглушки в ките ловится",
+		_walled_problems(library, no_plug, 2).any(func(p: String) -> bool: return "plug" in p), "")
+
+
+func _walled_problems(library: RS_RoomPresetLibrary, scene: PackedScene, doors_max: int) -> Array[String]:
+	var preset := RS_RoomPreset.new()
+	preset.display_name = "монолит"
+	preset.scene = scene
+	preset.doors_min = 1
+	preset.doors_max = doors_max
+	return library.validate_preset(preset)
+
+
+## Копия сцены монолита с поправленным C_RoomShell: компонент — подресурс сцены,
+## поэтому правится его копия, иначе правка ушла бы в кэш загруженного эталона.
+func _walled_variant(scene: PackedScene, edit: Callable) -> PackedScene:
+	var room := scene.instantiate() as Entity
+	var shell := RS_RoomLayout.shell_of(room).duplicate() as C_RoomShell
+	edit.call(shell)
+	var components: Array[Component] = [shell]
+	room.component_resources = components
+	var packed := PackedScene.new()
+	packed.pack(room)
+	room.free()
+	return packed
 
 
 # -----------------------------------------------------------------------------

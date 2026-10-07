@@ -332,15 +332,27 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 		problems.append(
 			"'%s': в коробке %d дверей с C_DoorSlot — двери сборной комнаты ставит спавн" % [label, scene_doors]
 		)
+	# Коробке со стенами в меше без объявленных сокетов достались бы все грани
+	# периметра — и раскладка повела бы коридор в глухую стену меша.
+	if shell.walls_in_shell and shell.door_sockets.is_empty():
+		problems.append(
+			"'%s': стены в коробке, но сокеты не объявлены (C_RoomShell.door_sockets) — проёмы в меше и есть сокеты"
+			% label
+		)
 	if shell.walls == null:
 		problems.append("'%s': у коробки не назначен кит стен (C_RoomShell.walls)" % label)
 	else:
+		# Стены коробки в меше берут из кита только полотно и заглушку: стена с
+		# проёмом и глухая у них уже нарисованы.
+		var needed: Array[String] = ["door", "plug"]
+		if not shell.walls_in_shell:
+			needed = ["door_wall", "blank_wall", "door"]
+			if shell.size.y > 1:
+				needed.append("upper_wall")
 		var missing: Array[String] = []
-		for field: String in ["door_wall", "blank_wall", "door"]:
+		for field in needed:
 			if shell.walls.get(field) == null:
 				missing.append(field)
-		if shell.size.y > 1 and shell.walls.upper_wall == null:
-			missing.append("upper_wall")
 		if not missing.is_empty():
 			problems.append("'%s': в ките стен нет %s" % [label, ", ".join(missing)])
 	# Объявленный сокет не на наружной грани — дверь, которой раскладка найдёт
