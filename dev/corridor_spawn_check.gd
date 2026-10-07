@@ -22,6 +22,10 @@ const PROBE_HEIGHT := 1.5
 ## Только статическая геометрия (слой static_colliders): объём прицеливания
 ## двери (interactives) шире самой двери и стенкой не является.
 const GEOMETRY_MASK := 1
+## Во что упирается идущий сквозь проём: к статике добавлен moving_colliders —
+## полотно двери подвижное и стоит на нём. С одной статикой луч проходил сквозь
+## закрытую дверь, как только арт переложил створки на свой слой.
+const DOORWAY_MASK := GEOMETRY_MASK | 1 << 4
 ## Насколько по обе стороны грани клетки щупать пол на стыке: щель шире — уже
 ## провал под мир.
 const SEAM_PROBE := 0.4
@@ -358,7 +362,7 @@ func _doorway_ray(space: PhysicsDirectSpaceState3D, door: Node) -> Dictionary:
 	var normal := body.global_transform.basis.z.normalized()
 	var along := body.global_transform.basis.x.normalized() * 0.4
 	var center := body.global_position + Vector3(0.0, PROBE_HEIGHT, 0.0) + along
-	return _ray(space, center - normal * 1.5, center + normal * 1.5)
+	return _ray(space, center - normal * 1.5, center + normal * 1.5, DOORWAY_MASK)
 
 
 func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3, mask: int = GEOMETRY_MASK) -> Dictionary:
