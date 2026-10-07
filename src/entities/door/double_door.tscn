@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="4_travel"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_slot"]
 [ext_resource type="PackedScene" uid="uid://djmjulnyrgth6" path="res://assets/props/interactive/SM_door_double/SM_door_double.glb" id="8_mesh"]
+[ext_resource type="Script" uid="uid://bnn1fxupyhnda" path="res://src/components/level/c_door_motion.gd" id="9_motion"]
 
 [sub_resource type="Resource" id="Travel"]
 script = ExtResource("4_travel")
@@ -15,6 +16,9 @@ script = ExtResource("4_travel")
 script = ExtResource("4_interactable")
 prompt_text = "HUD_PROMPT_PASS"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[sub_resource type="Resource" id="Motion"]
+script = ExtResource("9_motion")
 
 [sub_resource type="Resource" id="Slot"]
 script = ExtResource("7_slot")
@@ -25,7 +29,7 @@ size = Vector3(3.15, 4.35, 0.7)
 [node name="DoubleDoor" type="Node3D"]
 script = ExtResource("2_door")
 actions = Array[ExtResource("3_action")]([SubResource("Travel")])
-component_resources = Array[ExtResource("3_component")]([SubResource("Interactable"), SubResource("Slot")])
+component_resources = Array[ExtResource("3_component")]([SubResource("Interactable"), SubResource("Slot"), SubResource("Motion")])
 
 [node name="Visual" parent="." instance=ExtResource("8_mesh")]
 

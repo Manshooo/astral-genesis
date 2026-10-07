@@ -428,7 +428,8 @@ func travel_to(node_id: StringName) -> void:
 ## Игрок воспользовался дверью (A_TravelThroughDoor) — она ведёт в [param target].
 ##
 ## В коридорной раскладке дверь в коридор своего этажа никуда не переносит: она
-## ОТКРЫВАЕТСЯ, и дальше игрок идёт ногами, а текущий узел сменит присутствие.
+## ОТКРЫВАЕТСЯ (S_DoorMotion.open, через hold секунд закроется сама), и дальше
+## игрок идёт ногами, а текущий узел сменит присутствие.
 ## Исключение — комната без проёма за дверью (RS_LevelNode.door_teleports, хаб до
 ## переделки арта): открывать там нечего, и игрока переставляют на тайл перед
 ## дверью. Порталы идут через travel_to.
@@ -451,20 +452,7 @@ func use_door(door: Entity, target: StringName) -> void:
 		if player:
 			PlayerPlacement.in_front_of(player, door, room, plan_for_depth(current_depth))
 		return
-	_open_door(door)
-
-
-## Открывает дверь: полотно поднимает S_DoorOpen, а интеракция гаснет — открытую
-## дверь больше незачем подсвечивать, и подсказка в проходе мешала бы. Зовётся из
-## действия двери, то есть уже вне прохода ECS (interact() идёт через
-## call_deferred), поэтому компонент добавляется напрямую.
-func _open_door(door: Entity) -> void:
-	if door.has_component(C_DoorOpen):
-		return
-	door.add_component(C_DoorOpen.new())
-	var inter := door.get_component(C_Interactable) as C_Interactable
-	if inter:
-		inter.enabled = false
+	S_DoorMotion.open(door)
 
 
 ## Игрок стоит в точке [param world_position] — если это клетка другого узла

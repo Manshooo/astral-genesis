@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://dibrg03qygmfk" path="res://src/resources/interaction/a_travel_through_door.gd" id="4_qd5pf"]
 [ext_resource type="Script" uid="uid://dv1d7jb1mo3fv" path="res://src/components/level/c_door_slot.gd" id="7_cehsg"]
 [ext_resource type="PackedScene" uid="uid://djmjulnyrgth6" path="res://assets/props/interactive/SM_door_double/SM_door_double.glb" id="7_qd5pf"]
+[ext_resource type="Script" uid="uid://bnn1fxupyhnda" path="res://src/components/level/c_door_motion.gd" id="8_motion"]
 
 [sub_resource type="Resource" id="Resource_r83wa"]
 script = ExtResource("4_qd5pf")
@@ -19,13 +20,16 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 [sub_resource type="Resource" id="Resource_qd5pf"]
 script = ExtResource("7_cehsg")
 
+[sub_resource type="Resource" id="Motion"]
+script = ExtResource("8_motion")
+
 [sub_resource type="BoxShape3D" id="BoxShape3D_dpga7"]
 size = Vector3(3.1486816, 4.35223, 0.6937256)
 
 [node name="Door" type="Node3D" unique_id=1986258941]
 script = ExtResource("2_tkmj8")
 actions = Array[ExtResource("3_cehsg")]([SubResource("Resource_r83wa")])
-component_resources = Array[ExtResource("3_3hoce")]([SubResource("Resource_8ssbo"), SubResource("Resource_qd5pf")])
+component_resources = Array[ExtResource("3_3hoce")]([SubResource("Resource_8ssbo"), SubResource("Resource_qd5pf"), SubResource("Motion")])
 
 [node name="Visual" parent="." unique_id=645974255 instance=ExtResource("7_qd5pf")]
 
