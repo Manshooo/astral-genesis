@@ -57,6 +57,10 @@ component_resources = Array[ExtResource("2_pw0oc")]([SubResource("Resource_bg5xb
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.4925244, -2.6010575)
 
 [node name="Light" type="OmniLight3D" parent="." unique_id=1855549985]
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 200.0
+distance_fade_shadow = 40.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15.5, 0)
 light_color = Color(1, 0.93, 0.82, 1)
 light_energy = 1.6
