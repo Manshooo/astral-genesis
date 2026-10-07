@@ -16,17 +16,28 @@ extends RefCounted
 enum Piece { END, STRAIGHT, CORNER, TEE, CROSS }
 
 const PIECE_NAMES: Array[String] = ["тупик", "прямой", "поворот", "Т", "крест"]
-## Со скольких сторон к комнате должны подходить её собственные коридоры, чтобы
-## комната считалась обволакиваемой: с трёх сторон из четырёх коридор уже обходит
-## комнату, а не подходит к ней.
-const ENVELOPED_SIDES := 3
+## Со скольких сторон кусок коридора в поясе комнаты её огибает (wraps): с трёх
+## сторон из четырёх коридор уже обходит комнату, а не подходит к ней.
+const WRAP_SIDES := 3
 
 ## Этажей с хотя бы одним узлом.
 var floors := 0
 var rooms := 0
-## Комнаты, к которым с ENVELOPED_SIDES и больше сторон подходят их же коридоры
-## (те, в которые ведут их двери), — все вместе, а не каждый порознь.
+## Комнаты, которые коридор огибает вплотную (wraps): кусок сети в поясе вокруг
+## комнаты связывает две её двери или подходит к ней с трёх сторон.
+##
+## До 08.10 считались комнаты, к которым с трёх сторон подходят её коридоры, все
+## вместе. Цифра держалась на 0 %, а игрок видел обратное: у 61 % комнат свой
+## коридор огибал угол и связывал две соседние двери — с двух сторон, мимо
+## порога. А с дверью на каждую сторону коридоры с трёх сторон — это уже
+## перекрёсток, а не обволакивание.
 var enveloped_rooms := 0
+## Сквозные комнаты: двери на противоположных сторонах ведут в разные коридоры —
+## вошёл в одну, вышел из другой в другое место.
+var through_rooms := 0
+## Двери, разыгранные пресетом, которые раскладка не поставила
+## (RS_LayerPlan.dropped_doors).
+var dropped_doors := 0
 var tiles := 0
 ## Коридоров — узлов графа: отрезков сети между развилками (карточка «Коридор —
 ## отдельный узел»).
@@ -68,8 +79,11 @@ static func of_plan(plan: RS_LayerPlan) -> RS_LayoutMetrics:
 	# без дверей в коридор.
 	for room: StringName in plan.door_faces:
 		metrics.rooms += 1
-		if _own_branch_sides(plan, room) >= ENVELOPED_SIDES:
+		if wrapped_in_plan(plan, room):
 			metrics.enveloped_rooms += 1
+		if _is_through(plan, room):
+			metrics.through_rooms += 1
+	metrics.dropped_doors = plan.dropped_doors
 
 	metrics.loops = _node_loops(plan)
 	metrics.corridor_loops = _tile_loops(plan)
@@ -82,6 +96,8 @@ func add(other: RS_LayoutMetrics) -> void:
 	floors += other.floors
 	rooms += other.rooms
 	enveloped_rooms += other.enveloped_rooms
+	through_rooms += other.through_rooms
+	dropped_doors += other.dropped_doors
 	tiles += other.tiles
 	corridors += other.corridors
 	loops += other.loops
@@ -112,6 +128,10 @@ static func piece_of(mask: int) -> Piece:
 
 func enveloped_share() -> float:
 	return float(enveloped_rooms) / maxi(rooms, 1)
+
+
+func through_share() -> float:
+	return float(through_rooms) / maxi(rooms, 1)
 
 
 func tiles_per_room() -> float:
@@ -145,9 +165,13 @@ func dead_ends_per_floor() -> float:
 ## Сводка строками — одна и та же в туле и в выводе проверки.
 func report_lines() -> PackedStringArray:
 	var lines := PackedStringArray()
-	lines.append("обволакиваемых комнат  %5.1f%%  (%d из %d; свои коридоры с %d+ сторон)" % [
-		100.0 * enveloped_share(), enveloped_rooms, rooms, ENVELOPED_SIDES
+	lines.append("обволакиваемых комнат  %5.1f%%  (%d из %d; коридор вплотную вокруг: две её двери или %d+ стороны)" % [
+		100.0 * enveloped_share(), enveloped_rooms, rooms, WRAP_SIDES
 	])
+	lines.append("сквозных комнат        %5.1f%%  (двери напротив друг друга, в разные коридоры)" % [
+		100.0 * through_share()
+	])
+	lines.append("снято дверей           %5d   (запасной двери некуда вести)" % dropped_doors)
 	lines.append("тайлов на комнату      %5.2f   (на этаж %.1f)" % [tiles_per_room(), tiles_per_floor()])
 	lines.append("коридоров на этаж      %5.2f   (тайлов в коридоре %.1f)" % [
 		corridors_per_floor(), float(tiles) / maxi(corridors, 1)
@@ -162,17 +186,102 @@ func report_lines() -> PackedStringArray:
 	return lines
 
 
-## Со скольких сторон к комнате подходят тайлы коридоров, в которые ведут её двери.
-## По сторонам, а не по клеткам: у комнаты в несколько клеток на одной стороне
-## несколько соседей, а обволакивание — это коридор вокруг, а не вдоль одной стены.
-static func _own_branch_sides(plan: RS_LayerPlan, room: StringName) -> int:
-	var own: Array = (plan.door_faces[room] as Dictionary).values()
-	var sides := {}
-	for face in plan.topology.perimeter(plan.room_cells(room)):
-		var next := plan.topology.neighbour(GridTopology.face_cell(face), face.w)
-		if plan.corridor_tiles.has(next) and own.has(plan.node_by_cell.get(next, &"")):
-			sides[face.w] = true
-	return sides.size()
+## Пояс комнаты на уровне [param level]: клетки перед её наружными гранями (->
+## сторона грани) и углы между ними (-> GridTopology.NO_SIDE) — всё, что вплотную
+## к комнате. Угол — клетка снаружи, соседняя с двумя клетками перед гранями:
+## через неё коридор огибает комнату, ни разу не встав перед её гранью.
+static func ring_of(topology: GridTopology, cells: Array[Vector3i], level: int) -> Dictionary[Vector3i, int]:
+	var inside: Dictionary[Vector3i, bool] = {}
+	for cell in cells:
+		inside[cell] = true
+	var ring: Dictionary[Vector3i, int] = {}
+	for cell in cells:
+		if cell.y != level:
+			continue
+		for side in topology.side_count(cell):
+			var next := topology.neighbour(cell, side)
+			if not inside.has(next):
+				ring[next] = side
+	var touches: Dictionary[Vector3i, int] = {}
+	for cell: Vector3i in ring:
+		for side in topology.side_count(cell):
+			var next := topology.neighbour(cell, side)
+			if not inside.has(next) and not ring.has(next):
+				touches[next] = touches.get(next, 0) + 1
+	for cell: Vector3i in touches:
+		if touches[cell] >= 2:
+			ring[cell] = GridTopology.NO_SIDE
+	return ring
+
+
+## Огибает ли коридор комнату вплотную: связный по проёмам кусок сети в её поясе
+## [param ring] (ring_of) связывает две её двери (клетки перед ними —
+## [param door_fronts]) или подходит к ней с WRAP_SIDES сторон. [param is_tile] —
+## клетка ли сети, [param linked] — открыт ли проём между двумя клетками сети.
+##
+## По поясу, а не по тому, со скольких сторон подходят её коридоры: у комнаты с
+## дверью на каждой стороне коридоры с четырёх сторон — перекрёсток, а коридор,
+## обогнувший угол от двери к соседней двери, касается только двух — и именно его
+## игрок видит обволакиванием. Одно правило на раскладку
+## (RS_CorridorPlanner._envelops) и на метрику, иначе раскладка сторожила бы не
+## то, что меряет порог проверки.
+static func wraps(ring: Dictionary[Vector3i, int], door_fronts: Array[Vector3i], is_tile: Callable, linked: Callable) -> bool:
+	var seen: Dictionary[Vector3i, bool] = {}
+	for start: Vector3i in ring:
+		if seen.has(start) or not is_tile.call(start):
+			continue
+		seen[start] = true
+		var piece: Array[Vector3i] = [start]
+		var i := 0
+		while i < piece.size():
+			var cell := piece[i]
+			i += 1
+			for next: Vector3i in ring:
+				if not seen.has(next) and linked.call(cell, next):
+					seen[next] = true
+					piece.append(next)
+		var sides: Dictionary[int, bool] = {}
+		var doors := 0
+		for cell in piece:
+			if ring[cell] != GridTopology.NO_SIDE:
+				sides[ring[cell]] = true
+			if door_fronts.has(cell):
+				doors += 1
+		if doors >= 2 or sides.size() >= WRAP_SIDES:
+			return true
+	return false
+
+
+## wraps по готовому плану: на каждом уровне комнаты, где у неё есть двери.
+static func wrapped_in_plan(plan: RS_LayerPlan, room: StringName) -> bool:
+	var faces: Dictionary = plan.door_faces.get(room, {})
+	var by_level: Dictionary[int, Array] = {}
+	for face: Vector4i in faces:
+		by_level.get_or_add(face.y, []).append(plan.topology.neighbour(GridTopology.face_cell(face), face.w))
+	var is_tile := func(cell: Vector3i) -> bool: return plan.corridor_tiles.has(cell)
+	var linked := func(a: Vector3i, b: Vector3i) -> bool:
+		if not plan.corridor_tiles.has(a) or not plan.corridor_tiles.has(b):
+			return false
+		var side := plan.topology.side_toward(a, b)
+		return side != GridTopology.NO_SIDE and plan.corridor_tiles[a] & (1 << side) != 0
+	for level: int in by_level:
+		var fronts: Array[Vector3i] = []
+		fronts.assign(by_level[level])
+		if wraps(ring_of(plan.topology, plan.room_cells(room), level), fronts, is_tile, linked):
+			return true
+	return false
+
+
+## Сквозная ли комната: две двери на противоположных сторонах ведут в разные
+## коридоры.
+static func _is_through(plan: RS_LayerPlan, room: StringName) -> bool:
+	var faces: Dictionary = plan.door_faces.get(room, {})
+	for a: Vector4i in faces:
+		for b: Vector4i in faces:
+			if a.y == b.y and faces[a] != faces[b] \
+					and plan.topology.opposite(GridTopology.face_cell(a), a.w) == b.w:
+				return true
+	return false
 
 
 ## Обходные пути слоя (см. loops): цикломатическое число графа узлов — рёбер −

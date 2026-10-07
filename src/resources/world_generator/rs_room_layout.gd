@@ -228,6 +228,13 @@ static func sockets_of_scene(scene_path: String) -> Array[Vector4i]:
 	var shell := shell_of_scene(scene_path)
 	if shell == null:
 		return []
+	return sockets_of_shell(shell)
+
+
+## Сокеты коробки [param shell] в осях сцены — как sockets_of_scene, но по уже
+## разобранному компоненту: сборке стен (RS_RoomWallKit.assemble) пути сцены не
+## передают, а корень комнаты у неё в руках.
+static func sockets_of_shell(shell: C_RoomShell) -> Array[Vector4i]:
 	if not shell.door_sockets.is_empty():
 		return shell.door_sockets
 	return SquareGridTopology.new().perimeter(SquareGridTopology.box(Vector3i.ZERO, shell.size))
