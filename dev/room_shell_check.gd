@@ -8,8 +8,8 @@ extends "res://dev/check_harness.gd"
 ##
 ## Три части:
 ##   1. все комнаты генератора — коробки, и коробка каждой = footprint × клетка;
-##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5) и стоят
-##      внутри стен коробки;
+##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5) и не
+##      выходят за footprint коробки (в толщу стены — можно);
 ##   3. сборка на настоящих деталях каждого кита в игре (P, X): план с комнатой
 ##      2×2×1 и веткой, стены и торцы по маске — и лучи по коллизии, как у
 ##      corridor_spawn_check.
@@ -29,8 +29,6 @@ const KIT_ROOMS: Array[String] = [
 ## Зона перед сокетом, свободная от пропов: 3 м вдоль стены, 2 м вглубь комнаты,
 ## от пола до верха рамки проёма (4.5 м) — [[Метрики и кит]] §2 п. 6, §3.
 const SOCKET_ZONE := Vector3(3.0, 4.5, 2.0)
-## Толщина стены кита внутрь клетки: всё, что дальше от центра, сидит в стене.
-const WALL := 0.25
 ## Допуск сравнения габаритов: экспорт glTF кладёт вершины с погрешностью float.
 const EPSILON := 0.01
 const GEOMETRY_MASK := 1
@@ -107,15 +105,18 @@ func _check_zones(path: String, plan: RS_LayerPlan) -> void:
 	_check("%s: пропы не заходят в зоны перед сокетами" % path.get_file(), hits.is_empty(), ", ".join(hits))
 	# Содержимое, перенесённое из комнаты 18 м, могло остаться там, где теперь стена.
 	var inside := _props_outside(room, plan)
-	_check("%s: пропы стоят внутри стен коробки" % path.get_file(), inside.is_empty(), ", ".join(inside))
+	_check("%s: пропы не выходят за footprint коробки" % path.get_file(), inside.is_empty(), ", ".join(inside))
 	room.queue_free()
 
 
-## Пропы, чья геометрия в плане заходит за лицо стены коробки.
+## Пропы, чья геометрия в плане выходит за границу клеток коробки. Толща стены
+## пропу разрешена — труба или кабель, уходящие в стену, и есть то, как проп
+## к ней крепится. А за границей уже соседняя клетка: раскладка о пропе не знает
+## и может провести там коридор, сквозь стену которого проп и прорастёт.
 func _props_outside(room: Node3D, plan: RS_LayerPlan) -> Array[String]:
 	var outside: Array[String] = []
 	var shell := RS_RoomLayout.shell_of(room)
-	var half := Vector2(shell.size.x, shell.size.z) * plan.embedding.cell_size * 0.5 - Vector2(WALL, WALL)
+	var half := Vector2(shell.size.x, shell.size.z) * plan.embedding.cell_size * 0.5
 	for geometry in _props(room):
 		var box := room.global_transform.affine_inverse() * geometry.global_transform * geometry.get_aabb()
 		if box.position.x < -half.x - EPSILON or box.end.x > half.x + EPSILON \
