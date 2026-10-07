@@ -235,18 +235,33 @@ func _check_assembly(kit_room: String, turns: int) -> void:
 	# В подписи — кит: проверки у P и X одни и те же, и по повороту не понять, чья
 	# сборка упала.
 	var tag := "%s, поворот %d" % [kit_room.get_file().get_basename(), turns]
-	# Слой из одной комнаты раскладывает сам планировщик: план рождается в генерации
-	# графа, а графа здесь нет. Без петель и тупиков — проверяется сборка комнаты.
+	# Слой раскладывает сам планировщик: план рождается в генерации графа, а графа
+	# здесь нет. Без петель и тупиков — проверяется сборка комнаты. Соседи — чтобы
+	# дверям было куда вести: одинокой комнате раскладка оставляет одну дверь
+	# (RS_CorridorPlanner._join_spare_doors). Сколько дверей встало, решает
+	# раскладка, поэтому сборка сверяется с планом, а не с числом.
 	var rooms: Array[RS_LevelNode] = [room_node]
+	for i in 2:
+		var neighbour := RS_LevelNode.new()
+		neighbour.id = StringName("neighbour_%d" % i)
+		neighbour.room_scene_path = KIT_P_ROOM
+		neighbour.socket_doors = 1
+		rooms.append(neighbour)
 	var config := RS_WorldGenConfig.new()
 	config.corridor_loops = 0
 	config.dead_ends = 0
 	var plan := RS_LayerPlan.new()
 	RS_CorridorPlanner.plan_floor(plan, rooms, "corridor_", 0, config, RandomNumberGenerator.new())
 	var faces: Dictionary = plan.door_faces.get(room_node.id, {})
-	_check("%s: у комнаты 2×2×1 ровно две двери, обе в сокетах" % tag,
-		faces.size() == 2 and plan.routing_failures.is_empty(),
+	var sockets := RS_RoomLayout.sockets_in_plan(kit_room, turns, plan.cells[room_node.id])
+	var total_doors := 0
+	for room_id: StringName in plan.door_faces:
+		total_doors += (plan.door_faces[room_id] as Dictionary).size()
+	_check("%s: у комнаты 2×2×1 есть двери (%d), и все в сокетах" % [tag, faces.size()],
+		not faces.is_empty() and faces.keys().all(func(f: Vector4i) -> bool: return sockets.has(f))
+		and plan.routing_failures.is_empty(),
 		"%s %s" % [faces, plan.routing_failures])
+	var perimeter := plan.topology.perimeter(plan.room_cells(room_node.id)).size()
 
 	var root := Node3D.new()
 	add_child(root)
@@ -272,9 +287,11 @@ func _check_assembly(kit_room: String, turns: int) -> void:
 		for child in room.get_children():
 			door_walls += 1 if child.scene_file_path == walls.door_wall.resource_path else 0
 			blank_walls += 1 if child.scene_file_path == walls.blank_wall.resource_path else 0
-		_check("%s: стен по граням периметра — 2 с проёмом и 6 глухих" % tag, door_walls == 2 and blank_walls == 6,
+		_check("%s: стен по граням периметра — с проёмом на каждую дверь, глухих на остальные" % tag,
+			door_walls == faces.size() and blank_walls == perimeter - faces.size(),
 			"с проёмом %d, глухих %d" % [door_walls, blank_walls])
-	_check("%s: торец с проёмом — на каждый тайл перед дверью" % tag, caps == 2, "торцов %d" % caps)
+	_check("%s: торец с проёмом — на каждый тайл перед дверью" % tag, caps == total_doors,
+		"торцов %d, дверей %d" % [caps, total_doors])
 	var misplaced: Array[String] = []
 	for door: Node3D in doors:
 		var face: Vector4i = doors[door]
@@ -282,7 +299,8 @@ func _check_assembly(kit_room: String, turns: int) -> void:
 		var mid := (plan.embedding.cell_origin(cell) + plan.embedding.cell_origin(plan.topology.neighbour(cell, face.w))) * 0.5
 		if door.global_position.distance_to(mid) > EPSILON:
 			misplaced.append("%s: %s вместо %s" % [face, door.global_position, mid])
-	_check("%s: двери стоят на середине своих граней" % tag, doors.size() == 2 and misplaced.is_empty(), ", ".join(misplaced))
+	_check("%s: двери стоят на середине своих граней" % tag, doors.size() == faces.size() and misplaced.is_empty(),
+		", ".join(misplaced))
 
 	for i in 3:
 		await get_tree().physics_frame
@@ -368,12 +386,17 @@ func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3, exclude:
 
 ## Монолит ломается в данных тихо, и ловит это только валидация пресета: без
 ## объявленных сокетов раскладка поведёт коридор в глухую стену меша, без
-## заглушки в ките невыбранный проём останется дырой.
+## заглушки в ките невыбранный проём останется дырой. Заодно — правило «дверь на
+## сторону» для любой коробки: у обычной 2×2 сокетов восемь, а сторон четыре, и
+## пятая дверь встала бы второй на сторону — коридором вдоль стены от двери к двери.
 func _check_walled_validation() -> void:
 	var library := RS_RoomPresetLibrary.new()
 	var scene := load(KIT_ROOMS[-1]) as PackedScene
-	_check("эталон монолита с дверями 1..4 валиден", _walled_problems(library, scene, 4).is_empty(),
+	_check("эталон монолита с дверями 1..4 валиден — по двери на сторону", _walled_problems(library, scene, 4).is_empty(),
 		", ".join(_walled_problems(library, scene, 4)))
+	var box := load(KIT_P_ROOM) as PackedScene
+	_check("коробка 2×2 с дверями 1..5 ловится: сторон с сокетами четыре",
+		_walled_problems(library, box, 5).any(func(p: String) -> bool: return "сторон с сокетами" in p), "")
 
 	var no_sockets := _walled_variant(scene, func(shell: C_RoomShell) -> void: shell.door_sockets = [])
 	_check("монолит без объявленных сокетов ловится",

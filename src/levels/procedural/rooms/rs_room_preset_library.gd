@@ -371,7 +371,26 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 			"'%s': дверей %d..%d, а сокетов у footprint %s — %d; нужно 1 ≤ min ≤ max ≤ сокетов"
 			% [label, preset.doors_min, preset.doors_max, shell.size, sockets]
 		)
+	# Раскладка ставит не больше одной двери на сторону (RS_CorridorPlanner.
+	# _pick_sockets): вторая дверь на той же стороне — это коридор вдоль стены от
+	# двери к двери, то самое обволакивание. Дверей больше, чем сторон с сокетами,
+	# пресету не дать.
+	var sides := _socket_sides(RS_RoomLayout.sockets_of_shell(shell))
+	if preset.doors_max > sides:
+		problems.append(
+			"'%s': дверей до %d, а сторон с сокетами %d — дверь ставится по одной на сторону"
+			% [label, preset.doors_max, sides]
+		)
 	return problems
+
+
+## Сколько сторон с сокетами — каждая сторона на каждом уровне отдельно: у
+## лестницы два входа с одной стороны, но на разных этажах.
+static func _socket_sides(sockets: Array[Vector4i]) -> int:
+	var sides := {}
+	for face in sockets:
+		sides[Vector2i(face.y, face.w)] = true
+	return sides.size()
 
 
 ## Может ли комната пресета получить хотя бы одну дверь: иначе она недостижима, и

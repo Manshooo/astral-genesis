@@ -35,11 +35,11 @@ const ROUTE_MARGIN := 1
 const MAX_ROUTE_MARGIN := 7
 ## Цена поворота сверх шага. Без неё первый же прогон дал 43 % поворотов.
 const TURN_COST := 3
-## Со скольких сторон комнаты ставятся двери, пока на этих сторонах хватает
-## сокетов. Дверь на третьей стороне — это коридор с трёх сторон комнаты, то самое
-## обволакивание; у коробки 2×2 на двух сторонах четыре сокета, этого хватает
-## любой нынешней комнате.
-const DOOR_SIDES := 2
+## Цена прохода сквозь комнату от двери к двери в расстояниях по сети
+## (_distances): комната 2×2 — две клетки поперёк. Без неё сеть, разорванная
+## комнатами, считалась бы несвязной, и петля или запасная дверь не видели бы,
+## что место уже рядом — через комнату.
+const ROOM_HOP := 2
 ## Сколько случайных точек пробует каждая комната при разбросе (_place_rooms).
 ## Из годных выбор взвешен шумом, поэтому точек нужно больше одной: при одной
 ## шум ничего не решал бы.
@@ -67,6 +67,12 @@ var _level := 0
 var _room_at: Dictionary[Vector3i, StringName] = {}
 ## Комната -> грани её дверей.
 var _doors: Dictionary[StringName, Array] = {}
+## Клетка перед дверью -> чья дверь.
+var _front_room: Dictionary[Vector3i, StringName] = {}
+## Комнаты этого этажа: им раскладка вправе убрать запасную дверь
+## (_join_spare_doors). Верх лестницы этажа ниже сюда не входит — его дверь
+## единственная на уровне и связывает этажи.
+var _rooms: Dictionary[StringName, RS_LevelNode] = {}
 ## Тайл сети -> соседние тайлы, с которыми он связан проёмом.
 var _links: Dictionary[Vector3i, Array] = {}
 ## Тайл -> номер коридора. До разреза по развилкам (_segment) вся сеть — нулевой:
@@ -101,9 +107,12 @@ static func plan_floor(
 	var planner := RS_CorridorPlanner.new(plan, floor_index)
 	planner._place_rooms(rooms, config.room_gap, config.room_density, rng)
 	for room in rooms:
+		planner._rooms[room.id] = room
+	for room in rooms:
 		planner._choose_doors(room)
 	planner._adopt_pending()
 	planner._grow_network()
+	planner._join_spare_doors()
 	planner._add_loops(config.corridor_loops)
 	planner._add_dead_ends(config.dead_ends, rng)
 	var ids: Array[StringName] = []
@@ -233,8 +242,8 @@ func _put(room: RS_LevelNode, anchor: Vector3i, size: Vector3i) -> void:
 
 ## Грани под двери комнаты. У комнаты с дверями в сцене — стороны её дверей,
 ## повёрнутые вместе с комнатой: сцена в одну клетку, и грань — её сторона в мире.
-## У собранной по сокетам — [member RS_LevelNode.socket_doors] сокетов, смотрящих
-## внутрь этажа (_inward_sockets): из объявленных коробкой
+## У собранной по сокетам — [member RS_LevelNode.socket_doors] сокетов по одному на
+## сторону, к соседям (_pick_sockets): из объявленных коробкой
 ## (C_RoomShell.door_sockets), а если она их не объявила — из всех граней нижнего
 ## уровня. Дверь выше этажа комнаты (верх лестницы) эта раскладка не свяжет — её
 ## уровень трассы не видят, — и дверь ждёт в плане раскладку своего этажа
@@ -250,14 +259,19 @@ func _choose_doors(room: RS_LevelNode) -> void:
 		var sockets := _topology.perimeter(_plan.room_cells(room.id))
 		if shell and not shell.door_sockets.is_empty():
 			sockets = RS_RoomLayout.sockets_in_plan(room.room_scene_path, room.turns, anchor)
-		faces = _inward_sockets(sockets, room.socket_doors)
+		faces = _pick_sockets(room.id, sockets, room.socket_doors)
 	_doors[room.id] = []
 	for face in faces:
 		if face.y != _level:
 			_plan.pending_doors[face] = room.id
 			continue
-		_doors[room.id].append(face)
-		_terminals.append(_front(face))
+		_add_door(room.id, face)
+
+
+func _add_door(room: StringName, face: Vector4i) -> void:
+	_doors[room].append(face)
+	_terminals.append(_front(face))
+	_front_room[_front(face)] = room
 
 
 ## Забирает из плана двери комнат этажа ниже, чей уровень — этот (верх
@@ -275,44 +289,100 @@ func _adopt_pending() -> void:
 			for cell in _plan.room_cells(room):
 				if cell.y == _level:
 					_room_at[cell] = room
-		_doors[room].append(face)
-		_terminals.append(_front(face))
+		_add_door(room, face)
 
 
-## [param count] сокетов, ближайших к центру комнат этажа, и не больше чем с
-## DOOR_SIDES сторон, пока на них хватает сокетов. Двери внутрь этажа смотрят
-## друг на друга через улицу, и сеть связывает их коротко; дверь наружу тянула бы
-## коридор в обход, а дверь на третьей стороне — коридор вокруг комнаты.
-func _inward_sockets(sockets: Array[Vector4i], count: int) -> Array[Vector4i]:
-	var score: Dictionary[Vector4i, float] = {}
+## [param count] сокетов комнаты [param room] под двери: не больше одной двери на
+## сторону (на каждом уровне), стороны — туда, где соседи. Комнату с двумя
+## дверями раскладка делает сквозной — вторая дверь на противоположной стороне,
+## если и там есть соседи.
+##
+## До 08.10 двери ставились к центру этажа и не больше чем с двух сторон: у
+## коробки 2×2 это четыре сокета на двух соседних сторонах, и дерево сети
+## связывало двери одной комнаты коридором вокруг её угла. Сквозных комнат не
+## было вовсе (дверей на противоположных сторонах — 0 %), а у 61 % комнат свой
+## коридор огибал угол (замер 60 сидов в карточке). Дверь на сторону и проход
+## через комнату в сети (_grow_network) дают другое: каждая дверь ведёт в своё
+## направление.
+##
+## Сторону тянут комнаты этажа, лежащие в её сторону: каждая — с весом обратно
+## расстоянию и тем сильнее, чем прямее она напротив. Не центр этажа: к центру
+## смотрит одна сторона, и противоположная у комнаты в середине этажа была бы
+## «наружу», хотя соседи там есть. На стороне — сокет, ближайший к тем, кто её тянет.
+## Сторон меньше, чем дверей, — остаток добирается лучшими из оставшихся сокетов;
+## пресету столько дверей не дают (RS_RoomPresetLibrary.validate).
+func _pick_sockets(room: StringName, sockets: Array[Vector4i], count: int) -> Array[Vector4i]:
+	var center := _room_center(room)
+	var pull: Dictionary[Vector2i, float] = {}  # (уровень, сторона) -> тяга
+	var aim: Dictionary[Vector2i, Vector2] = {}  # куда тянут — взвешенная точка соседей
+	var best: Dictionary[Vector2i, Vector4i] = {}
 	for face in sockets:
+		var key := Vector2i(face.y, face.w)
+		if pull.has(key):
+			continue
+		var cell := GridTopology.face_cell(face)
+		var step := _topology.neighbour(cell, face.w) - cell
+		var normal := Vector2(step.x, step.z).normalized()
+		var weight := 0.0
+		var point := Vector2.ZERO
+		for other: StringName in _rooms:
+			if other == room:
+				continue
+			var to := _room_center(other) - center
+			var facing := normal.dot(to.normalized()) if to.length() > 0.0 else 0.0
+			if facing <= 0.0:
+				continue
+			var w := facing / to.length()
+			weight += w
+			point += _room_center(other) * w
+		pull[key] = weight
+		aim[key] = point / weight if weight > 0.0 else _center
+	for face in sockets:
+		var key := Vector2i(face.y, face.w)
 		var front := _front(face)
-		score[face] = Vector2(front.x, front.z).distance_squared_to(_center)
-	sockets.sort_custom(func(a: Vector4i, b: Vector4i) -> bool:
-		return score[a] < score[b] if score[a] != score[b] else _face_before(a, b))
-	var sides: Array[int] = []
-	for face in sockets:
-		if not sides.has(face.w):
-			sides.append(face.w)
-	var allowed := mini(DOOR_SIDES, sides.size())
-	while allowed < sides.size() and _sockets_on(sockets, sides.slice(0, allowed)) < count:
-		allowed += 1
-	var open := sides.slice(0, allowed)
-	var picked: Array[Vector4i] = []
-	for face in sockets:
-		if picked.size() == count:
+		if not best.has(key) or _closer(front, _front(best[key]), aim[key]):
+			best[key] = face
+
+	var sides := best.keys()
+	sides.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return pull[a] > pull[b] if pull[a] != pull[b] else _face_before(best[a], best[b]))
+	var picked: Array[Vector2i] = []
+	if count >= 1 and not sides.is_empty():
+		picked.append(sides[0])
+	if count >= 2 and not sides.is_empty():
+		var first: Vector2i = sides[0]
+		var across := Vector2i(first.x, _topology.opposite(GridTopology.face_cell(best[first]), first.y))
+		if pull.get(across, 0.0) > 0.0:
+			picked.append(across)
+	for key: Vector2i in sides:
+		if picked.size() >= count:
 			break
-		if open.has(face.w):
-			picked.append(face)
-	return picked
+		if not picked.has(key):
+			picked.append(key)
+	var faces: Array[Vector4i] = []
+	for key in picked:
+		faces.append(best[key])
+	if faces.size() < count:
+		var rest := sockets.filter(func(face: Vector4i) -> bool: return not faces.has(face))
+		rest.sort_custom(func(a: Vector4i, b: Vector4i) -> bool: return _closer(_front(a), _front(b), _center))
+		for face: Vector4i in rest.slice(0, count - faces.size()):
+			faces.append(face)
+	return faces
 
 
-func _sockets_on(sockets: Array[Vector4i], sides: Array) -> int:
-	var count := 0
-	for face in sockets:
-		if sides.has(face.w):
-			count += 1
-	return count
+## Центр footprint комнаты в клетках, в плоскости (X, Z).
+func _room_center(room: StringName) -> Vector2:
+	var anchor: Vector3i = _plan.cells[room]
+	var size: Vector3i = _plan.footprints.get(room, Vector3i.ONE)
+	return Vector2(anchor.x + (size.x - 1) * 0.5, anchor.z + (size.z - 1) * 0.5)
+
+
+## Ближе ли клетка [param a] к точке [param to], чем [param b]; при равенстве —
+## порядок клеток: раскладка обязана совпадать от запуска к запуску.
+func _closer(a: Vector3i, b: Vector3i, to: Vector2) -> bool:
+	var da := Vector2(a.x, a.z).distance_squared_to(to)
+	var db := Vector2(b.x, b.z).distance_squared_to(to)
+	return da < db if da != db else _before(a, b)
 
 
 # ---------------------------------------------------------------------------
@@ -325,6 +395,13 @@ func _sockets_on(sockets: Array[Vector4i], sides: Array) -> int:
 ## проложенному (Прим для дерева Штейнера). В заранее заданном порядке дальняя
 ## дверь тянула бы свой ряд вдоль чужого, пока сеть до неё не дошла, — на карте
 ## это «лесенка» параллельных коридоров.
+##
+## Комната в сети — звено, а не тупик: стоит одной её двери связаться с сетью, и
+## остальные двери тоже в сети — через саму комнату (_enter_room). Следующая
+## комната тянется к ближайшему коридору или к ещё свободной двери уже вошедшей —
+## так комнаты и встают сквозными, коридор входит в одну дверь, а выходит из
+## другой. Пока каждая дверь была отдельным концом дерева, дерево связывало две
+## двери одной комнаты кратчайшим путём — вокруг её же угла.
 func _grow_network() -> void:
 	_terminals.sort_custom(_nearer_center)
 	if _terminals.is_empty():
@@ -332,16 +409,13 @@ func _grow_network() -> void:
 		return
 	var search := _bounds().grow(ROUTE_MARGIN)
 	var to_network := func(cell: Vector3i) -> bool: return _links.has(cell)
-	_links[_terminals[0]] = []
-	var pending: Array[Vector3i] = []
-	for terminal in _terminals:
-		pending.append(terminal)
+	_enter_room(_front_room[_terminals[0]])
 	while true:
-		var left: Array[Vector3i] = []
-		for terminal in pending:
+		# Свободны — двери комнат, ещё не вошедших в сеть: двери вошедших уже в ней.
+		var pending: Array[Vector3i] = []
+		for terminal in _terminals:
 			if not _links.has(terminal):
-				left.append(terminal)
-		pending = left
+				pending.append(terminal)
 		if pending.is_empty():
 			break
 		# Нижняя оценка — путь по сетке до ближайшего тайла, без обходов: трассы ищутся
@@ -366,7 +440,83 @@ func _grow_network() -> void:
 				_plan.routing_failures.append("этаж %d: дверь перед %s не связана с сетью" % [_level, terminal])
 			break
 		_claim(best)
+		# Трасса могла пройти и мимо двери другой комнаты — та тоже в сети.
+		for cell in best:
+			if _front_room.has(cell):
+				_enter_room(_front_room[cell])
 	_area = _bounds().grow(ROUTE_MARGIN)
+
+
+## Комната вошла в сеть: клетки перед всеми её дверями — узлы сети, пусть пока и
+## без проёмов. К ним можно тянуть коридор, как к любому тайлу.
+func _enter_room(room: StringName) -> void:
+	for front in _fronts(room):
+		if not _links.has(front):
+			_links[front] = []
+
+
+## Клетки перед дверями комнаты на этом этаже.
+func _fronts(room: StringName) -> Array[Vector3i]:
+	var fronts: Array[Vector3i] = []
+	for face: Vector4i in _doors.get(room, []):
+		fronts.append(_front(face))
+	return fronts
+
+
+## Двери вошедших в сеть комнат, к которым коридор так и не подошёл. Каждая
+## тянется к сети отдельно — как петля (_add_loops): к месту, до которого по сети
+## (сквозь комнату) далеко, и не по своему поясу (_ring) и не вплотную к ближней
+## сети. Иначе запасная дверь замыкалась бы на соседний коридор той же комнаты —
+## снова коридор вокруг угла, — или обходила бы комнату кругом.
+##
+## Не нашлось такой трассы — двери нет: сокет остаётся стеной, а число дверей
+## комнаты (RS_LevelNode.socket_doors) — меньше разыгранного. Пресет задаёт
+## «сколько можно», а не «сколько обязательно»: дверь, которой некуда вести, хуже
+## стены. Последнюю дверь комнаты это не трогает — её связал рост сети.
+##
+## Выигрыш — тот же MIN_LOOP_GAIN, что у петли: запасная дверь и есть петля
+## сквозь комнату. Пробовался выигрыш 2 (замер 08.10, 30 сидов): дверей снималось
+## на треть меньше и сквозных комнат было 39 % против 29 %, но запасная дверь
+## снова замыкалась на коридор соседней двери той же комнаты — в клетке от угла,
+## за поясом, где метрика его уже не видит.
+func _join_spare_doors() -> void:
+	for front: Vector3i in _terminals.duplicate():
+		if not _links.has(front) or not (_links[front] as Array).is_empty():
+			continue
+		var room: StringName = _front_room[front]
+		# Последняя дверь остаётся, даже если ей не к чему вести (комната одна на
+		# этаже): без неё комнату не достать вовсе.
+		if _fronts(room).size() <= 1:
+			continue
+		var dist := _distances(front)
+		var ring := _ring(room)
+		var goal := func(cell: Vector3i) -> bool: return dist.get(cell, 0) >= MIN_LOOP_GAIN
+		var passable := func(cell: Vector3i) -> bool:
+			return _free(cell, _area) and not ring.has(cell) and not _near_except(cell, dist, front)
+		var path := GridRouter.find_path(_topology, front, goal, passable, TURN_COST)
+		if not path.is_empty() and dist[path[-1]] - (path.size() - 1) >= MIN_LOOP_GAIN and not _envelops(path):
+			_claim(path)
+		elif _rooms.has(room):
+			_drop_door(room, front)
+		else:
+			# Верх лестницы этажа ниже — дверь между этажами, её не убрать.
+			var fallback := _route_around(front, func(cell: Vector3i) -> bool:
+				return _links.has(cell) and cell != front, _area)
+			if fallback.is_empty():
+				_plan.routing_failures.append("этаж %d: дверь перед %s не связана с сетью" % [_level, front])
+			else:
+				_claim(fallback)
+
+
+func _drop_door(room: StringName, front: Vector3i) -> void:
+	_links.erase(front)
+	_terminals.erase(front)
+	_front_room.erase(front)
+	for face: Vector4i in (_doors[room] as Array).duplicate():
+		if _front(face) == front:
+			_doors[room].erase(face)
+	_rooms[room].socket_doors -= 1
+	_plan.dropped_doors += 1
 
 
 ## Режет сеть на коридоры — отрезки между развилками (карточка «Коридор —
@@ -579,53 +729,62 @@ func _add_dead_ends(count: int, rng: RandomNumberGenerator) -> void:
 		_dead_ends.append(stub[-1])
 
 
-## Обволокла бы комнату трасса [param path]: сеть вместе с ней подошла бы к
-## комнате с трёх сторон. Петли и тупики ставятся до разреза на коридоры, так что
-## своя для комнаты здесь — вся сеть, чей бы ни был коридор. Это строже, чем «её
-## коридоры» в RS_LayoutMetrics, и как раз то, что видит игрок: коридор с трёх
-## сторон комнаты, как его ни режь на узлы. Комната без дверей не в счёт — у неё
-## своих коридоров нет вовсе.
+## Обволокла бы комнату трасса [param path]: вместе с ней сеть в поясе вокруг
+## комнаты связала бы две её двери или подошла бы к ней с трёх сторон
+## (RS_LayoutMetrics.wraps — одно правило на раскладку и на метрику). Петли и
+## тупики ставятся до разреза на коридоры, так что чей коридор — неважно: игрок
+## видит коридор вокруг комнаты, как его ни режь на узлы. Комната без дверей не в
+## счёт — у неё своих коридоров нет вовсе.
+##
+## По поясу, а не по сторонам: с тех пор как дверей бывает по одной на каждую
+## сторону, коридоры с трёх-четырёх сторон — это перекрёсток, а не обволакивание.
+## Обволакивание — один кусок коридора, огибающий комнату вплотную.
 func _envelops(path: Array[Vector3i]) -> bool:
 	return not _enveloped(path).is_empty()
 
 
 ## Комнаты, которые обволокла бы трасса [param path] (см. _envelops).
 func _enveloped(path: Array[Vector3i]) -> Array[StringName]:
-	var enveloped: Array[StringName] = []
-	var added: Dictionary[Vector3i, bool] = {}
-	for cell in path:
-		added[cell] = true
+	var added: Dictionary[Vector3i, Array] = {}
+	for i in path.size():
+		var cell := path[i]
+		if not added.has(cell):
+			added[cell] = []
+		if i > 0:
+			added[cell].append(path[i - 1])
+			added[path[i - 1]].append(cell)
+	var is_tile := func(cell: Vector3i) -> bool: return _links.has(cell) or added.has(cell)
+	var linked := func(a: Vector3i, b: Vector3i) -> bool:
+		return (_links.has(a) and (_links[a] as Array).has(b)) or (added.has(a) and (added[a] as Array).has(b))
+	# Пояс комнаты — клетки в шаге от неё и углы, поэтому смотрим на два шага.
 	var rooms: Dictionary[StringName, bool] = {}
 	for cell in path:
 		for side in _topology.side_count(cell):
 			var next := _topology.neighbour(cell, side)
-			if _room_at.has(next):
-				rooms[_room_at[next]] = true
+			for near in [next] + _side_neighbours(next):
+				if _room_at.has(near):
+					rooms[_room_at[near]] = true
+	var enveloped: Array[StringName] = []
 	for room: StringName in rooms:
-		if (_doors[room] as Array).is_empty():
+		var fronts := _fronts(room)
+		if fronts.is_empty():
 			continue
-		var sides: Dictionary[int, bool] = {}
-		for face in _faces_here(room):
-			var next := _front(face)
-			if added.has(next) or _links.has(next):
-				sides[face.w] = true
-		if sides.size() >= 3:
+		if RS_LayoutMetrics.wraps(_ring(room), fronts, is_tile, linked):
 			enveloped.append(room)
 	return enveloped
 
 
-## Наружные грани комнаты на уровне этого этажа. Не perimeter: тот отдаёт нижний
-## уровень, а у лестницы этажа ниже здесь её верх.
-func _faces_here(room: StringName) -> Array[Vector4i]:
-	var cells := _plan.room_cells(room)
-	var faces: Array[Vector4i] = []
-	for cell in cells:
-		if cell.y != _level:
-			continue
-		for side in _topology.side_count(cell):
-			if not cells.has(_topology.neighbour(cell, side)):
-				faces.append(GridTopology.face(cell, side))
-	return faces
+func _side_neighbours(cell: Vector3i) -> Array[Vector3i]:
+	var cells: Array[Vector3i] = []
+	for side in _topology.side_count(cell):
+		cells.append(_topology.neighbour(cell, side))
+	return cells
+
+
+## Пояс комнаты на уровне этого этажа (RS_LayoutMetrics.ring_of). Не по нижнему
+## уровню: у лестницы этажа ниже здесь её верх.
+func _ring(room: StringName) -> Dictionary[Vector3i, int]:
+	return RS_LayoutMetrics.ring_of(_topology, _plan.room_cells(room), _level)
 
 
 # ---------------------------------------------------------------------------
@@ -683,38 +842,42 @@ func _route(
 	return []
 
 
-## Трасса от двери к сети, которая не обволакивает комнат: подошла к комнате с
-## третьей стороны — клетки трассы вдоль стен этой комнаты запрещаются, и трасса
-## ищется заново, не больше ENVELOP_RETRIES раз. Петлям и тупикам такая трасса
-## просто не ставится (_envelops), а ствол обязан дойти, поэтому ему — обход.
-## На решётке хватало дверей, смотрящих внутрь: улицы шли ровно между рядами. При
-## разбросе комнаты стоят вразбег, и кратчайший путь к соседней то и дело идёт
-## вдоль чужой стены — без обхода так обволакивалось 0.6 % комнат при 8 на этаж и
-## 1.2 % при 12 (замер 29.09 при density 0.5), с обходом — снова 0.
-## Обхода не нашлось — остаётся первая трасса: дверь без сети хуже коридора с
-## трёх сторон.
+## Трасса от двери к сети, которая не обволакивает комнат (_envelops): обволокла —
+## пояс этой комнаты запрещается, и трасса ищется заново, не больше
+## ENVELOP_RETRIES раз. Петлям и тупикам такая трасса просто не ставится, а ствол
+## обязан дойти, поэтому ему — обход. На решётке хватало дверей, смотрящих
+## внутрь: улицы шли ровно между рядами. При разбросе комнаты стоят вразбег, и
+## кратчайший путь к соседней то и дело идёт вдоль чужой стены — без обхода так
+## обволакивалось 0.6 % комнат при 8 на этаж и 1.2 % при 12 (замер 29.09 при
+## density 0.5), с обходом — снова 0. Обхода не нашлось — остаётся первая
+## трасса: дверь без сети хуже коридора вокруг комнаты.
+##
+## Свой пояс трассе закрыт с самого начала, кроме клетки перед дверью: от двери
+## коридор уходит прочь, а не вдоль своей же стены — к соседней двери той же
+## комнаты.
 func _route_around(start: Vector3i, goal: Callable, area: Rect2i) -> Array[Vector3i]:
 	var avoid: Dictionary[Vector3i, bool] = {}
-	var path := _route(start, goal, area)
+	if _front_room.has(start):
+		for cell in _ring(_front_room[start]):
+			if cell != start and not _links.has(cell):
+				avoid[cell] = true
+	var path := _route(start, goal, area, avoid)
+	if path.is_empty():
+		avoid.clear()
+		path = _route(start, goal, area)
 	for attempt in ENVELOP_RETRIES:
 		var rooms := _enveloped(path)
 		if rooms.is_empty():
 			break
-		for cell in path:
-			if not _terminals.has(cell) and _touches_any(cell, rooms):
-				avoid[cell] = true
+		for room in rooms:
+			for cell in _ring(room):
+				if cell != start and not _links.has(cell):
+					avoid[cell] = true
 		var detour := _route(start, goal, area, avoid)
 		if detour.is_empty():
 			break
 		path = detour
 	return path
-
-
-func _touches_any(cell: Vector3i, rooms: Array[StringName]) -> bool:
-	for side in _topology.side_count(cell):
-		if rooms.has(_room_at.get(_topology.neighbour(cell, side), &"")):
-			return true
-	return false
 
 
 ## Занимает клетки пути под сеть и открывает проёмы между соседними клетками пути.
@@ -751,6 +914,15 @@ func _near(cell: Vector3i, dist: Dictionary) -> bool:
 	return false
 
 
+## Как _near, но клетка [param except] не в счёт: от неё трасса и начинается.
+func _near_except(cell: Vector3i, dist: Dictionary, except: Vector3i) -> bool:
+	for side in _topology.side_count(cell):
+		var next := _topology.neighbour(cell, side)
+		if next != except and _links.has(next) and dist.get(next, 0) < MIN_LOOP_GAIN:
+			return true
+	return false
+
+
 func _touches_tiles(cell: Vector3i, except: Vector3i) -> bool:
 	for side in _topology.side_count(cell):
 		var next := _topology.neighbour(cell, side)
@@ -766,18 +938,36 @@ func _touches_room(cell: Vector3i) -> bool:
 	return false
 
 
-## Расстояния по сети (в шагах по проёмам) от тайла [param start].
+## Расстояния по сети от тайла [param start]: шаг по проёму — 1, проход сквозь
+## комнату от двери к двери — ROOM_HOP. Сеть разорвана комнатами на куски, и
+## только через них она связна.
 func _distances(start: Vector3i) -> Dictionary[Vector3i, int]:
 	var dist: Dictionary[Vector3i, int] = {start: 0}
-	var queue: Array[Vector3i] = [start]
-	var i := 0
-	while i < queue.size():
-		var cell := queue[i]
-		i += 1
-		for next: Vector3i in _links[cell]:
-			if not dist.has(next):
-				dist[next] = dist[cell] + 1
-				queue.append(next)
+	var buckets: Array[Array] = [[start]]
+	var cost := 0
+	while cost < buckets.size():
+		for cell: Vector3i in buckets[cost]:
+			if dist[cell] != cost:
+				continue
+			var steps: Array[Vector3i] = []
+			var costs: Array[int] = []
+			for next: Vector3i in _links[cell]:
+				steps.append(next)
+				costs.append(1)
+			if _front_room.has(cell):
+				for other in _fronts(_front_room[cell]):
+					if other != cell and _links.has(other):
+						steps.append(other)
+						costs.append(ROOM_HOP)
+			for i in steps.size():
+				var total := cost + costs[i]
+				if dist.has(steps[i]) and dist[steps[i]] <= total:
+					continue
+				dist[steps[i]] = total
+				while buckets.size() <= total:
+					buckets.append([])
+				buckets[total].append(steps[i])
+		cost += 1
 	return dist
 
 
