@@ -1,11 +1,15 @@
 [gd_scene format=3 uid="uid://bq3ukgw2nntde"]
 
-[ext_resource type="Script" path="res://src/levels/procedural/rooms/room_template.gd" id="1_qwslo"]
-[ext_resource type="Script" path="res://addons/gecs/ecs/component.gd" id="2_xa3ha"]
-[ext_resource type="Script" path="res://src/components/level/c_room_shell.gd" id="3_jqxau"]
-[ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_lh1oc"]
-[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_5lyph"]
-[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
+[ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_qwslo"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_xa3ha"]
+[ext_resource type="Script" uid="uid://d3it37nh6j7in" path="res://src/components/level/c_room_shell.gd" id="3_jqxau"]
+[ext_resource type="Resource" uid="uid://cc13xk6btj5eg" path="res://data/room_walls_p.tres" id="4_lh1oc"]
+[ext_resource type="PackedScene" uid="uid://cf6cx3bnpefhp" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_5lyph"]
+[ext_resource type="PackedScene" uid="uid://cs1ogsnm0eh50" path="res://assets/props/SM_animal_cage_B/SM_animal_cage_B.glb" id="7_m6osu"]
+[ext_resource type="PackedScene" uid="uid://npfkqqy41ta8" path="res://assets/props/SM_animal_cage_C/SM_animal_cage_C.glb" id="8_vquqx"]
+[ext_resource type="PackedScene" uid="uid://b2172qd47jicw" path="res://assets/props/SM_Animal_cage_A/SM_Animal_cage_A.glb" id="9_xikcx"]
+[ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="10_1sr8u"]
+[ext_resource type="Script" uid="uid://b3jb75b7ortsb" path="res://src/levels/level_light.gd" id="ll_light"]
 
 [sub_resource type="Resource" id="Resource_ng4uo"]
 script = ExtResource("3_jqxau")
@@ -24,14 +28,26 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.
 
 [node name="light" type="Node3D" parent="." unique_id=1385158210]
 
-[node name="SpotLight3D" type="SpotLight3D" parent="light" unique_id=597006309]
-script = ExtResource("ll_light")
+[node name="SpotLight3D" type="OmniLight3D" parent="light" unique_id=599812103]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 4.710988, 0)
+light_energy = 20.36
 shadow_enabled = true
+shadow_bias = 0.069
+shadow_normal_bias = 5.0
 distance_fade_enabled = true
 distance_fade_begin = 200.0
 distance_fade_shadow = 40.0
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 6.710988, 0)
-light_energy = 20.36
-spot_range = 9.75
-spot_angle = 46.5
-spot_angle_attenuation = 0.14865111
+omni_range = 13.0
+script = ExtResource("ll_light")
+
+[node name="SM_animal_cage_B2" parent="." unique_id=688918385 instance=ExtResource("7_m6osu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 5)
+
+[node name="SM_animal_cage_C2" parent="." unique_id=158699151 instance=ExtResource("8_vquqx")]
+transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, -1, 0, 2)
+
+[node name="SM_animal_cage_A2" parent="." unique_id=1351094476 instance=ExtResource("9_xikcx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 3)
+
+[node name="headog_skeleton" parent="." unique_id=1516563894 instance=ExtResource("10_1sr8u")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.2, 2)
