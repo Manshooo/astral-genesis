@@ -176,6 +176,28 @@ func _check_screen() -> void:
 		screen.floor_views().size() == floors.size() and shown_once,
 		"панелей %d, этажей %d" % [screen.floor_views().size(), floors.size()])
 
+	# Срез (§9 «Меню — спека»): полоса своего слоя знает все его этажи и ровно те
+	# комнаты, что видны на планах, — срез не выдаёт больше купленного; игрок
+	# отмечен на своём этаже; чужие слои на втором уровне закрыты штриховкой.
+	var stratum := screen._layer_buttons[HUB_DEPTH] as UI_MapStratum
+	var stratum_rooms := 0
+	for floor_info: Dictionary in stratum.floors:
+		stratum_rooms += (floor_info["rooms"] as Array).size()
+	var plan_rooms := 0
+	for node_data in MapKnowledge.visible_nodes(_graph, HUB_DEPTH, 2, HUB_DEPTH, visited):
+		plan_rooms += 1 if node_data.role != RS_LevelNode.Role.CORRIDOR else 0
+	_check("срез: полоса слоя — по этажу на линию и по штриху на комнату",
+		stratum.floors.size() == floors.size() and stratum_rooms == plan_rooms,
+		"линий %d при %d этажах, штрихов %d при %d комнатах" % [stratum.floors.size(), floors.size(), stratum_rooms, plan_rooms])
+	_check("срез: игрок отмечен на своём этаже",
+		stratum.player_floor == _graph.get_node_data(hub).floor_index, "этаж %d" % stratum.player_floor)
+	var closed_fogged := true
+	for depth: int in screen._layer_buttons:
+		var other := screen._layer_buttons[depth] as UI_MapStratum
+		if depth != HUB_DEPTH:
+			closed_fogged = closed_fogged and not other.open and other.floors.is_empty() and other.disabled
+	_check("срез: чужие слои на втором уровне закрыты и пусты", closed_fogged, "")
+
 	var projected := true
 	var portals_marked := true
 	var misses: Array[String] = []
@@ -207,6 +229,12 @@ func _check_screen() -> void:
 	for depth: int in screen._layer_buttons:
 		all_enabled = all_enabled and not screen._layer_buttons[depth].disabled
 	_check("уровень 3: все слои доступны", all_enabled and screen._layer_buttons.size() == RS_LevelGraph.DEPTHS.size(), "")
+	# Порталы между слоями в срезе — только между соседними и открытыми слоями:
+	# пунктир через пропущенный слой нарисовался бы поверх его полосы.
+	var adjacent := not screen._slice_portals.is_empty()
+	for portal: Dictionary in screen._slice_portals:
+		adjacent = adjacent and absi(int(portal["from"]) - int(portal["to"])) == 1
+	_check("уровень 3: в срезе порталы между соседними слоями", adjacent, "%s" % [screen._slice_portals])
 	var target := _graph.get_node_data(screen.portal_pair(interlayer.id))
 	_check("уровень 3: второй конец межслойного портала найден",
 		target != null and target.depth != HUB_DEPTH, "")

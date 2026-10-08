@@ -428,6 +428,20 @@ content_margin_top = 0.0
 content_margin_right = 1.0
 content_margin_bottom = 0.0
 
+[sub_resource type="FontVariation" id="MenuFont_map"]
+base_font = ExtResource("m_ttf")
+variation_opentype = {
+2003265652: 600
+}
+spacing_glyph = 2
+
+[sub_resource type="FontVariation" id="MenuFont_stratum"]
+base_font = ExtResource("m_ttf")
+variation_opentype = {
+2003265652: 600
+}
+spacing_glyph = 1
+
 [resource]
 Button/styles/disabled = SubResource("StyleBoxFlat_3oi2e")
 Button/styles/focus = SubResource("StyleBoxFlat_vivct")
@@ -745,6 +759,22 @@ MenuKeyRow/styles/hover = SubResource("Menu_keyrow")
 MenuKeyRow/styles/hover_pressed = SubResource("Menu_keyrow")
 MenuKeyRow/styles/normal = SubResource("Menu_keyrow")
 MenuKeyRow/styles/pressed = SubResource("Menu_keyrow_pressed")
+MenuMapLabel/base_type = &"Label"
+MenuMapLabel/colors/font_color = Color(0.71, 0.68, 0.75, 1)
+MenuMapLabel/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuMapLabel/constants/shadow_offset_x = 2
+MenuMapLabel/constants/shadow_offset_y = 0
+MenuMapLabel/constants/shadow_outline_size = 0
+MenuMapLabel/font_sizes/font_size = 11
+MenuMapLabel/fonts/font = SubResource("MenuFont_map")
+MenuMapUnique/base_type = &"Label"
+MenuMapUnique/colors/font_color = Color(0.83, 0.72, 0.97, 1)
+MenuMapUnique/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuMapUnique/constants/shadow_offset_x = 2
+MenuMapUnique/constants/shadow_offset_y = 0
+MenuMapUnique/constants/shadow_outline_size = 0
+MenuMapUnique/font_sizes/font_size = 11
+MenuMapUnique/fonts/font = ExtResource("2_ynviq")
 MenuNodeName/base_type = &"Label"
 MenuNodeName/colors/font_color = Color(0.86, 0.84, 0.89, 1)
 MenuNodeName/colors/font_shadow_color = Color(0, 0, 0, 0)
@@ -796,6 +826,14 @@ MenuStatValue/constants/shadow_offset_y = 0
 MenuStatValue/constants/shadow_outline_size = 0
 MenuStatValue/font_sizes/font_size = 17
 MenuStatValue/fonts/font = SubResource("MenuFont_value")
+MenuStratum/base_type = &"Label"
+MenuStratum/colors/font_color = Color(0.93, 0.91, 0.95, 1)
+MenuStratum/colors/font_shadow_color = Color(0, 0, 0, 0)
+MenuStratum/constants/shadow_offset_x = 2
+MenuStratum/constants/shadow_offset_y = 0
+MenuStratum/constants/shadow_outline_size = 0
+MenuStratum/font_sizes/font_size = 15
+MenuStratum/fonts/font = SubResource("MenuFont_stratum")
 MenuTab/base_type = &"EchoButton"
 MenuTab/colors/font_color = Color(0.93, 0.91, 0.95, 0.5)
 MenuTab/colors/font_hover_color = Color(0.93, 0.91, 0.95, 0.85)

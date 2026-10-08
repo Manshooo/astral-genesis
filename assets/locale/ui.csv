@@ -40,7 +40,7 @@ MAP_PORTAL_UP,портал вверх,portal up
 MAP_PORTAL_DOWN,портал вниз,portal down
 MAP_PORTAL_TARGET,"→ L%d, этаж %d","→ L%d, floor %d"
 MAP_LOCKED,заперт: нужен %s,locked: needs %s
-MAP_HINT,"Наведите на комнату, чтобы узнать о ней. Клик по порталу переносит к его второму концу. Закрыть — Esc или клавиша карты.","Hover a room to learn about it. Clicking a portal takes you to its other end. Close with Esc or the map key."
+MAP_HINT,"Наведите на комнату, чтобы узнать о ней. Клик по порталу переносит к его второму концу.",Hover a room to learn about it. Clicking a portal takes you to its other end.
 MAP_UNIQUE_HUB,Хаб,Hub
 MAP_UNIQUE_EXIT,Выход,Exit
 MAP_UNIQUE_ARCHITECT,Архитектор,Architect
@@ -183,3 +183,6 @@ SKILL_SECOND_WIND_NAME,Второе дыхание,Second wind
 SKILL_SECOND_WIND_DESC,Увеличивает скорость бега в захваченном теле.,Raises sprint speed in a captured body.
 SKILL_REQ_BRANCH,"Рангов в ветке «%s»: %d","Ranks in “%s”: %d"
 SKILL_HINT_PAN,"Тащите за пустое место, колесо — масштаб","Drag empty space to pan, wheel to zoom"
+MAP_SLICE,Срез,Cross-section
+MAP_LAYER_SURFACE,поверхность,surface
+MAP_LAYER_DEPTH,глубина,the depths
