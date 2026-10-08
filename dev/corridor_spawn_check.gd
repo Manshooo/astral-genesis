@@ -60,7 +60,9 @@ func _ready() -> void:
 	await _check_geometry()
 	_check_doors_bound()
 	await _check_open_door()
+	_check_visibility("у входа")
 	_check_hub_door()
+	_check_visibility("в коридоре хаба после шага присутствием")
 	await _check_minimap()
 	await _check_reload_in_corridor()
 
@@ -302,6 +304,57 @@ func _check_hub_door() -> void:
 	ECS.process(0.016, "gameplay")
 	_check("и присутствие делает коридор текущим узлом",
 		RunManager.current_node_id == portal.target_node_id, RunManager.current_node_id)
+
+
+## Слой виден на LayerStreamer.VISIBLE_HOPS рёбер от текущего узла, дальше спрятан
+## — лампа далёкой комнаты не светит сквозь стены и не тратит кадр. Видимость
+## сверяется по самим узлам (лампа комнаты, тайлы коридора), а не по флагу
+## стримера, и ожидание считается обходом графа здесь же — от определения, а не
+## вызовом кода стримера. Ломается тихо в обе стороны: забытый пересчёт оставляет
+## слой целиком видимым (кадры и засветы), лишний — прячет комнату под ногами.
+func _check_visibility(where: String) -> void:
+	var graph := RunManager.current_graph
+	var here := RunManager.current_node_id
+	var near := {here: 0}
+	var queue: Array[StringName] = [here]
+	while not queue.is_empty():
+		var id: StringName = queue.pop_front()
+		if near[id] >= LayerStreamer.VISIBLE_HOPS:
+			continue
+		for conn: RS_LevelConnection in graph.get_node_data(id).connections:
+			if not conn.is_portal() and not near.has(conn.target_node_id):
+				near[conn.target_node_id] = near[id] + 1
+				queue.append(conn.target_node_id)
+
+	var wrong: Array[String] = []
+	var hidden := 0
+	var walkers_hidden: Array[String] = []
+	for id: StringName in RunManager.layer.rooms:
+		var room := RunManager.layer.rooms[id].entity as Node as Node3D
+		var lamps := room.find_children("*", "Light3D", true, false)
+		var shown := not lamps.is_empty() and (lamps[0] as Light3D).is_visible_in_tree()
+		if lamps.is_empty():
+			continue
+		if shown != near.has(id):
+			wrong.append("%s: видна %s" % [id, shown])
+		if not shown:
+			hidden += 1
+			for walker in room.find_children("*", "CharacterBody3D", true, false):
+				if not (walker as Node3D).is_visible_in_tree():
+					walkers_hidden.append("%s/%s" % [id, walker.name])
+	for id: StringName in RunManager.layer.corridor_tiles:
+		var tiles: Array = RunManager.layer.corridor_tiles[id]
+		if tiles.is_empty():
+			continue
+		var shown := (tiles[0] as Node3D).visible
+		if shown != near.has(id):
+			wrong.append("%s: виден %s" % [id, shown])
+		hidden += 0 if shown else 1
+	_check("%s: видно ровно то, что в %d рёбрах графа, остального нет (спрятано %d)"
+			% [where, LayerStreamer.VISIBLE_HOPS, hidden],
+		wrong.is_empty() and hidden > 0, ", ".join(wrong.slice(0, 4)))
+	_check("%s: враги спрятанных комнат видны — погоня не делает их невидимками" % where,
+		walkers_hidden.is_empty(), ", ".join(walkers_hidden))
 
 
 ## Мини-карта в коридоре (стоим в ветке хаба после _check_hub_door): ветка видна
