@@ -218,6 +218,13 @@ content_margin_top = 4.0
 content_margin_right = 8.0
 content_margin_bottom = 4.0
 
+[sub_resource type="FontVariation" id="MenuFont_map"]
+base_font = ExtResource("m_ttf")
+variation_opentype = {
+2003265652: 600
+}
+spacing_glyph = 2
+
 [sub_resource type="FontVariation" id="MenuFont_small"]
 base_font = ExtResource("m_ttf")
 variation_opentype = {
@@ -235,6 +242,13 @@ variation_opentype = {
 opentype_features = {
 1953396077: 1
 }
+
+[sub_resource type="FontVariation" id="MenuFont_stratum"]
+base_font = ExtResource("m_ttf")
+variation_opentype = {
+2003265652: 600
+}
+spacing_glyph = 1
 
 [sub_resource type="StyleBoxEmpty" id="Menu_tab"]
 content_margin_left = 26.0
@@ -427,20 +441,6 @@ content_margin_left = 1.0
 content_margin_top = 0.0
 content_margin_right = 1.0
 content_margin_bottom = 0.0
-
-[sub_resource type="FontVariation" id="MenuFont_map"]
-base_font = ExtResource("m_ttf")
-variation_opentype = {
-2003265652: 600
-}
-spacing_glyph = 2
-
-[sub_resource type="FontVariation" id="MenuFont_stratum"]
-base_font = ExtResource("m_ttf")
-variation_opentype = {
-2003265652: 600
-}
-spacing_glyph = 1
 
 [resource]
 Button/styles/disabled = SubResource("StyleBoxFlat_3oi2e")
