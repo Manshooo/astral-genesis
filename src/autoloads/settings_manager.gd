@@ -66,6 +66,9 @@ func _init() -> void:
 
 func _ready() -> void:
 	settings = _load()  # проходит через сеттер -> сразу применяет эффекты
+	# Масштаб интерфейса зависит от размера окна, а окно меняет не только
+	# «Применить»: его тянут руками и разворачивают на весь экран.
+	get_window().size_changed.connect(_apply_ui_scale)
 
 func save() -> void:
 	UserResourceFile.write(settings, SETTINGS_PATH, "SettingsManager")
@@ -111,6 +114,7 @@ func _apply_runtime_effects() -> void:
 		return
 	Engine.max_fps = settings.max_fps
 	_apply_keybinds()
+	_apply_display_settings()
 	_apply_graphics_settings()
 	settings_changed.emit(settings)
 
@@ -135,7 +139,9 @@ func _apply_graphics_settings() -> void:
 		RenderingServer.directional_soft_shadow_filter_set_quality(level.soft_filter)
 	var viewport := get_viewport()
 	if viewport:
-		viewport.scaling_3d_scale = settings.render_scale
+		# Во весь экран «разрешение» — это мельче экрана рисуемое 3D, поверх
+		# «Масштаба разрешения» (см. render_resolution_factor).
+		viewport.scaling_3d_scale = settings.render_scale * render_resolution_factor()
 		viewport.positional_shadow_atlas_size = atlas
 		if level:
 			# Все четыре четверти одинаково — см. RS_ShadowLevel.cells_per_quadrant.
@@ -160,6 +166,131 @@ func _apply_graphics_settings() -> void:
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if settings.vsync_enabled else DisplayServer.VSYNC_DISABLED
 	)
+
+
+# ---------------------------------------------------------------------------
+# Экран: режим окна, разрешение, масштаб интерфейса
+# ---------------------------------------------------------------------------
+
+const WINDOW_WINDOWED := &"windowed"
+const WINDOW_BORDERLESS := &"borderless"
+const WINDOW_FULLSCREEN := &"fullscreen"
+
+## Разрешения, которые предлагает список: 16:9 и 16:10 — то, что реально
+## стоит у игроков. Показываются только влезающие в экран (resolution_options).
+const RESOLUTIONS: Array[Vector2i] = [
+	Vector2i(1280, 720), Vector2i(1366, 768), Vector2i(1440, 900), Vector2i(1600, 900),
+	Vector2i(1680, 1050), Vector2i(1920, 1080), Vector2i(1920, 1200), Vector2i(2560, 1440),
+	Vector2i(2560, 1600), Vector2i(3200, 1800), Vector2i(3840, 2160),
+]
+## Фиксированные масштабы интерфейса. Целые — самые чёткие: линия в пиксель
+## остаётся линией в пиксель.
+const UI_SCALES: Array[float] = [1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
+
+
+## Базовое окно проекта, под которое свёрстан весь интерфейс (1497×720).
+func base_size() -> Vector2i:
+	return Vector2i(
+		ProjectSettings.get_setting("display/window/size/viewport_width"),
+		ProjectSettings.get_setting("display/window/size/viewport_height")
+	)
+
+
+## Разрешения для списка в настройках: влезающие в экран, плюс сам экран, если
+## его нет среди стандартных.
+func resolution_options() -> Array[Vector2i]:
+	var screen := DisplayServer.screen_get_size()
+	var options: Array[Vector2i] = []
+	for size in RESOLUTIONS:
+		if size.x <= screen.x and size.y <= screen.y:
+			options.append(size)
+	if screen.x > 0 and not options.has(screen):
+		options.append(screen)
+	return options
+
+
+## Масштабы интерфейса для списка: только те, при которых базовое окно ещё
+## влезает в экран, — больший интерфейс вылез бы за край.
+func ui_scale_options() -> Array[float]:
+	var screen := Vector2(DisplayServer.screen_get_size())
+	var fit := minf(screen.x / base_size().x, screen.y / base_size().y)
+	var options: Array[float] = []
+	for scale in UI_SCALES:
+		if scale <= fit + 0.001 or scale == 1.0:
+			options.append(scale)
+	return options
+
+
+## Режим и размер окна. Godot не меняет разрешение монитора, поэтому во весь
+## экран «разрешение» — это то, в чём рисуется 3D (см. render_resolution_factor),
+## а размер окна — экран целиком.
+func _apply_display_settings() -> void:
+	var window := get_window()
+	if window == null or DisplayServer.get_name() == "headless":
+		return
+	match settings.window_mode:
+		WINDOW_FULLSCREEN:
+			window.mode = Window.MODE_EXCLUSIVE_FULLSCREEN
+		WINDOW_BORDERLESS:
+			window.mode = Window.MODE_FULLSCREEN
+		_:
+			if window.mode != Window.MODE_WINDOWED:
+				window.mode = Window.MODE_WINDOWED
+			var wanted := settings.resolution if settings.resolution != Vector2i.ZERO else base_size()
+			# Окно не больше рабочей области: иначе заголовок уезжает за край
+			# экрана, и окно не передвинуть.
+			var usable := DisplayServer.screen_get_usable_rect().size
+			if usable.x > 0:
+				wanted = wanted.min(usable)
+			if window.size != wanted:
+				window.size = wanted
+				window.move_to_center()
+	_apply_ui_scale()
+
+
+## Во сколько раз 3D рисуется мельче экрана из-за выбранного разрешения: во весь
+## экран 1920×1080 на мониторе 2560×1440 — 0.75. В окне разрешение и есть
+## размер окна, множитель — 1. Сверху — 1: рисовать 3D крупнее экрана этот
+## пункт не обещает, для этого есть «Масштаб разрешения».
+func render_resolution_factor() -> float:
+	if settings == null or settings.window_mode == WINDOW_WINDOWED or settings.resolution == Vector2i.ZERO:
+		return 1.0
+	var screen := DisplayServer.screen_get_size()
+	if screen.y <= 0:
+		return 1.0
+	return minf(1.0, float(settings.resolution.y) / screen.y)
+
+
+## Масштаб интерфейса. «Авто» — canvas_items растягивает базовое окно по окну
+## дробно (project.godot). Фиксированный множитель k сделан тем же режимом:
+## базовым размером назначается окно / k, и растяжение выходит ровно k — без
+## чёрных полей, которые даёт встроенный целый режим Godot (при базе 1497 px его
+## множитель на 1080p и 1440p — 1, и игра стоит посередине в рамке).
+## Пересчитывается на каждое изменение размера окна.
+func _apply_ui_scale() -> void:
+	var window := get_window()
+	if window == null or settings == null or window.size.x <= 0 or window.size.y <= 0:
+		return
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+	window.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_FRACTIONAL
+	window.content_scale_size = ui_content_size(window.size, base_size(), settings.ui_scale)
+
+
+## Базовый размер холста для окна [param window_size] при масштабе
+## [param ui_scale]: canvas_items растянет его по окну, и множитель выйдет ровно
+## тот, что задан. «Авто» (0) и окно меньше базового — сама база: фиксированный
+## масштаб в маленьком окне оставил бы раскладке меньше места, чем она
+## свёрстана. Масштаб больше, чем влезает, зажимается до влезающего. Не static
+## по той же причине, что event_to_code: до автолоада без class_name снаружи
+## дозваться можно только через инстанс.
+func ui_content_size(window_size: Vector2i, base: Vector2i, ui_scale: float) -> Vector2i:
+	var size := Vector2(window_size)
+	var fit := minf(size.x / base.x, size.y / base.y)
+	if ui_scale <= 0.0 or fit < 1.0:
+		return base
+	var k := minf(ui_scale, fit)
+	return Vector2i(ceili(size.x / k), ceili(size.y / k))
 
 
 # ---------------------------------------------------------------------------

@@ -186,3 +186,14 @@ SKILL_HINT_PAN,"Тащите за пустое место, колесо — ма
 MAP_SLICE,Срез,Cross-section
 MAP_LAYER_SURFACE,поверхность,surface
 MAP_LAYER_DEPTH,глубина,the depths
+SETTINGS_WINDOW_MODE,Режим окна,Window mode
+SETTINGS_WINDOW_FULLSCREEN,Полноэкранный,Fullscreen
+SETTINGS_WINDOW_BORDERLESS,Безрамочный во весь экран,Borderless fullscreen
+SETTINGS_WINDOW_WINDOWED,Оконный,Windowed
+SETTINGS_RESOLUTION,Разрешение,Resolution
+SETTINGS_RES_AUTO,Авто,Auto
+SETTINGS_UI_SCALE,Масштаб интерфейса,Interface scale
+SETTINGS_UI_SCALE_AUTO,Авто — по окну,Auto — fit window
+SETTINGS_HINT_WINDOW_MODE,"Полноэкранный — монитор целиком за игрой, меньше задержка. Безрамочный — окно во весь экран, быстро сворачивается. Оконный — обычное окно.","Fullscreen gives the game the whole monitor, with less latency. Borderless is a window covering the screen that is quick to switch away from. Windowed is a regular window."
+SETTINGS_HINT_RESOLUTION,"В окне — размер окна. Во весь экран монитор остаётся в своём разрешении, а это — разрешение, в котором рисуется 3D; интерфейс остаётся чётким.","In a window, the window size. In fullscreen the monitor keeps its own resolution, and this is the resolution the 3D view is drawn at; the interface stays sharp."
+SETTINGS_HINT_UI_SCALE,"«Авто» растягивает интерфейс по окну. Целые значения — 100 %, 200 % — самые чёткие. Больше, чем помещается в окно, интерфейс не станет.","Auto stretches the interface to the window. Whole values — 100 %, 200 % — are the sharpest. The interface never grows larger than fits the window."

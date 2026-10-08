@@ -31,6 +31,9 @@ const EXPECTED_TAB := {
 	"shadow_quality": "SETTINGS_TAB_GRAPHICS",
 	"aa_mode": "SETTINGS_TAB_GRAPHICS",
 	"vsync_enabled": "SETTINGS_TAB_GRAPHICS",
+	"window_mode": "SETTINGS_TAB_GRAPHICS",
+	"resolution": "SETTINGS_TAB_GRAPHICS",
+	"ui_scale": "SETTINGS_TAB_GRAPHICS",
 	"master_volume": "SETTINGS_TAB_AUDIO",
 	"mouse_sensitivity": "SETTINGS_TAB_CONTROLS",
 	"keybinds": "SETTINGS_TAB_CONTROLS",
@@ -247,6 +250,22 @@ func _run() -> void:
 	_check("колонка подсказки показывает строку", hint_title.text == shadows_row.title()
 			and hint_text.text == tr("SETTINGS_HINT_SHADOWS"),
 			"«%s» / «%s»" % [hint_title.text, hint_text.text])
+
+	# --- 10. Масштаб интерфейса без чёрных полей ---------------------------
+	# Встроенный целый режим Godot при базе 1497 px на 1080p даёт множитель 1 и
+	# ставит игру посередине в рамке. Масштаб поэтому задаётся базовым размером
+	# холста: окно / k. Проверяется чистая функция — окна в headless нет.
+	var base: Vector2i = SettingsManager.base_size()
+	var full_hd := Vector2i(1920, 1080)
+	_check("авто — холст базового размера",
+		SettingsManager.ui_content_size(full_hd, base, 0.0) == base, "")
+	var uhd := SettingsManager.ui_content_size(Vector2i(3840, 2160), base, 2.0)
+	_check("200 % на 4K — холст ровно в половину окна, без полей", uhd == Vector2i(1920, 1080), str(uhd))
+	var clamped := SettingsManager.ui_content_size(full_hd, base, 2.0)
+	_check("масштаб больше влезающего зажимается: раскладке хватает базового места",
+		clamped.x >= base.x and clamped.y >= base.y, str(clamped))
+	_check("окно меньше базового — только авто",
+		SettingsManager.ui_content_size(Vector2i(1280, 720), base, 1.0) == base, "")
 
 	# Настройки не трогались: правился только черновик меню, «Применить» не
 	# нажималась. Убираем меню, чтобы его _input не пережил проверку.
