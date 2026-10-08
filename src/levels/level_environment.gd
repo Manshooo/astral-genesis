@@ -25,12 +25,20 @@
 ## Яркость — через exposure_multiplier, до тонмаппинга, а не через
 ## adjustment_brightness после него: экспозиция сжимает пересветы тем же
 ## тонмаппингом, а поправка после него поднимает чёрное в серую дымку.
+##
+## Свет слоя (RS_DepthLight) задаёт фоновому свету цвет и энергию, а туману —
+## цвет; экспозицию не трогает (почему — там же). Фоновый свет окружение обязано
+## держать в режиме «цвет»: в другом режиме цвет и энергия ничего не значат.
 class_name LevelEnvironment
 extends WorldEnvironment
 
 ## Слушать ли яркость. Яркость — калибровка игрового мира под монитор; фон меню
 ## нарисован как картинка, и крутить его вместе с миром незачем.
 @export var apply_brightness: bool = true
+## Слушать ли свет слоя. Только окружение мира: «Выход в меню» из паузы забег не
+## кончает, глубина в RunManager остаётся, и меню без этого флага потемнело бы
+## до слоя, с которого из него вышли.
+@export var apply_depth_lighting: bool = false
 
 var _authored_ssao := false
 var _authored_ssil := false
@@ -39,6 +47,11 @@ var _authored_glow := false
 var _authored_exposure := 1.0
 ## Доля начала тумана от его конца; -1 — тумана по глубине у автора нет.
 var _fog_begin_share := -1.0
+## Авторский свет — вне слоя (до первого спавна, после снятия) окружение
+## возвращается к нему.
+var _authored_ambient_color := Color.BLACK
+var _authored_ambient_energy := 0.0
+var _authored_fog_color := Color.BLACK
 
 
 func _ready() -> void:
@@ -51,12 +64,25 @@ func _ready() -> void:
 		if environment.fog_enabled and environment.fog_mode == Environment.FOG_MODE_DEPTH \
 				and environment.fog_depth_end > 0.0:
 			_fog_begin_share = clampf(environment.fog_depth_begin / environment.fog_depth_end, 0.0, 1.0)
+		_authored_ambient_color = environment.ambient_light_color
+		_authored_ambient_energy = environment.ambient_light_energy
+		_authored_fog_color = environment.fog_light_color
 	# Без атрибутов камеры экспозиции нет вовсе; пустые практические атрибуты
 	# картинку не меняют (множитель 1, автоэкспозиция и глубина резкости выкл).
 	camera_attributes = camera_attributes.duplicate() if camera_attributes else CameraAttributesPractical.new()
 	_authored_exposure = camera_attributes.exposure_multiplier
 	SettingsManager.settings_changed.connect(_on_settings_changed)
 	_on_settings_changed(SettingsManager.settings)
+	if apply_depth_lighting and environment:
+		RunManager.layer_changed.connect(_on_layer_changed)
+		_on_layer_changed(RunManager.current_depth)
+
+
+func _on_layer_changed(depth: int) -> void:
+	var layer: RS_DepthLight = RS_DepthLighting.layer(depth) if depth != RunManager.NO_DEPTH else null
+	environment.ambient_light_color = layer.ambient_color if layer else _authored_ambient_color
+	environment.ambient_light_energy = layer.ambient_energy if layer else _authored_ambient_energy
+	environment.fog_light_color = layer.fog_color if layer else _authored_fog_color
 
 
 func _on_settings_changed(settings: RS_Settings) -> void:

@@ -33,8 +33,8 @@
 [ext_resource type="Script" uid="uid://ce1egkovweis2" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
 [ext_resource type="Script" uid="uid://djr3ni2jldn8y" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
 [ext_resource type="Script" uid="uid://c8sf3oftjjlwm" path="res://src/systems/physics/s_door_motion.gd" id="27_dooropen"]
-[ext_resource type="Environment" path="res://assets/world_environment.tres" id="34_nqy31"]
-[ext_resource type="Script" path="res://src/levels/level_environment.gd" id="35_levelenv"]
+[ext_resource type="Environment" uid="uid://nxask5g2qtp7" path="res://assets/world_environment.tres" id="34_nqy31"]
+[ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="35_levelenv"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -194,6 +194,7 @@ script = ExtResource("8_a20vb")
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=360419260]
-script = ExtResource("35_levelenv")
 environment = ExtResource("34_nqy31")
 camera_attributes = SubResource("CameraAttributesPractical_3owqy")
+script = ExtResource("35_levelenv")
+apply_depth_lighting = true

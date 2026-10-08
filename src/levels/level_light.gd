@@ -9,6 +9,11 @@
 ## лампы слоя спавнятся и уходят вместе с комнатами. Подписка рвётся сама, когда
 ## лампу освобождают.
 ##
+## Энергию лампы масштабирует слой, на котором она стоит (RS_DepthLight
+## .lamp_energy_scale): глубже — тусклее. Слой узнаётся из сигнала RunManager, а не
+## при входе в дерево: стример выставляет глубину, только заспавнив слой целиком,
+## так что в _ready лампы слоя глубины ещё не знают.
+##
 ## В редакторе скрипт не работает: значения в сцене (тени вкл, 40 м) — это
 ## ступень «Средние», то, что художник и видит при правке света.
 class_name LevelLight
@@ -19,11 +24,22 @@ const GROUP := &"level_lights"
 ## на ходу заметен, а клетка — 8 м.
 const FADE_LENGTH := 8.0
 
+## Энергия из сцены — множитель слоя считается от неё, а не от прошлого слоя.
+var _authored_energy := 1.0
+
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	_authored_energy = light_energy
 	SettingsManager.settings_changed.connect(_on_settings_changed)
 	_on_settings_changed(SettingsManager.settings)
+	RunManager.layer_changed.connect(_on_layer_changed)
+	_on_layer_changed(RunManager.current_depth)
+
+
+func _on_layer_changed(depth: int) -> void:
+	var layer: RS_DepthLight = RS_DepthLighting.layer(depth) if depth != RunManager.NO_DEPTH else null
+	light_energy = _authored_energy * (layer.lamp_energy_scale if layer else 1.0)
 
 
 ## Лампа гаснет там же, где перестаёт отбрасывать тень: дальше она светила бы
