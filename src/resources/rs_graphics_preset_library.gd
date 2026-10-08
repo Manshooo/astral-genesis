@@ -3,14 +3,30 @@
 ## добавлением элемента в presets — без правок кода: выпадающий список в
 ## настройках строится по этому массиву (см. GraphicsPresetSetting), а
 ## SettingsManager ищет применённый пресет по id через by_id().
+##
+## Ступени теней лежат здесь же: пресет ссылается на ступень по id, и держать
+## их в одном файле — значит видеть «Средний = тени Средние» рядом с тем, что
+## такое «Средние».
 class_name RS_GraphicsPresetLibrary
 extends Resource
 
 @export var presets: Array[RS_GraphicsPreset] = []
+## Ступени настройки «Тени» от дешёвой к дорогой — в этом порядке они и идут в
+## списке, после «Выкл».
+@export var shadow_levels: Array[RS_ShadowLevel] = []
 
 
 func by_id(id: StringName) -> RS_GraphicsPreset:
 	for p in presets:
 		if p != null and p.id == id:
 			return p
+	return null
+
+
+## Ступень теней по id или null — для SHADOWS_OFF и для id, пропавшего из
+## каталога (сейв старше проекта): и то и другое значит «теней нет».
+func shadow_level(id: StringName) -> RS_ShadowLevel:
+	for level in shadow_levels:
+		if level != null and level.id == id:
+			return level
 	return null

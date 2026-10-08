@@ -81,9 +81,28 @@ func default_settings() -> RS_Settings:
 func preset_by_id(id: StringName) -> RS_GraphicsPreset:
 	return GRAPHICS_PRESETS.by_id(id) if GRAPHICS_PRESETS else null
 
+## Ступень теней из настроек или null — тени выключены (или id пропал из
+## каталога, что для игрока то же самое). Её дальность читают лампы уровня
+## (LevelLight): сами узлы сцены этот автолоад не трогает, см.
+## _apply_graphics_settings.
+func shadow_level() -> RS_ShadowLevel:
+	if settings == null or GRAPHICS_PRESETS == null:
+		return null
+	return GRAPHICS_PRESETS.shadow_level(settings.shadow_quality)
+
+
+## Сейв с именованным пресетом приводится к пресету, каким он стал: игрок выбрал
+## «Высокий», а не набор чисел, и раз «Высокий» поменялся (или в нём появилось
+## новое поле, как ступень теней вместо флажка и атласа), он получает новый.
+## «Собственные» настройки не трогаются — их числа и есть выбор игрока.
 func _load() -> RS_Settings:
 	var loaded := UserResourceFile.read(SETTINGS_PATH, RS_Settings, "SettingsManager") as RS_Settings
-	return loaded if loaded else DEFAULT_SETTINGS.copy()
+	if loaded == null:
+		return DEFAULT_SETTINGS.copy()
+	var preset := preset_by_id(loaded.graphics_preset_id)
+	if preset:
+		preset.apply_to(loaded)
+	return loaded
 
 ## Побочные эффекты, которые должны применяться немедленно при смене настроек,
 ## а не только на старте игры.
@@ -106,11 +125,24 @@ func _apply_runtime_effects() -> void:
 ## (меню, будущие уровни), а настройка обязана продолжать работать без правки
 ## каждой новой сцены. directional-атлас не зануляем совсем (0 там не валиден),
 ## а сжимаем до минимума — эффект тот же, тени неотличимы от выключенных.
+## Дальность теней — свойство каждой лампы, и её ставят сами лампы (LevelLight)
+## по settings_changed, а не этот автолоад обходом дерева.
 func _apply_graphics_settings() -> void:
+	var level := shadow_level()
+	var atlas := level.atlas_size if level else 0
+	if level:
+		RenderingServer.positional_soft_shadow_filter_set_quality(level.soft_filter)
+		RenderingServer.directional_soft_shadow_filter_set_quality(level.soft_filter)
 	var viewport := get_viewport()
 	if viewport:
 		viewport.scaling_3d_scale = settings.render_scale
-		viewport.positional_shadow_atlas_size = settings.shadow_atlas_size if settings.shadows_enabled else 0
+		viewport.positional_shadow_atlas_size = atlas
+		if level:
+			# Все четыре четверти одинаково — см. RS_ShadowLevel.cells_per_quadrant.
+			viewport.positional_shadow_atlas_quad_0 = level.cells_per_quadrant
+			viewport.positional_shadow_atlas_quad_1 = level.cells_per_quadrant
+			viewport.positional_shadow_atlas_quad_2 = level.cells_per_quadrant
+			viewport.positional_shadow_atlas_quad_3 = level.cells_per_quadrant
 		match settings.aa_mode:
 			RS_GraphicsPreset.AAMode.OFF:
 				viewport.msaa_3d = Viewport.MSAA_DISABLED
@@ -124,9 +156,7 @@ func _apply_graphics_settings() -> void:
 			RS_GraphicsPreset.AAMode.MSAA_4X:
 				viewport.msaa_3d = Viewport.MSAA_4X
 				viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
-	RenderingServer.directional_shadow_atlas_set_size(
-		settings.shadow_atlas_size if settings.shadows_enabled else 1, false
-	)
+	RenderingServer.directional_shadow_atlas_set_size(maxi(atlas, 1), false)
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if settings.vsync_enabled else DisplayServer.VSYNC_DISABLED
 	)

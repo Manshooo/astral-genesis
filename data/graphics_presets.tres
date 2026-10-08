@@ -2,14 +2,14 @@
 
 [ext_resource type="Script" path="res://src/resources/rs_graphics_preset.gd" id="1_preset"]
 [ext_resource type="Script" path="res://src/resources/rs_graphics_preset_library.gd" id="2_library"]
+[ext_resource type="Script" path="res://src/resources/rs_shadow_level.gd" id="3_shadow"]
 
 [sub_resource type="Resource" id="Resource_low"]
 script = ExtResource("1_preset")
 id = &"low"
 display_name = "SETTINGS_PRESET_LOW"
 render_scale = 0.75
-shadows_enabled = false
-shadow_atlas_size = 1024
+shadow_quality = &"low"
 aa_mode = 0
 
 [sub_resource type="Resource" id="Resource_medium"]
@@ -17,8 +17,7 @@ script = ExtResource("1_preset")
 id = &"medium"
 display_name = "SETTINGS_PRESET_MEDIUM"
 render_scale = 1.0
-shadows_enabled = true
-shadow_atlas_size = 2048
+shadow_quality = &"medium"
 aa_mode = 1
 
 [sub_resource type="Resource" id="Resource_high"]
@@ -26,10 +25,46 @@ script = ExtResource("1_preset")
 id = &"high"
 display_name = "SETTINGS_PRESET_HIGH"
 render_scale = 1.0
-shadows_enabled = true
-shadow_atlas_size = 4096
+shadow_quality = &"high"
 aa_mode = 3
+
+[sub_resource type="Resource" id="Shadow_low"]
+script = ExtResource("3_shadow")
+id = &"low"
+display_name = "SETTINGS_SHADOWS_LOW"
+atlas_size = 4096
+soft_filter = 1
+shadow_distance = 30.0
+cells_per_quadrant = 3
+
+[sub_resource type="Resource" id="Shadow_medium"]
+script = ExtResource("3_shadow")
+id = &"medium"
+display_name = "SETTINGS_SHADOWS_MEDIUM"
+atlas_size = 4096
+soft_filter = 2
+shadow_distance = 40.0
+cells_per_quadrant = 3
+
+[sub_resource type="Resource" id="Shadow_high"]
+script = ExtResource("3_shadow")
+id = &"high"
+display_name = "SETTINGS_SHADOWS_HIGH"
+atlas_size = 8192
+soft_filter = 3
+shadow_distance = 60.0
+cells_per_quadrant = 4
+
+[sub_resource type="Resource" id="Shadow_ultra"]
+script = ExtResource("3_shadow")
+id = &"ultra"
+display_name = "SETTINGS_SHADOWS_ULTRA"
+atlas_size = 16384
+soft_filter = 4
+shadow_distance = 90.0
+cells_per_quadrant = 4
 
 [resource]
 script = ExtResource("2_library")
 presets = Array[ExtResource("1_preset")]([SubResource("Resource_low"), SubResource("Resource_medium"), SubResource("Resource_high")])
+shadow_levels = Array[ExtResource("3_shadow")]([SubResource("Shadow_low"), SubResource("Shadow_medium"), SubResource("Shadow_high"), SubResource("Shadow_ultra")])

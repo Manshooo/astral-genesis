@@ -34,7 +34,6 @@ var caller_node: Control = null
 @onready var _hint_title: Label = %HintTitle
 @onready var _hint_text: Label = %HintText
 @onready var _keybinds: Control = %Keybinds
-@onready var _shadow_atlas_row: UI_SettingRow = %ShadowAtlasRow
 
 var _controls: Array = []
 
@@ -45,7 +44,7 @@ var _controls: Array = []
 ## разрыв кадров на конкретном мониторе — независимая настройка, пресет её не
 ## трогает (см. RS_GraphicsPreset).
 const GRAPHICS_PRESET_FIELDS := [
-	"render_scale", "shadows_enabled", "shadow_atlas_size", "aa_mode",
+	"render_scale", "shadow_quality", "aa_mode",
 ]
 const GRAPHICS_PRESET_KEY := "graphics_preset_id"
 const CUSTOM_PRESET_ID := &"custom"
@@ -131,13 +130,6 @@ func _apply_draft_to_controls() -> void:
 		var key: String = control.setting_key
 		if key != "" and key in _draft:
 			control.set_setting_value(_draft.get(key))
-	_refresh_dependencies()
-
-
-## Разрешение теней без теней ничего не значит: строка гаснет, а её подсказка
-## говорит почему (§1 «недоступное объясняет себя»).
-func _refresh_dependencies() -> void:
-	_shadow_atlas_row.set_row_disabled(not _draft.shadows_enabled)
 
 func _capture_baseline() -> void:
 	_baseline.clear()
@@ -184,7 +176,6 @@ func _on_any_setting_changed(control: Variant) -> void:
 		_apply_preset_to_draft(control.get_setting_value())
 	elif key in GRAPHICS_PRESET_FIELDS:
 		_sync_preset_with_draft()
-	_refresh_dependencies()
 	_update_apply_button()
 
 ## Выбор пресета в списке раскатывает его значения на все поля черновика и
@@ -196,10 +187,7 @@ func _apply_preset_to_draft(preset_id: StringName) -> void:
 	var preset := SettingsManager.preset_by_id(preset_id)
 	if preset == null:
 		return
-	_draft.render_scale = preset.render_scale
-	_draft.shadows_enabled = preset.shadows_enabled
-	_draft.shadow_atlas_size = preset.shadow_atlas_size
-	_draft.aa_mode = preset.aa_mode
+	preset.apply_to(_draft)
 	for control in _controls:
 		var field_key: String = control.setting_key
 		if field_key in GRAPHICS_PRESET_FIELDS:
@@ -211,19 +199,11 @@ func _apply_preset_to_draft(preset_id: StringName) -> void:
 ## повторного заезда в _apply_preset_to_draft.
 func _sync_preset_with_draft() -> void:
 	var preset := SettingsManager.preset_by_id(_draft.graphics_preset_id)
-	if preset != null and _draft_matches_preset(preset):
+	if preset != null and preset.matches(_draft):
 		return
 	_draft.graphics_preset_id = CUSTOM_PRESET_ID
 	if _preset_control:
 		_preset_control.set_setting_value(CUSTOM_PRESET_ID)
-
-func _draft_matches_preset(preset: RS_GraphicsPreset) -> bool:
-	return (
-		is_equal_approx(_draft.render_scale, preset.render_scale)
-		and _draft.shadows_enabled == preset.shadows_enabled
-		and _draft.shadow_atlas_size == preset.shadow_atlas_size
-		and _draft.aa_mode == preset.aa_mode
-	)
 
 func _on_apply_pressed() -> void:
 	SettingsManager.settings = _draft

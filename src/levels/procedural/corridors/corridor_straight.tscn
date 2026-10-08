@@ -1,12 +1,14 @@
 [gd_scene load_steps=2 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/levels/SM_corridor_P_straight/SM_corridor_P_straight.glb" id="1_mesh"]
+[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
 
 [node name="CorridorStraight" type="Node3D"]
 
 [node name="Visual" parent="." instance=ExtResource("1_mesh")]
 
 [node name="Light" type="OmniLight3D" parent="."]
+script = ExtResource("ll_light")
 shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 200.0

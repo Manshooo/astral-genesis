@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://src/ui/settings/checkbox_setting.gd" id="5_chkbx"]
 [ext_resource type="Script" path="res://src/ui/settings/graphics_preset_setting.gd" id="6_presetui"]
 [ext_resource type="Script" path="res://src/ui/settings/aa_mode_setting.gd" id="7_aaui"]
+[ext_resource type="Script" path="res://src/ui/settings/shadow_quality_setting.gd" id="13_shadowui"]
 [ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="8_backdrop"]
 [ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="9_echo"]
 [ext_resource type="Script" path="res://src/ui/menu/setting_row.gd" id="10_row"]
@@ -177,50 +178,21 @@ auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
 
 [node name="Shadows" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120021]
+unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_SHADOWS"
 
 [node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120022]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_SHADOWS"
 
-[node name="CheckBox" type="CheckBox" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120023]
+[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120023]
 layout_mode = 2
 size_flags_vertical = 4
-script = ExtResource("5_chkbx")
-setting_key = "shadows_enabled"
-
-[node name="ShadowAtlasRow" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120024]
-unique_name_in_owner = true
-layout_mode = 2
-script = ExtResource("10_row")
-hint_key = "SETTINGS_HINT_SHADOW_RES"
-
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/ShadowAtlasRow" unique_id=11120025]
-layout_mode = 2
-theme_type_variation = &"MenuRowLabel"
-text = "SETTINGS_SHADOW_RES"
-
-[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/ShadowAtlasRow" unique_id=11120026]
-custom_minimum_size = Vector2(320, 24)
-layout_mode = 2
-size_flags_vertical = 4
-min_value = 512.0
-max_value = 4096.0
-step = 512.0
-value = 512.0
-rounded = true
-script = ExtResource("3_kktd5")
-setting_key = "shadow_atlas_size"
-display_format = "%d"
-value_label_path = NodePath("../Value")
-
-[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/ShadowAtlasRow" unique_id=11120027]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-auto_translate_mode = 2
-theme_type_variation = &"MenuValue"
+script = ExtResource("13_shadowui")
+setting_key = "shadow_quality"
 
 [node name="AA" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120028]
 layout_mode = 2

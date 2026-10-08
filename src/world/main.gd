@@ -17,6 +17,7 @@ func _ready() -> void:
 	UIManager.enabled = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_child(HUD_SCENE.instantiate())
+	add_child(ShadowBudget.new())
 	_add_debug_overlay()
 	RunManager.enter_complex()
 
