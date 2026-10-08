@@ -105,6 +105,12 @@ SETTINGS_SHADOWS_LOW,Низкие,Low
 SETTINGS_SHADOWS_MEDIUM,Средние,Medium
 SETTINGS_SHADOWS_HIGH,Высокие,High
 SETTINGS_SHADOWS_ULTRA,Ультра,Ultra
+SETTINGS_EFFECTS,Эффекты освещения,Lighting effects
+SETTINGS_EFFECTS_LOW,Низкие,Low
+SETTINGS_EFFECTS_MEDIUM,Средние,Medium
+SETTINGS_EFFECTS_HIGH,Высокие,High
+SETTINGS_BRIGHTNESS,Яркость,Brightness
+SETTINGS_GLOW,Свечение,Glow
 SETTINGS_AA,Сглаживание,Anti-aliasing
 SETTINGS_AA_OFF,Выкл,Off
 SETTINGS_VSYNC,Вертикальная синхронизация,Vertical synchronization
@@ -123,9 +129,12 @@ SETTINGS_CANCEL,Отмена,Cancel
 SETTINGS_RESET,Сброс,Reset to defaults
 SETTINGS_APPLY,Применить,Apply
 SETTINGS_DIRTY,есть непримененные изменения,unapplied changes
-SETTINGS_HINT_PRESET,"Задаёт масштаб, тени и сглаживание разом. Ручная правка любого из них переводит пресет в «Собственный».","Sets scale, shadows and anti-aliasing at once. Changing any of them by hand switches the preset to “Custom”."
+SETTINGS_HINT_PRESET,"Задаёт масштаб, тени, эффекты освещения, свечение и сглаживание разом. Ручная правка любого из них переводит пресет в «Собственный».","Sets scale, shadows, lighting effects, glow and anti-aliasing at once. Changing any of them by hand switches the preset to “Custom”."
 SETTINGS_HINT_RES_SCALE,"Доля разрешения окна, в которой рисуется 3D. Интерфейс остаётся чётким.",Share of the window resolution the 3D view is drawn at. The interface stays sharp.
 SETTINGS_HINT_SHADOWS,"Чёткость, мягкость краёв и дальность теней. «Выкл» быстрее всего, но свет ламп проходит сквозь стены.","Sharpness, edge softness and draw distance of shadows. “Off” is fastest, but lamp light shines through walls."
+SETTINGS_HINT_EFFECTS,"Затенение в углах, отражённый свет ламп и отражения на глянцевом полу. Каждая ступень дороже предыдущей.","Ambient occlusion in corners, bounced lamp light and reflections on glossy floors. Each step costs more than the last."
+SETTINGS_HINT_GLOW,"Ореол вокруг ламп и ярких мест. На встроенной графике заметно снижает частоту кадров.","Halo around lamps and bright spots. Noticeably lowers frame rate on integrated graphics."
+SETTINGS_HINT_BRIGHTNESS,"Подберите так, чтобы в тёмном углу едва угадывались очертания. Тьма без лампы задумана тьмой.","Set it so outlines in a dark corner are barely visible. Darkness without a lamp is meant to be dark."
 SETTINGS_HINT_FPS,0 — без ограничения.,0 means unlimited.
 SETTINGS_HINT_KEYS,Клик по клавише — ждёт новую. Занятая клавиша меняется местами.,Click a key to wait for a new one. A taken key swaps places.
 ACTION_MOVE_FORWARD,Вперёд,Move forward

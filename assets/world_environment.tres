@@ -1,0 +1,21 @@
+[gd_resource type="Environment" format=3 uid="uid://nxask5g2qtp7"]
+
+[sub_resource type="Sky" id="Sky_abrql"]
+
+[resource]
+background_mode = 1
+sky = SubResource("Sky_abrql")
+ambient_light_source = 1
+reflected_light_source = 1
+tonemap_mode = 2
+tonemap_white = 5.0
+ssr_enabled = true
+ssao_enabled = true
+ssil_enabled = true
+glow_enabled = true
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.02, 0.02, 0.025, 1)
+fog_density = 1.0
+fog_depth_begin = 24.0
+fog_depth_end = 48.0

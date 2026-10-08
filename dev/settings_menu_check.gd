@@ -29,8 +29,11 @@ const EXPECTED_TAB := {
 	"graphics_preset_id": "SETTINGS_TAB_GRAPHICS",
 	"render_scale": "SETTINGS_TAB_GRAPHICS",
 	"shadow_quality": "SETTINGS_TAB_GRAPHICS",
+	"screen_effects": "SETTINGS_TAB_GRAPHICS",
+	"glow_enabled": "SETTINGS_TAB_GRAPHICS",
 	"aa_mode": "SETTINGS_TAB_GRAPHICS",
 	"vsync_enabled": "SETTINGS_TAB_GRAPHICS",
+	"brightness": "SETTINGS_TAB_GRAPHICS",
 	"master_volume": "SETTINGS_TAB_AUDIO",
 	"mouse_sensitivity": "SETTINGS_TAB_CONTROLS",
 	"keybinds": "SETTINGS_TAB_CONTROLS",
@@ -73,20 +76,32 @@ func _run() -> void:
 
 	# --- 2. Ни одна настройка не потерялась при переносе ----------------
 	var by_key := {}
+	var doubled: Array[String] = []
 	for control in _collect(menu):
 		var key: String = control.setting_key
-		_check("ключ %s не задвоен" % key, not by_key.has(key), "два контрола на одну настройку")
+		if by_key.has(key):
+			doubled.append(key)
 		by_key[key] = control
+	_check("ни одна настройка не задвоена", doubled.is_empty(), "два контрола на %s" % ", ".join(doubled))
 
+	var lost: Array[String] = []
+	var misplaced: Array[String] = []
 	for key: String in EXPECTED_TAB:
-		_check("настройка %s в меню" % key, by_key.has(key), "контрол потерялся при переверстке")
 		if not by_key.has(key):
-			continue
-		_check(
-			"настройка %s на вкладке «%s»" % [key, EXPECTED_TAB[key]],
-			_tab_of(by_key[key], tabs) == EXPECTED_TAB[key],
-			"оказалась на «%s»" % _tab_of(by_key[key], tabs),
-		)
+			lost.append(key)
+		elif _tab_of(by_key[key], tabs) != EXPECTED_TAB[key]:
+			misplaced.append("%s на «%s»" % [key, _tab_of(by_key[key], tabs)])
+	_check("каждая настройка в меню", lost.is_empty(), "потерялись при переверстке: %s" % ", ".join(lost))
+	_check("каждая настройка на своей вкладке", misplaced.is_empty(), ", ".join(misplaced))
+
+	# Границы ползунка — те же, что держит камера: разойдись они, и ползунок
+	# показывал бы угол, которого камера не даст.
+	var fov_slider := by_key.get("fov") as Range
+	if fov_slider != null:
+		_check("ползунок поля зрения — от FOV_MIN до FOV_MAX",
+			is_equal_approx(fov_slider.min_value, RS_Settings.FOV_MIN)
+				and is_equal_approx(fov_slider.max_value, RS_Settings.FOV_MAX),
+			"%.0f–%.0f" % [fov_slider.min_value, fov_slider.max_value])
 
 	# --- 3. Значения читаются и со скрытых вкладок ----------------------
 	# Именно это делает открытие меню «чистым»: baseline снимается со всех
@@ -139,11 +154,14 @@ func _run() -> void:
 			"контрол показывает %s, ожидалось %s" % [render_scale.get_setting_value(), low.render_scale],
 		)
 		var shadows = by_key.get("shadow_quality")
-		if shadows != null:
+		var effects = by_key.get("screen_effects")
+		if shadows != null and effects != null:
 			_check(
-				"и на ступень теней тоже",
-				shadows.get_setting_value() == low.shadow_quality,
-				"контрол показывает %s, ожидалось %s" % [shadows.get_setting_value(), low.shadow_quality],
+				"и на ступени теней и эффектов тоже",
+				shadows.get_setting_value() == low.shadow_quality
+					and effects.get_setting_value() == low.screen_effects,
+				"тени %s, эффекты %s; ожидалось %s, %s" % [shadows.get_setting_value(),
+					effects.get_setting_value(), low.shadow_quality, low.screen_effects],
 			)
 
 		# Ручная правка одного поля черновика — как будто игрок подвинул слайдер.
@@ -223,9 +241,16 @@ func _run() -> void:
 			expected.append(level.id)
 		_check("список теней: «Выкл» и все ступени по порядку", shadows_control.option_values == expected,
 				"%s вместо %s" % [shadows_control.option_values, expected])
+		# Пресет, сославшийся на несуществующую ступень, не падает: тени или
+		# эффекты просто выключаются.
+		var dangling: Array[String] = []
 		for p in library.presets:
-			_check("ступень теней пресета «%s» есть в каталоге" % p.id,
-					library.shadow_level(p.shadow_quality) != null, String(p.shadow_quality))
+			if library.shadow_level(p.shadow_quality) == null:
+				dangling.append("%s: тени «%s»" % [p.id, p.shadow_quality])
+			if library.effects_level(p.screen_effects) == null:
+				dangling.append("%s: эффекты «%s»" % [p.id, p.screen_effects])
+		_check("ступени теней и эффектов каждого пресета есть в каталоге", dangling.is_empty(),
+				", ".join(dangling))
 		# Ломается молча: при четырёх ячейках в четверти пары под омни-лампы
 		# рвутся, и лампа в бюджете остаётся без тени — засвет вместо ошибки
 		# (RS_ShadowLevel.cells_per_quadrant).
@@ -238,6 +263,14 @@ func _run() -> void:
 		_check("ручной выбор «Выкл» переводит пресет на «Собственный»",
 				preset == null or preset.get_setting_value() == GraphicsPresetSetting.CUSTOM_ID,
 				"список пресетов остался на «%s»" % [preset.get_setting_value()])
+
+	var effects_control = by_key.get("screen_effects") as OptionSetting
+	if effects_control != null:
+		var effect_ids: Array = []
+		for level in library.effects_levels:
+			effect_ids.append(level.id)
+		_check("список эффектов — ступени каталога по порядку", effects_control.option_values == effect_ids,
+				"%s вместо %s" % [effects_control.option_values, effect_ids])
 
 	# --- 9. Подсказка — в колонке, по строке, на которую смотрят ----------
 	var shadows_row := menu.get_node("%Shadows") as UI_SettingRow
@@ -253,7 +286,9 @@ func _run() -> void:
 	menu.queue_free()
 
 	_check_legacy_shadows()
+	_check_player_fov()
 	_check_level_light()
+	_check_level_environment()
 	_check_shadow_budget()
 
 
@@ -270,8 +305,32 @@ func _check_legacy_shadows() -> void:
 	sharp.set(&"shadow_atlas_size", 4096)
 	_check("старый атлас 4096 становится ступенью «Высокие»", sharp.shadow_quality == &"high",
 			String(sharp.shadow_quality))
-	var plain := RS_Settings.new()
-	_check("без старых полей — умолчание «Средние»", plain.shadow_quality == &"medium", String(plain.shadow_quality))
+
+
+## Ползунок «Поле зрения» доходит до камеры игрока — и сразу, и при смене
+## настройки. Ломалось молча: значение сохранялось и показывалось в меню, но его
+## никто не читал, и камера жила с углом из сцены.
+func _check_player_fov() -> void:
+	var before := SettingsManager.settings
+	var player := (load("res://src/entities/player/e_player.tscn") as PackedScene).instantiate() as E_Player
+	add_child(player)
+	var start_ok := is_equal_approx(player.camera.fov, before.fov)
+	var narrow := before.copy()
+	narrow.fov = 95.0 if not is_equal_approx(before.fov, 95.0) else 105.0
+	SettingsManager.settings = narrow
+	_check("поле зрения из настроек доходит до камеры игрока, по горизонтали",
+		start_ok and is_equal_approx(player.camera.fov, narrow.fov)
+			and player.camera.keep_aspect == Camera3D.KEEP_WIDTH,
+		"на старте %.1f при %.1f, после смены %.1f при %.1f" % [
+			player.camera.fov if start_ok else -1.0, before.fov, player.camera.fov, narrow.fov])
+	# Сейв со старой шкалы 60–120: камера держит границы сама.
+	var wide := before.copy()
+	wide.fov = 120.0
+	SettingsManager.settings = wide
+	_check("поле зрения из старого сейва прижимается к границам",
+		is_equal_approx(player.camera.fov, RS_Settings.FOV_MAX), "%.1f" % player.camera.fov)
+	SettingsManager.settings = before
+	player.free()
 
 
 ## Лампа уровня следит за настройкой сама: «Выкл» снимает тень, ступень ставит
@@ -286,15 +345,162 @@ func _check_level_light() -> void:
 	tuned.shadow_quality = &"high"
 	SettingsManager.settings = tuned
 	var high := SettingsManager.GRAPHICS_PRESETS.shadow_level(&"high")
-	_check("лампа берёт дальность теней ступени", omni.shadow_enabled
-			and is_equal_approx(omni.distance_fade_shadow, high.shadow_distance),
-			"тень %s, дальность %.0f" % [omni.shadow_enabled, omni.distance_fade_shadow])
+	_check("лампа берёт дальность теней ступени и гаснет там же", omni.shadow_enabled
+			and is_equal_approx(omni.distance_fade_shadow, high.shadow_distance)
+			and omni.distance_fade_enabled and is_equal_approx(omni.distance_fade_begin, high.shadow_distance),
+			"тень %s, дальность тени %.0f, затухание с %.0f" % [omni.shadow_enabled,
+				omni.distance_fade_shadow, omni.distance_fade_begin])
 	var off := before.copy()
 	off.shadow_quality = RS_GraphicsPreset.SHADOWS_OFF
 	SettingsManager.settings = off
-	_check("«Выкл» снимает тень с лампы", not omni.shadow_enabled, "")
+	var unshadowed := SettingsManager.GRAPHICS_PRESETS.unshadowed_light_distance
+	_check("«Выкл» снимает тень с лампы, а гаснет она на дальности без теней",
+		not omni.shadow_enabled and omni.distance_fade_enabled
+			and is_equal_approx(omni.distance_fade_begin, unshadowed),
+		"затухание с %.0f, ждали %.0f" % [omni.distance_fade_begin, unshadowed])
+	# Апскейл: ниже 100 % — FSR1, иначе растяжение билинейным фильтром мылит
+	# картинку «Низкого» пресета без всякой выгоды.
+	var scaled := before.copy()
+	scaled.render_scale = 0.65
+	SettingsManager.settings = scaled
+	var fsr := get_viewport().scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR
+	scaled = before.copy()
+	scaled.render_scale = 1.0
+	SettingsManager.settings = scaled
+	_check("ниже 100 % разрешения — FSR1, на 100 % — без апскейла",
+		fsr and get_viewport().scaling_3d_mode == Viewport.SCALING_3D_MODE_BILINEAR,
+		"режим %d" % get_viewport().scaling_3d_mode)
 	SettingsManager.settings = before
 	omni.queue_free()
+
+
+## Окружение уровня под настройками: яркость доезжает до экспозиции поверх
+## авторской, ступень эффектов снимает лишнее, но не включает того, что автор не
+## ставил, а общий .tres окружения правкой не задевается. Всё это ломается молча —
+## картинка просто светлее, темнее или дороже, чем выбрал игрок.
+func _check_level_environment() -> void:
+	var before := SettingsManager.settings
+	var authored := Environment.new()
+	authored.ssao_enabled = true
+	authored.ssil_enabled = true
+	authored.ssr_enabled = false
+	authored.glow_enabled = true
+	authored.fog_enabled = true
+	authored.fog_mode = Environment.FOG_MODE_DEPTH
+	authored.fog_depth_begin = 10.0
+	authored.fog_depth_end = 40.0
+	var attributes := CameraAttributesPractical.new()
+	attributes.exposure_multiplier = 0.8
+
+	# Всё, на что смотрят ассерты, задаётся явно: настройки разработчика бывают
+	# любыми (пресет «Низкий» выключает свечение), и проверка не должна от них
+	# зависеть.
+	var tuned := before.copy()
+	tuned.screen_effects = &"high"
+	tuned.glow_enabled = true
+	tuned.shadow_quality = &"high"
+	tuned.brightness = 1.5
+	SettingsManager.settings = tuned
+	var node := WorldEnvironment.new()
+	node.environment = authored
+	node.camera_attributes = attributes
+	node.set_script(LevelEnvironment)
+	add_child(node)
+	_check("яркость умножает авторскую экспозицию",
+		is_equal_approx(node.camera_attributes.exposure_multiplier, 0.8 * 1.5),
+		"%.3f" % node.camera_attributes.exposure_multiplier)
+	_check("«Высокие» не включают эффект, которого автор не ставил",
+		node.environment.ssao_enabled and node.environment.ssil_enabled and not node.environment.ssr_enabled,
+		"ssao %s, ssil %s, ssr %s" % [node.environment.ssao_enabled, node.environment.ssil_enabled,
+			node.environment.ssr_enabled])
+
+	_check("свечение, поставленное автором, при флажке «Вкл» остаётся", node.environment.glow_enabled, "")
+	# Туман сгущается до полного там, где лампы погасли целиком, а начало держит
+	# долю автора (10 из 40 — четверть).
+	var fog_end := LevelLight.fade_begin() + LevelLight.FADE_LENGTH
+	_check("туман кончается там, где погасли лампы, начало — в доле автора",
+		is_equal_approx(node.environment.fog_depth_end, fog_end)
+			and is_equal_approx(node.environment.fog_depth_begin, fog_end * 0.25),
+		"туман %.1f–%.1f, лампы гаснут к %.1f" % [node.environment.fog_depth_begin,
+			node.environment.fog_depth_end, fog_end])
+
+	var low := before.copy()
+	low.screen_effects = &"low"
+	low.glow_enabled = false
+	low.shadow_quality = &"low"
+	SettingsManager.settings = low
+	_check("«Низкие» оставляют только SSAO",
+		node.environment.ssao_enabled and not node.environment.ssil_enabled,
+		"ssao %s, ssil %s" % [node.environment.ssao_enabled, node.environment.ssil_enabled])
+	_check("флажок «Свечение» снимает свечение", not node.environment.glow_enabled, "")
+	_check("туман следует за ступенью теней: «Низкие» — ближе",
+		is_equal_approx(node.environment.fog_depth_end, LevelLight.fade_begin() + LevelLight.FADE_LENGTH)
+			and node.environment.fog_depth_end < fog_end,
+		"%.1f при прежних %.1f" % [node.environment.fog_depth_end, fog_end])
+	_check("правка не задела общий ресурс окружения и камеры",
+		authored.ssil_enabled and is_equal_approx(attributes.exposure_multiplier, 0.8), "")
+
+	SettingsManager.settings = tuned
+	_check("ступень выше возвращает снятый эффект — счёт от авторского, а не от прошлого",
+		node.environment.ssil_enabled, "")
+
+	# Фон меню яркость не слушает, а эффекты — слушает.
+	var menu_like := WorldEnvironment.new()
+	menu_like.environment = authored
+	menu_like.camera_attributes = attributes
+	menu_like.set_script(LevelEnvironment)
+	menu_like.set(&"apply_brightness", false)
+	add_child(menu_like)
+	_check("окружение без яркости экспозицию не трогает, а эффекты слушает",
+		is_equal_approx(menu_like.camera_attributes.exposure_multiplier, 0.8)
+			and menu_like.environment.ssil_enabled,
+		"%.3f" % menu_like.camera_attributes.exposure_multiplier)
+
+	SettingsManager.settings = before
+	node.queue_free()
+	menu_like.queue_free()
+	_check_environments_wired()
+
+
+## Каждое окружение сцен игры — WorldEnvironment под LevelEnvironment. Окружение,
+## повешенное на Camera3D, или голый WorldEnvironment настройки не слышат и
+## ничем об этом не скажут: эффекты в такой сцене просто не выключаются. Так и
+## жил фон меню, пока окружение висело на его камере. Сверяется по SceneState —
+## без инстанцирования сцен.
+func _check_environments_wired() -> void:
+	var stray: Array[String] = []
+	var wired := 0
+	for path in _scenes_under("res://src"):
+		var state := (load(path) as PackedScene).get_state()
+		for i in state.get_node_count():
+			var type := state.get_node_type(i)
+			var script: Script = null
+			var has_environment := false
+			for p in state.get_node_property_count(i):
+				match state.get_node_property_name(i, p):
+					&"script":
+						script = state.get_node_property_value(i, p)
+					&"environment":
+						has_environment = true
+			if type == &"WorldEnvironment":
+				if script == LevelEnvironment:
+					wired += 1
+				else:
+					stray.append("%s: %s без LevelEnvironment" % [path.get_file(), state.get_node_name(i)])
+			elif type == &"Camera3D" and has_environment:
+				stray.append("%s: окружение на камере %s" % [path.get_file(), state.get_node_name(i)])
+	_check("каждое окружение сцен игры идёт через LevelEnvironment (%d)" % wired,
+		stray.is_empty() and wired > 0, ", ".join(stray))
+
+
+func _scenes_under(dir: String) -> Array[String]:
+	var found: Array[String] = []
+	for sub in DirAccess.get_directories_at(dir):
+		found.append_array(_scenes_under(dir.path_join(sub)))
+	for file in DirAccess.get_files_at(dir):
+		if file.get_extension() == "tscn":
+			found.append(dir.path_join(file))
+	return found
 
 
 ## Бюджет теней: в кадре тень получают лампы, чей свет ближе к камере, сверх
@@ -318,6 +524,13 @@ func _check_shadow_budget() -> void:
 	var on: Array = lamps.map(func(l: Light3D) -> bool: return l.shadow_enabled)
 	_check("бюджет: тень у двух ближних в кадре, дальняя без, лампа за спиной с тенью",
 			on == [true, false, true, true], str(on))
+	# Спрятанная лампа (узел дальше видимых) места в очереди не занимает: ближняя
+	# спрятана — тень переходит к следующей видимой.
+	(lamps[0] as Light3D).visible = false
+	ShadowBudget.distribute(lamps, camera, level)
+	_check("бюджет: спрятанная лампа тень у видимой не отнимает",
+			(lamps[1] as Light3D).shadow_enabled and (lamps[2] as Light3D).shadow_enabled,
+			str(lamps.map(func(l: Light3D) -> bool: return l.shadow_enabled)))
 	for lamp in lamps:
 		lamp.queue_free()
 	camera.queue_free()

@@ -25,6 +25,25 @@ static func is_embodied() -> bool:
 	return player != null and player.has_component(C_Embodied)
 
 
+## Поле зрения — из настроек, по горизонтали. Камера сцены держала 118° по
+## вертикали (≈143° по горизонтали на 16:9), а ползунок «Поле зрения» не
+## доходил до неё вовсе: его значение никто не читал. Шкала ползунка (60–120,
+## умолчание 103) — горизонтальная, как принято в играх, поэтому KEEP_WIDTH: на
+## вертикальной шкале 103° было бы рыбьим глазом.
+func _ready() -> void:
+	if Engine.is_editor_hint():
+		return
+	SettingsManager.settings_changed.connect(_apply_fov)
+	_apply_fov(SettingsManager.settings)
+
+
+func _apply_fov(settings: RS_Settings) -> void:
+	if settings == null:
+		return
+	camera.keep_aspect = Camera3D.KEEP_WIDTH
+	camera.fov = clampf(settings.fov, RS_Settings.FOV_MIN, RS_Settings.FOV_MAX)
+
+
 ## Компоненты-идентичность БФЖ, живущие независимо от текущего тела.
 ## Здесь, а не в сцене — чтобы «душа» всегда имела их, и чтобы O_ApplySkillEffects
 ## (запрос C_StatModifiers) матчил игрока.

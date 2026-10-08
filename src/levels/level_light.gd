@@ -15,6 +15,9 @@ class_name LevelLight
 extends Light3D
 
 const GROUP := &"level_lights"
+## За сколько метров лампа гаснет целиком после начала затухания: резкий обрыв
+## на ходу заметен, а клетка — 8 м.
+const FADE_LENGTH := 8.0
 
 
 func _ready() -> void:
@@ -23,12 +26,26 @@ func _ready() -> void:
 	_on_settings_changed(SettingsManager.settings)
 
 
+## Лампа гаснет там же, где перестаёт отбрасывать тень: дальше она светила бы
+## без тени — то есть сквозь стены — и тратила кадр на то, что за ними. В сценах
+## стояло 200 м, то есть «не гаснуть никогда».
 func _on_settings_changed(_settings: RS_Settings) -> void:
 	var level := SettingsManager.shadow_level()
 	shadow_enabled = level != null
+	distance_fade_enabled = true
+	distance_fade_length = FADE_LENGTH
+	distance_fade_begin = fade_begin()
 	if level:
-		distance_fade_enabled = true
 		distance_fade_shadow = level.shadow_distance
+
+
+## С какой дальности лампы уровня начинают гаснуть: дальность теней ступени, а
+## без теней — unshadowed_light_distance каталога. Одна функция на лампы и туман
+## (LevelEnvironment): туман обязан сгущаться ровно туда, где свет кончается, и
+## две копии этого правила разошлись бы при первой правке.
+static func fade_begin() -> float:
+	var level := SettingsManager.shadow_level()
+	return level.shadow_distance if level else SettingsManager.GRAPHICS_PRESETS.unshadowed_light_distance
 
 
 ## Докуда достаёт свет лампы — радиус сферы, за которой она ничего не освещает.

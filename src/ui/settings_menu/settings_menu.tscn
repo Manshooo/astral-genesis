@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://src/ui/settings/graphics_preset_setting.gd" id="6_presetui"]
 [ext_resource type="Script" path="res://src/ui/settings/aa_mode_setting.gd" id="7_aaui"]
 [ext_resource type="Script" path="res://src/ui/settings/shadow_quality_setting.gd" id="13_shadowui"]
+[ext_resource type="Script" path="res://src/ui/settings/screen_effects_setting.gd" id="14_effectsui"]
 [ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="8_backdrop"]
 [ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="9_echo"]
 [ext_resource type="Script" path="res://src/ui/menu/setting_row.gd" id="10_row"]
@@ -194,6 +195,38 @@ size_flags_vertical = 4
 script = ExtResource("13_shadowui")
 setting_key = "shadow_quality"
 
+[node name="Effects" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120070]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_EFFECTS"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Effects" unique_id=11120071]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_EFFECTS"
+
+[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Effects" unique_id=11120072]
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("14_effectsui")
+setting_key = "screen_effects"
+
+[node name="Glow" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120077]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_GLOW"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Glow" unique_id=11120078]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_GLOW"
+
+[node name="CheckBox" type="CheckBox" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Glow" unique_id=11120079]
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("5_chkbx")
+setting_key = "glow_enabled"
+
 [node name="AA" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120028]
 layout_mode = 2
 script = ExtResource("10_row")
@@ -224,6 +257,36 @@ size_flags_vertical = 4
 script = ExtResource("5_chkbx")
 setting_key = "vsync_enabled"
 
+[node name="Brightness" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120073]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_BRIGHTNESS"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120074]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_BRIGHTNESS"
+
+[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120075]
+custom_minimum_size = Vector2(320, 24)
+layout_mode = 2
+size_flags_vertical = 4
+min_value = 50.0
+max_value = 200.0
+step = 5.0
+value = 100.0
+script = ExtResource("3_kktd5")
+setting_key = "brightness"
+display_multiplier = 100.0
+display_format = "%d %%"
+value_label_path = NodePath("../Value")
+
+[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120076]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
+
 [node name="FOV" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120034]
 layout_mode = 2
 script = ExtResource("10_row")
@@ -237,10 +300,10 @@ text = "SETTINGS_FOV"
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
-min_value = 60.0
-max_value = 120.0
+min_value = 90.0
+max_value = 110.0
 step = 1.0
-value = 60.0
+value = 90.0
 script = ExtResource("3_kktd5")
 setting_key = "fov"
 display_format = "%d°"
