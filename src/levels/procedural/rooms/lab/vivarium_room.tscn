@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://src/components/level/c_room_shell.gd" id="3_jqxau"]
 [ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_lh1oc"]
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_5lyph"]
+[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
 
 [sub_resource type="Resource" id="Resource_ng4uo"]
 script = ExtResource("3_jqxau")
@@ -23,6 +24,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.
 [node name="light" type="Node" parent="." unique_id=1385158210]
 
 [node name="SpotLight3D" type="SpotLight3D" parent="light" unique_id=597006309]
+script = ExtResource("ll_light")
 shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 200.0

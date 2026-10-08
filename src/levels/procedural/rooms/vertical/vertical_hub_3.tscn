@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_bv4nx"]
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_b7vy5"]
 [ext_resource type="PackedScene" path="res://src/entities/vertical_portal/e_vertical_portal.tscn" id="8_ryc4f"]
+[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
 
 [sub_resource type="Resource" id="Resource_pdoc4"]
 script = ExtResource("3_26aso")
@@ -25,6 +26,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.45408034, -4)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.8, -3.4)
 
 [node name="Light" type="OmniLight3D" parent="." unique_id=1762202642]
+script = ExtResource("ll_light")
 shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 200.0

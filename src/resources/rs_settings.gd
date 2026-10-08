@@ -29,14 +29,15 @@ extends Resource
 @export var max_fps: int = 60
 ## Применённый пресет ("low"/"medium"/"high", каталог — data/graphics_presets.tres)
 ## или &"custom", если игрок вручную поменял хоть одно из полей пресета ниже
-## (render_scale/shadows_enabled/shadow_atlas_size/aa_mode — см.
+## (render_scale/shadow_quality/aa_mode — см.
 ## RS_GraphicsPreset и settings_menu.gd.GRAPHICS_PRESET_FIELDS). Значения по
 ## умолчанию здесь равны пресету "medium" — свежая установка не должна
 ## выглядеть как "собственные" настройки.
 @export var graphics_preset_id: StringName = &"medium"
 @export_range(0.5, 1.5, 0.05) var render_scale: float = 1.0
-@export var shadows_enabled: bool = true
-@export var shadow_atlas_size: int = 2048
+## Ступень теней: id из RS_GraphicsPresetLibrary.shadow_levels или
+## RS_GraphicsPreset.SHADOWS_OFF.
+@export var shadow_quality: StringName = &"medium"
 @export var aa_mode: RS_GraphicsPreset.AAMode = RS_GraphicsPreset.AAMode.FXAA
 ## Вне пресета: про разрыв кадров на конкретном мониторе, а не про качество
 ## картинки — пресет её не меняет и правка не считается "отступлением" от него.
@@ -59,3 +60,24 @@ func copy() -> RS_Settings:
 	var clone := duplicate() as RS_Settings
 	clone.keybinds = keybinds.duplicate()
 	return clone
+
+
+## Перевод сейва старше ступеней теней — второе исключение из «никакой логики»:
+## переводить его больше негде, загрузчик ресурса кладёт поля прямо сюда.
+## Раньше тени были флажком и размером атласа (shadows_enabled,
+## shadow_atlas_size); полей больше нет, и загрузчик отдаёт их в _set. Без
+## перевода игрок, выключивший тени, после обновления получил бы их снова.
+## В файл пишутся только отличные от умолчания поля, поэтому «флажок не пришёл»
+## значит «тени были включены», а «атлас не пришёл» — «был 2048», то есть
+## нынешнее умолчание. Флажок в файле идёт раньше атласа.
+func _set(property: StringName, value: Variant) -> bool:
+	if property == &"shadows_enabled":
+		if not value:
+			shadow_quality = RS_GraphicsPreset.SHADOWS_OFF
+		return true
+	if property == &"shadow_atlas_size":
+		if shadow_quality != RS_GraphicsPreset.SHADOWS_OFF:
+			var size := int(value)
+			shadow_quality = &"low" if size <= 1024 else &"medium" if size <= 2048 else &"high" if size <= 4096 else &"ultra"
+		return true
+	return false

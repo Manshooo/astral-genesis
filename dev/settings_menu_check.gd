@@ -28,8 +28,7 @@ const EXPECTED_TAB := {
 	"max_fps": "SETTINGS_TAB_GRAPHICS",
 	"graphics_preset_id": "SETTINGS_TAB_GRAPHICS",
 	"render_scale": "SETTINGS_TAB_GRAPHICS",
-	"shadows_enabled": "SETTINGS_TAB_GRAPHICS",
-	"shadow_atlas_size": "SETTINGS_TAB_GRAPHICS",
+	"shadow_quality": "SETTINGS_TAB_GRAPHICS",
 	"aa_mode": "SETTINGS_TAB_GRAPHICS",
 	"vsync_enabled": "SETTINGS_TAB_GRAPHICS",
 	"master_volume": "SETTINGS_TAB_AUDIO",
@@ -139,12 +138,12 @@ func _run() -> void:
 			is_equal_approx(float(render_scale.get_setting_value()), low.render_scale),
 			"контрол показывает %s, ожидалось %s" % [render_scale.get_setting_value(), low.render_scale],
 		)
-		var shadows = by_key.get("shadows_enabled")
+		var shadows = by_key.get("shadow_quality")
 		if shadows != null:
 			_check(
-				"и на shadows_enabled тоже",
-				bool(shadows.get_setting_value()) == low.shadows_enabled,
-				"контрол показывает %s, ожидалось %s" % [shadows.get_setting_value(), low.shadows_enabled],
+				"и на ступень теней тоже",
+				shadows.get_setting_value() == low.shadow_quality,
+				"контрол показывает %s, ожидалось %s" % [shadows.get_setting_value(), low.shadow_quality],
 			)
 
 		# Ручная правка одного поля черновика — как будто игрок подвинул слайдер.
@@ -212,30 +211,116 @@ func _run() -> void:
 		_check("кнопка %d открывает страницу %d" % [i, i], tabs.current_tab == i,
 				"открыта %d" % tabs.current_tab)
 
-	# --- 8. Разрешение теней гаснет без теней -----------------------------
-	var shadows_control = by_key.get("shadows_enabled")
-	var atlas_row := menu.get_node("%ShadowAtlasRow") as UI_SettingRow
-	var atlas = by_key.get("shadow_atlas_size")
-	if shadows_control != null and atlas != null:
-		shadows_control.set_setting_value(false)
+	# --- 8. Тени — один список: «Выкл» и ступени каталога ----------------
+	# Пункты строятся из данных: ступень, пропавшая из списка, или пресет,
+	# ссылающийся на несуществующую ступень, не дают ошибки — пресет просто
+	# выключил бы тени.
+	var shadows_control = by_key.get("shadow_quality") as OptionSetting
+	var library := SettingsManager.GRAPHICS_PRESETS
+	if shadows_control != null:
+		var expected: Array = [RS_GraphicsPreset.SHADOWS_OFF]
+		for level in library.shadow_levels:
+			expected.append(level.id)
+		_check("список теней: «Выкл» и все ступени по порядку", shadows_control.option_values == expected,
+				"%s вместо %s" % [shadows_control.option_values, expected])
+		for p in library.presets:
+			_check("ступень теней пресета «%s» есть в каталоге" % p.id,
+					library.shadow_level(p.shadow_quality) != null, String(p.shadow_quality))
+		# Ломается молча: при четырёх ячейках в четверти пары под омни-лампы
+		# рвутся, и лампа в бюджете остаётся без тени — засвет вместо ошибки
+		# (RS_ShadowLevel.cells_per_quadrant).
+		for level in library.shadow_levels:
+			_check("ступень «%s»: в четверти атласа не меньше 16 ячеек" % level.id,
+					level.cells_per_quadrant >= Viewport.SHADOW_ATLAS_QUADRANT_SUBDIV_16,
+					"%d" % level.cells_per_quadrant)
+		shadows_control.set_setting_value(RS_GraphicsPreset.SHADOWS_OFF)
 		shadows_control.setting_changed.emit(shadows_control)
-		_check("без теней разрешение теней недоступно", not (atlas as Range).editable,
-				"слайдер разрешения теней остался в деле при выключенных тенях")
-		shadows_control.set_setting_value(true)
-		shadows_control.setting_changed.emit(shadows_control)
-		_check("с тенями — снова доступно", (atlas as Range).editable, "слайдер так и остался погашен")
+		_check("ручной выбор «Выкл» переводит пресет на «Собственный»",
+				preset == null or preset.get_setting_value() == GraphicsPresetSetting.CUSTOM_ID,
+				"список пресетов остался на «%s»" % [preset.get_setting_value()])
 
 	# --- 9. Подсказка — в колонке, по строке, на которую смотрят ----------
-	atlas_row.looked_at.emit(atlas_row)
+	var shadows_row := menu.get_node("%Shadows") as UI_SettingRow
+	shadows_row.looked_at.emit(shadows_row)
 	var hint_text := menu.get_node("%HintText") as Label
 	var hint_title := menu.get_node("%HintTitle") as Label
-	_check("колонка подсказки показывает строку", hint_title.text == atlas_row.title()
-			and hint_text.text == tr("SETTINGS_HINT_SHADOW_RES"),
+	_check("колонка подсказки показывает строку", hint_title.text == shadows_row.title()
+			and hint_text.text == tr("SETTINGS_HINT_SHADOWS"),
 			"«%s» / «%s»" % [hint_title.text, hint_text.text])
 
 	# Настройки не трогались: правился только черновик меню, «Применить» не
 	# нажималась. Убираем меню, чтобы его _input не пережил проверку.
 	menu.queue_free()
+
+	_check_legacy_shadows()
+	_check_level_light()
+	_check_shadow_budget()
+
+
+## Сейв до ступеней теней: флажок и атлас приходят в RS_Settings._set тем же
+## путём, что и из файла, — загрузчик ресурса зовёт set() на каждое поле. Ломается
+## это молча: игрок, выключивший тени, после обновления получил бы их снова.
+func _check_legacy_shadows() -> void:
+	var off := RS_Settings.new()
+	off.set(&"shadows_enabled", false)
+	off.set(&"shadow_atlas_size", 4096)
+	_check("старый сейв «тени выкл» остаётся без теней", off.shadow_quality == RS_GraphicsPreset.SHADOWS_OFF,
+			String(off.shadow_quality))
+	var sharp := RS_Settings.new()
+	sharp.set(&"shadow_atlas_size", 4096)
+	_check("старый атлас 4096 становится ступенью «Высокие»", sharp.shadow_quality == &"high",
+			String(sharp.shadow_quality))
+	var plain := RS_Settings.new()
+	_check("без старых полей — умолчание «Средние»", plain.shadow_quality == &"medium", String(plain.shadow_quality))
+
+
+## Лампа уровня следит за настройкой сама: «Выкл» снимает тень, ступень ставит
+## свою дальность. Настройки подменяются только в памяти и возвращаются — на диск
+## проверка ничего не пишет.
+func _check_level_light() -> void:
+	var before := SettingsManager.settings
+	var omni := OmniLight3D.new()
+	omni.set_script(LevelLight)
+	add_child(omni)
+	var tuned := before.copy()
+	tuned.shadow_quality = &"high"
+	SettingsManager.settings = tuned
+	var high := SettingsManager.GRAPHICS_PRESETS.shadow_level(&"high")
+	_check("лампа берёт дальность теней ступени", omni.shadow_enabled
+			and is_equal_approx(omni.distance_fade_shadow, high.shadow_distance),
+			"тень %s, дальность %.0f" % [omni.shadow_enabled, omni.distance_fade_shadow])
+	var off := before.copy()
+	off.shadow_quality = RS_GraphicsPreset.SHADOWS_OFF
+	SettingsManager.settings = off
+	_check("«Выкл» снимает тень с лампы", not omni.shadow_enabled, "")
+	SettingsManager.settings = before
+	omni.queue_free()
+
+
+## Бюджет теней: в кадре тень получают лампы, чей свет ближе к камере, сверх
+## бюджета — теряют; лампа вне кадра ячейку не занимает и тень сохраняет.
+## Ломается тихо: перепутай порядок — без тени останется лампа над головой, и
+## её свет пройдёт сквозь стену.
+func _check_shadow_budget() -> void:
+	var camera := Camera3D.new()
+	add_child(camera)
+	var level := RS_ShadowLevel.new()
+	level.cells_per_quadrant = Viewport.SHADOW_ATLAS_QUADRANT_SUBDIV_1  # бюджет 2
+	level.shadow_distance = 40.0
+	var lamps: Array = []
+	for z in [-3.0, -20.0, -10.0, 15.0]:  # три впереди (камера смотрит в −Z), одна за спиной
+		var lamp := OmniLight3D.new()
+		lamp.omni_range = 8.0
+		lamp.position = Vector3(0, 0, z)
+		add_child(lamp)
+		lamps.append(lamp)
+	ShadowBudget.distribute(lamps, camera, level)
+	var on: Array = lamps.map(func(l: Light3D) -> bool: return l.shadow_enabled)
+	_check("бюджет: тень у двух ближних в кадре, дальняя без, лампа за спиной с тенью",
+			on == [true, false, true, true], str(on))
+	for lamp in lamps:
+		lamp.queue_free()
+	camera.queue_free()
 
 
 ## Те же правила, по которым контролы собирает само меню: узел с утиным

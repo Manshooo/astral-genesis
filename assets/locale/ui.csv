@@ -101,7 +101,10 @@ SETTINGS_PRESET_HIGH,Высокий,High
 SETTINGS_PRESET_CUSTOM,Собственный,Custom
 SETTINGS_RES_SCALE,Масштаб разрешения,Resolution scale
 SETTINGS_SHADOWS,Тени,Shadows
-SETTINGS_SHADOW_RES,Разрешение теней,Shadow resolution
+SETTINGS_SHADOWS_LOW,Низкие,Low
+SETTINGS_SHADOWS_MEDIUM,Средние,Medium
+SETTINGS_SHADOWS_HIGH,Высокие,High
+SETTINGS_SHADOWS_ULTRA,Ультра,Ultra
 SETTINGS_AA,Сглаживание,Anti-aliasing
 SETTINGS_AA_OFF,Выкл,Off
 SETTINGS_VSYNC,Вертикальная синхронизация,Vertical synchronization
@@ -122,7 +125,7 @@ SETTINGS_APPLY,Применить,Apply
 SETTINGS_DIRTY,есть непримененные изменения,unapplied changes
 SETTINGS_HINT_PRESET,"Задаёт масштаб, тени и сглаживание разом. Ручная правка любого из них переводит пресет в «Собственный».","Sets scale, shadows and anti-aliasing at once. Changing any of them by hand switches the preset to “Custom”."
 SETTINGS_HINT_RES_SCALE,"Доля разрешения окна, в которой рисуется 3D. Интерфейс остаётся чётким.",Share of the window resolution the 3D view is drawn at. The interface stays sharp.
-SETTINGS_HINT_SHADOW_RES,"Чёткость теней. Недоступно, пока тени выключены.",Shadow sharpness. Unavailable while shadows are off.
+SETTINGS_HINT_SHADOWS,"Чёткость, мягкость краёв и дальность теней. «Выкл» быстрее всего, но свет ламп проходит сквозь стены.","Sharpness, edge softness and draw distance of shadows. “Off” is fastest, but lamp light shines through walls."
 SETTINGS_HINT_FPS,0 — без ограничения.,0 means unlimited.
 SETTINGS_HINT_KEYS,Клик по клавише — ждёт новую. Занятая клавиша меняется местами.,Click a key to wait for a new one. A taken key swaps places.
 ACTION_MOVE_FORWARD,Вперёд,Move forward
