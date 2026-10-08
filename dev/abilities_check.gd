@@ -286,15 +286,10 @@ func _run(world: World) -> void:
 	add_child(floor_node)
 	await _physics(20)  # дать телу осесть на пол
 
+	# Сам прыжок с пола после гравитации сверяют movement_check (вся цепочка
+	# систем у стены) и system_order_check (порядок deps()); здесь пол нужен бегу.
 	var body_node := player as Node as CharacterBody3D
 	_check("во плоти стоим на полу", body_node.is_on_floor(), str(player.global_position))
-	inp.jump_pressed = true
-	await _physics(1)
-	_check(
-		"прыжок с пола поднимает — S_Jump отработал ПОСЛЕ гравитации",
-		vel.velocity.y > 0.0,
-		str(vel.velocity.y)
-	)
 
 	# --- 7б. Бег: множитель ложится на ПОСЧИТАННЫЙ стат, а не на поле --------
 	# Смысл проверки не в самом ускорении, а в том, ГДЕ оно живёт: S_Sprint не
@@ -451,7 +446,7 @@ func _run(world: World) -> void:
 	var move_line := tr("HUD_CTRL_MOVE")
 	var jump_line := tr("HUD_CTRL_JUMP")
 	var sprint_line := tr("HUD_CTRL_SPRINT")
-	_check("HUD: ключи управления переведены", flight_line != "HUD_CTRL_FLIGHT" and move_line != "HUD_CTRL_MOVE", flight_line)
+	# Переведены ли ключи HUD_*, сверяет hud_check по всему src/.
 	_check(
 		"HUD: призрак — одна строка «Полёт», без прыжка и бега",
 		abilities.visible_lines() == PackedStringArray([flight_line]),

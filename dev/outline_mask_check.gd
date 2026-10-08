@@ -120,27 +120,24 @@ func _run(world: World, mask_system: S_OutlineMask) -> void:
 	world.remove_entity(narrowed)
 	await get_tree().process_frame
 
+	# Сущность без единого меша: ассерта нет, падение наблюдателя — SCRIPT ERROR,
+	# и его засчитывает провалом сторож обвязки.
 	var bare := Entity.new()
 	bare.name = "БезГеометрии"
 	world.add_entity(bare)
 	await get_tree().process_frame
 	bare.add_component(C_Highlighted.new())
 	await get_tree().process_frame
-	_check("сущность без единого меша не роняет наблюдатель", true, "")
 	world.remove_entity(bare)
 	await get_tree().process_frame
 
 	# --- 3. Система: из чего собрана маска ---------------------------------
 	var mask := mask_system.get_node_or_null("OutlineMask") as SubViewport
 	var overlay := mask_system.get_node_or_null("OutlineCanvas/OutlineOverlay") as ColorRect
-	_check("система собрала SubViewport маски", mask != null, "узла OutlineMask нет")
-	_check("система собрала оверлей контура", overlay != null, "узла OutlineOverlay нет")
-	if mask == null or overlay == null:
-		return
-
-	var mask_camera := mask.get_node_or_null("MaskCamera") as Camera3D
-	_check("у маски есть своя камера", mask_camera != null, "узла MaskCamera нет")
-	if mask_camera == null:
+	var mask_camera := mask.get_node_or_null("MaskCamera") as Camera3D if mask else null
+	if mask == null or overlay == null or mask_camera == null:
+		_check("система собрала маску, её камеру и оверлей", false,
+			"маска %s, камера %s, оверлей %s" % [mask, mask_camera, overlay])
 		return
 
 	_check(

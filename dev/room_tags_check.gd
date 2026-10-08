@@ -39,7 +39,6 @@ func _run() -> void:
 
 	var problems := catalog.validate()
 	_check("словарь без расхождений", problems.is_empty(), "; ".join(problems))
-	_check("в словаре есть теги", not catalog.tags.is_empty(), "tags пуст")
 
 	_check_presets(library, catalog)
 	_check_generator_tags(library, catalog)

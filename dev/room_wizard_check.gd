@@ -30,8 +30,17 @@ func _ready() -> void:
 
 	_check_tagify()
 	_check_no_scene(wizard)
+	var problems := {
+		"путь пресета — рядом со сценой, и файл на месте": [],
+		"форма — ровно display_name/doors_min/doors_max/weight": [],
+		"список типов заполнен и показывает тип пресета": [],
+		"обе кнопки включены": [],
+	}
 	for scene_path in ROOM_SCENES:
-		_check_scene(wizard, scene_path)
+		_check_scene(wizard, scene_path, problems)
+	for what: String in problems:
+		var list: Array = problems[what]
+		_check("%s (%d сцен)" % [what, ROOM_SCENES.size()], list.is_empty(), ", ".join(list))
 	_check_hub_scene(wizard)
 	_check_baked_scene(wizard)
 
@@ -87,23 +96,16 @@ func _check_no_scene(wizard: RoomWizard) -> void:
 	_check("без сцены кнопка библиотеки выключена", wizard._add_to_library_btn.disabled, "")
 
 
-func _check_scene(wizard: RoomWizard, scene_path: String) -> void:
+func _check_scene(wizard: RoomWizard, scene_path: String, problems: Dictionary) -> void:
 	var room := (load(scene_path) as PackedScene).instantiate()
 	wizard.refresh_for_scene(room)
 
 	var expected_preset_path := scene_path.get_basename() + ".tres"
 	var label := scene_path.get_file()
 
-	_check(
-		"%s: путь пресета — рядом со сценой, тот же файл" % label,
-		wizard._preset_path == expected_preset_path,
-		wizard._preset_path
-	)
-	_check(
-		"%s: пресет уже существует (мигрирован Room Wizard'ом)" % label,
-		ResourceLoader.exists(expected_preset_path),
-		expected_preset_path
-	)
+	if wizard._preset_path != expected_preset_path or not ResourceLoader.exists(expected_preset_path):
+		problems["путь пресета — рядом со сценой, и файл на месте"].append(
+			"%s → %s" % [label, wizard._preset_path])
 
 	# Рефлексивная форма: ровно скалярные @export-поля RS_RoomPreset — не
 	# scene/tags (своя вёрстка) и не служебные поля базового Resource
@@ -111,33 +113,24 @@ func _check_scene(wizard: RoomWizard, scene_path: String) -> void:
 	# игры собираются по сокетам, поэтому степень у них — диапазон дверей.
 	var fields: Array = wizard._field_controls.keys()
 	fields.sort()
-	_check(
-		"%s: форма — ровно display_name/doors_min/doors_max/weight" % label,
-		fields == ["display_name", "doors_max", "doors_min", "weight"],
-		str(fields)
-	)
+	if fields != ["display_name", "doors_max", "doors_min", "weight"]:
+		problems["форма — ровно display_name/doors_min/doors_max/weight"].append("%s: %s" % [label, fields])
 	# Тип помещения — отдельный контрол, а не поле рефлексивной формы (в форме
 	# StringName нарисовался бы нередактируемой строкой). Проверяем ровно то,
 	# чем он опасен: пустой или сбитый список делает сохранение РАЗРУШИТЕЛЬНЫМ —
 	# _apply_form_to_preset возьмёт из него «нет типа» и сотрёт авторский.
 	var selected: int = wizard._type_option.get_selected()
-	_check(
-		"%s: список типов заполнен и показывает тип пресета" % label,
-		(
-			wizard._type_option.item_count > 0
-			and selected >= 0
-			and selected < wizard._type_ids.size()
-			and wizard._type_ids[selected] == wizard._preset.room_type
-		),
-		"пунктов %d, выбран %d, у пресета «%s»" % [
-			wizard._type_option.item_count, selected, wizard._preset.room_type],
-	)
-	_check("%s: кнопка сохранения включена" % label, not wizard._save_btn.disabled, "")
-	_check(
-		"%s: кнопка библиотеки включена (пресет уже на диске)" % label,
-		not wizard._add_to_library_btn.disabled,
-		""
-	)
+	if not (
+		wizard._type_option.item_count > 0
+		and selected >= 0
+		and selected < wizard._type_ids.size()
+		and wizard._type_ids[selected] == wizard._preset.room_type
+	):
+		problems["список типов заполнен и показывает тип пресета"].append(
+			"%s: пунктов %d, выбран %d, у пресета «%s»" % [
+				label, wizard._type_option.item_count, selected, wizard._preset.room_type])
+	if wizard._save_btn.disabled or wizard._add_to_library_btn.disabled:
+		problems["обе кнопки включены"].append(label)
 
 	room.free()
 

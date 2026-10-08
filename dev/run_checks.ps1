@@ -3,20 +3,18 @@
     Прогоняет headless sanity-check'и Astral Genesis и печатает единый вердикт.
 
 .DESCRIPTION
-    Оборачивает dev-сценарии в консистентный CI-подобный запуск:
-      - dev/*_check.tscn — любой сценарий, названный по этому шаблону
-        (body_traits_check, stat_modifiers_check, body_form_check, …),
-        подхватывается АВТОМАТИЧЕСКИ: он сам печатает ok/FAIL по каждому
-        ассерту и выходит нужным кодом (см. SKILL.md, §«Как писать проверку»).
-        Ничего регистрировать вручную не нужно — новый файл с этим суффиксом
-        подхватится сам при следующем прогоне.
-      - dev/gen_verifier.tscn — единственный сценарий вне этого шаблона:
-        генератор графа + библиотека пресетов на SEED_COUNT сидах; ничего не
-        возвращает и не квитится сам, поэтому вывод парсится на
-        "недобор дверей" / "недостижимо" / "проблем". Остаётся отдельным
-        случаем, а не подгоняется под общий шаблон.
+    Оборачивает dev-сценарии в консистентный CI-подобный запуск: любой
+    dev/*_check.tscn (body_traits_check, stat_modifiers_check, …)
+    подхватывается АВТОМАТИЧЕСКИ — он сам печатает ok/FAIL по каждому ассерту и
+    выходит нужным кодом (см. SKILL.md, §«Как писать проверку»). Ничего
+    регистрировать вручную не нужно — новый файл с этим суффиксом подхватится сам
+    при следующем прогоне.
 
-    Ни то, ни другое не подменяет ручной плейтест — см. SKILL.md, раздел
+    Особых случаев нет. Последним был dev/gen_verifier.tscn, чей вывод раннер
+    разбирал регулярками и два числа из четырёх только печатал; его инварианты
+    переехали ассертами в corridor_graph_check.
+
+    Прогон не подменяет ручной плейтест — см. SKILL.md, раздел
     «Чек-лист ручного плейтеста».
 
 .PARAMETER GodotPath
@@ -26,10 +24,9 @@
     `godot` из PATH.
 
 .PARAMETER Check
-    Какую проверку прогнать: "All" (по умолчанию, всё), "Gen" (только
-    gen_verifier), либо имя файла любого dev/*_check.tscn без расширения
-    (например "body_traits_check"). "Body" остаётся алиасом
-    "body_traits_check" для обратной совместимости.
+    Какую проверку прогнать: "All" (по умолчанию, всё) либо имя файла любого
+    dev/*_check.tscn без расширения (например "body_traits_check"). "Body"
+    остаётся алиасом "body_traits_check" для обратной совместимости.
 
 .PARAMETER ListChecks
     Только напечатать, какие dev/*_check.tscn найдены, и выйти — без запуска
@@ -41,7 +38,7 @@
 
 .EXAMPLE
     ./dev/run_checks.ps1
-    Прогоняет gen_verifier и все найденные dev/*_check.tscn известным Godot.
+    Прогоняет все найденные dev/*_check.tscn известным Godot.
 
 .EXAMPLE
     ./dev/run_checks.ps1 -Check body_traits_check -GodotPath "D:\Godot\Godot_v4.7.2-stable_win64_console.exe"
@@ -82,7 +79,6 @@ function Get-GenericChecks {
 }
 
 if ($ListChecks) {
-    Write-Host "gen_verifier (особый случай, не по шаблону *_check.tscn)"
     Get-GenericChecks | ForEach-Object { Write-Host $_ }
     exit 0
 }
@@ -156,55 +152,6 @@ function Run-GenericCheck([string]$Name) {
     return $true
 }
 
-function Run-GenVerifier {
-    Write-Host "`n=== gen_verifier ==="
-    $output = & $GodotPath --headless --path $RepoRoot "res://dev/gen_verifier.tscn" --quit-after 300 2>&1
-    $output | ForEach-Object { Write-Host $_ }
-
-    $fail = $false
-
-    $summaryLine = $output | Select-String -Pattern "Итог: макс\. недостижимо по графу=(\d+), по дверям=(\d+), макс\. узлов с 2\+ вертикальными рёбрами=(\d+)"
-    if (-not $summaryLine) {
-        Write-Host "FAIL: не нашёл итоговую строку 'Итог: ...' в выводе — сцена не отработала до конца?" -ForegroundColor Red
-        return $false
-    }
-    $m = $summaryLine.Matches[0]
-    $unreachableGraph = [int]$m.Groups[1].Value
-    $unreachableDoors = [int]$m.Groups[2].Value
-    $multiVertical = [int]$m.Groups[3].Value
-    if ($unreachableGraph -gt 0) {
-        Write-Host "FAIL: недостижимо по графу > 0 ($unreachableGraph) — граф генератора несвязен, это баг генератора, не дверей." -ForegroundColor Red
-        $fail = $true
-    }
-    if ($unreachableDoors -gt 0) {
-        Write-Host "ВНИМАНИЕ: недостижимо по дверям = $unreachableDoors — не обязательно фейл (см. SKILL.md), но проверьте, не выросло ли число." -ForegroundColor Yellow
-    }
-    if ($multiVertical -gt 0) {
-        Write-Host "FAIL: узлов с 2+ вертикальными рёбрами > 0 ($multiVertical) — портал в комнате один, лишнее ребро утечёт обычной двери (см. v0.5.0 «Вертикальные переходы»)." -ForegroundColor Red
-        $fail = $true
-    }
-
-    if ($output | Select-String -Pattern "проблем:") {
-        Write-Host "FAIL: RS_RoomPresetLibrary.validate() нашёл проблемы (см. строки 'validate(): N проблем' выше)." -ForegroundColor Red
-        $fail = $true
-    }
-    # gen_verifier не на общей обвязке проверок (dev/check_harness.gd), и сторожа
-    # ошибок скрипта у него нет — оборванный блок ловим здесь, по логу.
-    if ($output | Select-String -Pattern "SCRIPT ERROR" -SimpleMatch) {
-        Write-Host "FAIL: в gen_verifier ошибка скрипта — часть проверки оборвана (см. SCRIPT ERROR выше)." -ForegroundColor Red
-        $fail = $true
-    }
-    if ($output | Select-String -Pattern "room_preset_library не назначена") {
-        Write-Host "FAIL: library == null — data/game_config.tres не ссылается на room_preset_library." -ForegroundColor Red
-        $fail = $true
-    }
-
-    if (-not $fail) {
-        Write-Host "OK: gen_verifier — граф связен, пресеты валидны." -ForegroundColor Green
-    }
-    return -not $fail
-}
-
 $genericChecks = Get-GenericChecks
 
 # "Body" — алиас "body_traits_check" для обратной совместимости с тем, как
@@ -213,17 +160,14 @@ $resolvedCheck = $Check
 if ($resolvedCheck -eq "Body") { $resolvedCheck = "body_traits_check" }
 
 if ($resolvedCheck -eq "All") {
-    if (-not (Run-GenVerifier)) { $overallFail = $true }
     foreach ($name in $genericChecks) {
         if (-not (Run-GenericCheck $name)) { $overallFail = $true }
     }
-} elseif ($resolvedCheck -eq "Gen") {
-    if (-not (Run-GenVerifier)) { $overallFail = $true }
 } elseif ($genericChecks -contains $resolvedCheck) {
     if (-not (Run-GenericCheck $resolvedCheck)) { $overallFail = $true }
 } else {
     Write-Host "Неизвестное значение -Check: '$Check'." -ForegroundColor Red
-    Write-Host "Доступно: All, Gen, $([string]::Join(', ', $genericChecks))"
+    Write-Host "Доступно: All, $([string]::Join(', ', $genericChecks))"
     exit 2
 }
 

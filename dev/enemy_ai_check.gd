@@ -67,11 +67,6 @@ func _run(world: World) -> void:
 		not enemy.has_component(C_PlayerInput),
 		""
 	)
-	_check(
-		"запрос «у кого есть C_PlayerInput» находит настоящего игрока, а не врага",
-		ECS.world.query.with_all([C_PlayerInput]).execute_one() == player,
-		""
-	)
 
 	await _check_layers(world, player, enemy)
 

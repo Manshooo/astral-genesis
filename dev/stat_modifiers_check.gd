@@ -97,28 +97,28 @@ func _run(world: World) -> void:
 	)
 
 	# --- 4. Дерево перков доезжает до души ----------------------------------
-	# Числа те же, что раньше были захардкожены в наблюдателе: 2.0 + rank * 0.5 и
-	# 60.0 + rank * 20.0. Перевод скиллов в данные баланс менять не должен.
+	# Сколько даёт ранг — баланс в data/skill_tree.tres, и его тюнят; проверка
+	# сверяет путь «ранг → модификатор → прочитанный стат», а не число.
 	var stub := PlayerSkillSave.new()
 	stub.ranks = {&"body_snatch": 2, &"lifespan": 1}
 	SkillManager.save = stub
 
 	var soul := _make_soul()
 	world.add_entity(soul)
-	SkillManager.reapply_all()
-
 	var bs := soul.get_component(C_BodySnatch) as C_BodySnatch
 	var life := soul.get_component(C_Lifespan) as C_Lifespan
+	var base_reach := bs.capture_range
+	var base_max := life.max_duration
+	SkillManager.reapply_all()
+
 	var reach := C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_RANGE, bs.capture_range)
-	_check("перк дальности: 2.0 + 2 * 0.5 = 3.0", is_equal_approx(reach, 3.0), str(reach))
-	_check(
-		"перк запаса: 60.0 + 1 * 20.0 = 80.0",
-		is_equal_approx(life.effective_max(soul), 80.0),
-		str(life.effective_max(soul))
-	)
+	_check("ранги перка дальности увеличивают дальность захвата", reach > base_reach,
+		"%.2f при базе %.2f" % [reach, base_reach])
+	_check("ранг перка запаса увеличивает максимум", life.effective_max(soul) > base_max,
+		"%.2f при базе %.2f" % [life.effective_max(soul), base_max])
 	_check(
 		"база в компоненте не переписана",
-		is_equal_approx(bs.capture_range, 2.0) and is_equal_approx(life.max_duration, 60.0),
+		is_equal_approx(bs.capture_range, base_reach) and is_equal_approx(life.max_duration, base_max),
 		"%.1f / %.1f" % [bs.capture_range, life.max_duration]
 	)
 
@@ -128,8 +128,8 @@ func _run(world: World) -> void:
 	SkillManager.reapply_all()
 	_check(
 		"обнуление рангов возвращает базу",
-		is_equal_approx(C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_RANGE, bs.capture_range), 2.0)
-			and is_equal_approx(life.effective_max(soul), 60.0),
+		is_equal_approx(C_StatModifiers.of(soul, C_StatModifiers.CAPTURE_RANGE, bs.capture_range), base_reach)
+			and is_equal_approx(life.effective_max(soul), base_max),
 		str(life.effective_max(soul))
 	)
 
@@ -141,6 +141,7 @@ func _run(world: World) -> void:
 
 	var body := BODY_SCENE.instantiate()
 	world.add_entity(body)
+	var pocket := (body.get_component(C_BodyDecay) as C_BodyDecay).maximum
 	body.add_component(C_SnatchTargeted.new())
 	bs.capture_success_chance = 1.0
 	bs.capture_requested = true
@@ -148,21 +149,23 @@ func _run(world: World) -> void:
 
 	var decay := soul.get_component(C_BodyDecay) as C_BodyDecay
 	_check(
-		"карман открылся по эффективному объёму: 60 * 1.5 = 90",
-		decay != null and is_equal_approx(decay.remaining, 90.0),
-		str(decay.remaining if decay else -1.0)
+		"карман открылся по эффективному объёму: объём тела × 1.5",
+		decay != null and is_equal_approx(decay.remaining, pocket * 1.5),
+		"%.2f при объёме тела %.2f" % [decay.remaining if decay else -1.0, pocket]
 	)
 	_check(
 		"авторское число пресета не переписано",
-		decay != null and is_equal_approx(decay.maximum, 60.0),
+		decay != null and is_equal_approx(decay.maximum, pocket),
 		str(decay.maximum if decay else -1.0)
 	)
 
 	# +10% к времени, забираемому при добровольном выходе.
 	soul_mods.set_source(&"test", {}, {C_StatModifiers.LEAVE_BODY_GAIN: 1.1})
+	var taken := decay.remaining
 	life.current = 0.0
 	O_ExpelFromBody.expel(soul, true)
-	_check("добровольный выход: 90 * 1.1 = 99", is_equal_approx(life.current, 99.0), str(life.current))
+	_check("добровольный выход забирает остаток × 1.1", is_equal_approx(life.current, taken * 1.1),
+		"%.2f при остатке %.2f" % [life.current, taken])
 
 	# Доля, остающаяся при гибели тела, — тоже стат.
 	var body2 := BODY_SCENE.instantiate()
@@ -175,11 +178,11 @@ func _run(world: World) -> void:
 	soul_mods.set_source(&"test", {}, {C_StatModifiers.DEATH_KEEP: 2.0})
 	life.current = 100.0
 	O_ExpelFromBody.expel(soul, false)
-	# База 0.1, множитель 2 — остаётся 20% от эффективного максимума души (60).
+	var keep: float = life.effective_max(soul) * GameConfig.config.lifespan_death_fraction * 2.0
 	_check(
-		"гибель тела: доля остатка — стат, 60 * 0.2 = 12",
-		is_equal_approx(life.current, 12.0),
-		str(life.current)
+		"гибель тела: доля остатка — стат (база из конфига × 2)",
+		is_equal_approx(life.current, keep),
+		"%.2f, ожидалось %.2f" % [life.current, keep]
 	)
 
 

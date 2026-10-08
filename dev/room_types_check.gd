@@ -260,23 +260,12 @@ func _check_generation(library: RS_RoomPresetLibrary) -> void:
 		"ни одной комнаты с типом на %d сидах — предпочтение не работает" % SEED_COUNT,
 	)
 
-	# Детерминированность: забег хранит сид, а не комнаты, и второй проход по
-	# тому же сиду обязан дать те же типы — иначе загруженная игра окажется в
-	# другом комплексе.
-	var first := RS_LevelGraph.new().generate_run(0, library)
-	var second := RS_LevelGraph.new().generate_run(0, library)
-	var mismatched := 0
-	for id: StringName in first.nodes:
-		if first.nodes[id].room_type != second.nodes[id].room_type:
-			mismatched += 1
-	_check(
-		"типы детерминированы по сиду",
-		mismatched == 0,
-		"%d узлов получили разный тип на одном сиде" % mismatched,
-	)
+	# Детерминизм типов здесь не сверяется: подпись графа в corridor_graph_check
+	# включает room_type каждого узла.
 
 	# Домашний узел получает сцену хаба в обход отбора — тип обязан описывать
 	# именно её, иначе на карте дом подпишется случайным складом.
+	var first := RS_LevelGraph.new().generate_run(0, library)
 	var home := first.get_node_data(first.entry_node_id)
 	var hub_type: StringName = library.hub.room_type if library.hub else &""
 	_check(
