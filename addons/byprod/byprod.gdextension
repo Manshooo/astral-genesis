@@ -19,8 +19,8 @@ macos.release = "res://addons/byprod/bin/libgdbyprod.macos.template_release.fram
 ;
 ; ВАЖНО: объявленная зависимость обязана существовать на диске, иначе Godot
 ; обрывает экспорт с «Failed to copy shared object». В git рантайма нет (лицензия
-; Madrigal, см. README.md рядом), поэтому перед экспортом его кладёт пайплайн из
-; приватного зеркала — шаг «Забрать рантайм byProd» в .github/workflows/build.yml.
+; Madrigal, см. README.md рядом), поэтому перед экспортом его качает с byprod.io
+; пайплайн — шаг «Скачать рантайм byProd» в .github/workflows/build.yml.
 ; Локальный экспорт требует того же: положить библиотеку в addons/byprod/bin/.
 [dependencies]
 
