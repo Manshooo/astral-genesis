@@ -44,7 +44,9 @@ effort=4
 
 window/size/viewport_width=1497
 window/size/viewport_height=720
-window/stretch/scale_mode="integer"
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/stretch/scale_mode="fractional"
 
 [editor]
 
