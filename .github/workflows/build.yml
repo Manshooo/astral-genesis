@@ -99,8 +99,8 @@ jobs:
       - name: Скачать рантайм byProd
         shell: bash
         env:
-          BYPROD_SDK_URL: https://byprod.io/packages/byProdSDK0.5.3.zip
-          BYPROD_SDK_SHA256: 0d7225913b2892bdfaea936f3a39aa57c418b416d3c30a6e18856477914bcd6c
+          BYPROD_SDK_URL: https://byprod.io/packages/byProdSDK0.5.5.zip
+          BYPROD_SDK_SHA256: 63d83a7d9a02bad134482d177e8156eda966ff1f7c23db6cfce3c9e3a2245255
         run: |
           set -euo pipefail
           curl -fsSL "$BYPROD_SDK_URL" -e "https://byprod.io/" -o /tmp/byprod-sdk.zip
