@@ -13,7 +13,13 @@ extends Resource
 @export var mouse_sensitivity: float = 0.0015  ## Умножается на 1000
 
 @export_group("Camera")
-@export var fov: float = 103.0
+## Поле зрения по горизонтали, в градусах (камеру ставит E_Player). Уже 90 тесно
+## в комнате 8 м, шире 110 тянет края кадра; границы держат и ползунок меню, и
+## камера — сейв мог сохраниться со старой шкалы 60–120.
+@export_range(90.0, 110.0, 1.0) var fov: float = 103.0
+
+const FOV_MIN := 90.0
+const FOV_MAX := 110.0
 
 @export_group("Interaction")
 @export var interact_range: float = 3.0        ## Дальность луча взаимодействия
@@ -29,7 +35,7 @@ extends Resource
 @export var max_fps: int = 60
 ## Применённый пресет ("low"/"medium"/"high", каталог — data/graphics_presets.tres)
 ## или &"custom", если игрок вручную поменял хоть одно из полей пресета ниже
-## (render_scale/shadow_quality/aa_mode — см.
+## (render_scale/shadow_quality/screen_effects/glow_enabled/aa_mode — см.
 ## RS_GraphicsPreset и settings_menu.gd.GRAPHICS_PRESET_FIELDS). Значения по
 ## умолчанию здесь равны пресету "medium" — свежая установка не должна
 ## выглядеть как "собственные" настройки.
@@ -38,10 +44,21 @@ extends Resource
 ## Ступень теней: id из RS_GraphicsPresetLibrary.shadow_levels или
 ## RS_GraphicsPreset.SHADOWS_OFF.
 @export var shadow_quality: StringName = &"medium"
+## Ступень экранных эффектов (SSAO/SSIL/SSR): id из
+## RS_GraphicsPresetLibrary.effects_levels.
+@export var screen_effects: StringName = &"medium"
+## Свечение ярких мест (glow, bloom). Отдельным флажком, а не ступенью эффектов:
+## его выключают не только ради кадров — кому-то ореол вокруг ламп просто мешает.
+@export var glow_enabled: bool = true
 @export var aa_mode: RS_GraphicsPreset.AAMode = RS_GraphicsPreset.AAMode.FXAA
 ## Вне пресета: про разрыв кадров на конкретном мониторе, а не про качество
 ## картинки — пресет её не меняет и правка не считается "отступлением" от него.
 @export var vsync_enabled: bool = true
+## Яркость — множитель экспозиции камеры поверх авторского (LevelEnvironment).
+## Вне пресета по той же причине, что vsync: это калибровка под монитор игрока,
+## а не цена кадра. Тьма без источника света в игре задумана чёрной, и на
+## тёмной матрице без этой ручки в ней не разглядеть ничего.
+@export_range(0.5, 2.0, 0.05) var brightness: float = 1.0
 
 @export_group("Controls")
 ## Переназначенные клавиши: имя действия → код события ("key:70", "mouse:1"),

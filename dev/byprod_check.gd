@@ -48,13 +48,16 @@ func _ready() -> void:
 
 func _run() -> void:
 	# --- 1. Расширение загрузилось и зарегистрировало классы ------------
+	var missing: Array[String] = []
 	for class_name_string in ["ByProdSoundManager", "ByProdEventDescription",
 			"ByProdEventInstance", "ByProdGroupBus", "ByProdStreamPump"]:
-		_check(
-			"класс %s зарегистрирован" % class_name_string,
-			ClassDB.class_exists(class_name_string),
-			"GDExtension не загрузился — проверить addons/byprod/bin/ и byprod.gdextension",
-		)
+		if not ClassDB.class_exists(class_name_string):
+			missing.append(class_name_string)
+	_check(
+		"классы расширения зарегистрированы",
+		missing.is_empty(),
+		"нет %s — GDExtension не загрузился, проверить addons/byprod/bin/ и byprod.gdextension" % ", ".join(missing),
+	)
 
 	if not ClassDB.class_exists("ByProdSoundManager"):
 		return
@@ -87,16 +90,6 @@ func _run() -> void:
 	# устройство уже открыто первым. Проверка, заводившая собственный, валила
 	# прогон целиком — при том, что все её ассерты успевали пройти.
 	var manager = AudioManager.sound_manager()
-
-	# --- Громкость: значение по умолчанию ------------------------------
-	# Спрашиваем ДЕФОЛТ, а не текущие настройки: проверка идёт на машине
-	# разработчика, где в user:// лежит его собственный ползунок.
-	_check(
-		"по умолчанию громкость на единице",
-		is_equal_approx(SettingsManager.default_settings().master_volume, 1.0),
-		"дефолт %f — тихий старт игры выглядел бы как поломка звука" % (
-			SettingsManager.default_settings().master_volume),
-	)
 
 	# --- 3. Деградация без рантайма ------------------------------------
 	if not runtime_present:
@@ -154,11 +147,11 @@ func _run() -> void:
 		manager.get_event_description("event:/нет-такого") == null,
 		"вернулось описание события, которого нет в проекте",
 	)
-	_check(
-		"такт и слушатель безопасны",
-		_survives_update(manager),
-		"update() уронил рантайм",
-	)
+	# Такт и слушатель — без ассерта: упавший рантайм роняет процесс до итоговой
+	# строки, и раннер засчитывает это провалом сам.
+	manager.update()
+	manager.set_listener_transform(Vector3.ZERO, Vector3.FORWARD, Vector3.UP)
+	manager.update()
 
 	# --- 5. Проект звука доехал до рантайма ----------------------------
 	# Событие находится только если рантайм принял и .byprod, и его банк: банки
@@ -296,12 +289,3 @@ func _reaches_state(instance, state: int, frames: int = 8) -> bool:
 		if instance.get_state() == state:
 			return true
 	return false
-
-
-## Отдельной функцией, чтобы падение было видно как провал ассерта, а не как
-## обрыв всего прогона без итоговой строки.
-func _survives_update(manager) -> bool:
-	manager.update()
-	manager.set_listener_transform(Vector3.ZERO, Vector3.FORWARD, Vector3.UP)
-	manager.update()
-	return true

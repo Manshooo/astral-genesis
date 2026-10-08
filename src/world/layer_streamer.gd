@@ -87,6 +87,19 @@ var corridor_tiles: Dictionary[StringName, Array] = {}
 ## Общий родитель тайлов под ECS.world — см. _corridor_parent.
 var _corridor_root: Node3D
 
+## Узлы слоя, которые сейчас показаны (reveal_around). Пусто — показано всё:
+## так слой выходит из spawn, пока текущий узел ещё не назначен.
+var _shown: Dictionary[StringName, bool] = {}
+
+## На сколько рёбер графа от текущего узла слой виден. Весь слой стоит в дереве
+## разом (~170 ламп), а окклюзия Godot отсекает геометрию, но не свет: лампа
+## комнаты за стеной светила бы сквозь неё и тратила кадр. Граф — честный
+## посредник «что видно»: глазу открыто только то, что соединено проёмами.
+## Два шага, а не один: из комнаты через дверь виден коридор, а с его развилки —
+## поперечный коридор и двери его комнат; прямая же линия взгляда остаётся в
+## одном коридоре, раскладка отдаёт развилку прямому (RS_CorridorPlanner).
+const VISIBLE_HOPS := 2
+
 
 ## Новый граф забега; планы слоёв приходят вместе с ним.
 func set_graph(new_graph: RS_LevelGraph) -> void:
@@ -161,9 +174,58 @@ func despawn() -> bool:
 			if is_instance_valid(tile):
 				(tile as Node).free()
 	corridor_tiles.clear()
+	_shown.clear()
 	var was_loaded := depth != NO_DEPTH
 	depth = NO_DEPTH
 	return was_loaded
+
+
+## Показывает узлы слоя не дальше VISIBLE_HOPS рёбер от [param node_id] и
+## прячет остальные. Портальные рёбра не в счёт: за ними другой слой, его в
+## дереве нет, а соседний этаж за порталом виден только после перехода.
+func reveal_around(node_id: StringName) -> void:
+	var near := {node_id: 0}
+	var queue: Array[StringName] = [node_id]
+	while not queue.is_empty():
+		var current: StringName = queue.pop_front()
+		var hops: int = near[current]
+		if hops >= VISIBLE_HOPS:
+			continue
+		var node_data := graph.get_node_data(current)
+		if node_data == null:
+			continue
+		for conn: RS_LevelConnection in node_data.connections:
+			if conn.is_portal() or near.has(conn.target_node_id):
+				continue
+			near[conn.target_node_id] = hops + 1
+			queue.append(conn.target_node_id)
+
+	for id: StringName in rooms:
+		var on := near.has(id)
+		if _shown.get(id, true) != on and is_instance_valid(rooms[id].entity):
+			_set_room_visible(rooms[id].entity as Node as Node3D, on)
+		_shown[id] = on
+	for id: StringName in corridor_tiles:
+		var on := near.has(id)
+		if _shown.get(id, true) != on:
+			for tile in corridor_tiles[id]:
+				if is_instance_valid(tile):
+					(tile as Node3D).visible = on
+		_shown[id] = on
+
+
+## Показан ли узел (для проверок и ShadowBudget-подобных потребителей).
+func is_shown(node_id: StringName) -> bool:
+	return _shown.get(node_id, true)
+
+
+## Прячет содержимое комнаты, кроме того, что ходит: враг, вышедший из своей
+## комнаты в погоню, живёт под её корнем, и спрятанный вместе с ней он стал бы
+## невидимкой рядом с игроком. Прятать корень целиком поэтому нельзя.
+func _set_room_visible(room_root: Node3D, on: bool) -> void:
+	for child in room_root.get_children():
+		if child is Node3D and not child is CharacterBody3D:
+			(child as Node3D).visible = on
 
 
 func _remove_valid_entities(list: Array[Entity]) -> void:

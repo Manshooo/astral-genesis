@@ -8,7 +8,11 @@ extends "res://dev/check_harness.gd"
 ## первое делает соседа недостижимым, второе возвращает заваренные двери, от
 ## которых этот путь и уходит. Портал в комнате без вертикального ребра — мёртвый
 ## портал посреди пола, вертикальное ребро без портала — оборванный переход.
-## Запертые наглухо переходы между слоями — непроходимый забег.
+## Запертые наглухо переходы между слоями — непроходимый забег. Связный граф ещё
+## не значит проходимый мир, поэтому достижимость сверяется дважды: по рёбрам и
+## так, как ходит игрок, — через двери плана и порталы сцен. Здесь же валидация
+## библиотеки пресетов (раньше всё это жило в dev/gen_verifier вне обвязки, и
+## два его числа из четырёх раннер только печатал, не засчитывая провалом).
 ##
 ## Запускать: godot --headless dev/corridor_graph_check.tscn
 
@@ -43,10 +47,12 @@ func _ready() -> void:
 
 
 func _check_config(base: RS_WorldGenConfig) -> void:
-	_check("конфиг генерации загружается", base != null, CONFIG_PATH)
-	_check("конфиг назначен в GameConfig", GameConfig.config.world_gen != null, "")
-	var problems := base.validate() if base else ["нет конфига"]
-	_check("конфиг валиден", problems.is_empty(), ", ".join(problems))
+	var problems := base.validate()
+	_check("конфиг генерации валиден", problems.is_empty(), ", ".join(problems))
+	# Рассинхрон пресета со сценой (диапазон дверей шире сокетов, комната без кита
+	# стен) не падает: подбор молча обрезает двери или ставит комнату без стен.
+	var library_problems := _library.validate()
+	_check("библиотека пресетов валидна", library_problems.is_empty(), "; ".join(library_problems))
 
 
 func _check_invariants(config: RS_WorldGenConfig) -> void:
@@ -54,6 +60,7 @@ func _check_invariants(config: RS_WorldGenConfig) -> void:
 	var exit_unique := _unique(config, false, true)
 	var problems := {
 		"граф связен от входа": [],
+		"по дверям и порталам доходишь туда же, куда по графу": [],
 		"вход — хаб": [],
 		"выходы: число, глубина, сцена, тег": [],
 		"у комнаты рёбер в коридоры ровно столько, сколько у неё дверей": [],
@@ -83,6 +90,10 @@ func _collect(
 	var unreachable := graph.nodes.size() - _reachable(graph).size()
 	if unreachable > 0:
 		problems["граф связен от входа"].append("сид %d: %d недостижимо" % [s, unreachable])
+	var walled_off := graph.nodes.size() - _walkable(graph).size()
+	if walled_off > 0:
+		problems["по дверям и порталам доходишь туда же, куда по графу"].append(
+			"сид %d: %d узлов за стеной" % [s, walled_off])
 
 	var entry := graph.get_node_data(graph.entry_node_id)
 	if entry == null or entry.room_scene_path != entry_unique.preset.scene.resource_path:
@@ -324,6 +335,35 @@ func _reachable(graph: RS_LevelGraph) -> Dictionary:
 			if not seen.has(conn.target_node_id):
 				seen[conn.target_node_id] = true
 				queue.append(conn.target_node_id)
+	return seen
+
+
+## Обход так, как пускает мир: из комнаты в коридор — только через дверь, которую
+## план поставил на этот коридор (RS_LayerPlan.door_faces), вертикальным ребром —
+## только если в сцене комнаты есть портал. Коридор пропускает по всем рёбрам:
+## стыки коридоров открыты. Связный граф с дверью не на той стороне — сосед,
+## до которого ногами не дойти, и по графу этого не видно.
+func _walkable(graph: RS_LevelGraph) -> Dictionary:
+	var seen := {graph.entry_node_id: true}
+	var queue: Array[StringName] = [graph.entry_node_id]
+	while not queue.is_empty():
+		var node := graph.get_node_data(queue.pop_front())
+		if node == null:
+			continue
+		var next: Array[StringName] = []
+		if node.role == RS_LevelNode.Role.CORRIDOR:
+			for conn: RS_LevelConnection in node.connections:
+				next.append(conn.target_node_id)
+		else:
+			next.append_array(graph.layer_plan(node.depth).door_faces.get(node.id, {}).values())
+			if _has_portal(node.room_scene_path):
+				for conn: RS_LevelConnection in node.connections:
+					if conn.is_portal():
+						next.append(conn.target_node_id)
+		for target in next:
+			if not seen.has(target):
+				seen[target] = true
+				queue.append(target)
 	return seen
 
 

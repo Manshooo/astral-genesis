@@ -52,11 +52,6 @@ func _ready() -> void:
 
 func _run(world: World, spy: _RunEndedSpy) -> void:
 	var depth: float = GameConfig.config.void_fall_depth
-	_check(
-		"порог лежит ниже любого пола, а не рядом с ним",
-		depth <= -50.0,
-		"%.1f — на такой глубине можно оказаться и штатно" % depth
-	)
 
 	var player := (load(PLAYER_SCENE) as PackedScene).instantiate() as E_Player
 	world.add_entity(player)

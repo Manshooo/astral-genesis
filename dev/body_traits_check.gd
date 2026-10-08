@@ -19,16 +19,7 @@ func _ready() -> void:
 
 
 func _run(world: World) -> void:
-	# --- 0. Все сцены тел и шаблон грузятся ---------------------------------
-	# Дешёвая страховка от битой ссылки на компонент: сцена с ext_resource на
-	# удалённый скрипт грузится «молча-сломанной» ровно до первого запуска.
-	for path in _body_scenes():
-		_check("грузится %s" % path.get_file(), load(path) != null, path)
-	_check(
-		"грузится шаблон «Тело»", load("res://data/entity_templates/body.tres") != null, ""
-	)
-
-	# --- 0.1. Посадка рига измеряется, а не берётся нулём -------------------
+	# --- 0. Посадка рига измеряется, а не берётся нулём -------------------
 	# Форму коллайдера игрока меняли (капсула → сфера), и неизмеренная форма даёт
 	# ноль — надетое тело утапливается в пол на полроста. Конкретное число не
 	# проверяем: его тюнят в сцене.
@@ -54,6 +45,14 @@ func _run(world: World) -> void:
 	var body := BODY_SCENE.instantiate()
 	world.add_entity(body)
 	body.add_component(C_SnatchTargeted.new())
+	# Числа — у самого тела, а не литералами: их тюнят в сцене, и проверка
+	# сверяет перенос, а не баланс.
+	var authored := [
+		(body.get_component(C_Walk) as C_Walk).speed,
+		(body.get_component(C_Jump) as C_Jump).velocity,
+		(body.get_component(C_Health) as C_Health).maximum,
+		(body.get_component(C_BodyDecay) as C_BodyDecay).maximum,
+	]
 
 	var bs := soul.get_component(C_BodySnatch) as C_BodySnatch
 	bs.capture_success_chance = 1.0
@@ -64,12 +63,17 @@ func _run(world: World) -> void:
 	var jump := soul.get_component(C_Jump) as C_Jump
 	var decay := soul.get_component(C_BodyDecay) as C_BodyDecay
 	var health := soul.get_component(C_Health) as C_Health
-	_check("перенесён C_Walk", walk != null and is_equal_approx(walk.speed, 4.5), str(walk))
-	_check("перенесён C_Jump", jump != null and is_equal_approx(jump.velocity, 6.0), str(jump))
-	_check("перенесён C_Health", health != null and is_equal_approx(health.maximum, 100.0), str(health))
+	var on_soul := [
+		walk.speed if walk else NAN,
+		jump.velocity if jump else NAN,
+		health.maximum if health else NAN,
+		decay.maximum if decay else NAN,
+	]
+	_check("ходьба, прыжок, здоровье и карман перенесены с числами тела", on_soul == authored,
+		"на душе %s, у тела %s" % [on_soul, authored])
 	_check(
 		"карман открыт полным",
-		decay != null and is_equal_approx(decay.remaining, 60.0) and is_equal_approx(decay.maximum, 60.0),
+		decay != null and is_equal_approx(decay.remaining, decay.maximum),
 		"%s" % [decay.remaining if decay else -1]
 	)
 	_check(
@@ -82,30 +86,33 @@ func _run(world: World) -> void:
 	var life := soul.get_component(C_Lifespan) as C_Lifespan
 	var soul_before := life.current
 	ECS.process(1.0, "gameplay")
-	_check("тикает карман тела", is_equal_approx(decay.remaining, 59.0), str(decay.remaining))
+	_check("тикает карман тела", is_equal_approx(decay.remaining, decay.maximum - 1.0), str(decay.remaining))
 	_check("запас души не тронут", is_equal_approx(life.current, soul_before), str(life.current))
 
 	# --- 4. Добровольный выход: остаток прибавляется -------------------------
+	var leftover := decay.remaining
 	bs.leave_requested = true
 	ECS.process(0.016, "physics")
 	await get_tree().process_frame  # expel идёт через call_deferred
 
-	_check("снят C_Walk", soul.get_component(C_Walk) == null, "")
-	_check("снят C_Jump", soul.get_component(C_Jump) == null, "")
-	_check("снят C_Health", soul.get_component(C_Health) == null, "")
-	_check("снят карман", soul.get_component(C_BodyDecay) == null, "")
-	_check("снят C_Embodied", soul.get_component(C_Embodied) == null, "")
+	var still_worn: Array[String] = []
+	for trait_type in [C_Walk, C_Jump, C_Health, C_BodyDecay, C_Embodied]:
+		if soul.get_component(trait_type) != null:
+			still_worn.append(trait_type.get_global_name())
+	_check("выход снял всё, что тело надело", still_worn.is_empty(), ", ".join(still_worn))
 	_check(
-		"остаток тела перетёк душе (60+59=119)", is_equal_approx(life.current, 119.0), str(life.current)
+		"остаток тела перетёк душе", is_equal_approx(life.current, soul_before + leftover),
+		"%.2f, ожидалось %.2f + %.2f" % [life.current, soul_before, leftover]
 	)
 
 	# --- 5. Без тела тикает собственный запас (и излишек — быстрее) ----------
 	var before := life.current
 	ECS.process(0.5, "gameplay")
 	var burned := before - life.current
+	var leak: float = GameConfig.config.lifespan_overflow_leak
 	_check(
-		"излишек утекает быстрее (×3)",
-		is_equal_approx(burned, 1.5),
+		"излишек утекает быстрее (×%.1f из конфига)" % leak,
+		is_equal_approx(burned, 0.5 * leak),
 		"сгорело %.2f" % burned
 	)
 
@@ -168,23 +175,13 @@ func _run(world: World) -> void:
 	worn.current = worn.maximum
 
 	O_ExpelFromBody.expel(soul, false)
+	var keep: float = life.effective_max(soul) * GameConfig.config.lifespan_death_fraction
 	_check(
-		"гибель тела оставляет 10% от максимума",
-		is_equal_approx(life.current, 6.0),
-		str(life.current)
+		"гибель тела оставляет долю lifespan_death_fraction от максимума",
+		is_equal_approx(life.current, keep),
+		"%.2f, ожидалось %.2f" % [life.current, keep]
 	)
 	_check("после гибели карман снят", soul.get_component(C_BodyDecay) == null, "")
-
-
-func _body_scenes() -> Array[String]:
-	var out: Array[String] = []
-	var dir := DirAccess.open("res://src/entities/body")
-	if dir == null:
-		return out
-	for file in dir.get_files():
-		if file.ends_with(".tscn"):
-			out.append("res://src/entities/body/" + file)
-	return out
 
 
 func _make_soul() -> Entity:

@@ -15,8 +15,9 @@ extends "res://dev/check_harness.gd"
 
 ## Допуск сверки с таблицами: в спеке числа округлены до сотых.
 const EPS := 0.011
-const SOURCE_DIRS := ["res://src"]
-const KEY_PATTERN := "\"((?:HUD|KEY|ITEM)_[A-Z0-9_]+)\""
+## Код и данные: данные хранят ключ, а не строку (skill_tree.tres и прочие).
+const SOURCE_DIRS := ["res://src", "res://data"]
+const LOCALE_CSV := "res://assets/locale/ui.csv"
 
 
 func _ready() -> void:
@@ -121,8 +122,15 @@ func _check_impulses() -> void:
 	fx.hit(0.3, 10.0)
 	fx.update_params(body, 10.0, 0.0)
 	_check("удар сразу темнит края", _near(fx.params.edge_dark, UI_HudScreenFx.HIT_DARK), str(fx.params.edge_dark))
-	var shake := UI_HudScreenFx.SHAKE_PX * Vector2(UI_HudMood.noise(370.0, 1.0), UI_HudMood.noise(410.0, 2.3))
-	_check("удар трясёт экран на SHAKE_PX", (fx.params.shake_px as Vector2).is_equal_approx(shake), str(fx.params.shake_px))
+	# Сдвиг не сверяется с формулой шума: та же формула в проверке зеленела бы при
+	# любой правке. Важно другое — тряска есть и не выходит за SHAKE_PX.
+	var shake := fx.params.shake_px as Vector2
+	_check(
+		"удар трясёт экран, но не дальше SHAKE_PX",
+		not shake.is_zero_approx()
+			and absf(shake.x) <= UI_HudScreenFx.SHAKE_PX and absf(shake.y) <= UI_HudScreenFx.SHAKE_PX,
+		str(shake)
+	)
 	_check("тяжёлый удар (30 % HP) — полная красная вспышка", _near(fx.params.blood, UI_HudScreenFx.HIT_RED), str(fx.params.blood))
 	var first_layout: Vector3 = fx.params.blot_to
 	_check("удар перекладывает пятна крови", not first_layout.is_zero_approx(), str(first_layout))
@@ -264,15 +272,25 @@ func _check_key_names() -> void:
 	_check("редкая кнопка мыши — с номером", SettingsManager.code_display_name("mouse:12") == tr("KEY_MOUSE_N") % 12, SettingsManager.code_display_name("mouse:12"))
 
 
-# --- 10. Каждый ключ из кода есть на обоих языках --------------------------------
+# --- 10. Каждый ключ из кода и данных есть на обоих языках -----------------------
+# Префиксы берутся из самого ui.csv (HUD_, MAP_, SKILL_…), а не из списка в
+# проверке: ручные списки ключей в отдельных проверках отставали от кода, а
+# новый префикс в таблице сразу попадает под скан.
 func _check_translation_keys() -> void:
-	var regex := RegEx.create_from_string(KEY_PATTERN)
+	var prefixes := {}
+	for line in FileAccess.get_file_as_string(LOCALE_CSV).split("\n").slice(1):
+		var key := line.get_slice(",", 0)
+		if key.contains("_"):
+			prefixes[key.get_slice("_", 0)] = true
+	var regex := RegEx.create_from_string("\"((?:%s)_[A-Z0-9_]+)\"" % "|".join(prefixes.keys()))
 	var keys := {}
 	for dir: String in SOURCE_DIRS:
 		for path in _source_files(dir):
 			for found in regex.search_all(FileAccess.get_file_as_string(path)):
 				keys[found.get_string(1)] = path
-	_check("ключи HUD в коде найдены", keys.size() >= 20, str(keys.size()))
+	# Сторож скана: сломанный разбор csv или регулярка дали бы ноль ключей и
+	# зелёный ассерт ниже.
+	_check("ключи перевода в коде и данных найдены", keys.size() >= 100, str(keys.size()))
 	var locale := TranslationServer.get_locale()
 	for language: String in ["ru", "en"]:
 		TranslationServer.set_locale(language)
@@ -280,7 +298,7 @@ func _check_translation_keys() -> void:
 		for key: String in keys:
 			if tr(key) == key:
 				missing.append("%s (%s)" % [key, keys[key].get_file()])
-		_check("все ключи HUD переведены на «%s»" % language, missing.is_empty(), ", ".join(missing))
+		_check("все ключи перевода есть на «%s»" % language, missing.is_empty(), ", ".join(missing))
 	TranslationServer.set_locale(locale)
 
 
@@ -310,18 +328,18 @@ func _check_scene() -> void:
 	)
 	hud.free()
 
+	# Пропавшая вариация не падает: Label молча берёт шрифт по умолчанию.
 	var theme: Theme = load(ProjectSettings.get_setting("gui/theme/custom"))
+	var off_theme: Array[String] = []
 	for variation: StringName in [
 		&"HudThought", &"HudKey", &"HudKeyBracket", &"HudMessage", &"HudControls",
 		&"HudMapLabel", &"HudMapKey", &"HudMapKeyBracket",
 	]:
 		var font := theme.get_font(&"font", variation) as FontVariation
-		_check(
-			"вариация %s — Golos Text из общей темы" % variation,
-			theme.get_type_variation_base(variation) == &"Label" and font != null
-			and font.base_font.resource_path.contains("GolosText"),
-			str(font)
-		)
+		if not (theme.get_type_variation_base(variation) == &"Label" and font != null
+				and font.base_font.resource_path.contains("GolosText")):
+			off_theme.append(String(variation))
+	_check("вариации Hud* — Golos Text из общей темы", off_theme.is_empty(), ", ".join(off_theme))
 
 
 # --- 12. Мини-карта: контур прорисовывается пером --------------------------------

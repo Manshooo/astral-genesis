@@ -44,7 +44,7 @@ var _controls: Array = []
 ## разрыв кадров на конкретном мониторе — независимая настройка, пресет её не
 ## трогает (см. RS_GraphicsPreset).
 const GRAPHICS_PRESET_FIELDS := [
-	"render_scale", "shadow_quality", "aa_mode",
+	"render_scale", "shadow_quality", "screen_effects", "glow_enabled", "aa_mode",
 ]
 const GRAPHICS_PRESET_KEY := "graphics_preset_id"
 const CUSTOM_PRESET_ID := &"custom"

@@ -1,16 +1,14 @@
 extends "res://dev/check_harness.gd"
 ## Проверка экономики очков навыка (карточка Задачи/Карточки/Скиллы.md):
-## RunManager._max_depth_reached — монотонный трекер, «Чистый выход»
-## (O_ExpelFromBody, порог 50% выжатости тела) и целостность data/skill_tree.tres
-## (все 10 статов каталога заняты хотя бы одним навыком).
+## «Чистый выход» (O_ExpelFromBody, порог 50% выжатости тела), сброс дерева на
+## «Новую игру» и целостность данных деревьев (каждый стат каталога занят
+## навыком, validate() ловит дыры).
 ## Запускать: godot --headless dev/skill_economy_check.tscn
 ##
-## RunManager.finish_run()/die() здесь НЕ зовутся: оба меняют сцену
-## (get_tree().change_scene_to_file) и завершают забег по-настоящему — это
-## подорвало бы headless-процесс проверки, а не проверило формулу. Вместо этого
-## раздел 1 проверяет то самое состояние, которое эти методы читают
-## (_max_depth_reached), а формулу («глубина + бонус за побег» против «глубина
-## без бонуса») — код-ревью и живой прогон из карточки.
+## Награда за глубину (RunManager.finish_run()/die()) здесь не проверяется: оба
+## меняют сцену и оборвали бы headless-процесс. Прежний ассерт на
+## _max_depth_reached сам крутил maxi() в своём цикле и сверял собственный
+## результат — RunManager в нём не участвовал, поэтому он удалён.
 ##
 ## SkillManager.save НА ВРЕМЯ проверки подменяется заглушкой (как и в
 ## stat_modifiers_check.gd), но, в отличие от него, здесь реально зовётся
@@ -21,43 +19,23 @@ extends "res://dev/check_harness.gd"
 const BODY_DECAY_MAX := 60.0
 
 var _original_skill_save: PlayerSkillSave
-var _original_max_depth: int
 
 
 func _ready() -> void:
 	var world := _new_world()
 
 	_original_skill_save = SkillManager.save
-	_original_max_depth = RunManager._max_depth_reached
 
 	await _run(world)
 
 	SkillManager.save = _original_skill_save
 	SkillManager._save()
-	RunManager._max_depth_reached = _original_max_depth
 
 	_finish()
 
 
 func _run(world: World) -> void:
-	# --- 1. Трекер максимальной глубины монотонен -----------------------------
-	# _spawn_layer обновляет его строкой `_max_depth_reached = maxi(..., depth)`
-	# на КАЖДЫЙ вход в слой, включая возврат на уже пройденный (портал проходим
-	# в обе стороны). Награда за забег читает это поле один раз, в конце —
-	# так что задвоения при шатании между слоями быть не может ПО ПОСТРОЕНИЮ,
-	# при условии, что поле действительно монотонно. Симулируем ровно
-	# последовательность обновлений, которую делает _spawn_layer, без самой
-	# генерации графа и спавна комнат.
-	RunManager._max_depth_reached = 0
-	for depth in [0, 1, 2, 1, 2, 0]:
-		RunManager._max_depth_reached = maxi(RunManager._max_depth_reached, depth)
-	_check(
-		"глубина: возврат на пройденные слои не опускает максимум",
-		RunManager._max_depth_reached == 2,
-		str(RunManager._max_depth_reached)
-	)
-
-	# --- 2. Чистый выход из тела: порог 50% выжатости -------------------------
+	# --- 1. Чистый выход из тела: порог 50% выжатости -------------------------
 	var stub := PlayerSkillSave.new()
 	SkillManager.save = stub
 
@@ -88,7 +66,7 @@ func _run(world: World) -> void:
 		"skill_points=%d" % stub.skill_points
 	)
 
-	# --- 3. Гибель тела (voluntary=false) очков не даёт вообще -----------------
+	# --- 2. Гибель тела (voluntary=false) очков не даёт вообще -----------------
 	_wear_body(soul, 0.0)  # тело выжато полностью — самый "щедрый" случай для порога
 	O_ExpelFromBody.expel(soul, false)
 	_check(
@@ -97,28 +75,20 @@ func _run(world: World) -> void:
 		"skill_points=%d" % stub.skill_points
 	)
 
-	# --- 4. Дерево навыков занимает весь каталог статов ------------------------
-	var tree := SkillManager.SKILL_TREE
+	# --- 3. Дерево навыков занимает весь каталог статов ------------------------
+	# Стат, который не трогает ни один навык, — мёртвая точка чтения: механика
+	# его спрашивает, а прокачать его нечем.
+	var unused: Array[String] = []
 	for stat in C_StatModifiers.ALL:
 		var covered := false
-		for def in tree.skills:
+		for def in SkillManager.SKILL_TREE.skills:
 			for mod in def.modifiers:
-				if mod.stat == stat:
-					covered = true
-					break
-			if covered:
-				break
-		_check("стат каталога занят навыком: %s" % stat, covered, "ни один навык не трогает этот стат")
+				covered = covered or mod.stat == stat
+		if not covered:
+			unused.append(String(stat))
+	_check("каждый стат каталога занят навыком", unused.is_empty(), "никто не трогает: %s" % ", ".join(unused))
 
-	var expected_ids: Array[StringName] = [
-		&"body_snatch", &"capture_precision", &"lifespan", &"decay_capacity",
-		&"graceful_exit", &"overflow_control", &"last_breath",
-		&"steady_legs", &"spring_step", &"resilient_flesh", &"second_wind",
-	]
-	for id in expected_ids:
-		_check("навык объявлен в дереве: %s" % id, tree.get_definition(id) != null, "get_definition вернул null")
-
-	# --- 5. «Новая игра» обнуляет дерево --------------------------------------
+	# --- 4. «Новая игра» обнуляет дерево --------------------------------------
 	# Смерть метапрогресс сохраняет, новая игра — снимает. Вторая проверка здесь
 	# важнее первой: Resource.duplicate() отдаёт ТОТ ЖЕ Dictionary, что лежит в
 	# дефолтном ресурсе, поэтому без отдельного копирования рангов покупка
@@ -145,7 +115,7 @@ func _run(world: World) -> void:
 		"skill_points=%d" % SkillManager.save.skill_points
 	)
 
-	# --- 6. Данные деревьев сходятся ------------------------------------------
+	# --- 5. Данные деревьев сходятся ------------------------------------------
 	# Всё ниже ломается не при загрузке, а в момент клика игрока (ранг без цены)
 	# или не ломается вовсе, а тихо запирает навык навсегда (ссылка в никуда,
 	# цикл требований). Оба настоящих дерева обязаны быть чистыми, а сломанное —
