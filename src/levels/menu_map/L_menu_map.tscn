@@ -1,24 +1,231 @@
 [gd_scene format=3 uid="uid://cnoq0anpv63fs"]
 
 [ext_resource type="Script" uid="uid://c72re8o718wdg" path="res://src/levels/menu_map/l_menu_map.gd" id="1_2pq14"]
-[ext_resource type="Environment" uid="uid://dt6nbx8xwsp5s" path="res://assets/environment.tres" id="1_cv4yv"]
 [ext_resource type="PackedScene" uid="uid://cnof4mx1fdwwd" path="res://src/ui/main_menu/main_menu.tscn" id="2_conk4"]
-[ext_resource type="PackedScene" uid="uid://bix7vb7fq07pm" path="res://assets/menu_map/menu_map.glb" id="2_cv4yv"]
-[ext_resource type="Script" path="res://src/levels/level_environment.gd" id="3_levelenv"]
+[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_walled_2x2x1/SM_room_P_walled_2x2x1.glb" id="3_room"]
+[ext_resource type="PackedScene" uid="uid://c5r436og78ylb" path="res://assets/props/interactive/SM_incubator/SM_incubator.glb" id="4_tank"]
+[ext_resource type="Script" path="res://src/levels/level_environment.gd" id="5_levelenv"]
+
+[sub_resource type="Environment" id="Environment_or"]
+background_mode = 1
+background_color = Color(0.012, 0.01, 0.016, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.16, 0.12, 0.22, 1)
+ambient_light_energy = 0.18
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.6
+glow_bloom = 0.05
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.018
+volumetric_fog_albedo = Color(0.55, 0.52, 0.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_metal"]
+albedo_color = Color(0.32, 0.33, 0.35, 1)
+metallic = 0.3
+roughness = 0.45
+
+[sub_resource type="StandardMaterial3D" id="Mat_sheet"]
+albedo_color = Color(0.78, 0.77, 0.74, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="Mesh_top"]
+material = SubResource("Mat_metal")
+size = Vector3(2.2, 0.06, 0.8)
+
+[sub_resource type="CylinderMesh" id="Mesh_leg"]
+material = SubResource("Mat_metal")
+top_radius = 0.025
+bottom_radius = 0.025
+height = 0.86
+
+[sub_resource type="CapsuleMesh" id="Mesh_body"]
+material = SubResource("Mat_sheet")
+radius = 0.27
+height = 1.7
+
+[sub_resource type="SphereMesh" id="Mesh_head"]
+material = SubResource("Mat_sheet")
+radius = 0.17
+height = 0.32
+
+[sub_resource type="BoxMesh" id="Mesh_drape"]
+material = SubResource("Mat_sheet")
+size = Vector3(2.1, 0.02, 0.86)
+
+[sub_resource type="CylinderMesh" id="Mesh_lamp"]
+material = SubResource("Mat_metal")
+top_radius = 0.12
+bottom_radius = 0.55
+height = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_dust"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 0.86, 0.66, 0.35)
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="Mesh_dust"]
+material = SubResource("Mat_dust")
+size = Vector2(0.018, 0.018)
+
+[sub_resource type="ParticleProcessMaterial" id="Proc_dust"]
+emission_shape = 3
+emission_box_extents = Vector3(1.4, 2.6, 1.4)
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 0.01
+initial_velocity_max = 0.05
+gravity = Vector3(0, -0.004, 0)
+turbulence_enabled = true
+turbulence_noise_strength = 0.2
+turbulence_noise_scale = 3.0
+
+[sub_resource type="Gradient" id="Grad_dot"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="Tex_dot"]
+gradient = SubResource("Grad_dot")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wisp"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.79, 0.66, 0.95, 1)
+albedo_texture = SubResource("Tex_dot")
+emission_enabled = true
+emission = Color(0.79, 0.66, 0.95, 1)
+emission_energy_multiplier = 2.0
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="Mesh_wisp"]
+material = SubResource("Mat_wisp")
+size = Vector2(0.16, 0.16)
+
+[sub_resource type="Gradient" id="Grad_wisp"]
+offsets = PackedFloat32Array(0, 0.25, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0.8, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="Ramp_wisp"]
+gradient = SubResource("Grad_wisp")
+
+[sub_resource type="ParticleProcessMaterial" id="Proc_wisp"]
+emission_shape = 1
+emission_sphere_radius = 0.4
+direction = Vector3(0, 1, 0)
+spread = 12.0
+initial_velocity_min = 0.25
+initial_velocity_max = 0.5
+gravity = Vector3(0, 0, 0)
+scale_min = 0.6
+scale_max = 1.3
+color_ramp = SubResource("Ramp_wisp")
+turbulence_enabled = true
+turbulence_noise_strength = 0.6
+turbulence_noise_scale = 1.5
 
 [node name="MenuMap" type="Node3D" unique_id=1644741111]
 script = ExtResource("1_2pq14")
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=453056377]
-transform = Transform3D(0.7560341, 0.2481463, -0.6056698, 0, 0.9253475, 0.37912005, 0.65453225, -0.28662768, 0.69959426, -17.960625, 14.771881, 55.849308)
-current = true
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=453056378]
-script = ExtResource("3_levelenv")
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+script = ExtResource("5_levelenv")
 apply_brightness = false
-environment = ExtResource("1_cv4yv")
+environment = SubResource("Environment_or")
 
-[node name="menu_map" parent="." unique_id=318512815 instance=ExtResource("2_cv4yv")]
+[node name="Room" parent="." instance=ExtResource("3_room")]
+
+[node name="Gurney" type="Node3D" parent="."]
+transform = Transform3D(0.94, 0, -0.34, 0, 1, 0, 0.34, 0, 0.94, 1.6, 0, 0.6)
+
+[node name="Top" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("Mesh_top")
+
+[node name="Leg1" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 0.43, -0.32)
+mesh = SubResource("Mesh_leg")
+
+[node name="Leg2" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 0.43, -0.32)
+mesh = SubResource("Mesh_leg")
+
+[node name="Leg3" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 0.43, 0.32)
+mesh = SubResource("Mesh_leg")
+
+[node name="Leg4" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 0.43, 0.32)
+mesh = SubResource("Mesh_leg")
+
+[node name="Body" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.1, 1.12, 0)
+mesh = SubResource("Mesh_body")
+
+[node name="Head" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.1, 0)
+mesh = SubResource("Mesh_head")
+
+[node name="Drape" type="MeshInstance3D" parent="Gurney"]
+transform = Transform3D(1, 0, 0, 0, 0.995, -0.1, 0, 0.1, 0.995, 0.05, 0.94, 0.02)
+mesh = SubResource("Mesh_drape")
+
+[node name="Tank" parent="." instance=ExtResource("4_tank")]
+transform = Transform3D(0.82, 0, 0.57, 0, 1, 0, -0.57, 0, 0.82, 4.6, 1.78, -4.4)
+
+[node name="TankGlow" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.8, 2.8, -1.9)
+light_color = Color(0.79, 0.66, 0.95, 1)
+light_energy = 1.4
+omni_range = 5.0
+
+[node name="Wisps" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.9, 2.2, -2.2)
+amount = 24
+lifetime = 4.0
+preprocess = 4.0
+process_material = SubResource("Proc_wisp")
+draw_pass_1 = SubResource("Mesh_wisp")
+
+[node name="LampHousing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 6.4, 0.6)
+mesh = SubResource("Mesh_lamp")
+
+[node name="Lamp" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 1.6, 6.2, 0.6)
+light_color = Color(1, 0.78, 0.56, 1)
+light_energy = 6.0
+light_volumetric_fog_energy = 1.4
+shadow_enabled = true
+spot_range = 9.0
+spot_angle = 26.0
+spot_angle_attenuation = 0.6
+
+[node name="Dust" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 3.4, 0.6)
+amount = 120
+lifetime = 8.0
+preprocess = 8.0
+process_material = SubResource("Proc_dust")
+draw_pass_1 = SubResource("Mesh_dust")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=453056377]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 3.3, 4.6)
+current = true
+fov = 62.0
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1024209716]
 follow_viewport_enabled = true

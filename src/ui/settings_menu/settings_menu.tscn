@@ -12,6 +12,9 @@
 [ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="9_echo"]
 [ext_resource type="Script" path="res://src/ui/menu/setting_row.gd" id="10_row"]
 [ext_resource type="Script" path="res://src/ui/menu/key_hint_button.gd" id="11_hint"]
+[ext_resource type="Script" path="res://src/ui/settings/window_mode_setting.gd" id="14_window"]
+[ext_resource type="Script" path="res://src/ui/settings/resolution_setting.gd" id="15_resolution"]
+[ext_resource type="Script" path="res://src/ui/settings/ui_scale_setting.gd" id="16_uiscale"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_tabs"]
 
@@ -131,6 +134,54 @@ theme_override_constants/margin_left = 20
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
+
+[node name="WindowMode" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120100]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_WINDOW_MODE"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/WindowMode" unique_id=11120101]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_WINDOW_MODE"
+
+[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/WindowMode" unique_id=11120102]
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("14_window")
+setting_key = "window_mode"
+
+[node name="Resolution" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120103]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_RESOLUTION"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Resolution" unique_id=11120104]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_RESOLUTION"
+
+[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Resolution" unique_id=11120105]
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("15_resolution")
+setting_key = "resolution"
+
+[node name="UiScale" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120106]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_UI_SCALE"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/UiScale" unique_id=11120107]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_UI_SCALE"
+
+[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/UiScale" unique_id=11120108]
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("16_uiscale")
+setting_key = "ui_scale"
 
 [node name="Preset" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120014]
 layout_mode = 2

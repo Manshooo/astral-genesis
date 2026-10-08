@@ -1,18 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/ui/map/complex_map_screen.gd" id="1_screen"]
+[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="2_backdrop"]
+[ext_resource type="Script" path="res://src/ui/menu/key_hint_button.gd" id="3_hint"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_title"]
-font_size = 32
-
-[sub_resource type="LabelSettings" id="LabelSettings_info"]
-font_size = 16
-
-[sub_resource type="LabelSettings" id="LabelSettings_hint"]
-font_size = 13
-font_color = Color(0.72, 0.76, 0.84, 0.6)
-
-[node name="ComplexMap" type="Control"]
+[node name="ComplexMap" type="Control" node_paths=PackedStringArray("content")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,82 +12,121 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_screen")
+content = NodePath("Content")
 
-[node name="Panel" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 48.0
-offset_top = 40.0
-offset_right = -48.0
-offset_bottom = -40.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+[node name="Backdrop" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 16
+mouse_filter = 2
+script = ExtResource("2_backdrop")
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 12
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="Header" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBox/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
+[node name="Title" type="Label" parent="Content"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 52.0
+offset_right = 112.0
+offset_bottom = 52.0
+theme_type_variation = &"MenuWhisper"
 text = "MAP_TITLE"
-label_settings = SubResource("LabelSettings_title")
+uppercase = true
 
-[node name="LevelLabel" type="Label" parent="Panel/MarginContainer/VBox/Header"]
+[node name="Close" type="Button" parent="Content"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 36.0
+grow_horizontal = 0
+script = ExtResource("3_hint")
+action_key = "MAP_CLOSE"
+
+[node name="SliceCaption" type="Label" parent="Content"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 86.0
+offset_right = 112.0
+offset_bottom = 86.0
+theme_type_variation = &"MenuMapLabel"
+text = "MAP_SLICE"
+uppercase = true
+
+[node name="Slice" type="VBoxContainer" parent="Content"]
 unique_name_in_owner = true
-layout_mode = 2
-text = "MAP_LEVEL"
+layout_mode = 0
+offset_left = 112.0
+offset_top = 110.0
+offset_right = 476.0
+offset_bottom = 110.0
+theme_override_constants/separation = 4
 
-[node name="CloseButton" type="Button" parent="Panel/MarginContainer/VBox/Header"]
-layout_mode = 2
-focus_mode = 0
-text = "MAP_CLOSE"
-
-[node name="Body" type="HBoxContainer" parent="Panel/MarginContainer/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="Layers" type="VBoxContainer" parent="Panel/MarginContainer/VBox/Body"]
+[node name="SliceLinks" type="Control" parent="Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_constants/separation = 6
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="Floors" type="HBoxContainer" parent="Panel/MarginContainer/VBox/Body"]
+[node name="LevelLabel" type="Label" parent="Content"]
 unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 12
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 112.0
+offset_top = -60.0
+offset_right = 112.0
+offset_bottom = -60.0
+grow_vertical = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuCaption"
 
-[node name="Info" type="Label" parent="Panel/MarginContainer/VBox"]
+[node name="LayerTitle" type="Label" parent="Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-label_settings = SubResource("LabelSettings_info")
+layout_mode = 0
+offset_left = 560.0
+offset_top = 82.0
+offset_right = 560.0
+offset_bottom = 82.0
+auto_translate_mode = 2
+theme_type_variation = &"MenuStratum"
 
-[node name="Hint" type="Label" parent="Panel/MarginContainer/VBox"]
-layout_mode = 2
-text = "MAP_HINT"
-label_settings = SubResource("LabelSettings_hint")
+[node name="Plans" type="Control" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 560.0
+offset_top = 110.0
+offset_right = 1400.0
+offset_bottom = 600.0
+mouse_filter = 2
 
-[connection signal="pressed" from="Panel/MarginContainer/VBox/Header/CloseButton" to="." method="_on_close_pressed"]
+[node name="Info" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 560.0
+offset_top = 620.0
+offset_right = 1400.0
+offset_bottom = 664.0
+auto_translate_mode = 2
+theme_type_variation = &"MenuBody"
+autowrap_mode = 3
+
+[connection signal="pressed" from="Content/Close" to="." method="_on_close_pressed"]

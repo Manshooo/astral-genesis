@@ -40,7 +40,7 @@ MAP_PORTAL_UP,портал вверх,portal up
 MAP_PORTAL_DOWN,портал вниз,portal down
 MAP_PORTAL_TARGET,"→ L%d, этаж %d","→ L%d, floor %d"
 MAP_LOCKED,заперт: нужен %s,locked: needs %s
-MAP_HINT,"Наведите на комнату, чтобы узнать о ней. Клик по порталу переносит к его второму концу. Закрыть — Esc или клавиша карты.","Hover a room to learn about it. Clicking a portal takes you to its other end. Close with Esc or the map key."
+MAP_HINT,"Наведите на комнату, чтобы узнать о ней. Клик по порталу переносит к его второму концу.",Hover a room to learn about it. Clicking a portal takes you to its other end.
 MAP_UNIQUE_HUB,Хаб,Hub
 MAP_UNIQUE_EXIT,Выход,Exit
 MAP_UNIQUE_ARCHITECT,Архитектор,Architect
@@ -192,3 +192,17 @@ SKILL_SECOND_WIND_NAME,Второе дыхание,Second wind
 SKILL_SECOND_WIND_DESC,Увеличивает скорость бега в захваченном теле.,Raises sprint speed in a captured body.
 SKILL_REQ_BRANCH,"Рангов в ветке «%s»: %d","Ranks in “%s”: %d"
 SKILL_HINT_PAN,"Тащите за пустое место, колесо — масштаб","Drag empty space to pan, wheel to zoom"
+MAP_SLICE,Срез,Cross-section
+MAP_LAYER_SURFACE,поверхность,surface
+MAP_LAYER_DEPTH,глубина,the depths
+SETTINGS_WINDOW_MODE,Режим окна,Window mode
+SETTINGS_WINDOW_FULLSCREEN,Полноэкранный,Fullscreen
+SETTINGS_WINDOW_BORDERLESS,Безрамочный во весь экран,Borderless fullscreen
+SETTINGS_WINDOW_WINDOWED,Оконный,Windowed
+SETTINGS_RESOLUTION,Разрешение,Resolution
+SETTINGS_RES_AUTO,Авто,Auto
+SETTINGS_UI_SCALE,Масштаб интерфейса,Interface scale
+SETTINGS_UI_SCALE_AUTO,Авто — по окну,Auto — fit window
+SETTINGS_HINT_WINDOW_MODE,"Полноэкранный — монитор целиком за игрой, меньше задержка. Безрамочный — окно во весь экран, быстро сворачивается. Оконный — обычное окно.","Fullscreen gives the game the whole monitor, with less latency. Borderless is a window covering the screen that is quick to switch away from. Windowed is a regular window."
+SETTINGS_HINT_RESOLUTION,"В окне — размер окна. Во весь экран монитор остаётся в своём разрешении, а это — разрешение, в котором рисуется 3D; интерфейс остаётся чётким.","In a window, the window size. In fullscreen the monitor keeps its own resolution, and this is the resolution the 3D view is drawn at; the interface stays sharp."
+SETTINGS_HINT_UI_SCALE,"«Авто» растягивает интерфейс по окну. Целые значения — 100 %, 200 % — самые чёткие. Больше, чем помещается в окно, интерфейс не станет.","Auto stretches the interface to the window. Whole values — 100 %, 200 % — are the sharpest. The interface never grows larger than fits the window."

@@ -10,8 +10,16 @@
 ## карте» и «север в игре» одно и то же. План считается без спавна, так что
 ## рисовать можно любой слой.
 ##
+## Рисунок панели — язык «Отголосок» экрана карты (§9 «Меню — спека»): комната —
+## рамка (посещённая — с сиреневой заливкой, неисследованная — пунктиром,
+## лестница — со штриховкой), коридор — линия по оси, портал — кольцо со
+## стрелкой, игрок — точка с дышащим ореолом там, где он стоит. Мини-карта
+## рисует свой язык поверх той же раскладки (решение 02.10: полная карта — по
+## спеке меню, а не языком мини-карты).
+##
 ## После правки содержимого владелец сам зовёт queue_redraw(): перерисовка,
-## запрошенная из самого _draw(), крутила бы контрол каждый кадр.
+## запрошенная из самого _draw(), крутила бы контрол каждый кадр. Исключение —
+## ореол игрока: он дышит, и пока игрок на панели, она перерисовывается сама.
 class_name UI_MapFloor
 extends Control
 
@@ -24,42 +32,17 @@ signal node_pressed(node_id: StringName)
 ## свои клетки целиком (стена — на границе клетки), зазор нужен, только чтобы
 ## соседние комнаты не слипались в пятно.
 @export_range(0.1, 1.0) var room_fill: float = 0.82
-@export var color_current: Color = Color(1, 0.85, 0.4, 0.95)
-@export var color_visited: Color = Color(0.65, 0.75, 0.85, 0.7)
-## Комната, о которой известно, но где игрок не был, — только контур.
-@export var color_known: Color = Color(0.65, 0.75, 0.85, 0.35)
 
 @export_group("Коридоры")
-## Ширина полосы коридора в долях клетки — сечение кита (6 м внутри) к клетке
-## 8 м: карта рисует коридор таким, каким игрок его видит.
-@export_range(0.05, 0.9) var corridor_width: float = 0.75
-
-@export_group("Маркер игрока")
-## Размер маркера в долях клетки: вместе с картой он и масштабируется.
-@export_range(0.05, 0.5) var marker_size: float = 0.22
-@export var color_player: Color = Color(1, 1, 1, 0.95)
-## Контур маркера. Комната под ним бывает светлой (текущая — почти белая), и без
-## обводки треугольник в ней тонет.
-@export var color_player_outline: Color = Color(0.1, 0.1, 0.12, 0.85)
-
-@export_group("Пометки")
-## Рамка вокруг выделенной комнаты — второго конца портала, на который навели.
-@export var color_highlight: Color = Color(0.55, 0.9, 1.0, 1.0)
-@export var color_portal: Color = Color(0.72, 0.6, 1.0, 1.0)
-@export var color_locked: Color = Color(0.95, 0.4, 0.35, 1.0)
-## Подложка значка содержимого. Значок ложится на заливку комнаты любого цвета,
-## и светлый значок без подложки пропадает в текущей, почти белой, комнате.
-@export var color_marker_back: Color = Color(0.08, 0.09, 0.11, 0.85)
-@export var color_marker: Color = Color(0.9, 0.92, 0.96, 1.0)
-## Уникальные комнаты (выход, Архитектор) — своим цветом: пока вместо иконок
-## буквы, «А» Архитектора иначе не отличить от «А» арсенала.
-@export var color_unique_marker: Color = Color(1.0, 0.8, 0.35, 1.0)
+## Толщина линии коридора, px: коридор на плане — ось, а не полоса, иначе
+## клетки коридора и комнаты при шаге в 34 px читались бы одним пятном.
+@export var corridor_width: float = 2.4
 
 @export_group("Прочее")
-## Подложка всего контрола. Мини-карте не нужна (у неё тень-пятно), а на экране
-## карты без неё два плана этажей рядом читаются как один.
+## Подложка всего контрола. Мини-карте не нужна (у неё тень-пятно); экрану
+## карты тоже — этажи разведены зазором и подписью, а не плашкой.
 @export var color_background: Color = Color(0, 0, 0, 0)
-## Отступ от краёв контрола, чтобы комнаты не липли к рамке.
+## Отступ от краёв контрола, чтобы комнаты не липли к краю.
 @export var padding: float = 8.0
 ## Потолок шага клетки в пикселях; 0 — без потолка. На экране карты этаж из
 ## двух известных комнат иначе раздуло бы на всю панель.
@@ -153,9 +136,14 @@ func _draw() -> void:
 	_draw_corridors()
 	_draw_rooms()
 	_draw_highlight()
-	_draw_portals()
 	_draw_markers()
+	_draw_portals()
 	_draw_player()
+
+
+func _process(_delta: float) -> void:
+	if show_player and is_visible_in_tree():
+		queue_redraw()
 
 
 ## Вписывает клетки в контрол, сохраняя пропорции, чтобы карта не растягивалась
@@ -242,23 +230,22 @@ func _notification(what: int) -> void:
 		node_hovered.emit(&"")
 
 
-func _color_of(node_id: StringName) -> Color:
-	if node_id == here:
-		return color_current
-	return color_visited if visited.has(node_id) else color_known
+## Посещённое (и текущее) — изведано; про остальное известно лишь, что оно
+## есть. От этого зависит, сплошная линия или пунктир.
+func _explored(node_id: StringName) -> bool:
+	return node_id == here or visited.has(node_id)
 
 
-## Ветка — полосой по трассе: квадрат в центре тайла и рукав к каждому открытому
-## проёму, как рисует оверлей «Коридоры» в «Генераторе мира». Рукав к двери
-## комнаты упирается в её прямоугольник, поэтому дверь на карте видна как место,
-## где коридор входит в комнату.
+## Коридор — ось по трассе: из центра каждого тайла к каждому открытому проёму,
+## до границы клетки. Рукав к двери комнаты упирается в её рамку, поэтому дверь
+## на плане видна как место, где линия входит в комнату. Неисследованный —
+## пунктиром 3:4, бледно.
 func _draw_corridors() -> void:
-	var width := _step * corridor_width
 	for branch in branches:
-		var color := _color_of(branch.id)
+		var explored := _explored(branch.id)
+		var color := Color(UI_MenuStyle.TEXT, 0.5) if explored else Color(UI_MenuStyle.TEXT, 0.2)
 		for cell in tiles_of(branch.id):
 			var center := to_screen(Vector2(cell))
-			draw_rect(Rect2(center - Vector2(width, width) * 0.5, Vector2(width, width)), color, true)
 			var tile := Vector3i(cell.x, floor_index, cell.y)
 			var mask: int = plan.corridor_tiles[tile]
 			for side in plan.topology.side_count(tile):
@@ -266,11 +253,10 @@ func _draw_corridors() -> void:
 					continue
 				var offset := Vector2(_planar(plan.topology.neighbour(tile, side)) - cell)
 				var arm_end := center + offset * _step * 0.5
-				var arm := Rect2(center, Vector2.ZERO).expand(arm_end)
-				draw_rect(arm.grow_individual(
-					width * 0.5 if offset.x == 0 else 0.0, width * 0.5 if offset.y == 0 else 0.0,
-					width * 0.5 if offset.x == 0 else 0.0, width * 0.5 if offset.y == 0 else 0.0
-				), color, true)
+				if explored:
+					draw_line(center, arm_end, color, corridor_width, true)
+				else:
+					_draw_plan_dash(center, arm_end, color, 2.0, 3.0, 4.0)
 
 
 ## Прямоугольник комнаты на весь её footprint: от центра угловой клетки до центра
@@ -282,98 +268,145 @@ func _room_rect(node_id: StringName) -> Rect2:
 	return Rect2((first + last) * 0.5 - room * 0.5, room)
 
 
+## Лестница — комната на два этажа и больше: так её и узнаём, по footprint, а не
+## по имени сцены.
+func _is_stairs(node_id: StringName) -> bool:
+	return plan.footprints.get(node_id, Vector3i.ONE).y > 1
+
+
+## Комната — рамка: посещённая — светлая с сиреневой заливкой, неисследованная
+## — пунктиром; лестница — с вертикальной штриховкой, уникальная (с подписью на
+## последнем уровне) — рамкой цвета клавиши. Наведённая — сиреневым с ореолом.
 func _draw_rooms() -> void:
 	for node_data in rooms:
 		var rect := _room_rect(node_data.id)
-		if node_data.id == here or visited.has(node_data.id):
-			draw_rect(rect, _color_of(node_data.id), true)
+		var explored := _explored(node_data.id)
+		draw_rect(rect, Color(UI_MenuStyle.BG_VOID, 0.35), true)
+		if explored:
+			draw_rect(rect, Color(UI_HudMood.SOUL, 0.10), true)
+		if _is_stairs(node_data.id):
+			var x := rect.position.x + 2.5
+			while x < rect.end.x - 1.0:
+				draw_line(Vector2(x, rect.position.y + 1.0), Vector2(x, rect.end.y - 1.0),
+						Color(UI_MenuStyle.TEXT, 0.28), 1.0)
+				x += 5.0
+		var unique: bool = markers.get(node_data.id, {}).get("unique", false)
+		var border := Color(UI_MenuStyle.TEXT, 0.75) if explored else Color(UI_MenuStyle.TEXT, 0.30)
+		if unique:
+			border = UI_HudMood.SOUL_KEY
+		if node_data.id == _hovered:
+			draw_rect(rect.grow(3.0), Color(UI_HudMood.SOUL, 0.16), false, 3.0)
+			border = UI_HudMood.SOUL
+		if explored or unique or node_data.id == _hovered:
+			draw_rect(rect, border, false, 1.0)
 		else:
-			# Знаем, что есть, но не были — только контур.
-			draw_rect(rect, color_known, false, 1.5)
+			_draw_plan_dash_rect(rect, border)
 
 
+## Второй конец портала, на который навели или по которому кликнули: рамка в
+## полную силу и ореол.
 func _draw_highlight() -> void:
 	if highlighted == &"" or not plan.cells.has(highlighted) or not shows(highlighted):
 		return
-	draw_rect(_room_rect(highlighted).grow(_step * 0.08), color_highlight, false, 2.0)
+	var rect := _room_rect(highlighted)
+	draw_rect(rect.grow(2.0), Color(UI_HudMood.SOUL, 0.3), false, 6.0)
+	draw_rect(rect, UI_HudMood.OVER, false, 1.0)
 
 
-## Портал — ромб в углу комнаты со стрелкой: центр занят значком содержимого.
-## Вверх — к поверхности или на этаж выше; запертый — другим цветом.
+## Портал — кольцо Ø22 со стрелкой в углу комнаты: центр занят подписью. Вверх
+## — к поверхности или на этаж выше. Запертый — пунктирным кольцом: красного в
+## меню нет, красный в игре — тело и кровь (§2).
 func _draw_portals() -> void:
-	var radius := _step * 0.15
+	var radius := minf(11.0, _step * 0.45)
 	for node_data in rooms:
 		if not portals.has(node_data.id):
 			continue
 		var info: Dictionary = portals[node_data.id]
 		var rect := _room_rect(node_data.id)
-		var center := Vector2(rect.end.x - radius * 1.2, rect.position.y + radius * 1.2)
-		var diamond := PackedVector2Array([
-			center + Vector2(0, -radius), center + Vector2(radius, 0),
-			center + Vector2(0, radius), center + Vector2(-radius, 0),
-		])
-		draw_colored_polygon(diamond, color_locked if info.get("locked", false) else color_portal)
-		var closed := PackedVector2Array(diamond)
-		closed.append(diamond[0])
-		draw_polyline(closed, color_player_outline, 1.0)
+		var center := Vector2(rect.end.x - radius * 0.4, rect.position.y + radius * 0.4)
+		draw_circle(center, radius, UI_MenuStyle.BG_VOID)
+		if info.get("locked", false):
+			var a := 0.0
+			while a < TAU:
+				draw_arc(center, radius, a, a + 0.3, 4, UI_HudMood.SOUL, 1.0, true)
+				a += 0.6
+		else:
+			draw_arc(center, radius, 0.0, TAU, 32, UI_HudMood.SOUL, 1.0, true)
 		# Экранная ось Y смотрит вниз, поэтому «вверх» — это минус.
 		var tip := -1.0 if info.get("up", false) else 1.0
-		draw_colored_polygon(PackedVector2Array([
-			center + Vector2(0, tip * radius * 0.6),
-			center + Vector2(radius * 0.45, -tip * radius * 0.3),
-			center + Vector2(-radius * 0.45, -tip * radius * 0.3),
-		]), color_marker_back)
+		var k := radius / 11.0
+		draw_line(center + Vector2(0, -tip * 4.5 * k), center + Vector2(0, tip * 4.5 * k), UI_HudMood.SOUL, 1.4, true)
+		draw_polyline(PackedVector2Array([
+			center + Vector2(-3.5 * k, tip * 1.0 * k),
+			center + Vector2(0, tip * 4.5 * k),
+			center + Vector2(3.5 * k, tip * 1.0 * k),
+		]), UI_HudMood.SOUL, 1.4, true)
 
 
-## Значок содержимого по центру комнаты. Пока нет арта, вместо иконки —
-## первая буква названия: заглушка обязана быть различимой, иначе четвёртый
-## уровень карты до прихода иконок ничего бы не показывал.
+## Содержимое комнаты на последнем уровне карты. Уникальная (выход, Архитектор,
+## хаб) — подписью по центру, как в макете; обычная — значком типа или, пока
+## нет арта, первой буквой: заглушка обязана быть различимой.
 func _draw_markers() -> void:
-	var font := get_theme_default_font()
+	var font := get_theme_font(&"font", &"MenuMapUnique")
+	var font_size := get_theme_font_size(&"font_size", &"MenuMapUnique")
 	for node_data in rooms:
 		if not markers.has(node_data.id):
 			continue
 		var info: Dictionary = markers[node_data.id]
-		var center := _room_rect(node_data.id).get_center()
-		var radius := _step * room_fill * 0.3
-		var tint: Color = color_unique_marker if info.get("unique", false) else color_marker
-		draw_circle(center, radius, color_marker_back)
+		var rect := _room_rect(node_data.id)
+		var center := rect.get_center()
+		var unique: bool = info.get("unique", false)
+		var label: String = info.get("label", "") if unique else ""
+		if label != "" and font:
+			var shown := label
+			while shown.length() > 1 and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4.0:
+				shown = shown.substr(0, shown.length() - 1)
+			var width := font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+			var baseline := center.y + (font.get_ascent(font_size) - font.get_descent(font_size)) * 0.5
+			draw_string(font, Vector2(center.x - width * 0.5, baseline), shown,
+					HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, UI_HudMood.SOUL_KEY)
+			continue
+		var tint := UI_HudMood.SOUL_KEY if unique else UI_MenuStyle.TEXT_DIM
 		var icon: Texture2D = info.get("icon")
+		var side := minf(rect.size.x, rect.size.y) * 0.5
 		if icon:
-			var side := radius * 1.5
 			draw_texture_rect(icon, Rect2(center - Vector2(side, side) * 0.5, Vector2(side, side)), false, tint)
 		elif font:
 			var letter: String = info.get("letter", "")
-			var font_size := maxi(int(radius * 1.2), 6)
-			var width := font.get_string_size(letter, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-			var baseline := center.y + (font.get_ascent(font_size) - font.get_descent(font_size)) * 0.5
+			var letter_size := maxi(int(side * 0.8), 8)
+			var width := font.get_string_size(letter, HORIZONTAL_ALIGNMENT_LEFT, -1, letter_size).x
+			var baseline := center.y + (font.get_ascent(letter_size) - font.get_descent(letter_size)) * 0.5
 			draw_string(font, Vector2(center.x - width * 0.5, baseline), letter,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, tint)
-		draw_arc(center, radius, 0.0, TAU, 24, tint, 1.0)
+					HORIZONTAL_ALIGNMENT_LEFT, -1, letter_size, tint)
 
 
-## Маркер игрока: где он и куда смотрит. Позиция — прямо из мира через шаг
-## клетки: комнаты и коридоры лежат на одной сетке, и игрок законно бывает
-## между ними (в тамбуре, на стыке), так что зажимать маркер в своей комнате,
-## как в прежней раскладке, больше нечем и незачем.
+## Игрок — точка прицела HUD с дышащим ореолом (§7, цикл 3.2 с) там, где он
+## стоит, а не в центре комнаты: в коридоре и на стыке иначе нечем показать, где
+## ты (то же решение, что у мини-карты).
 func _draw_player() -> void:
 	if not show_player:
 		return
 	var center := world_to_screen(player_position)
-	var side := Vector2(-player_forward.y, player_forward.x)
-	var radius := _step * marker_size
-	var points := PackedVector2Array(
-		[
-			center + player_forward * radius,
-			center - player_forward * radius * 0.55 + side * radius * 0.6,
-			center - player_forward * radius * 0.55 - side * radius * 0.6,
-		]
-	)
-	draw_colored_polygon(points, color_player)
+	var k := 0.5 + 0.5 * sin(TAU * UI_HudMood.now() / 3.2)
+	draw_circle(center, 10.0 * lerpf(0.92, 1.08, k), Color(UI_HudMood.DOT, lerpf(0.10, 0.16, k)))
+	draw_circle(center, 4.2, UI_HudMood.DOT)
 
-	var outline := PackedVector2Array(points)
-	outline.append(points[0])
-	draw_polyline(outline, color_player_outline, 1.0)
+
+func _draw_plan_dash(from: Vector2, to: Vector2, color: Color, width: float, dash: float, gap: float) -> void:
+	var length := from.distance_to(to)
+	if length <= 0.0:
+		return
+	var direction := (to - from) / length
+	var d := 0.0
+	while d < length:
+		draw_line(from + direction * d, from + direction * minf(d + dash, length), color, width)
+		d += dash + gap
+
+
+func _draw_plan_dash_rect(rect: Rect2, color: Color) -> void:
+	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]
+	for i in 4:
+		_draw_plan_dash(corners[i], corners[(i + 1) % 4], color, 1.0, 3.0, 3.0)
 
 
 ## Игрок как узел сцены. Через Node: Entity наследует Node, и прямой каст
