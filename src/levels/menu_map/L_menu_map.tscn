@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://cnof4mx1fdwwd" path="res://src/ui/main_menu/main_menu.tscn" id="2_conk4"]
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_walled_2x2x1/SM_room_P_walled_2x2x1.glb" id="3_room"]
 [ext_resource type="PackedScene" uid="uid://c5r436og78ylb" path="res://assets/props/interactive/SM_incubator/SM_incubator.glb" id="4_tank"]
+[ext_resource type="Script" path="res://src/levels/level_environment.gd" id="5_levelenv"]
 
 [sub_resource type="Environment" id="Environment_or"]
 background_mode = 1
@@ -141,6 +142,8 @@ turbulence_noise_scale = 1.5
 script = ExtResource("1_2pq14")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+script = ExtResource("5_levelenv")
+apply_brightness = false
 environment = SubResource("Environment_or")
 
 [node name="Room" parent="." instance=ExtResource("3_room")]

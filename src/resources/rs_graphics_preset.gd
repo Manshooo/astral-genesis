@@ -26,6 +26,11 @@ const SHADOWS_OFF := &"off"
 
 ## Ступень теней: id из RS_GraphicsPresetLibrary.shadow_levels или SHADOWS_OFF.
 @export var shadow_quality: StringName = &"medium"
+## Ступень экранных эффектов: id из RS_GraphicsPresetLibrary.effects_levels.
+@export var screen_effects: StringName = &"medium"
+## Свечение ярких мест. В пресете, хоть у игрока и отдельный флажок: на
+## встроенной графике размытие свечения — заметная доля кадра.
+@export var glow_enabled: bool = true
 
 @export_group("Сглаживание")
 @export var aa_mode: AAMode = AAMode.FXAA
@@ -38,6 +43,8 @@ const SHADOWS_OFF := &"off"
 func apply_to(settings: RS_Settings) -> void:
 	settings.render_scale = render_scale
 	settings.shadow_quality = shadow_quality
+	settings.screen_effects = screen_effects
+	settings.glow_enabled = glow_enabled
 	settings.aa_mode = aa_mode
 
 
@@ -46,5 +53,7 @@ func matches(settings: RS_Settings) -> bool:
 	return (
 		is_equal_approx(settings.render_scale, render_scale)
 		and settings.shadow_quality == shadow_quality
+		and settings.screen_effects == screen_effects
+		and settings.glow_enabled == glow_enabled
 		and settings.aa_mode == aa_mode
 	)

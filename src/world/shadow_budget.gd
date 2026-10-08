@@ -50,6 +50,10 @@ static func distribute(lamps: Array, camera: Camera3D, level: RS_ShadowLevel) ->
 	var queue: Array = []
 	for node in lamps:
 		var light := node as Light3D
+		# Спрятанная лампа (узел дальше видимых, LayerStreamer.reveal_around) не
+		# светит, а место в очереди заняла бы — и тень ушла бы у видимой.
+		if not light.is_visible_in_tree():
+			continue
 		var distance := light.global_position.distance_to(eye)
 		queue.append([maxf(0.0, distance - LevelLight.reach_of(light)), distance, light])
 	queue.sort_custom(func(a: Array, b: Array) -> bool:

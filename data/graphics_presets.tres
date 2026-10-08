@@ -3,12 +3,15 @@
 [ext_resource type="Script" path="res://src/resources/rs_graphics_preset.gd" id="1_preset"]
 [ext_resource type="Script" path="res://src/resources/rs_graphics_preset_library.gd" id="2_library"]
 [ext_resource type="Script" path="res://src/resources/rs_shadow_level.gd" id="3_shadow"]
+[ext_resource type="Script" path="res://src/resources/rs_screen_effects_level.gd" id="4_effects"]
 
 [sub_resource type="Resource" id="Resource_low"]
 script = ExtResource("1_preset")
 id = &"low"
 display_name = "SETTINGS_PRESET_LOW"
-render_scale = 0.75
+screen_effects = &"off"
+glow_enabled = false
+render_scale = 0.65
 shadow_quality = &"low"
 aa_mode = 0
 
@@ -16,6 +19,7 @@ aa_mode = 0
 script = ExtResource("1_preset")
 id = &"medium"
 display_name = "SETTINGS_PRESET_MEDIUM"
+screen_effects = &"medium"
 render_scale = 1.0
 shadow_quality = &"medium"
 aa_mode = 1
@@ -24,6 +28,7 @@ aa_mode = 1
 script = ExtResource("1_preset")
 id = &"high"
 display_name = "SETTINGS_PRESET_HIGH"
+screen_effects = &"high"
 render_scale = 1.0
 shadow_quality = &"high"
 aa_mode = 3
@@ -52,8 +57,8 @@ id = &"high"
 display_name = "SETTINGS_SHADOWS_HIGH"
 atlas_size = 8192
 soft_filter = 3
-shadow_distance = 60.0
-cells_per_quadrant = 4
+shadow_distance = 50.0
+cells_per_quadrant = 3
 
 [sub_resource type="Resource" id="Shadow_ultra"]
 script = ExtResource("3_shadow")
@@ -61,10 +66,37 @@ id = &"ultra"
 display_name = "SETTINGS_SHADOWS_ULTRA"
 atlas_size = 16384
 soft_filter = 4
-shadow_distance = 90.0
+shadow_distance = 80.0
 cells_per_quadrant = 4
+
+[sub_resource type="Resource" id="Effects_off"]
+script = ExtResource("4_effects")
+id = &"off"
+display_name = "SETTINGS_OFF"
+
+[sub_resource type="Resource" id="Effects_low"]
+script = ExtResource("4_effects")
+id = &"low"
+display_name = "SETTINGS_EFFECTS_LOW"
+ssao = true
+
+[sub_resource type="Resource" id="Effects_medium"]
+script = ExtResource("4_effects")
+id = &"medium"
+display_name = "SETTINGS_EFFECTS_MEDIUM"
+ssao = true
+ssil = true
+
+[sub_resource type="Resource" id="Effects_high"]
+script = ExtResource("4_effects")
+id = &"high"
+display_name = "SETTINGS_EFFECTS_HIGH"
+ssao = true
+ssil = true
+ssr = true
 
 [resource]
 script = ExtResource("2_library")
 presets = Array[ExtResource("1_preset")]([SubResource("Resource_low"), SubResource("Resource_medium"), SubResource("Resource_high")])
 shadow_levels = Array[ExtResource("3_shadow")]([SubResource("Shadow_low"), SubResource("Shadow_medium"), SubResource("Shadow_high"), SubResource("Shadow_ultra")])
+effects_levels = Array[ExtResource("4_effects")]([SubResource("Effects_off"), SubResource("Effects_low"), SubResource("Effects_medium"), SubResource("Effects_high")])

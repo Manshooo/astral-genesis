@@ -94,6 +94,14 @@ func shadow_level() -> RS_ShadowLevel:
 	return GRAPHICS_PRESETS.shadow_level(settings.shadow_quality)
 
 
+## Ступень экранных эффектов из настроек или null — эффектов нет. Читает её
+## окружение сцены (LevelEnvironment), по той же причине, что лампы — тени.
+func effects_level() -> RS_ScreenEffectsLevel:
+	if settings == null or GRAPHICS_PRESETS == null:
+		return null
+	return GRAPHICS_PRESETS.effects_level(settings.screen_effects)
+
+
 ## Сейв с именованным пресетом приводится к пресету, каким он стал: игрок выбрал
 ## «Высокий», а не набор чисел, и раз «Высокий» поменялся (или в нём появилось
 ## новое поле, как ступень теней вместо флажка и атласа), он получает новый.
@@ -141,7 +149,15 @@ func _apply_graphics_settings() -> void:
 	if viewport:
 		# Во весь экран «разрешение» — это мельче экрана рисуемое 3D, поверх
 		# «Масштаба разрешения» (см. render_resolution_factor).
-		viewport.scaling_3d_scale = settings.render_scale * render_resolution_factor()
+		var scale_3d := settings.render_scale * render_resolution_factor()
+		viewport.scaling_3d_scale = scale_3d
+		# Ниже 100 % — FSR1: он дешёвый и вытягивает резкость, которую растяжение
+		# билинейным фильтром съедает. FSR2 на встроенной графике сам стоит кадров,
+		# а выше 100 % (суперсэмплинг) FSR не работает вовсе. Решает итоговый
+		# масштаб, а не ползунок: разрешение ниже экрана — то же уменьшение.
+		viewport.scaling_3d_mode = (
+			Viewport.SCALING_3D_MODE_FSR if scale_3d < 1.0 else Viewport.SCALING_3D_MODE_BILINEAR
+		)
 		viewport.positional_shadow_atlas_size = atlas
 		if level:
 			# Все четыре четверти одинаково — см. RS_ShadowLevel.cells_per_quadrant.

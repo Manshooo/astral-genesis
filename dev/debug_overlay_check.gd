@@ -18,10 +18,9 @@ extends "res://dev/check_harness.gd"
 ## не должен трогать прогресс игрока.
 
 const OVERLAY_SCENE := preload("res://dev/debug_overlay.tscn")
-## Тот же путь, по которому оверлей ищет мир. Литерал здесь намеренный: проверка
-## обязана сверить ДВА независимых написания пути, а взяв константу из main.gd,
-## она сверяла бы его с самим собой.
-const OVERLAY_PATH := "res://dev/debug_overlay.tscn"
+## Мир, который грузит оверлей по строке. Проверяется его собственная константа:
+## своя строка-литерал рядом с preload той же сцены существовала бы всегда.
+const MAIN_SCRIPT := preload("res://src/world/main.gd")
 
 var _original_save: PlayerSkillSave
 var _original_architect_save: PlayerSkillSave
@@ -73,8 +72,8 @@ func _check_packaging() -> void:
 	# видит: ResourceLoader.exists() просто вернёт false, и читов не будет.
 	_check(
 		"путь оверлея в main.gd ведёт на существующую сцену",
-		ResourceLoader.exists(OVERLAY_PATH),
-		"нет ресурса по пути %s" % OVERLAY_PATH
+		ResourceLoader.exists(MAIN_SCRIPT.DEBUG_OVERLAY_PATH),
+		"нет ресурса по пути %s" % MAIN_SCRIPT.DEBUG_OVERLAY_PATH
 	)
 
 	# Обратная сторона того же: путь исключён из экспорта, и это ЕДИНСТВЕННОЕ,

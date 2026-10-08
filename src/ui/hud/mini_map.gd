@@ -647,8 +647,7 @@ func _draw_arrows(node_data: RS_LevelNode, progress: float) -> void:
 	var center := _room_rect(node_data.id).get_center()
 	var color := UI_HudMood.SOUL
 	color.a = ARROW_ALPHA * progress
-	var stairs: bool = plan.footprints.get(node_data.id, Vector3i.ONE).y > 1
-	if stairs:
+	if _joins_floors(node_data.id):
 		_draw_chevron(center + Vector2(0.0, -4.0) * k, -1.0, k, color)
 		_draw_chevron(center + Vector2(0.0, 2.0) * k, 1.0, k, color)
 		return
@@ -658,6 +657,17 @@ func _draw_arrows(node_data: RS_LevelNode, progress: float) -> void:
 	var target := RunManager.current_graph.get_node_data(conn.target_node_id)
 	var up := target.depth < node_data.depth
 	_draw_chevron(center + Vector2(0.0, 3.0 if up else -3.0) * k, -1.0 if up else 1.0, k, color)
+
+
+## Связывает ли комната этажи — есть ли у неё дверь выше её нижнего уровня. По
+## высоте footprint не судить: зал Архитектора тоже в два уровня, но дверь у него
+## одна, внизу, и стрелки «есть этаж выше» на нём были бы враньём.
+func _joins_floors(node_id: StringName) -> bool:
+	var bottom: int = plan.cells[node_id].y
+	for face: Vector4i in plan.door_faces.get(node_id, {}):
+		if face.y != bottom:
+			return true
+	return false
 
 
 ## Галка «^» ([param direction] −1) или «v» (+1) с основанием в [param base].

@@ -87,6 +87,10 @@ func _run(world: World) -> void:
 	world.add_entity(body)
 	body.add_component(C_SnatchTargeted.new())
 	await get_tree().physics_frame
+	# Габарит и глаза — из сцены тела: их тюнят там, и проверка сверяет перенос,
+	# а не конкретный рост.
+	var body_form := E_Body.form_of(body)
+	var sole := body_form.foot_offset().y
 
 	var bs := player.get_component(C_BodySnatch) as C_BodySnatch
 	bs.capture_success_chance = 1.0
@@ -96,26 +100,25 @@ func _run(world: World) -> void:
 
 	_check("захват состоялся", player.has_component(C_Embodied), "")
 	_check(
-		"ригу надет габарит тела (капсула 1.8)",
-		collision.shape is CapsuleShape3D and is_equal_approx((collision.shape as CapsuleShape3D).height, 1.8),
-		str(collision.shape)
+		"ригу надет габарит тела",
+		collision.shape != ghost_shape and _same_shape(collision.shape, body_form.shape),
+		"%s против %s" % [collision.shape, body_form.shape]
 	)
-	_check("габарит изменился", collision.shape != ghost_shape, "")
-	# Маркер Eyes стоит на 1.7 над подошвой, origin рига — в центре капсулы (0.9).
+	# Origin рига — в центре габарита, на высоте подошвы над полом.
 	_check(
-		"камера села на уровень глаз (1.7 − 0.9 = 0.8)",
-		is_equal_approx(camera.transform.origin.y, 0.8),
-		str(camera.transform.origin.y)
+		"камера села на уровень глаз тела",
+		is_equal_approx(camera.transform.origin.y, body_form.eye_height - sole),
+		"%.3f вместо %.3f" % [camera.transform.origin.y, body_form.eye_height - sole]
 	)
 	# Подошва рига должна оказаться там же, где подошва тела, — на полу комнаты.
 	_check(
 		"риг сел подошвами на место тела, а не по пояс в пол",
-		is_equal_approx(player.global_position.y, 0.9),
-		"%.3f (призрачный офсет был %.3f)" % [player.global_position.y, ghost_lift]
+		is_equal_approx(player.global_position.y, sole),
+		"%.3f вместо %.3f (призрачный офсет был %.3f)" % [player.global_position.y, sole, ghost_lift]
 	)
 	_check(
 		"foot_offset пересчитался по надетой капсуле",
-		is_equal_approx(player.foot_offset().y, 0.9),
+		is_equal_approx(player.foot_offset().y, sole),
 		str(player.foot_offset().y)
 	)
 	# Меш обязан сесть подошвами на пол вместе с ригом. Наблюдатели облика и
@@ -128,9 +131,9 @@ func _run(world: World) -> void:
 	var body_visual := E_Body.visual_of_scene(BODY_SCENE)
 	_check(
 		"меш надетого тела сел подошвами к полу",
-		is_equal_approx(geo.transform.origin.y, body_visual.mesh_transform.origin.y - 0.9),
+		is_equal_approx(geo.transform.origin.y, body_visual.mesh_transform.origin.y - sole),
 		"%.3f вместо %.3f (призрачный офсет был %.3f)"
-		% [geo.transform.origin.y, body_visual.mesh_transform.origin.y - 0.9, ghost_lift]
+		% [geo.transform.origin.y, body_visual.mesh_transform.origin.y - sole, ghost_lift]
 	)
 
 	# --- 3. Развоплощение возвращает призрачную форму -----------------------
@@ -204,7 +207,7 @@ func _run(world: World) -> void:
 			geo.transform.origin.y,
 			crawler_visual.mesh_transform.origin.y - crawler_form.foot_offset().y
 		),
-		"%.3f (офсет прошлого тела был %.3f)" % [geo.transform.origin.y, 0.9]
+		"%.3f (офсет прошлого тела был %.3f)" % [geo.transform.origin.y, sole]
 	)
 	_check(
 		"после пересадки камера села на уровень глаз нового тела",
@@ -277,6 +280,17 @@ func _body_scenes() -> Array[String]:
 		if file.ends_with(".tscn"):
 			out.append("res://src/entities/body/" + file)
 	return out
+
+
+## Надет ли на риг тот же габарит, что объявило тело: наблюдатель вправе отдать
+## копию формы, поэтому сверяются тип и размеры, а не ссылка.
+func _same_shape(worn: Shape3D, authored: Shape3D) -> bool:
+	if worn == null or authored == null or worn.get_class() != authored.get_class():
+		return false
+	for property in ["height", "radius", "size"]:
+		if property in authored and worn.get(property) != authored.get(property):
+			return false
+	return true
 
 
 ## Тела-заглушки (капсула без модели) лицом никуда не смотрят — разворачивать

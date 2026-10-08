@@ -420,6 +420,9 @@ func travel_to(node_id: StringName) -> void:
 	if room == null:
 		push_error("RunManager: комната узла '%s' не заспавнилась" % node_id)
 		return
+	# Текущим комнату сделает присутствие на следующем такте, а показать её надо
+	# уже сейчас: иначе кадр после портала игрок стоит в спрятанной комнате.
+	layer.reveal_around(node_id)
 	var player := _player_node()
 	if player:
 		PlayerPlacement.in_room(player, room, current_node_id)
@@ -469,6 +472,7 @@ func note_presence(world_position: Vector3) -> void:
 	if node_id == &"" or node_id == current_node_id or not layer.is_spawned(node_id):
 		return
 	current_node_id = node_id
+	layer.reveal_around(node_id)
 	_checkpoint(node_id)
 	room_changed.emit(node_id)
 
@@ -494,6 +498,7 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 		return
 
 	current_node_id = node_id
+	layer.reveal_around(node_id)
 	# Смена комнаты — гранула сохранения забега: дальше игрок продолжит отсюда.
 	#
 	# А вот ВХОД в забег (came_from пуст: старт, загрузка, возрождение) точкой не

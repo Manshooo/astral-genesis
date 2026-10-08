@@ -41,17 +41,12 @@ const INLINE_EDITOR_SEED := 0
 
 
 func _ready() -> void:
-	# Ассертов тут тысячи (узлы × сиды) — в логе нужны только провалы.
-	_print_passes = false
 	var library := ResourceLoader.load(LIBRARY_PATH) as RS_RoomPresetLibrary
-	_check("библиотека пресетов загружается", library != null, LIBRARY_PATH)
 
 	var host := ViewportHost.new()
 	add_child(host)
 
-	for seed_value in range(SEED_COUNT):
-		_check_seed(seed_value, library, host)
-
+	_check_seeds(library, host)
 	_check_inline_preset_editor()
 	_check_room_outline(library, host)
 	_check_restore_state()
@@ -454,97 +449,85 @@ func _check_restore_state() -> void:
 	tab.free()
 
 
-func _check_seed(seed_value: int, library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
-	var graph := RS_LevelGraph.new().generate_run(seed_value, library)
+## Слой каждого сида строится и пикается. Проблемы собираются списками и
+## засчитываются одним ассертом на инвариант — прежние две с половиной тысячи
+## ассертов «узел N пикается» говорили ровно то же, но тонули в собственном логе.
+func _check_seeds(library: RS_RoomPresetLibrary, host: ViewportHost) -> void:
+	var problems := {
+		"комнат построено по числу комнат, сфер — по числу узлов": [],
+		"подпись скрыта сразу после пересборки слоя": [],
+		"пикинг узла находит его самого": [],
+		"луч мимо слоя не пикает ничего": [],
+		"хаб — ровно один узел графа, и это тупик": [],
+	}
+	for seed_value in SEED_COUNT:
+		var graph := RS_LevelGraph.new().generate_run(seed_value, library)
+		for depth: int in RS_LevelGraph.DEPTHS:
+			var layer_nodes := graph.get_nodes_by_depth(depth)
+			if layer_nodes.is_empty():
+				continue
+			var plan := graph.layer_plan(depth)
+			var tag := "сид %d L%d" % [seed_value, depth]
 
-	for depth: int in RS_LevelGraph.DEPTHS:
-		var layer_nodes := graph.get_nodes_by_depth(depth)
-		if layer_nodes.is_empty():
-			continue
-		var plan := graph.layer_plan(depth)
-		var label := "seed %d L%d" % [seed_value, depth]
+			# --- 1. Оверлеи строят ровно по узлу на комнату/сферу, без утечек
+			# предыдущей раскладки. Регресс на баг живого прогона: RoomsOverlay и
+			# GraphOverlay чистили детей queue_free()'ом, а пересборка идёт
+			# синхронно (сид/глубина меняются в один тик) — отложенное удаление не
+			# успевало сработать между вызовами show_layer, и счётчик комнат рос от
+			# слоя к слою. Чинит free() вместо queue_free() в обоих оверлеях.
+			host.show_layer(LayerView.new(graph, layer_nodes, plan))
+			var rooms := host.overlay(&"rooms")
+			var graph_overlay := host.overlay(&"graph")
+			# Комнаты — только узлы-комнаты: у ветки коридора сцены нет, её рисует
+			# оверлей «Коридоры».
+			var room_nodes := layer_nodes.filter(
+				func(n: RS_LevelNode) -> bool: return n.role == RS_LevelNode.Role.ROOM
+			).size()
+			if rooms.get_child_count() != room_nodes or graph_overlay._spheres.size() != layer_nodes.size():
+				problems["комнат построено по числу комнат, сфер — по числу узлов"].append(
+					"%s: комнат %d из %d, сфер %d из %d" % [
+						tag, rooms.get_child_count(), room_nodes, graph_overlay._spheres.size(), layer_nodes.size()])
+			# «Подписи» — одна на весь оверлей, показывается только по set_selected;
+			# содержимое и место подписи — в _check_inline_preset_editor, здесь
+			# только «не утекла видимой с прошлого слоя».
+			if host.overlay(&"labels")._label.visible:
+				problems["подпись скрыта сразу после пересборки слоя"].append(tag)
 
-		# --- 1. Оверлеи строят ровно по узлу на комнату/сферу, без утечек
-		# предыдущей раскладки. Регресс на баг живого прогона: RoomsOverlay и
-		# GraphOverlay чистили детей queue_free()'ом, а пересборка идёт
-		# синхронно (сид/глубина меняются в один тик) — отложенное удаление не
-		# успевало сработать между вызовами show_layer, и счётчик комнат рос от
-		# слоя к слою. Чинит free() вместо queue_free() в обоих оверлеях.
-		host.show_layer(LayerView.new(graph, layer_nodes, plan))
-		var rooms := host.overlay(&"rooms")
-		var graph_overlay := host.overlay(&"graph")
-		# Комнаты — только узлы-комнаты: у ветки коридора сцены нет, её рисует
-		# оверлей «Коридоры».
-		var room_nodes := layer_nodes.filter(
-			func(n: RS_LevelNode) -> bool: return n.role == RS_LevelNode.Role.ROOM
-		).size()
-		_check(
-			"%s: комнат построено по числу комнат" % label,
-			rooms.get_child_count() == room_nodes,
-			"%d комнат, %d узлов-комнат" % [rooms.get_child_count(), room_nodes]
-		)
-		_check(
-			"%s: сфер графа построено по числу узлов" % label,
-			graph_overlay._spheres.size() == layer_nodes.size(),
-			"%d сфер, %d узлов" % [graph_overlay._spheres.size(), layer_nodes.size()]
-		)
-		# «Подписи» — одна на весь оверлей, показывается только по set_selected
-		# (see_layer завершается _select(&"") — см. viewport_host.gd), поэтому
-		# после rebuild её не должно быть видно вовсе, независимо от того,
-		# сколько в слое узлов. Содержимое/позиция подписи проверяются отдельно
-		# и подробно в _check_inline_preset_editor — здесь только «не утекла
-		# видимой с прошлого слоя».
-		_check(
-			"%s: подпись скрыта сразу после пересборки слоя" % label,
-			not host.overlay(&"labels")._label.visible,
-			""
-		)
+			# --- 2. Пикинг: ray-vs-AABB находит узел, а не соседа снизу/сверху.
+			# Луч пускается из точки ВНУТРИ коробки конкретной комнаты, а не сверху
+			# всего слоя: этажи одного depth стоят друг над другом по одной сетке
+			# X/Z, и луч издалека честно нашёл бы ближайший по лучу этаж. Коробки
+			# высотой 7 м при разносе этажей в уровень вложения (8 м) не
+			# пересекаются, так что точка чуть выше пола принадлежит только своей.
+			for node_data: RS_LevelNode in layer_nodes:
+				var picked := Picker.pick(
+					plan.position_of(node_data.id) + Vector3(0, 3.0, 0), Vector3.DOWN, layer_nodes, plan)
+				if picked != node_data.id:
+					problems["пикинг узла находит его самого"].append(
+						"%s %s → %s" % [tag, node_data.id, picked if picked != &"" else "ничего"])
+			var far_pick := Picker.pick(Vector3(100000, 50, 100000), Vector3.DOWN, layer_nodes, plan)
+			if far_pick != &"":
+				problems["луч мимо слоя не пикает ничего"].append("%s → %s" % [tag, far_pick])
 
-		# --- 2. Пикинг: ray-vs-AABB находит узел, а не соседа снизу/сверху.
-		# Луч пускается из точки ВНУТРИ коробки конкретной комнаты, а не
-		# откуда-то сверху всего слоя: этажи одного depth штатно стоят друг
-		# над другом по одной сетке X/Z (связаны floor_hub — то же самое,
-		# что видит игрок), и луч издалека сверху честно нашёл бы ближайший
-		# по лучу этаж, а не тот, что проверяется. Коробки высотой 7 м при
-		# разносе этажей в уровень вложения (8 м) не пересекаются, так что
-		# точка чуть выше пола комнаты гарантированно принадлежит только её
-		# собственной коробке.
-		for node_data: RS_LevelNode in layer_nodes:
-			var pos := plan.position_of(node_data.id)
-			var picked := Picker.pick(pos + Vector3(0, 3.0, 0), Vector3.DOWN, layer_nodes, plan)
-			_check(
-				"%s: пикинг узла %s находит его самого" % [label, node_data.id],
-				picked == node_data.id,
-				"нашёл %s" % (picked if picked != &"" else "ничего")
-			)
+		# --- 3. Хаб — ровно один узел на весь граф, и это тупик. Регресс-щит на
+		# hub.tres (RS_RoomPresetLibrary.hub): протеки он в пул автоподбора
+		# (.presets) — молча достался бы и другим узлам-тупикам по всему графу.
+		var hub_nodes: Array[StringName] = []
+		for node_data: RS_LevelNode in graph.nodes.values():
+			if node_data.room_scene_path == RS_LevelGraph.HUB_ROOM_SCENE:
+				hub_nodes.append(node_data.id)
+		var hub_data := graph.get_node_data(graph.entry_node_id)
+		if hub_nodes.size() != 1 or hub_nodes[0] != graph.entry_node_id \
+				or hub_data == null or hub_data.connections.size() != 1:
+			problems["хаб — ровно один узел графа, и это тупик"].append(
+				"сид %d: хабов %s, рёбер %d" % [
+					seed_value, hub_nodes, hub_data.connections.size() if hub_data else -1])
 
-		# Луч мимо всех комнат слоя не должен ничего находить.
-		var far_pick := Picker.pick(Vector3(100000, 50, 100000), Vector3.DOWN, layer_nodes, plan)
-		_check("%s: луч мимо слоя не пикает ничего" % label, far_pick == &"", "нашёл %s" % far_pick)
+		# Сброс статического кэша RS_RoomLayout (зовётся вкладкой на
+		# «Пересобрать»): следующий сид обязан строиться и после него. Падение —
+		# SCRIPT ERROR, его засчитывает сторож обвязки.
+		RS_RoomLayout.clear_scene_cache()
 
-	# --- 3. Хаб — ровно один узел на весь граф (сам домашний, entry_node_id),
-	# и это всегда тупик (degree=1): у сцены хаба одна дверь, а рёбер в коридоры
-	# у комнаты ровно столько, сколько дверей. Прямой регресс-щит на риск
-	# добавления hub.tres как пресета (RS_RoomPresetLibrary.hub): протеки он в
-	# пул автоподбора (.presets) — молча достался бы и другим узлам-тупикам по
-	# всему графу, ни одна из проверок пикинга/оверлеев этого не поймала бы.
-	var hub_nodes: Array[StringName] = []
-	for node_data: RS_LevelNode in graph.nodes.values():
-		if node_data.room_scene_path == RS_LevelGraph.HUB_ROOM_SCENE:
-			hub_nodes.append(node_data.id)
-	_check(
-		"seed %d: хаб — ровно один узел графа" % seed_value,
-		hub_nodes.size() == 1 and hub_nodes[0] == graph.entry_node_id,
-		"%s" % hub_nodes
-	)
-	var hub_data := graph.get_node_data(graph.entry_node_id)
-	_check(
-		"seed %d: хаб — тупик (ровно одно ребро)" % seed_value,
-		hub_data != null and hub_data.connections.size() == 1,
-		"degree=%d" % (hub_data.connections.size() if hub_data else -1)
-	)
-
-	# --- 4. Сброс статического кэша RS_RoomLayout (зовётся вкладкой на
-	# «Пересобрать») не должен падать и не должен ломать последующие запросы.
-	RS_RoomLayout.clear_scene_cache()
-	_check("seed %d: clear_scene_cache отрабатывает" % seed_value, true, "")
+	for what: String in problems:
+		var list: Array = problems[what]
+		_check("%s (%d сидов)" % [what, SEED_COUNT], list.is_empty(), ", ".join(list.slice(0, 4)))

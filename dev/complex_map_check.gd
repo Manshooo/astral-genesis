@@ -17,14 +17,6 @@ extends "res://dev/check_harness.gd"
 
 const RUN_SEED := 515151
 const HUB_DEPTH := 3
-## Все ключи, которые экран и терминал показывают игроку.
-const KEYS: Array[String] = [
-	"MAP_TITLE", "MAP_TERMINAL_PROMPT", "MAP_NO_LINK", "MAP_LEVEL", "MAP_CLOSE", "MAP_LAYER",
-	"MAP_LAYER_CLOSED", "MAP_HERE", "MAP_FLOOR", "MAP_ROOM", "MAP_CORRIDOR", "MAP_VISITED",
-	"MAP_UNEXPLORED", "MAP_PORTAL_UP", "MAP_PORTAL_DOWN", "MAP_PORTAL_TARGET", "MAP_LOCKED",
-	"MAP_HINT", "MAP_UNIQUE_HUB", "MAP_UNIQUE_EXIT", "MAP_UNIQUE_ARCHITECT",
-	"HUD_MAP_HIDE", "HUD_MAP_FULL", "ACTION_MAP_MINI", "MAP_TERMINAL_ONLY",
-]
 
 var _save_backup := PackedByteArray()
 var _had_save := false
@@ -75,11 +67,7 @@ func _check_input_and_texts() -> void:
 				clashes.append(String(action))
 		_check("клавиша %s не занята другим действием" % map_action, map_code != "" and clashes.is_empty(),
 			"код %s, занят: %s" % [map_code, clashes])
-	var missing: Array[String] = []
-	for key in KEYS:
-		if tr(key) == key:
-			missing.append(key)
-	_check("все ключи карты переведены", missing.is_empty(), str(missing))
+	# Переведены ли ключи MAP_*, сверяет hud_check сканом всего src/ и data/.
 
 
 ## Правило видимости (MapKnowledge) по уровням — на графе без забега.
@@ -161,8 +149,11 @@ func _check_screen() -> void:
 	for node_data in _graph.get_nodes_by_depth(HUB_DEPTH):
 		floors[node_data.floor_index] = true
 	# Узел — на стольких панелях, сколько этажей занимает: лестница стоит на своём
-	# этаже и на этаже выше, и коридор там упирается в её верхнюю дверь.
+	# этаже и на этаже выше, и коридор там упирается в её верхнюю дверь. Считаются
+	# только этажи, которые у слоя есть: высокий зал на верхнем этаже (Архитектор
+	# 1×1×2) уходит верхом туда, где этажа нет, и панели под этот верх нет.
 	var shown_once := true
+	var wrong: Array[String] = []
 	var hub_plan := _graph.layer_plan(HUB_DEPTH)
 	for node_data in _graph.get_nodes_by_depth(HUB_DEPTH):
 		var times := 0
@@ -170,11 +161,17 @@ func _check_screen() -> void:
 			times += 1 if view.shows(node_data.id) else 0
 		var floors_taken: int = 1
 		if node_data.role == RS_LevelNode.Role.ROOM:
-			floors_taken = hub_plan.footprints.get(node_data.id, Vector3i.ONE).y
-		shown_once = shown_once and times == floors_taken
+			var bottom: int = hub_plan.cells[node_data.id].y
+			var height: int = hub_plan.footprints.get(node_data.id, Vector3i.ONE).y
+			floors_taken = 0
+			for level in range(bottom, bottom + height):
+				floors_taken += 1 if floors.has(level) else 0
+		if times != floors_taken:
+			shown_once = false
+			wrong.append("%s: %d из %d" % [node_data.id, times, floors_taken])
 	_check("уровень 2: панель на каждый этаж, каждый узел — на каждом своём этаже",
 		screen.floor_views().size() == floors.size() and shown_once,
-		"панелей %d, этажей %d" % [screen.floor_views().size(), floors.size()])
+		"панелей %d, этажей %d; %s" % [screen.floor_views().size(), floors.size(), ", ".join(wrong.slice(0, 4))])
 
 	# Срез (§9 «Меню — спека»): полоса своего слоя знает все его этажи и ровно те
 	# комнаты, что видны на планах, — срез не выдаёт больше купленного; игрок
@@ -472,7 +469,7 @@ func _check_mini_map(mini: UI_MiniMap) -> void:
 			later = node_id
 	var at := mini._opened_at + UI_MiniMap.CONTOUR_SECONDS
 	_check("контур текущего узла прорисован раньше соседей",
-		later != &"" and mini.progress_of(here, at) == 1.0 and mini.progress_of(later, at) < 1.0,
+		later != &"" and is_equal_approx(mini.progress_of(here, at), 1.0) and mini.progress_of(later, at) < 1.0,
 		"соседний %s" % later)
 
 	# Коридор — квадратами по клеткам, проступающими от входа волны по одному.
@@ -489,7 +486,10 @@ func _check_mini_map(mini: UI_MiniMap) -> void:
 		var first: Vector2i = chain.tiles[chain.ranks.find(0)]
 		var last: Vector2i = chain.tiles[chain.ranks.find(chain.ranks.max())]
 		var moment: float = mini._opened_at + mini._starts_at(chain.branch) + UI_MiniMap.TILE_FADE
-		in_order = mini.tile_progress(chain.branch, first, moment) == 1.0 \
+		# Приближённо, а не == 1.0: момент собран сложением от времени открытия, и
+		# при большом времени с запуска вычитание обратно даёт 0.99999… — проверка
+		# падала от того, сколько секунд прожил процесс до открытия карты.
+		in_order = is_equal_approx(mini.tile_progress(chain.branch, first, moment), 1.0) \
 			and mini.tile_progress(chain.branch, last, moment) < 1.0
 	_check("квадраты коридора проступают по очереди, у каждой клетки свой номер",
 		in_order and not chain.ranks.has(-1), str(chain.get("ranks", [])))

@@ -3,24 +3,53 @@
 [ext_resource type="Script" uid="uid://dcbx4x7wuxqdi" path="res://src/levels/procedural/rooms/room_template.gd" id="1_room"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_component"]
 [ext_resource type="Script" uid="uid://d3it37nh6j7in" path="res://src/components/level/c_room_shell.gd" id="3_pw5ya"]
-[ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_eda05"]
-[ext_resource type="PackedScene" uid="uid://cf6cx3bnpefhp" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_3b25f"]
+[ext_resource type="Resource" uid="uid://cc13xk6btj5eg" path="res://data/room_walls_p.tres" id="4_eda05"]
+[ext_resource type="Material" uid="uid://mnaqafpf6ato" path="res://assets/materials/_dev_proto.tres" id="5_proto"]
 [ext_resource type="PackedScene" uid="uid://t1k4bw0yi7ca" path="res://src/entities/architect/e_architect.tscn" id="8_architect"]
-[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
+[ext_resource type="Script" uid="uid://b3jb75b7ortsb" path="res://src/levels/level_light.gd" id="ll_light"]
 
 [sub_resource type="Resource" id="Resource_o7ouy"]
 script = ExtResource("3_pw5ya")
-size = Vector3i(2, 1, 2)
+size = Vector3i(1, 2, 1)
 walls = ExtResource("4_eda05")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+material = ExtResource("5_proto")
+size = Vector2(8, 8)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ceiling"]
+material = ExtResource("5_proto")
+flip_faces = true
+size = Vector2(8, 8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_slab"]
+size = Vector3(8, 0.2, 8)
 
 [node name="ArchitectRoom" type="Node3D" unique_id=1734177839]
 script = ExtResource("1_room")
 component_resources = Array[ExtResource("2_component")]([SubResource("Resource_o7ouy")])
 
-[node name="Visual" parent="." unique_id=250268331 instance=ExtResource("5_3b25f")]
+[node name="Visual" type="Node3D" parent="." unique_id=250268331]
+
+[node name="Floor" type="MeshInstance3D" parent="Visual" unique_id=250268332]
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="Ceiling" type="MeshInstance3D" parent="Visual" unique_id=250268333]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 16, 0)
+mesh = SubResource("PlaneMesh_ceiling")
+
+[node name="Collision" type="StaticBody3D" parent="." unique_id=250268334]
+
+[node name="FloorSlab" type="CollisionShape3D" parent="Collision" unique_id=250268335]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape3D_slab")
+
+[node name="CeilingSlab" type="CollisionShape3D" parent="Collision" unique_id=250268336]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 16.1, 0)
+shape = SubResource("BoxShape3D_slab")
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1488466474]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 5.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 2.5)
 
 [node name="Architect" parent="." unique_id=352931902 instance=ExtResource("8_architect")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.115, 0)

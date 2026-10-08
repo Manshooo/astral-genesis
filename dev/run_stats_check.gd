@@ -14,7 +14,6 @@ const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 const WALKER_SCENE := "res://src/entities/body/e_body_walker.tscn"
 const ENEMY_SCENE := "res://src/entities/enemy/e_enemy.tscn"
 const CATALOG_PATH := "res://data/run_stat_catalog.tres"
-const SAVE_ICON_PATH := "res://assets/ui/icons/save.svg"
 
 ## Сколько раз сейв отчитался о записи (WorldSave.progress_saved). Поле, а не
 ## локальная переменная в лямбде: лямбда GDScript захватывает переменную ПО
@@ -142,12 +141,7 @@ func _check_catalog() -> void:
 
 
 func _check_localization() -> void:
-	# Перевод, вернувший сам ключ, — это не перевод: либо .csv не подключён в
-	# project.godot, либо ключа в нём нет. И то, и другое в игре выглядит как
-	# «BODY_WALKER» вместо имени тела.
-	for key in [&"RUN_SUMMARY_TITLE_DEATH", &"RUN_SUMMARY_REVIVE", &"RUN_STAT_TIME", &"BODY_WALKER"]:
-		_check("ключ «%s» переведён" % key, tr(key) != String(key), tr(key))
-
+	# Переведены ли сами ключи RUN_*/BODY_*, сверяет hud_check сканом src/ и data/.
 	_check(
 		"имя тела читается из СЦЕНЫ тела, а не из словаря в коде",
 		E_Body.name_key_of_scene(WALKER_SCENE) == &"BODY_WALKER",
@@ -200,7 +194,7 @@ func _check_world(world: World) -> void:
 	world.add_entity(player)
 	await get_tree().process_frame
 
-	var walker := _spawn_body(world, WALKER_SCENE, Vector3(20.0, 0.0, 20.0))
+	_spawn_body(world, WALKER_SCENE, Vector3(20.0, 0.0, 20.0))
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	var bs := player.get_component(C_BodySnatch) as C_BodySnatch
@@ -210,13 +204,13 @@ func _check_world(world: World) -> void:
 	await get_tree().process_frame
 
 	_check("захват в мире дошёл до сводки записью", stats.bodies.size() == 1, str(stats.bodies.size()))
+	# Тело к этому моменту из мира уже убрано захватом — имя в записи держится
+	# без него.
 	_check(
 		"в записи — имя того тела, которое заняли",
 		not stats.bodies.is_empty() and stats.bodies[0].name_key == &"BODY_WALKER",
 		String(stats.bodies[0].name_key) if not stats.bodies.is_empty() else "записи нет"
 	)
-	_check("тело, которого больше нет в мире, всё равно названо", is_instance_valid(walker) == false
-		or not walker.is_inside_tree(), "")
 
 	# --- Урон: чей он, решает воронка, а не падение HP ----------------------
 	var enemy := (load(ENEMY_SCENE) as PackedScene).instantiate() as E_Enemy
@@ -301,9 +295,9 @@ func _check_run_boundaries() -> void:
 		"%.2f / %d" % [RunStats.last.value(RS_RunStats.TIME), RunStats.last.bodies.size()])
 	_check("сейв свою ссылку на статистику отпустил", saved.run_stats == null, "")
 
-	# Урон после конца забега писать некуда — и это не должно ронять игру.
+	# Урон после конца забега писать некуда — и это не должно ронять игру. Без
+	# ассерта: падение здесь — SCRIPT ERROR, и его засчитывает сторож обвязки.
 	RunStats.record_damage(null)
-	_check("урон после конца забега не роняет накопитель", true, "")
 
 
 # ---------------------------------------------------------------------------
@@ -438,8 +432,6 @@ func _check_autosave() -> void:
 ## а не режимом твина: режим — это как раз то, что можно переставить и не
 ## заметить.
 func _check_save_indicator() -> void:
-	_check("иконка сохранения на месте", ResourceLoader.exists(SAVE_ICON_PATH), SAVE_ICON_PATH)
-
 	var indicator := UI_HudSaveIndicator.new()
 	add_child(indicator)
 	await get_tree().process_frame

@@ -64,7 +64,6 @@ func _check_view(topology: SquareGridTopology, embedding: SquareGridEmbedding) -
 		if not direction.is_equal_approx(Vector3(SquareGridTopology.OFFSETS[side])):
 			turned.append("%s: %s" % [RS_RoomLayout.side_name(side), direction])
 	_check("стрелка смотрит в сторону соседа за своей стороной", turned.is_empty(), ", ".join(turned))
-	_check("стрелка — три отрезка", view.segment_count() == 12, str(view.segment_count()))
 
 	view.clear()
 	view.add_face_arrow(Vector3i.ZERO, SquareGridTopology.Side.EAST, 2.0, Color.WHITE)

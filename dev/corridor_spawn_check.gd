@@ -60,7 +60,9 @@ func _ready() -> void:
 	await _check_geometry()
 	_check_doors_bound()
 	await _check_open_door()
+	_check_visibility("у входа")
 	_check_hub_door()
+	_check_visibility("в коридоре хаба после шага присутствием")
 	await _check_minimap()
 	await _check_reload_in_corridor()
 
@@ -85,14 +87,13 @@ func _check_tiles() -> void:
 			spawned += 1
 			ends += 1 if kit.end and tile.scene_file_path == kit.end.resource_path else 0
 			var cell := plan.embedding.cell_at(tile.global_position)
-			var base := _base_mask(kit, tile.scene_file_path)
-			var turns := posmod(roundi(tile.rotation.y / (PI * 0.5)), 4)
-			if RS_CorridorKit.rotate_mask(base, turns) != plan.corridor_tiles.get(cell, -1) \
-					or plan.node_by_cell.get(cell, &"") != branch:
+			if not plan.corridor_tiles.has(cell) or plan.node_by_cell.get(cell, &"") != branch:
 				wrong.append("%s %s" % [branch, cell])
 	_check("на каждый тайл плана — ровно один кусок (%d)" % plan.corridor_tiles.size(),
 		spawned == plan.corridor_tiles.size(), "поставлено %d" % spawned)
-	_check("кусок под маску своего тайла и своей ветки", wrong.is_empty(), ", ".join(wrong.slice(0, 4)))
+	# Поворот куска сверяют лучи (_check_geometry), а не RS_CorridorKit.rotate_mask:
+	# та же формула в проверке зеленела на мутации «тупик с неверной базовой маской».
+	_check("кусок стоит в клетке своего коридора", wrong.is_empty(), ", ".join(wrong.slice(0, 4)))
 	# Иначе лучи ниже не видели бы ни одного тупика, и перевёрнутый кусок тупика
 	# прошёл бы молча.
 	_check("тупики слоя встали куском тупика, и они есть (%d)" % ends,
@@ -305,6 +306,57 @@ func _check_hub_door() -> void:
 		RunManager.current_node_id == portal.target_node_id, RunManager.current_node_id)
 
 
+## Слой виден на LayerStreamer.VISIBLE_HOPS рёбер от текущего узла, дальше спрятан
+## — лампа далёкой комнаты не светит сквозь стены и не тратит кадр. Видимость
+## сверяется по самим узлам (лампа комнаты, тайлы коридора), а не по флагу
+## стримера, и ожидание считается обходом графа здесь же — от определения, а не
+## вызовом кода стримера. Ломается тихо в обе стороны: забытый пересчёт оставляет
+## слой целиком видимым (кадры и засветы), лишний — прячет комнату под ногами.
+func _check_visibility(where: String) -> void:
+	var graph := RunManager.current_graph
+	var here := RunManager.current_node_id
+	var near := {here: 0}
+	var queue: Array[StringName] = [here]
+	while not queue.is_empty():
+		var id: StringName = queue.pop_front()
+		if near[id] >= LayerStreamer.VISIBLE_HOPS:
+			continue
+		for conn: RS_LevelConnection in graph.get_node_data(id).connections:
+			if not conn.is_portal() and not near.has(conn.target_node_id):
+				near[conn.target_node_id] = near[id] + 1
+				queue.append(conn.target_node_id)
+
+	var wrong: Array[String] = []
+	var hidden := 0
+	var walkers_hidden: Array[String] = []
+	for id: StringName in RunManager.layer.rooms:
+		var room := RunManager.layer.rooms[id].entity as Node as Node3D
+		var lamps := room.find_children("*", "Light3D", true, false)
+		var shown := not lamps.is_empty() and (lamps[0] as Light3D).is_visible_in_tree()
+		if lamps.is_empty():
+			continue
+		if shown != near.has(id):
+			wrong.append("%s: видна %s" % [id, shown])
+		if not shown:
+			hidden += 1
+			for walker in room.find_children("*", "CharacterBody3D", true, false):
+				if not (walker as Node3D).is_visible_in_tree():
+					walkers_hidden.append("%s/%s" % [id, walker.name])
+	for id: StringName in RunManager.layer.corridor_tiles:
+		var tiles: Array = RunManager.layer.corridor_tiles[id]
+		if tiles.is_empty():
+			continue
+		var shown := (tiles[0] as Node3D).visible
+		if shown != near.has(id):
+			wrong.append("%s: виден %s" % [id, shown])
+		hidden += 0 if shown else 1
+	_check("%s: видно ровно то, что в %d рёбрах графа, остального нет (спрятано %d)"
+			% [where, LayerStreamer.VISIBLE_HOPS, hidden],
+		wrong.is_empty() and hidden > 0, ", ".join(wrong.slice(0, 4)))
+	_check("%s: враги спрятанных комнат видны — погоня не делает их невидимками" % where,
+		walkers_hidden.is_empty(), ", ".join(walkers_hidden))
+
+
 ## Мини-карта в коридоре (стоим в ветке хаба после _check_hub_door): ветка видна
 ## целиком как текущая, хаб — как посещённый, комнаты ветки — как соседи, а
 ## маркер игрока внутри карты. Спрашивается build_view — пикселей headless не
@@ -376,18 +428,6 @@ func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3, mask: in
 func _to_face(plan: RS_LayerPlan, cell: Vector3i, side: int) -> Vector3:
 	var next := plan.topology.neighbour(cell, side)
 	return (plan.embedding.cell_origin(next) - plan.embedding.cell_origin(cell)) * 0.5
-
-
-func _base_mask(kit: RS_CorridorKit, scene_path: String) -> int:
-	if kit.straight and scene_path == kit.straight.resource_path:
-		return kit.straight_mask
-	if kit.corner and scene_path == kit.corner.resource_path:
-		return kit.corner_mask
-	if kit.tee and scene_path == kit.tee.resource_path:
-		return kit.tee_mask
-	if kit.end and scene_path == kit.end.resource_path:
-		return kit.end_mask
-	return kit.cross_mask
 
 
 func _player() -> Node3D:
