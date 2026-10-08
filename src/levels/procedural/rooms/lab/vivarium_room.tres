@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3]
+
+[ext_resource type="PackedScene" uid="uid://bq3ukgw2nntde" path="res://src/levels/procedural/rooms/lab/vivarium_room.tscn" id="1_scene"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_preset"]
+
+[resource]
+script = ExtResource("2_preset")
+display_name = "Виварий"
+scene = ExtResource("1_scene")
+doors_min = 1
+doors_max = 1
+tags = Array[StringName]([&"floor_hub"])
+room_type = &"lab"
+metadata/_custom_type_script = "uid://wiaffa7aebsm"
