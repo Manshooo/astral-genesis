@@ -39,7 +39,15 @@ Engine specifics (`project.godot`): **Godot 4.7.2**, Forward+, **Jolt Physics** 
 - **Branches — everything merges via PR into `master`, nothing is committed straight to it.** Feature/fix/docs work (`feat/kebab-case`, `fix/kebab-case`, `docs/kebab-case`, …) branches from `master` and merges back into it; there are no release branches — the changelog of a version is the PRs between two tags (`--generate-notes`). Branch protection is deliberately off: the release workflow may push a version bump to `master`. Why this shape: [Работа в master и релизы тегами](docs/astral-genesis/Задачи/Карточки/Работа%20в%20master%20и%20релизы%20тегами.md).
 - **Commit subject**: `Область: что сделано` — Russian, area capitalized, no trailing period. E.g. `Двери: запечённый меш вместо процедурного бокса`. This is not Conventional Commits — do not write `feat:`/`fix:`.
 - **Commit body**: Russian prose explaining **why**, grouped in paragraphs by area when a change spans several. Do not list changed files — the diff already does that.
-- **Drafting the actual message** — reading a diff and writing it in this project's voice (diagnosis-first for fixes, rejected-alternatives-first for design decisions) is the **`commit-message`** skill's job.
+- **Drafting the actual message** — reading a diff and writing it in this project's voice (diagnosis-first for fixes, rejected-alternatives-first for design decisions) is the **`commit-message`** skill's job. Unrelated changes go into separate commits.
+- **Local git work** — PR flow (`--base master`, PR state via `gh pr view`, never inferred from `gh pr list`), staging only your own files because other sessions work in parallel worktrees, and **GPG-signed commits**: a non-interactive shell cannot reach pinentry, so check `echo test | gpg --clearsign >/dev/null` before the first commit and ask the user if it hangs — never retry silently or bypass signing. A stalled LFS push has its own diagnosis order. [Релизы и сборка → Работа с git](docs/astral-genesis/how-to/Релизы%20и%20сборка.md).
+
+## Known environment traps
+
+- **GDScript and Python are edited with Edit/Write, never through bash heredocs** — a heredoc silently collapses backslash line continuations.
+- **Headless checks lie in two ways**: a runner that exits zero on failure, and a check that leaves the player's real save changed. Both are covered in the `gameplay-testing` skill, «Как писать проверку» (sound in headless is already host-mixed by `AudioManager`).
+- **Blender is not on PATH**; its path, MCP-vs-`--background`, and «grep the addon's source before claiming Ucupaint can't do something»: [tools/blender/README.md → Blender из агента](tools/blender/README.md).
+- **Kit dimensions are taken from the doc, never from memory**, and the kit build scripts / `level_kit.blend` placeholders are not restructured unasked: [Метрики и кит §3](docs/astral-genesis/Справка/Метрики%20и%20кит.md).
 
 ## Architecture at a glance
 
