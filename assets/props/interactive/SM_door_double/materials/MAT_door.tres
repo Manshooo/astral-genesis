@@ -1,8 +1,8 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://hyoi2hv5bou6"]
 
-[ext_resource type="Texture2D" uid="uid://cou5yqgoxp8n2" path="res://assets/props/interactive/SM_door_double/textures/T_door_albedo.png" id="1_ma58y"]
-[ext_resource type="Texture2D" uid="uid://y44nx50pdo7h" path="res://assets/props/interactive/SM_door_double/textures/T_door_orm.png" id="2_m0pht"]
-[ext_resource type="Texture2D" uid="uid://oft4xmhjxlot" path="res://assets/props/interactive/SM_door_double/textures/T_door_n.png" id="3_bx35v"]
+[ext_resource type="Texture2D" uid="uid://djpbjvrn1oy8v" path="res://assets/props/interactive/SM_door_double/textures/T_door_albedo.png" id="1_ma58y"]
+[ext_resource type="Texture2D" uid="uid://dpepwjak23mx6" path="res://assets/props/interactive/SM_door_double/textures/T_door_orm.png" id="2_m0pht"]
+[ext_resource type="Texture2D" uid="uid://deesw3lwufjh" path="res://assets/props/interactive/SM_door_double/textures/T_door_n.png" id="3_bx35v"]
 
 [resource]
 resource_name = "MAT_door"

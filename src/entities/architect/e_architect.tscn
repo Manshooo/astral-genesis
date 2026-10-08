@@ -16,7 +16,7 @@ prompt_text = "ARCHITECT_PROMPT"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_interact"]
-size = Vector3(3.4, 10.5842285, 3.4)
+size = Vector3(3.4, 10.575317, 3.4)
 
 [node name="Architect" type="Node3D" unique_id=557460108]
 script = ExtResource("1_entity")
@@ -30,5 +30,5 @@ collision_layer = 8
 collision_mask = 8
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=318295620]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.1812744, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.18573, 0)
 shape = SubResource("BoxShape3D_interact")

@@ -44,7 +44,7 @@ func _ready() -> void:
 
 	var world := _new_world()
 	_add_systems(world, "gameplay", [S_RoomPresence.new()])
-	_add_systems(world, "physics", [S_DoorOpen.new()])
+	_add_systems(world, "physics", [S_DoorMotion.new()])
 
 	GameConfig.config.world_gen = _base_config.duplicate() as RS_WorldGenConfig
 	var fresh := RS_WorldSave.new()
@@ -245,7 +245,7 @@ func _check_open_door() -> void:
 	var inter := door.get_component(C_Interactable) as C_Interactable
 	_check("дверь в коридор открывается на месте: игрок и узел не меняются",
 		player.global_position == before and RunManager.current_node_id == node_before
-			and door.has_component(C_DoorOpen) and inter != null and not inter.enabled, "")
+			and _door_phase(door) == C_DoorMotion.Phase.OPENING and inter != null and not inter.enabled, "")
 
 	for i in 12:
 		ECS.process(0.1, "physics")
@@ -255,12 +255,12 @@ func _check_open_door() -> void:
 	# Лучом, а не по положению узла: прежняя проверка смотрела на Visual и
 	# зеленела, пока меш уезжал, а коллизия полотна оставалась в проёме. Куда
 	# полотно обязано уехать, считает то же правило, что его двигает.
-	var open := door.get_component(C_DoorOpen) as C_DoorOpen
-	var leaves := S_DoorOpen.leaves_of(door)
+	var open := door.get_component(C_DoorMotion) as C_DoorMotion
+	var leaves := S_DoorMotion.leaves_of(door)
 	var moved := not leaves.is_empty()
 	for leaf in leaves:
-		var rest: Vector3 = leaf.get_meta(S_DoorOpen.REST_META, Vector3.INF)
-		var want := rest + S_DoorOpen.open_offset(open, S_DoorOpen.leaf_side(leaf), leaves.size())
+		var rest: Vector3 = leaf.get_meta(S_DoorMotion.REST_META, Vector3.INF)
+		var want := rest + S_DoorMotion.open_offset(open, S_DoorMotion.leaf_side(leaf), leaves.size())
 		moved = moved and leaf.position.distance_to(want) < 0.05
 	var hit := _doorway_ray(space, door)
 	_check("полотно открылось вместе с коллизией: проём свободен",
@@ -294,7 +294,7 @@ func _check_hub_door() -> void:
 	var before := _player().global_position
 	RunManager.use_door(door, portal.target_node_id)
 	_check("дверь хаба открывается на месте, как любая",
-		door.has_component(C_DoorOpen) and _player().global_position == before, "")
+		_door_phase(door) == C_DoorMotion.Phase.OPENING and _player().global_position == before, "")
 	var plan := RunManager.plan_for_depth(RunManager.current_depth)
 	PlayerPlacement.in_front_of(_player(), door, room, plan)
 	_check("шаг за дверь хаба — в его коридоре",
@@ -392,6 +392,12 @@ func _base_mask(kit: RS_CorridorKit, scene_path: String) -> int:
 
 func _player() -> Node3D:
 	return ECS.world.query.with_all([C_PlayerInput]).execute_one() as Node as Node3D
+
+
+## Фаза хода двери; у двери без C_DoorMotion — «закрыта», ей и не открыться.
+func _door_phase(door: Entity) -> C_DoorMotion.Phase:
+	var motion := door.get_component(C_DoorMotion) as C_DoorMotion
+	return motion.phase if motion else C_DoorMotion.Phase.CLOSED
 
 
 func _restore() -> void:

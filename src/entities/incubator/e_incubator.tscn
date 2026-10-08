@@ -18,7 +18,7 @@ requires_body = true
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="BoxShape3D" id="IncubatorShape"]
-size = Vector3(2.4349365, 3.2364502, 3.5)
+size = Vector3(2.259613, 3.2364502, 3.5)
 
 [node name="Incubator" type="Node3D" unique_id=522577828]
 script = ExtResource("1_jjamn")
@@ -30,7 +30,7 @@ collision_layer = 8
 collision_mask = 15
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=1101708281]
-transform = Transform3D(0.98480785, 0, 0.17364821, 0, 1, 0, -0.17364821, 0, 0.98480785, -6.4292827, 1.6371216, -2.4181366)
+transform = Transform3D(0.97450227, 0, 0.224378, 0, 1, 0, -0.224378, 0, 0.97450227, -6.343239, 1.6371216, -2.434767)
 shape = SubResource("IncubatorShape")
 
 [node name="Visual" parent="." unique_id=1229026779 instance=ExtResource("6_nijex")]
