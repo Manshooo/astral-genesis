@@ -48,6 +48,8 @@ const GRAPHICS_PRESET_FIELDS := [
 ]
 const GRAPHICS_PRESET_KEY := "graphics_preset_id"
 const CUSTOM_PRESET_ID := &"custom"
+## Настройки окна, которые встроенная в редактор игра применить не может.
+const WINDOW_LOCKED_KEYS := ["window_mode", "resolution"]
 
 ## Контрол выпадающего списка пресетов — держим отдельно от _controls, чтобы
 ## после отката на CUSTOM обновить его отображение напрямую, в обход
@@ -66,7 +68,22 @@ func _ready() -> void:
 	_load_values()
 	_connect_tabs()
 	_connect_hints(settings_list)
+	_lock_window_rows()
 	_show_hint("", "")
+
+
+## Во встроенной в редактор игре режим и разрешение не применяются
+## (SettingsManager.is_window_locked) — строки гаснут, а подсказка говорит
+## почему, чтобы выбор не выглядел сломанным. Значения в черновике остаются:
+## отдельно запущенная игра применит их как обычно.
+func _lock_window_rows() -> void:
+	if not SettingsManager.is_window_locked():
+		return
+	for control in _controls:
+		var row := (control as Node).get_parent() as UI_SettingRow
+		if row and control.setting_key in WINDOW_LOCKED_KEYS:
+			row.set_row_disabled(true)
+			row.hint_key = "SETTINGS_HINT_WINDOW_EMBEDDED"
 
 
 ## Кнопка-вкладка N открывает страницу N: порядок кнопок и страниц один.
