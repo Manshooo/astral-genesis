@@ -161,8 +161,11 @@ func _check_screen() -> void:
 	for node_data in _graph.get_nodes_by_depth(HUB_DEPTH):
 		floors[node_data.floor_index] = true
 	# Узел — на стольких панелях, сколько этажей занимает: лестница стоит на своём
-	# этаже и на этаже выше, и коридор там упирается в её верхнюю дверь.
+	# этаже и на этаже выше, и коридор там упирается в её верхнюю дверь. Считаются
+	# только этажи, которые у слоя есть: высокий зал на верхнем этаже (Архитектор
+	# 1×1×2) уходит верхом туда, где этажа нет, и панели под этот верх нет.
 	var shown_once := true
+	var wrong: Array[String] = []
 	var hub_plan := _graph.layer_plan(HUB_DEPTH)
 	for node_data in _graph.get_nodes_by_depth(HUB_DEPTH):
 		var times := 0
@@ -170,11 +173,17 @@ func _check_screen() -> void:
 			times += 1 if view.shows(node_data.id) else 0
 		var floors_taken: int = 1
 		if node_data.role == RS_LevelNode.Role.ROOM:
-			floors_taken = hub_plan.footprints.get(node_data.id, Vector3i.ONE).y
-		shown_once = shown_once and times == floors_taken
+			var bottom: int = hub_plan.cells[node_data.id].y
+			var height: int = hub_plan.footprints.get(node_data.id, Vector3i.ONE).y
+			floors_taken = 0
+			for level in range(bottom, bottom + height):
+				floors_taken += 1 if floors.has(level) else 0
+		if times != floors_taken:
+			shown_once = false
+			wrong.append("%s: %d из %d" % [node_data.id, times, floors_taken])
 	_check("уровень 2: панель на каждый этаж, каждый узел — на каждом своём этаже",
 		screen.floor_views().size() == floors.size() and shown_once,
-		"панелей %d, этажей %d" % [screen.floor_views().size(), floors.size()])
+		"панелей %d, этажей %d; %s" % [screen.floor_views().size(), floors.size(), ", ".join(wrong.slice(0, 4))])
 
 	var projected := true
 	var portals_marked := true
