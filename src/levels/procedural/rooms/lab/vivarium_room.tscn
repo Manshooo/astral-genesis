@@ -11,6 +11,7 @@
 script = ExtResource("3_jqxau")
 size = Vector3i(2, 1, 2)
 walls = ExtResource("4_lh1oc")
+door_sockets = Array[Vector4i]([Vector4i(0, 0, 0, 0), Vector4i(1, 0, 0, 0)])
 
 [node name="vivarium" type="Node3D" unique_id=620451068]
 script = ExtResource("1_qwslo")
@@ -21,7 +22,7 @@ component_resources = Array[ExtResource("2_xa3ha")]([SubResource("Resource_ng4uo
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)
 
-[node name="light" type="Node" parent="." unique_id=1385158210]
+[node name="light" type="Node3D" parent="." unique_id=1385158210]
 
 [node name="SpotLight3D" type="SpotLight3D" parent="light" unique_id=597006309]
 script = ExtResource("ll_light")
