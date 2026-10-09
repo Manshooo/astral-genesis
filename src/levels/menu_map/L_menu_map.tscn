@@ -16,6 +16,7 @@ tonemap_mode = 2
 ssr_enabled = true
 ssao_enabled = true
 ssil_enabled = true
+sdfgi_enabled = true
 glow_enabled = true
 glow_intensity = 0.6
 glow_bloom = 0.05
