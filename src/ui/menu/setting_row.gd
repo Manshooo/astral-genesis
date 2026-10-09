@@ -29,7 +29,7 @@ const ECHO_IN := 0.14
 
 var _label: Label
 var _echo := 0.0
-var _active := false
+var _looked := false
 var _disabled := false
 ## Что уже выставлено подписи: цвет, цвет эха, сдвиг эха.
 var _painted: Array = []
@@ -72,10 +72,13 @@ func _process(delta: float) -> void:
 		return
 	var focused := _has_focus_inside()
 	var hovered := get_global_rect().has_point(get_global_mouse_position())
-	var active := (focused or hovered) and not _disabled
-	if active and not _active:
+	# Подсказку получает и погашенная строка: только она и объясняет, почему
+	# строка недоступна. Не загорается она сама — подпись и эхо.
+	var looked := focused or hovered
+	if looked and not _looked:
 		looked_at.emit(self)
-	_active = active
+	_looked = looked
+	var active := looked and not _disabled
 	_echo = move_toward(_echo, 1.0 if active else 0.0, delta / ECHO_IN)
 	if _label:
 		var shadow := UI_MenuStyle.ECHO

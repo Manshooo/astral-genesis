@@ -203,6 +203,10 @@ const RESOLUTIONS: Array[Vector2i] = [
 ## остаётся линией в пиксель.
 const UI_SCALES: Array[float] = [1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
 
+## Режим и разрешение, последними применённые к окну ([] — ещё ни разу), см.
+## _apply_display_settings.
+var _applied_window: Array = []
+
 
 ## Базовое окно проекта, под которое свёрстан весь интерфейс (1497×720).
 func base_size() -> Vector2i:
@@ -237,13 +241,34 @@ func ui_scale_options() -> Array[float]:
 	return options
 
 
+## Игра запущена из редактора встроенной во вкладку «Игра». Такое окно Godot
+## держит только оконным («Embedded window only supports Windowed mode.»), а его
+## размер задаёт редактор: смену режима он отвергает, а размер применяет
+## наполовину — картинка обрезается или стоит с пустыми полями. Поэтому режим и
+## разрешение здесь не применяются вовсе, а меню их гасит.
+func is_window_locked() -> bool:
+	return Engine.is_embedded_in_editor()
+
+
 ## Режим и размер окна. Godot не меняет разрешение монитора, поэтому во весь
 ## экран «разрешение» — это то, в чём рисуется 3D (см. render_resolution_factor),
 ## а размер окна — экран целиком.
+##
+## Окно трогается, только когда режим или разрешение поменялись с прошлого
+## применения: эффекты применяются на любое «Применить», и без этого правка
+## громкости сворачивала бы развёрнутое руками окно обратно в выбранный размер.
 func _apply_display_settings() -> void:
 	var window := get_window()
 	if window == null or DisplayServer.get_name() == "headless":
 		return
+	var wanted_window := [settings.window_mode, settings.resolution]
+	if not is_window_locked() and wanted_window != _applied_window:
+		_applied_window = wanted_window
+		_apply_window_mode(window)
+	_apply_ui_scale()
+
+
+func _apply_window_mode(window: Window) -> void:
 	match settings.window_mode:
 		WINDOW_FULLSCREEN:
 			window.mode = Window.MODE_EXCLUSIVE_FULLSCREEN
@@ -261,15 +286,17 @@ func _apply_display_settings() -> void:
 			if window.size != wanted:
 				window.size = wanted
 				window.move_to_center()
-	_apply_ui_scale()
 
 
 ## Во сколько раз 3D рисуется мельче экрана из-за выбранного разрешения: во весь
 ## экран 1920×1080 на мониторе 2560×1440 — 0.75. В окне разрешение и есть
 ## размер окна, множитель — 1. Сверху — 1: рисовать 3D крупнее экрана этот
-## пункт не обещает, для этого есть «Масштаб разрешения».
+## пункт не обещает, для этого есть «Масштаб разрешения». Во встроенной в
+## редактор игре окно оконное, что бы ни стояло в настройках, — множитель 1.
 func render_resolution_factor() -> float:
 	if settings == null or settings.window_mode == WINDOW_WINDOWED or settings.resolution == Vector2i.ZERO:
+		return 1.0
+	if is_window_locked():
 		return 1.0
 	var screen := DisplayServer.screen_get_size()
 	if screen.y <= 0:

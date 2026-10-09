@@ -5,7 +5,7 @@
 [ext_resource type="Script" path="res://src/components/level/c_room_shell.gd" id="3_cjxtr"]
 [ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_8jqiu"]
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_0gk8d"]
-[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
+[ext_resource type="PackedScene" path="res://src/levels/lamp.tscn" id="lamp"]
 
 [sub_resource type="Resource" id="Resource_avea3"]
 script = ExtResource("3_cjxtr")
@@ -21,14 +21,5 @@ component_resources = Array[ExtResource("2_cjxtr")]([SubResource("Resource_avea3
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=88028626]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -7.4)
 
-[node name="Light" type="OmniLight3D" parent="." unique_id=2000780891]
-script = ExtResource("ll_light")
-shadow_enabled = true
-distance_fade_enabled = true
-distance_fade_begin = 200.0
-distance_fade_shadow = 40.0
+[node name="Light" parent="." unique_id=2000780891 instance=ExtResource("lamp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
-light_color = Color(1, 0.93, 0.82, 1)
-light_energy = 1.6
-omni_range = 14.0
-omni_attenuation = 1.2

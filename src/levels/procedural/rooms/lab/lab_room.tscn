@@ -6,7 +6,7 @@
 [ext_resource type="Resource" path="res://data/room_walls_p.tres" id="4_ua5we"]
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_8ut7d"]
 [ext_resource type="PackedScene" path="res://src/entities/body/e_body_walker.tscn" id="90_body"]
-[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
+[ext_resource type="PackedScene" path="res://src/levels/lamp.tscn" id="lamp"]
 
 [sub_resource type="Resource" id="Resource_6iy6b"]
 script = ExtResource("3_2oaqr")
@@ -25,14 +25,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.8, -4.8966465
 [node name="BodyWalker" parent="." unique_id=710000001 instance=ExtResource("90_body")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.7881393e-06, 0)
 
-[node name="Light" type="OmniLight3D" parent="." unique_id=1153442372]
-script = ExtResource("ll_light")
-shadow_enabled = true
-distance_fade_enabled = true
-distance_fade_begin = 200.0
-distance_fade_shadow = 40.0
+[node name="Light" parent="." unique_id=1153442372 instance=ExtResource("lamp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
-light_color = Color(1, 0.93, 0.82, 1)
-light_energy = 1.6
-omni_range = 14.0
-omni_attenuation = 1.2

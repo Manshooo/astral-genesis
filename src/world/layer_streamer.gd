@@ -248,6 +248,8 @@ func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 		push_error("LayerStreamer: нет набора кусков коридора (GameConfig.corridor_kit)")
 		return
 	var parent := _corridor_parent()
+	var light := RS_DepthLighting.layer(node_data.depth)
+	var dead_chance := light.dead_lamp_chance if light else 0.0
 	var tiles: Array[Node3D] = []
 	for cell: Vector3i in plan.corridor_tiles:
 		if plan.node_by_cell.get(cell, &"") != node_data.id:
@@ -256,12 +258,50 @@ func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 		if tile == null:
 			push_error("LayerStreamer: нет куска кита под маску %d (тайл %s)" % [plan.corridor_tiles[cell], cell])
 			continue
+		if _is_lamp_dead(node_data.depth, cell, dead_chance):
+			_remove_lamps(tile)
 		# Позиция ДО входа в дерево — как и у комнат (_spawn_room): иначе
 		# коллизия тайла успеет зарегистрироваться в начале координат.
 		tile.position = plan.embedding.cell_origin(cell)
 		parent.add_child(tile)
 		tiles.append(tile)
 	corridor_tiles[node_data.id] = tiles
+
+
+## Погасла ли лампа тайла — от сида мира, слоя и клетки, своим ГСЧ, а не общим:
+## тот же мир после загрузки гасит те же лампы, и ни порядок спавна, ни сама
+## генерация от этого броска не зависят. Слой в ключе — потому что все слои
+## раскладываются от одной клетки (0, 0), и без него погасшие лампы совпадали бы
+## клетками на всех слоях.
+func _is_lamp_dead(layer_depth: int, cell: Vector3i, chance: float) -> bool:
+	if chance <= 0.0:
+		return false
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([graph.run_seed, layer_depth, cell])
+	return rng.randf() < chance
+
+
+## Снимает лампы тайла, пока он не вошёл в дерево: погасшая лампа не должна ни
+## светить, ни занимать ячейку теневого атласа (ShadowBudget считает лампы группы).
+## Плафон остаётся на месте лампы тёмным — мёртвый светильник, а не дыра в потолке.
+func _remove_lamps(tile: Node3D) -> void:
+	for node in tile.find_children("*", "Light3D", true, false):
+		if not node is LevelLight:
+			continue
+		var light := node as Node3D
+		for child in light.get_children():
+			if child is LampFixture:
+				var fixture := child as LampFixture
+				var placed := light.transform * fixture.transform
+				# Владелец плафона и его деталей — корень сцены лампы, которая
+				# сейчас уйдёт: без сброса Godot ругается на чужого владельца.
+				for owned: Node in [fixture as Node] + fixture.find_children("*", "", true, false):
+					owned.owner = null
+				light.remove_child(fixture)
+				light.get_parent().add_child(fixture)
+				fixture.transform = placed
+				fixture.go_dark()
+		light.free()
 
 
 ## Родитель тайлов — под миром ECS, чтобы уходить вместе со сценой мира. Ссылка

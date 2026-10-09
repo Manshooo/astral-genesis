@@ -403,6 +403,7 @@ func _check_level_environment() -> void:
 	authored.ssao_enabled = true
 	authored.ssil_enabled = true
 	authored.ssr_enabled = false
+	authored.sdfgi_enabled = true
 	authored.glow_enabled = true
 	authored.fog_enabled = true
 	authored.fog_mode = Environment.FOG_MODE_DEPTH
@@ -432,6 +433,13 @@ func _check_level_environment() -> void:
 		node.environment.ssao_enabled and node.environment.ssil_enabled and not node.environment.ssr_enabled,
 		"ssao %s, ssil %s, ssr %s" % [node.environment.ssao_enabled, node.environment.ssil_enabled,
 			node.environment.ssr_enabled])
+	_check("SDFGI, поставленный автором, «Высокие» не включают — он только на «Ультра»",
+		not node.environment.sdfgi_enabled, "")
+	var ultra := tuned.copy()
+	ultra.screen_effects = &"ultra"
+	SettingsManager.settings = ultra
+	_check("«Ультра» включает SDFGI, поставленный автором", node.environment.sdfgi_enabled, "")
+	SettingsManager.settings = tuned
 
 	_check("свечение, поставленное автором, при флажке «Вкл» остаётся", node.environment.glow_enabled, "")
 	# Туман сгущается до полного там, где лампы погасли целиком, а начало держит

@@ -1,20 +1,11 @@
 [gd_scene load_steps=2 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/levels/SM_corridor_P_tee/SM_corridor_P_tee.glb" id="1_mesh"]
-[ext_resource type="Script" path="res://src/levels/level_light.gd" id="ll_light"]
+[ext_resource type="PackedScene" path="res://src/levels/lamp_corridor.tscn" id="lamp"]
 
 [node name="CorridorTee" type="Node3D"]
 
 [node name="Visual" parent="." instance=ExtResource("1_mesh")]
 
-[node name="Light" type="OmniLight3D" parent="."]
-script = ExtResource("ll_light")
-shadow_enabled = true
-distance_fade_enabled = true
-distance_fade_begin = 200.0
-distance_fade_shadow = 40.0
+[node name="Light" parent="." instance=ExtResource("lamp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 0)
-light_color = Color(0.7, 0.82, 1, 1)
-light_energy = 1.3
-omni_range = 8.0
-omni_attenuation = 1.4

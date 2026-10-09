@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="5_0tiaq"]
 [ext_resource type="Script" uid="uid://b61v0sxtcd1gw" path="res://src/components/gameplay/skills/c_flight.gd" id="6_flight"]
 [ext_resource type="Script" uid="uid://cnev7gn6q1ip3" path="res://src/components/gameplay/skills/c_phasing.gd" id="7_phasing"]
+[ext_resource type="Script" path="res://src/components/rendering/c_soul_glow.gd" id="8_glow"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("3_6qelm")
@@ -31,6 +32,9 @@ metadata/_custom_type_script = "uid://b61v0sxtcd1gw"
 script = ExtResource("7_phasing")
 metadata/_custom_type_script = "uid://cnev7gn6q1ip3"
 
+[sub_resource type="Resource" id="Resource_glow"]
+script = ExtResource("8_glow")
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_ml67e"]
 margin = 0.06
 radius = 0.26
@@ -43,7 +47,7 @@ height = 0.5
 collision_layer = 2
 collision_mask = 49
 script = ExtResource("1_yrckd")
-component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing")])
+component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing"), SubResource("Resource_glow")])
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1009209839]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033333153, 0.0049188733)
@@ -53,6 +57,14 @@ fov = 118.35706
 target_position = Vector3(0, 0, -3)
 collision_mask = 8
 hit_from_inside = true
+
+[node name="SoulGlow" type="OmniLight3D" parent="Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0.25)
+light_color = Color(0.79, 0.66, 0.95, 1)
+light_energy = 0.6
+light_specular = 0.2
+omni_range = 3.5
+omni_attenuation = 1.5
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
 shape = SubResource("SphereShape3D_ml67e")

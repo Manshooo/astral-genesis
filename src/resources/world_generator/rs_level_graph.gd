@@ -37,6 +37,10 @@ const GENERATOR_VERSION := 9
 ## рёбра «дверь → ветка» граф берёт из раскладки, и план — её же результат, а не
 ## пересчёт (см. RS_LayerPlan). Не сохраняется: граф выводится из сида заново.
 var _plans: Dictionary[int, RS_LayerPlan] = {}
+## Сид, из которого построен граф, — для того, что выводится из мира при спавне,
+## а не при генерации (погасшие лампы коридора, LayerStreamer): мир от этого не
+## меняется, и версию генератора ради него не поднимать.
+var run_seed: int = 0
 
 ## Комната на случай, когда библиотека не дала ничего (нет библиотеки, нет
 ## кандидата): генерация не падает, а узел честно остаётся заглушкой.
@@ -145,6 +149,7 @@ func _generate(
 ) -> RS_LevelGraph:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = level_seed
+	run_seed = level_seed
 
 	# depth -> Array этажей, этаж — Array[RS_LevelNode] комнат.
 	var floors_by_depth: Dictionary = {}

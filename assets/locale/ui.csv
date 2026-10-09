@@ -98,6 +98,7 @@ SETTINGS_PRESET,Пресет графики,Graphics preset
 SETTINGS_PRESET_LOW,Низкий,Low
 SETTINGS_PRESET_MEDIUM,Средний,Medium
 SETTINGS_PRESET_HIGH,Высокий,High
+SETTINGS_PRESET_ULTRA,Ультра,Ultra
 SETTINGS_PRESET_CUSTOM,Собственный,Custom
 SETTINGS_RES_SCALE,Масштаб разрешения,Resolution scale
 SETTINGS_SHADOWS,Тени,Shadows
@@ -109,6 +110,7 @@ SETTINGS_EFFECTS,Эффекты освещения,Lighting effects
 SETTINGS_EFFECTS_LOW,Низкие,Low
 SETTINGS_EFFECTS_MEDIUM,Средние,Medium
 SETTINGS_EFFECTS_HIGH,Высокие,High
+SETTINGS_EFFECTS_ULTRA,Ультра,Ultra
 SETTINGS_BRIGHTNESS,Яркость,Brightness
 SETTINGS_GLOW,Свечение,Glow
 SETTINGS_AA,Сглаживание,Anti-aliasing
@@ -132,7 +134,7 @@ SETTINGS_DIRTY,есть непримененные изменения,unapplied 
 SETTINGS_HINT_PRESET,"Задаёт масштаб, тени, эффекты освещения, свечение и сглаживание разом. Ручная правка любого из них переводит пресет в «Собственный».","Sets scale, shadows, lighting effects, glow and anti-aliasing at once. Changing any of them by hand switches the preset to “Custom”."
 SETTINGS_HINT_RES_SCALE,"Доля разрешения окна, в которой рисуется 3D. Интерфейс остаётся чётким.",Share of the window resolution the 3D view is drawn at. The interface stays sharp.
 SETTINGS_HINT_SHADOWS,"Чёткость, мягкость краёв и дальность теней. «Выкл» быстрее всего, но свет ламп проходит сквозь стены.","Sharpness, edge softness and draw distance of shadows. “Off” is fastest, but lamp light shines through walls."
-SETTINGS_HINT_EFFECTS,"Затенение в углах, отражённый свет ламп и отражения на глянцевом полу. Каждая ступень дороже предыдущей.","Ambient occlusion in corners, bounced lamp light and reflections on glossy floors. Each step costs more than the last."
+SETTINGS_HINT_EFFECTS,"Затенение в углах, отражённый свет ламп и отражения на глянцевом полу; «Ультра» добавляет глобальное освещение — свет, отражённый от стен вне кадра. Каждая ступень дороже предыдущей, «Ультра» — заметно.","Ambient occlusion in corners, bounced lamp light and reflections on glossy floors; Ultra adds global illumination — light bounced off walls outside the view. Each step costs more than the last, Ultra noticeably so."
 SETTINGS_HINT_GLOW,"Ореол вокруг ламп и ярких мест. На встроенной графике заметно снижает частоту кадров.","Halo around lamps and bright spots. Noticeably lowers frame rate on integrated graphics."
 SETTINGS_HINT_BRIGHTNESS,"Подберите так, чтобы в тёмном углу едва угадывались очертания. Тьма без лампы задумана тьмой.","Set it so outlines in a dark corner are barely visible. Darkness without a lamp is meant to be dark."
 SETTINGS_HINT_FPS,0 — без ограничения.,0 means unlimited.
@@ -206,3 +208,4 @@ SETTINGS_UI_SCALE_AUTO,Авто — по окну,Auto — fit window
 SETTINGS_HINT_WINDOW_MODE,"Полноэкранный — монитор целиком за игрой, меньше задержка. Безрамочный — окно во весь экран, быстро сворачивается. Оконный — обычное окно.","Fullscreen gives the game the whole monitor, with less latency. Borderless is a window covering the screen that is quick to switch away from. Windowed is a regular window."
 SETTINGS_HINT_RESOLUTION,"В окне — размер окна. Во весь экран монитор остаётся в своём разрешении, а это — разрешение, в котором рисуется 3D; интерфейс остаётся чётким.","In a window, the window size. In fullscreen the monitor keeps its own resolution, and this is the resolution the 3D view is drawn at; the interface stays sharp."
 SETTINGS_HINT_UI_SCALE,"«Авто» растягивает интерфейс по окну. Целые значения — 100 %, 200 % — самые чёткие. Больше, чем помещается в окно, интерфейс не станет.","Auto stretches the interface to the window. Whole values — 100 %, 200 % — are the sharpest. The interface never grows larger than fits the window."
+SETTINGS_HINT_WINDOW_EMBEDDED,"Игра встроена в окно редактора: режим окна и разрешение здесь не меняются. Выбор сохранится и сработает, когда игра запущена отдельно.","The game is embedded in the editor window: window mode and resolution can't change here. Your choice is kept and takes effect when the game runs on its own."
