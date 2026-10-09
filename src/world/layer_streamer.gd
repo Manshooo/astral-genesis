@@ -283,10 +283,25 @@ func _is_lamp_dead(layer_depth: int, cell: Vector3i, chance: float) -> bool:
 
 ## Снимает лампы тайла, пока он не вошёл в дерево: погасшая лампа не должна ни
 ## светить, ни занимать ячейку теневого атласа (ShadowBudget считает лампы группы).
+## Плафон остаётся на месте лампы тёмным — мёртвый светильник, а не дыра в потолке.
 func _remove_lamps(tile: Node3D) -> void:
 	for node in tile.find_children("*", "Light3D", true, false):
-		if node is LevelLight:
-			node.free()
+		if not node is LevelLight:
+			continue
+		var light := node as Node3D
+		for child in light.get_children():
+			if child is LampFixture:
+				var fixture := child as LampFixture
+				var placed := light.transform * fixture.transform
+				# Владелец плафона и его деталей — корень сцены лампы, которая
+				# сейчас уйдёт: без сброса Godot ругается на чужого владельца.
+				for owned: Node in [fixture as Node] + fixture.find_children("*", "", true, false):
+					owned.owner = null
+				light.remove_child(fixture)
+				light.get_parent().add_child(fixture)
+				fixture.transform = placed
+				fixture.go_dark()
+		light.free()
 
 
 ## Родитель тайлов — под миром ECS, чтобы уходить вместе со сценой мира. Ссылка

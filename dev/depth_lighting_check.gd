@@ -47,15 +47,16 @@ func _ready() -> void:
 
 	var surface: int = RS_LevelGraph.DEPTHS.min()
 	var deepest: int = RS_LevelGraph.DEPTHS.max()
-	var top := _load_layer(surface)
+	var top := await _load_layer(surface)
 	var top_ambient := with_depth.environment.ambient_light_energy
 	var top_fog := with_depth.environment.fog_light_color.get_luminance()
-	var bottom := _load_layer(deepest)
+	var bottom := await _load_layer(deepest)
 	var bottom_ambient := with_depth.environment.ambient_light_energy
 	var bottom_fog := with_depth.environment.fog_light_color.get_luminance()
-	var bottom_again := _load_layer(deepest)
+	var bottom_again := await _load_layer(deepest)
 
 	_check_lamps(top, bottom, bottom_again, surface, deepest)
+	_check_fixtures(top, bottom)
 	_check("окружение мира на дне темнее, чем у поверхности: фоновый свет и туман",
 		bottom_ambient < top_ambient and bottom_fog <= top_fog,
 		"фон %.3f → %.3f, туман %.3f → %.3f" % [top_ambient, bottom_ambient, top_fog, bottom_fog])
@@ -144,18 +145,31 @@ func _environment(authored: Environment, depth_lighting: bool) -> WorldEnvironme
 
 
 ## Грузит слой тем же путём, что портал: снять прежний, заспавнить новый — сигнал
-## слоя шлёт RunManager. Возвращает тайлы коридоров: позиция → энергии его ламп.
+## слоя шлёт RunManager. Возвращает тайлы коридоров: позиция → энергии его ламп
+## и его плафоны (светится ли, сила свечения, дотянулся ли тросик до потолка).
+## Тросик меряется лучом в физкадре — отсюда ожидание.
 func _load_layer(depth: int) -> Dictionary:
 	RunManager._despawn_layer()
 	RunManager._spawn_layer(depth)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	var tiles := {}
 	for branch: Array in RunManager.layer.corridor_tiles.values():
 		for tile: Node3D in branch:
 			var energies: Array[float] = []
-			for node in tile.find_children("*", "Light3D", true, false):
+			var fixtures: Array[Dictionary] = []
+			for node in tile.find_children("*", "", true, false):
 				if node is LevelLight:
 					energies.append((node as Light3D).light_energy)
-			tiles[tile.global_position.snapped(Vector3.ONE * 0.1)] = energies
+				elif node is LampFixture:
+					var panel := (node as Node).get_node("Panel") as MeshInstance3D
+					var material := panel.material_override as StandardMaterial3D
+					fixtures.append({
+						lit = material != null and material.emission_enabled,
+						emission = material.emission_energy_multiplier if material else 0.0,
+						cable = ((node as Node).get_node("Cable") as Node3D).visible,
+					})
+			tiles[tile.global_position.snapped(Vector3.ONE * 0.1)] = {energies = energies, fixtures = fixtures}
 	return tiles
 
 
@@ -187,17 +201,55 @@ func _check_lamps(top: Dictionary, bottom: Dictionary, bottom_again: Dictionary,
 		"%.3f → %.3f, отношение %.3f при заданном %.3f" % [top_mean, bottom_mean, bottom_mean / top_mean, expected])
 
 
+## Плафон — на каждом тайле ровно один и остаётся у погасшей лампы тёмным:
+## мёртвый светильник, а не дыра в потолке. Светится он силой своей лампы —
+## на дне тусклее, — и тросик дотягивается до потолка коридора.
+func _check_fixtures(top: Dictionary, bottom: Dictionary) -> void:
+	var problems: Array[String] = []
+	var no_cable := 0
+	for tiles: Dictionary in [top, bottom]:
+		for key: Vector3 in tiles:
+			var tile: Dictionary = tiles[key]
+			var fixtures: Array = tile.fixtures
+			if fixtures.size() != 1:
+				problems.append("%s: плафонов %d" % [key, fixtures.size()])
+				continue
+			var has_lamp := not (tile.energies as Array).is_empty()
+			if fixtures[0].lit != has_lamp:
+				problems.append("%s: лампа %s, плафон %s" % [key,
+					"горит" if has_lamp else "погасла", "светится" if fixtures[0].lit else "тёмный"])
+			if not fixtures[0].cable:
+				no_cable += 1
+	_check("на каждом тайле один плафон, светится ровно у горящей лампы",
+		problems.is_empty(), ", ".join(problems.slice(0, 5)))
+	_check("тросик плафона нашёл потолок коридора", no_cable == 0, "без потолка %d" % no_cable)
+	_check("плафоны на дне светятся тусклее, чем у поверхности",
+		_mean_emission(bottom) < _mean_emission(top),
+		"%.3f → %.3f" % [_mean_emission(top), _mean_emission(bottom)])
+
+
 func _dark(tiles: Dictionary) -> Array:
-	return tiles.keys().filter(func(key: Vector3) -> bool: return (tiles[key] as Array).is_empty())
+	return tiles.keys().filter(func(key: Vector3) -> bool: return (tiles[key].energies as Array).is_empty())
 
 
 func _mean_energy(tiles: Dictionary) -> float:
 	var total := 0.0
 	var count := 0
-	for energies: Array in tiles.values():
-		for energy: float in energies:
+	for tile: Dictionary in tiles.values():
+		for energy: float in tile.energies:
 			total += energy
 			count += 1
+	return total / count if count > 0 else 0.0
+
+
+func _mean_emission(tiles: Dictionary) -> float:
+	var total := 0.0
+	var count := 0
+	for tile: Dictionary in tiles.values():
+		for fixture: Dictionary in tile.fixtures:
+			if fixture.lit:
+				total += fixture.emission
+				count += 1
 	return total / count if count > 0 else 0.0
 
 

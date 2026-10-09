@@ -35,6 +35,7 @@
 [ext_resource type="Script" uid="uid://c8sf3oftjjlwm" path="res://src/systems/physics/s_door_motion.gd" id="27_dooropen"]
 [ext_resource type="Environment" uid="uid://nxask5g2qtp7" path="res://assets/world_environment.tres" id="34_nqy31"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="35_levelenv"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_soul_glow.gd" id="36_soulglow"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -102,6 +103,10 @@ group = &"gameplay"
 
 [node name="S_RoomPresence" type="Node" parent="World/Systems/gameplay" unique_id=1979994352]
 script = ExtResource("26_presence")
+group = &"gameplay"
+
+[node name="S_SoulGlow" type="Node" parent="World/Systems/gameplay" unique_id=1979994353]
+script = ExtResource("36_soulglow")
 group = &"gameplay"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

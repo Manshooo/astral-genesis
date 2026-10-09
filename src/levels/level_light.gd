@@ -40,6 +40,9 @@ func _ready() -> void:
 func _on_layer_changed(depth: int) -> void:
 	var layer: RS_DepthLight = RS_DepthLighting.layer(depth) if depth != RunManager.NO_DEPTH else null
 	light_energy = _authored_energy * (layer.lamp_energy_scale if layer else 1.0)
+	for child in get_children():
+		if child is LampFixture:
+			(child as LampFixture).refresh(light_color, light_energy)
 
 
 ## Лампа гаснет там же, где перестаёт отбрасывать тень: дальше она светила бы

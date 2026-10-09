@@ -1,0 +1,49 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/levels/level_light.gd" id="1_light"]
+[ext_resource type="Script" path="res://src/levels/lamp_fixture.gd" id="2_fixture"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_housing"]
+albedo_color = Color(0.16, 0.16, 0.17, 1)
+metallic = 0.6
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="Mesh_housing"]
+material = SubResource("Mat_housing")
+size = Vector3(0.6, 0.14, 0.6)
+
+[sub_resource type="BoxMesh" id="Mesh_panel"]
+size = Vector3(0.5, 0.02, 0.5)
+
+[sub_resource type="BoxMesh" id="Mesh_cable"]
+material = SubResource("Mat_housing")
+size = Vector3(0.025, 1, 0.025)
+
+[node name="Lamp" type="OmniLight3D"]
+light_color = Color(1, 0.93, 0.82, 1)
+light_energy = 1.6
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 200.0
+distance_fade_shadow = 40.0
+omni_range = 14.0
+omni_attenuation = 1.2
+script = ExtResource("1_light")
+
+[node name="Fixture" type="Node3D" parent="."]
+script = ExtResource("2_fixture")
+
+[node name="Housing" type="MeshInstance3D" parent="Fixture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_housing")
+
+[node name="Panel" type="MeshInstance3D" parent="Fixture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_panel")
+
+[node name="Cable" type="MeshInstance3D" parent="Fixture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_cable")
