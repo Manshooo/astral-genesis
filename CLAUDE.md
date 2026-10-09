@@ -93,11 +93,10 @@ Autoloads (`src/autoloads/`), in declaration order: `GameConfig`, `SettingsManag
 | Capture/expel, body traits, decay model, `E_Body` contract | [Захват тела](docs/astral-genesis/how-to/Захват%20тела.md) |
 | Editor tooling traps, template authoring | [Редакторские инструменты](docs/astral-genesis/how-to/Редакторские%20инструменты.md) |
 | byProd, единственность менеджера, пауза, шаги | [Звук](docs/astral-genesis/how-to/Звук.md) |
-| Physics and render layers, UI theme, prefixes, rebinding codec | [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md) |
+| Physics and render layers, UI theme and color tokens, prefixes, rebinding codec | [Конвенции проекта](docs/astral-genesis/Справка/Конвенции%20проекта.md) |
 | Blender→Godot: раскладка assets, бюджет карт, ORM, подмена материалов | [Blender-Godot пайплайн](docs/astral-genesis/Справка/Blender-Godot%20пайплайн.md) |
 | Масштаб (клетка vs тело), контракт клетки-куба 8 м, сокеты, кит P и стили поверх него, двустворчатая дверь и её карман | [Метрики и кит](docs/astral-genesis/Справка/Метрики%20и%20кит.md) |
 | Раскраска по классам ассетов: палитра, детальный слой, декали, трим-лист | [Визуальный стиль и текстуры](docs/astral-genesis/Справка/Визуальный%20стиль%20и%20текстуры.md) |
-| Макеты и прототипы Claude Design (копии холстов, генераторы; Godot папку не сканирует) | [design/README.md](design/README.md) |
 | Debug cheats for a live run, and which tool checks what | [Отладочный оверлей](docs/astral-genesis/how-to/Отладочный%20оверлей.md) |
 | CI, build numbers, releases, cloud-session setup | [Релизы и сборка](docs/astral-genesis/how-to/Релизы%20и%20сборка.md) |
 | Controls, player-facing | [Управление](docs/astral-genesis/Справка/Управление.md) |
