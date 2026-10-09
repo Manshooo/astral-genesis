@@ -33,6 +33,15 @@ render_scale = 1.0
 shadow_quality = &"high"
 aa_mode = 3
 
+[sub_resource type="Resource" id="Resource_ultra"]
+script = ExtResource("1_preset")
+id = &"ultra"
+display_name = "SETTINGS_PRESET_ULTRA"
+screen_effects = &"ultra"
+render_scale = 1.0
+shadow_quality = &"ultra"
+aa_mode = 3
+
 [sub_resource type="Resource" id="Shadow_low"]
 script = ExtResource("3_shadow")
 id = &"low"
@@ -95,8 +104,17 @@ ssao = true
 ssil = true
 ssr = true
 
+[sub_resource type="Resource" id="Effects_ultra"]
+script = ExtResource("4_effects")
+id = &"ultra"
+display_name = "SETTINGS_EFFECTS_ULTRA"
+ssao = true
+ssil = true
+ssr = true
+sdfgi = true
+
 [resource]
 script = ExtResource("2_library")
-presets = Array[ExtResource("1_preset")]([SubResource("Resource_low"), SubResource("Resource_medium"), SubResource("Resource_high")])
+presets = Array[ExtResource("1_preset")]([SubResource("Resource_low"), SubResource("Resource_medium"), SubResource("Resource_high"), SubResource("Resource_ultra")])
 shadow_levels = Array[ExtResource("3_shadow")]([SubResource("Shadow_low"), SubResource("Shadow_medium"), SubResource("Shadow_high"), SubResource("Shadow_ultra")])
-effects_levels = Array[ExtResource("4_effects")]([SubResource("Effects_off"), SubResource("Effects_low"), SubResource("Effects_medium"), SubResource("Effects_high")])
+effects_levels = Array[ExtResource("4_effects")]([SubResource("Effects_off"), SubResource("Effects_low"), SubResource("Effects_medium"), SubResource("Effects_high"), SubResource("Effects_ultra")])

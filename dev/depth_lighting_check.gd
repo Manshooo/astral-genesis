@@ -57,6 +57,7 @@ func _ready() -> void:
 
 	_check_lamps(top, bottom, bottom_again, surface, deepest)
 	_check_fixtures(top, bottom)
+	await _check_sdfgi_restart(surface)
 	_check("окружение мира на дне темнее, чем у поверхности: фоновый свет и туман",
 		bottom_ambient < top_ambient and bottom_fog <= top_fog,
 		"фон %.3f → %.3f, туман %.3f → %.3f" % [top_ambient, bottom_ambient, top_fog, bottom_fog])
@@ -133,6 +134,30 @@ func _check_world_scene() -> void:
 	_check("окружение мира слушает свет слоя", flagged, "")
 	_check("фоновый свет окружения мира — «цвет»", source == Environment.AMBIENT_SOURCE_COLOR,
 		"режим %d" % source)
+
+
+## SDFGI строит поле расстояний один раз, а слои раскладываются от одной клетки:
+## без перезапуска отражённый свет нового слоя считался бы по стенам прошлого.
+## Перезапуск — выключение на кадр и возврат по настройке.
+func _check_sdfgi_restart(depth: int) -> void:
+	var before := SettingsManager.settings
+	var ultra := before.copy()
+	ultra.screen_effects = &"ultra"
+	SettingsManager.settings = ultra
+	var authored := Environment.new()
+	authored.sdfgi_enabled = true
+	var node := _environment(authored, false)
+	var was_on := node.environment.sdfgi_enabled
+	RunManager._despawn_layer()
+	RunManager._spawn_layer(depth)
+	var off_after_swap := not node.environment.sdfgi_enabled
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check("смена слоя перезапускает SDFGI: выключен на кадр, затем снова включён",
+		was_on and off_after_swap and node.environment.sdfgi_enabled,
+		"до %s, после смены %s, через кадр %s" % [was_on, not off_after_swap, node.environment.sdfgi_enabled])
+	SettingsManager.settings = before
+	node.queue_free()
 
 
 func _environment(authored: Environment, depth_lighting: bool) -> WorldEnvironment:
