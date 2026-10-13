@@ -36,6 +36,7 @@
 [ext_resource type="Environment" uid="uid://nxask5g2qtp7" path="res://assets/world_environment.tres" id="34_nqy31"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="35_levelenv"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_soul_glow.gd" id="36_soulglow"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_decay_shelter.gd" id="37_shelter"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -83,6 +84,10 @@ metadata/_custom_type_script = "uid://1davl1dw2ge4"
 
 [node name="S_Lifespan" type="Node" parent="World/Systems/gameplay" unique_id=1979994347]
 script = ExtResource("15_lifespan")
+group = &"gameplay"
+
+[node name="S_DecayShelter" type="Node" parent="World/Systems/gameplay" unique_id=1979994354]
+script = ExtResource("37_shelter")
 group = &"gameplay"
 
 [node name="S_ScreenMessage" type="Node" parent="World/Systems/gameplay" unique_id=1979994348]
