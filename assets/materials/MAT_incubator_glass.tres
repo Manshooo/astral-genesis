@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "MAT_incubator_glass"
+transparency = 1
+albedo_color = Color(0.78, 0.82, 0.86, 0.14)
+metallic_specular = 0.9
+roughness = 0.18
+refraction_enabled = true
+refraction_scale = 0.03
