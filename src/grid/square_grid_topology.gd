@@ -39,6 +39,11 @@ func side_toward(cell: Vector3i, other: Vector3i) -> int:
 	return OFFSETS.find(other - cell)
 
 
+## Манхэттен в плоскости уровня: шаг сдвигает клетку ровно на одну по X или Z.
+func min_steps(from: Vector3i, to: Vector3i) -> int:
+	return absi(to.x - from.x) + absi(to.z - from.z)
+
+
 ## Клетки прямоугольного footprint [param size] = (ширина по X, уровней по Y,
 ## длина по Z) от угловой клетки [param anchor] — наименьшей по всем осям.
 ## Порядок — по уровням, внутри уровня по Z, затем по X: на нём держится порядок
