@@ -82,10 +82,11 @@ func _ready() -> void:
 	# F5 в ряду пропущен: он занят встроенным действием ui_filedialog_refresh, а
 	# чит, совпавший с действием InputMap, срабатывал бы вместе с ним. Дырку
 	# держит ассерт в debug_overlay_check — заполнить её «для красоты» не выйдет
-	# молча. F2 свободна: очки уехали в меню, а остальные клавиши не сдвинуты,
-	# чтобы не переучивать руки.
+	# молча. На F2 раньше были очки — они уехали в меню, а клавишу занял вид
+	# перехода порталом; остальные клавиши не сдвинуты, чтобы не переучивать руки.
 	_actions = [
 		{"key": KEY_F1, "label": "свернуть панель", "call": _toggle_panel},
+		{"key": KEY_F2, "label": "вид перехода порталом", "call": _toggle_portal_transition},
 		{"key": KEY_F3, "label": "дерево навыков", "call": _open_skill_tree},
 		{"key": KEY_F4, "label": "бессмертие", "call": _toggle_immortal},
 		{"key": KEY_F6, "label": "слой ниже", "call": _travel_down},
@@ -227,6 +228,18 @@ func _on_menu_travel(scene_path: String, title: String) -> void:
 	_travel_to_room(scene_path, title)
 
 
+## Затемнение ↔ шторка на переходе порталом (RS_GameConfig.portal_transition) —
+## чтобы сравнить оба вида в одной игре. Только в памяти: в game_config.tres
+## выбор пишется руками, когда он сделан.
+func _toggle_portal_transition() -> void:
+	var config := GameConfig.config
+	var fade := config.portal_transition == RS_GameConfig.PortalTransition.FADE
+	config.portal_transition = (
+		RS_GameConfig.PortalTransition.CURTAIN if fade else RS_GameConfig.PortalTransition.FADE
+	)
+	_say("переход порталом: %s" % ("шторка" if fade else "затемнение"))
+
+
 func _toggle_immortal() -> void:
 	_immortal = not _immortal
 	_say("бессмертие %s" % ("вкл" if _immortal else "выкл"))
@@ -259,7 +272,9 @@ func _travel(step: int) -> void:
 		_say("глубины %d в комплексе нет" % target_depth)
 		return
 
-	RunManager.travel_to(nodes[0].id)
+	# Тем же переходом, что и портал, — с затемнением или шторкой (F2): иначе
+	# сравнить их можно было бы, только отыскав портал в комплексе.
+	RunManager.travel_through_portal(nodes[0].id)
 	_say("слой %d" % target_depth)
 
 

@@ -57,13 +57,22 @@ func _on_settings_pressed() -> void:
 
 
 func _on_exit_to_menu_pressed() -> void:
+	# Меню грузится в фоне (SceneLoader), пока пункты гаснут, а нажатый бежит
+	# штрихом «занято»; мир под паузой стоит, пока сцена не готова — снесённый
+	# раньше, он показал бы под размытием пустоту.
+	for node in _items.find_children("*", "Button", true, false):
+		(node as Button).disabled = true
+	var pressed := get_node_or_null(^"Content/Column/ToMenu") as UI_EchoButton
+	if pressed:
+		pressed.busy = true
+	var menu := await SceneLoader.load_scene(get_tree(), MENU_SCENE)
 	# Забег не заканчиваем — только фиксируем точку и отпускаем мир: сцена сейчас
 	# уйдёт, а RunManager (autoload) её переживёт и не должен остаться со ссылками
 	# на убитые комнаты.
 	RunManager.leave_to_menu()
 	UIManager.close_all()
 	UIManager.enabled = false
-	get_tree().change_scene_to_file(MENU_SCENE)
+	get_tree().change_scene_to_packed(menu)
 
 
 ## Подменяет подпись кнопки на время, затем возвращает исходную. Удачное

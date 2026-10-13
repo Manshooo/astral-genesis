@@ -77,6 +77,10 @@ var _gen_config: RS_WorldGenConfig
 ## несколько кадров, и если за это время начат новый вход, граф старого уже
 ## чужой — дописывать его поверх нового нельзя.
 var _entry_serial: int = 0
+## Идёт переход порталом на другой слой (travel_through_portal): слой
+## пересобирается порциями, и второй портал или контрольная точка посреди него
+## застали бы полслоя.
+var _traveling: bool = false
 
 
 ## Точка входа в забег: генерирует комплекс и ставит игрока в стартовый узел.
@@ -146,6 +150,7 @@ func _entry_alive(entry: int) -> bool:
 ## Начало входа в забег, общее для обоих путей; возвращает сид забега.
 func _begin_entry(run_seed: int) -> int:
 	_entry_serial += 1
+	_traveling = false  # переход прошлого мира, перебитый входом, уже не закончится
 	if run_seed == -1:
 		run_seed = WorldSave.save.run_seed()  # детерминированно из (world_seed, death_count)
 
@@ -384,11 +389,18 @@ func finish_run() -> void:
 
 	WorldSave.clear_run()  # забег завершён: «Загрузить» начнёт этот мир заново
 	SkillManager.add_skill_points(reward)
-	_end_run()
-	run_finished.emit()
 
 	# TODO: экран концовки/победы. Пока — в меню, как «выход в меню» из паузы.
-	get_tree().change_scene_to_file(MENU_SCENE)
+	# Меню грузится в фоне (SceneLoader), а мир снимается уже после: экран на
+	# побеге не гаснет, и снесённый раньше мир показал бы на эти кадры пустоту.
+	# На время ожидания забег уже кончается — второй выход и смерть упрутся в
+	# _ending, как и при распаде.
+	_ending = true
+	var menu := await SceneLoader.load_scene(get_tree(), MENU_SCENE)
+	_end_run()
+	_ending = false
+	run_finished.emit()
+	get_tree().change_scene_to_packed(menu)
 
 
 ## Сколько прошло с последней контрольной точки — счётчик автосохранения (см.
@@ -422,7 +434,7 @@ func _process(delta: float) -> void:
 ## законченный забег. Окно это не теоретическое — экран гаснет почти секунду по
 ## живому миру, и за это время успевает случиться и удар, и развоплощение.
 func save_progress() -> bool:
-	if not _in_run() or current_node_id == &"":
+	if not _in_run() or _traveling or current_node_id == &"":
 		return false
 	_checkpoint(current_node_id)
 	return true
@@ -474,7 +486,9 @@ func die() -> void:
 	died.emit()
 
 	_ending = false
-	get_tree().change_scene_to_file(DEATH_SCENE)
+	# Экран уже чёрный, так что итоги грузятся в фоне под ним (SceneLoader): кадры
+	# идут, а не замирают на последнем.
+	await SceneLoader.change_to(get_tree(), DEATH_SCENE)
 
 
 ## Общий снос забега для finish_run/die: убрать загруженный слой и обнулить граф.
@@ -491,8 +505,59 @@ func _in_run() -> bool:
 	return current_graph != null and not _ending
 
 
-## Переход в другой узел графа по порталу (через use_door) и для отладочного
-## телепорта по слоям.
+## Переход порталом на другой слой — под затемнением или шторкой
+## (RS_GameConfig.portal_transition), пока новый слой собирается порциями
+## (LayerStreamer.spawn_async). Мгновенный travel_to остаётся проверкам и
+## переносам внутри слоя: весь слой в одном кадре — ~240 мс рывка (профайлер
+## 13.10), и на портале его было видно.
+##
+## Пока старого слоя уже нет, а новый не встал, под душой нет пола. Поэтому
+## C_Velocity на это время снимается — движение, гравитация и «дно мира» душу не
+## трогают — и возвращается нулевым: падение за время перехода не долетает до
+## нового слоя. Повторный портал и автосохранение на это время молчат
+## (_traveling), а смерть — нет: она обрывает сборку слоя, как и смена сцены.
+func travel_through_portal(node_id: StringName) -> void:
+	if not _in_run() or _traveling:
+		return
+	var node_data := current_graph.get_node_data(node_id)
+	if node_data == null or node_data.depth == current_depth:
+		travel_to(node_id)
+		return
+	_traveling = true
+	var entry := _entry_serial
+	var alive := func() -> bool: return _entry_alive(entry) and not _ending
+	var came_from := current_node_id
+	var player := _get_player()
+	if player:
+		player.remove_component(C_Velocity)
+
+	var config := GameConfig.config
+	var curtain: UI_LoadingScreen = null
+	if config.portal_transition == RS_GameConfig.PortalTransition.CURTAIN:
+		curtain = UI_LoadingScreen.new()
+		get_tree().current_scene.add_child(curtain)
+	else:
+		await UIManager.fade_to_black(config.portal_fade_duration)
+
+	if alive.call():
+		_despawn_layer()
+		if await layer.spawn_async(node_data.depth, get_tree(), alive):
+			_after_layer_spawned()
+	_traveling = false
+	if not alive.call():
+		return  # смерть или смена сцены — мир уже не наш
+	if is_instance_valid(player):
+		player.add_component(C_Velocity.new())
+	_enter_node(node_id, came_from)
+	if curtain:
+		await curtain.dismiss()
+	else:
+		await UIManager.fade_from_black(config.portal_fade_duration)
+
+
+## Переход в другой узел графа мгновенно, за один кадр: перенос внутри слоя,
+## отладочный телепорт в комнату и проверки, которым мир нужен сразу. Порталом
+## на другой слой игрок идёт через travel_through_portal.
 ##
 ## Внутри слоя — это портал между этажами: он только ПЕРЕСТАВЛЯЕТ игрока к порталу
 ## обратно, а текущим узлом комната станет по факту присутствия (note_presence),
@@ -530,7 +595,7 @@ func travel_to(node_id: StringName) -> void:
 ## игрок идёт ногами, а текущий узел сменит присутствие.
 ## Исключение — комната без проёма за дверью (RS_LevelNode.door_teleports, хаб до
 ## переделки арта): открывать там нечего, и игрока переставляют на тайл перед
-## дверью. Порталы идут через travel_to.
+## дверью. Порталы идут через travel_through_portal (внутри слоя — мгновенно).
 func use_door(door: Entity, target: StringName) -> void:
 	if not _in_run():
 		return
@@ -541,7 +606,7 @@ func use_door(door: Entity, target: StringName) -> void:
 		and target_data.depth == current_depth
 	)
 	if not in_place:
-		travel_to(target)
+		travel_through_portal(target)
 		return
 	var room := layer.room_of_door(door)
 	var room_data := current_graph.get_node_data(room.node_id) if room else null

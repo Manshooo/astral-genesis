@@ -32,6 +32,8 @@ func _ready() -> void:
 	await _check_same_world()
 	await _check_layer_in_portions()
 	await _check_cancelled_entry()
+	await _check_portal_transition(RS_GameConfig.PortalTransition.FADE, "затемнение")
+	await _check_portal_transition(RS_GameConfig.PortalTransition.CURTAIN, "шторка")
 	await _check_loading_screen()
 
 	RunManager._end_run()
@@ -119,6 +121,72 @@ func _check_cancelled_entry() -> void:
 		_world_signature() == other_world and RunManager.current_graph.run_seed == OTHER_SEED,
 		"сид графа %d" % RunManager.current_graph.run_seed)
 	_check("душа в мире по-прежнему одна", _player_count() == 1, "душ: %d" % _player_count())
+
+
+# --- 2б. Переход порталом на другой слой -------------------------------------
+
+
+## Оба вида перехода (RS_GameConfig.portal_transition) — один и тот же путь, и
+## ломается он тихо: душа, оставленная с C_Velocity, падает в пустоту, пока
+## слой собирается; контрольная точка посреди перехода пишет в сейв полслоя;
+## забытая шторка или затемнение оставляют экран закрытым.
+func _check_portal_transition(mode: RS_GameConfig.PortalTransition, title: String) -> void:
+	var config := GameConfig.config
+	var mode_before := config.portal_transition
+	config.portal_transition = mode
+	var target := _node_on_other_layer()
+	if target == &"":
+		_check("%s: есть слой, куда перейти" % title, false, "")
+		return
+	var target_depth := RunManager.current_graph.get_node_data(target).depth
+
+	var done := {}
+	var travel := func() -> void:
+		await RunManager.travel_through_portal(target)
+		done.ok = true
+	travel.call()
+	await get_tree().process_frame
+	var player := E_Player.find()
+	var frozen := player != null and not player.has_component(C_Velocity)
+	var saved_mid := RunManager.save_progress()
+	while not done.has("ok"):
+		await get_tree().process_frame
+
+	_check("%s: пока слой собирается, душа заморожена и контрольная точка не ставится" % title,
+		frozen and not saved_mid, "заморожена %s, точка %s" % [frozen, saved_mid])
+	_check("%s: после перехода душа в целевом узле нового слоя и снова движется" % title,
+		RunManager.current_depth == target_depth and RunManager.current_node_id == target
+			and player.has_component(C_Velocity),
+		"слой %d, узел %s" % [RunManager.current_depth, RunManager.current_node_id])
+	# Поиск по типу класс скрипта (class_name) не узнаёт — отбираем по `is`.
+	var curtains := get_tree().root.find_children("*", "CanvasLayer", true, false).filter(
+		func(node: Node) -> bool: return node is UI_LoadingScreen and not node.is_queued_for_deletion())
+	var fade := get_tree().root.get_node_or_null(^"FadeOverlay") as ColorRect
+	_check("%s: экран после перехода открыт — ни шторки, ни затемнения" % title,
+		curtains.is_empty() and (fade == null or not fade.visible),
+		"шторок %d, затемнение %s" % [curtains.size(), fade != null and fade.visible])
+
+	# Тот же слой, что дал бы мгновенный перенос: порталу — только вид.
+	var portioned := _layer_signature()
+	RunManager.travel_to(_node_on_other_layer())
+	await get_tree().process_frame
+	RunManager.travel_to(target)
+	await get_tree().process_frame
+	_check("%s: слой после перехода тот же, что после мгновенного переноса" % title,
+		_layer_signature() == portioned, "")
+	config.portal_transition = mode_before
+
+
+## Узел соседнего слоя (по глубине) — куда идти порталом.
+func _node_on_other_layer() -> StringName:
+	var graph := RunManager.current_graph
+	for depth in RS_LevelGraph.DEPTHS:
+		if depth == RunManager.current_depth:
+			continue
+		var nodes := graph.get_nodes_by_depth(depth)
+		if not nodes.is_empty():
+			return nodes[0].id
+	return &""
 
 
 # --- 3. Шторка загрузки -------------------------------------------------------
