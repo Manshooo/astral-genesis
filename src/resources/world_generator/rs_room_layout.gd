@@ -11,7 +11,8 @@
 ## Имена стен остаются только для людей — slot_id дверей в сценах и сообщения
 ## проверок.
 ##
-## Только статика — инстанцировать нечего.
+## Только статика — инстанцировать нечего. Кэши «сцена → …» генерация читает и
+## из фонового потока, поэтому сцены в них кладутся заранее (warm_scene_cache).
 @tool
 class_name RS_RoomLayout
 extends RefCounted
@@ -117,7 +118,7 @@ static func door_sides_of_scene(scene_path: String) -> Array[int]:
 
 	var sides: Array[int] = []
 	if scene_path != "" and ResourceLoader.exists(scene_path):
-		var room := (load(scene_path) as PackedScene).instantiate()
+		var room := _instantiate_detached(scene_path)
 		sides = door_sides(room)
 		room.free()
 	_sides_by_scene[scene_path] = sides
@@ -141,7 +142,7 @@ static func half_extent_of_scene(scene_path: String) -> float:
 
 	var extent := 0.0
 	if scene_path != "" and ResourceLoader.exists(scene_path):
-		var room := (load(scene_path) as PackedScene).instantiate()
+		var room := _instantiate_detached(scene_path)
 		for door in door_entities(room):
 			var offset := origin_relative_to(door as Node as Node3D, room)
 			extent = maxf(extent, maxf(absf(offset.x), absf(offset.z)))
@@ -165,7 +166,7 @@ static func door_count_of_scene(scene_path: String) -> int:
 
 	var count := 0
 	if scene_path != "" and ResourceLoader.exists(scene_path):
-		var room := (load(scene_path) as PackedScene).instantiate()
+		var room := _instantiate_detached(scene_path)
 		count = door_entities(room).size()
 		room.free()
 	_door_count_by_scene[scene_path] = count
@@ -186,7 +187,7 @@ static func shell_of_scene(scene_path: String) -> C_RoomShell:
 
 	var shell: C_RoomShell = null
 	if scene_path != "" and ResourceLoader.exists(scene_path):
-		var room := (load(scene_path) as PackedScene).instantiate()
+		var room := _instantiate_detached(scene_path)
 		shell = shell_of(room)
 		room.free()
 	_shell_by_scene[scene_path] = shell
@@ -277,6 +278,36 @@ static func face_in_plan(face: Vector4i, size: Vector3i, turns: int, anchor: Vec
 ## три.
 static func north_piece_turns(side: int) -> int:
 	return posmod(-side, SquareGridTopology.SIDE_COUNT)
+
+
+## Сколько раз сцена инстанцировалась не на главном потоке — см.
+## _instantiate_detached. Читает проверка фоновой генерации.
+static var off_main_thread_instances := 0
+
+
+## Заполняет кэши «сцена → …», которые читает генерация графа, для всех
+## [param scene_paths] — на главном потоке, до того как генерация уйдёт в фон
+## (RunManager.enter_complex_async). Список даёт RS_LevelGraph.scene_paths.
+static func warm_scene_cache(scene_paths: Array[String]) -> void:
+	for path in scene_paths:
+		shell_of_scene(path)
+		door_count_of_scene(path)
+		door_sides_of_scene(path)
+
+
+## Сцена комнаты вне дерева — только чтобы прочитать из неё двери или коробку.
+##
+## Только с главного потока: в комнатах меши и свет, а создавать узлы, которые
+## рисуют, из другого потока небезопасно при модели потоков рендера по умолчанию
+## («Safe», project.godot её не меняет). Поэтому фоновая генерация идёт по
+## прогретым кэшам (warm_scene_cache), а промах кэша в фоне — ошибка прогрева:
+## громко, со счётчиком для проверки, и всё же со сценой — без неё генерация
+## молча построила бы другой мир.
+static func _instantiate_detached(scene_path: String) -> Node:
+	if OS.get_thread_caller_id() != OS.get_main_thread_id():
+		off_main_thread_instances += 1
+		push_error("RS_RoomLayout: сцена «%s» инстанцирована не на главном потоке — её нет в прогреве (RS_LevelGraph.scene_paths)" % scene_path)
+	return (load(scene_path) as PackedScene).instantiate()
 
 
 ## Сбрасывает все кэши «сцена → …». Живут всю сессию редактора, поэтому без

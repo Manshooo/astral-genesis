@@ -14,12 +14,19 @@ const DEBUG_OVERLAY_PATH := "res://dev/debug_overlay.tscn"
 
 func _ready() -> void:
 	ECS.world = world
-	UIManager.enabled = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_child(HUD_SCENE.instantiate())
 	add_child(ShadowBudget.new())
 	_add_debug_overlay()
-	RunManager.enter_complex()
+	# Комплекс строится в фоне, кадры идут под шторкой (UI_LoadingScreen).
+	var loading := UI_LoadingScreen.new()
+	add_child(loading)
+	if not await RunManager.enter_complex_async():
+		return  # вход отменён — сцену уже сменили
+	# Пауза и карты — только когда мир есть: до этого Esc открыл бы меню паузы
+	# поверх шторки, а «Выход в меню» — забег, которого ещё нет.
+	UIManager.enabled = true
+	await loading.dismiss()
 
 
 func _add_debug_overlay() -> void:

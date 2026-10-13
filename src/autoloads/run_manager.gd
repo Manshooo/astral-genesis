@@ -73,12 +73,60 @@ var _max_depth_reached: int = 0
 var _ending: bool = false
 ## Снимок ручек, по которым построен current_graph (см. _run_gen_config).
 var _gen_config: RS_WorldGenConfig
+## Номер входа в забег. Асинхронный вход (enter_complex_async) ждёт генерацию
+## несколько кадров, и если за это время начат новый вход, граф старого уже
+## чужой — дописывать его поверх нового нельзя.
+var _entry_serial: int = 0
 
 
 ## Точка входа в забег: генерирует комплекс и ставит игрока в стартовый узел.
 ## Комплекс НЕ читается из сейва покомнатно — он выводится из сида, а сейв даёт
 ## только точку, где игрок остановился (см. _start_node_id).
+##
+## Синхронно, за один кадр: так его зовут проверки dev/ и инструменты, которым
+## мир нужен сразу. Игровая сцена входит через enter_complex_async.
 func enter_complex(run_seed: int = -1) -> void:
+	run_seed = _begin_entry(run_seed)
+	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
+	# затем входной слой — _enter_node → PlayerPlacement.in_room поставит её на место.
+	_spawn_player()
+	_gen_config = _run_gen_config()
+	current_graph = RS_LevelGraph.new().generate_run(
+		run_seed, GameConfig.config.room_preset_library, _gen_config
+	)
+	_finish_entry()
+
+
+## Тот же вход, но граф строится в фоновом потоке, а кадры идут — под
+## загрузочным экраном игровой сцены (main.gd). Генерация — самая долгая часть
+## входа (профайлер 13.10: 1.1 с из 1.65 с кадра в редакторе), и синхронно она
+## замораживала игру так, что показать прогресс было нельзя.
+##
+## Душа спавнится ПОСЛЕ генерации, а не до, как в enter_complex: кадры между
+## ними идут по живому миру, и душа без пола падала бы, пока строится граф.
+## Остальной порядок тот же — complex_entered по-прежнему до _enter_node
+## (RunStats начинает забег на нём).
+##
+## false — вход отменён, пока граф строился: сцену мира сменили или начат новый
+## вход. Дописывать мир тогда некуда, и граф выбрасывается.
+func enter_complex_async(run_seed: int = -1) -> bool:
+	run_seed = _begin_entry(run_seed)
+	var entry := _entry_serial
+	# Старый граф остался бы виден автосохранению и картам, пока строится новый.
+	current_graph = null
+	_gen_config = _run_gen_config()
+	var graph := await _generate_in_background(run_seed, _gen_config)
+	if entry != _entry_serial or not is_instance_valid(ECS.world) or not ECS.world.is_inside_tree():
+		return false
+	_spawn_player()
+	current_graph = graph
+	_finish_entry()
+	return true
+
+
+## Начало входа в забег, общее для обоих путей; возвращает сид забега.
+func _begin_entry(run_seed: int) -> int:
+	_entry_serial += 1
 	if run_seed == -1:
 		run_seed = WorldSave.save.run_seed()  # детерминированно из (world_seed, death_count)
 
@@ -91,17 +139,42 @@ func enter_complex(run_seed: int = -1) -> void:
 	_despawn_layer()
 	current_node_id = &""
 	_max_depth_reached = 0  # _enter_node ниже сам поднимет её до глубины входа
+	return run_seed
 
-	# Игрок появляется в уже сгенерированном мире: сперва спавним душу, затем граф,
-	# затем входной слой — _enter_node → PlayerPlacement.in_room поставит её на место.
-	_spawn_player()
-	_gen_config = _run_gen_config()
-	current_graph = RS_LevelGraph.new().generate_run(
-		run_seed, GameConfig.config.room_preset_library, _gen_config
-	)
+
+## Конец входа, общий для обоих путей: граф уже в current_graph, душа в мире.
+func _finish_entry() -> void:
 	complex_entered.emit(current_graph)
 	_restore_player_progress()
 	_enter_node(_start_node_id())
+
+
+## Строит граф в WorkerThreadPool и ждёт его, отдавая кадры. Генерация — чистые
+## данные (RS_LevelGraph не трогает ни дерево, ни автолоады), кроме одного:
+## сцены комнат она разглядывает вне дерева, а такие узлы создаются только на
+## главном потоке (RS_RoomLayout._instantiate_detached). Поэтому кэши сцен
+## прогреваются здесь, до старта задачи, а поток их только читает.
+func _generate_in_background(run_seed: int, config: RS_WorldGenConfig) -> RS_LevelGraph:
+	var library := GameConfig.config.room_preset_library
+	RS_RoomLayout.warm_scene_cache(RS_LevelGraph.scene_paths(library, config))
+	var job := _GenerationJob.new()
+	var task := WorkerThreadPool.add_task(
+		func() -> void: job.graph = RS_LevelGraph.new().generate_run(run_seed, library, config),
+		false,
+		"RunManager: генерация комплекса"
+	)
+	while not WorkerThreadPool.is_task_completed(task):
+		await get_tree().process_frame
+	# Задача уже кончилась; ожидание её только снимает с учёта пула.
+	WorkerThreadPool.wait_for_task_completion(task)
+	return job.graph
+
+
+## Результат фоновой генерации. Объект, а не локальная переменная: лямбда
+## захватывает локальные по значению, и присвоение внутри неё не дошло бы сюда.
+class _GenerationJob:
+	extends RefCounted
+	var graph: RS_LevelGraph
 
 
 ## Ручки генерации ЭТОГО забега. Начатый забег продолжается по снимку из сейва,
