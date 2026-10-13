@@ -36,6 +36,17 @@ extends Resource
 ## доля секунды — это время, за которое по уже мёртвому игроку успевают ударить.
 @export_range(0.0, 3.0) var death_fade_duration: float = 0.8
 
+@export_group("Переходы")
+## Как выглядит переход порталом на другой слой, пока новый слой собирается
+## порциями (RunManager.travel_through_portal). FADE — экран гаснет и
+## проявляется, CURTAIN — та же шторка загрузки, что при входе в забег. Два
+## вида, потому что выбор — вопрос вида, а не механики, и делается в игре:
+## F2 отладочного оверлея переключает их на лету.
+enum PortalTransition { FADE, CURTAIN }
+@export var portal_transition: PortalTransition = PortalTransition.FADE
+## Сколько секунд гаснет и столько же проявляется экран при FADE.
+@export_range(0.05, 2.0) var portal_fade_duration: float = 0.3
+
 @export_group("Сохранение")
 ## Через сколько секунд после последней контрольной точки ставится следующая
 ## (RunManager._process). Верхняя граница того, сколько игрок теряет при вылете:
