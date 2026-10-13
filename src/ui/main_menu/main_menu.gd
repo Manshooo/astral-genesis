@@ -36,14 +36,25 @@ func _on_new_game_pressed() -> void:
 	# Архитектора — тот же метапрогресс, и чистый лист снимает их тоже.
 	SkillManager.reset()
 	ArchitectManager.reset()
-	get_tree().change_scene_to_file(WORLD_SCENE)
+	_enter_world($Content/Items/NewGame as UI_EchoButton)
 
 
 ## Продолжить сохранённое прохождение. Ничего не катим и не грузим руками:
 ## WorldSave уже поднял сейв в _ready, а RunManager возьмёт из него и сид
 ## (world_seed + death_count), и узел, на котором игрок остановился.
 func _on_load_pressed() -> void:
-	get_tree().change_scene_to_file(WORLD_SCENE)
+	_enter_world(load_button as UI_EchoButton)
+
+
+## Уходит в мир: world.tscn грузится в фоне (SceneLoader), нажатый пункт
+## показывает бегущим штрихом, что игра работает, а остальные гаснут — второе
+## нажатие за время загрузки начало бы вход дважды.
+func _enter_world(pressed: UI_EchoButton) -> void:
+	for node in find_children("*", "Button", true, false):
+		(node as Button).disabled = true
+	if pressed:
+		pressed.busy = true
+	await SceneLoader.change_to(get_tree(), WORLD_SCENE)
 
 
 func _on_settings_pressed() -> void:

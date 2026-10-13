@@ -107,12 +107,10 @@ func _on_revive_pressed() -> void:
 	# генерация возьмёт свежий run_seed() из (world_seed, death_count).
 	#
 	# Комплекс строится уже в мире, под его загрузочным экраном (UI_LoadingScreen,
-	# RunManager.enter_complex_async). Но до него — смена сцены: change_scene_to_file
-	# грузит world.tscn синхронно, и этот кадр замирает. Поэтому здесь только
-	# показываем, что игра не зависла: гасим кнопку, меняем подпись и ДОЖИДАЕМСЯ
-	# ОТРИСОВАННОГО КАДРА, иначе новая подпись не успеет появиться до фриза.
+	# RunManager.enter_complex_async), а world.tscn до него грузится в фоне
+	# (SceneLoader) — кадры идут всё время. Кнопка гаснет, чтобы второе нажатие не
+	# начало вход дважды, а подпись и бегущий штрих говорят, что игра работает.
 	_revive.disabled = true
 	_revive.busy = true
 	_revive.text = "RUN_SUMMARY_REVIVING"
-	await RenderingServer.frame_post_draw
-	get_tree().change_scene_to_file(WORLD_SCENE)
+	await SceneLoader.change_to(get_tree(), WORLD_SCENE)
