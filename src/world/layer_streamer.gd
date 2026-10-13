@@ -100,6 +100,10 @@ var _shown: Dictionary[StringName, bool] = {}
 ## одном коридоре, раскладка отдаёт развилку прямому (RS_CorridorPlanner).
 const VISIBLE_HOPS := 2
 
+## Сколько spawn_async тратит на спавн за кадр, микросекунды. Меньше кадра в
+## 60 FPS с запасом: под шторкой загрузки кадр должен успеть ещё и нарисоваться.
+const SPAWN_FRAME_BUDGET_USEC := 8000
+
 
 ## Новый граф забега; планы слоёв приходят вместе с ним.
 func set_graph(new_graph: RS_LevelGraph) -> void:
@@ -139,16 +143,53 @@ func spawn(layer_depth: int) -> bool:
 
 	var plan := plan_for_depth(layer_depth)
 	for node_data in layer_nodes:
-		# У коридора нет сцены: он собирается из тайлов кита по трассе плана.
-		if node_data.role == RS_LevelNode.Role.CORRIDOR:
-			_spawn_corridor(node_data, plan)
-			continue
-		var entity := _instantiate_room(node_data)
-		if entity == null:
-			continue
-		rooms[node_data.id] = _spawn_room(node_data, entity, plan)
+		_spawn_node(node_data, plan)
 	depth = layer_depth
 	return true
+
+
+## Как spawn, но порциями: узел за узлом, и как только кадр выбрал
+## SPAWN_FRAME_BUDGET_USEC, ждёт следующий кадр [param tree]. Нужен входу в
+## забег под шторкой (RunManager.enter_complex_async): весь слой за один кадр —
+## ~240 мс (профайлер 13.10), и строка загрузки на это время замирала.
+##
+## После каждого ожидания спрашивает [param keep_going]: вход могли перебить или
+## сцену мира сменить, и тогда слой уже чужой — новый вход его снёс, а
+## дописывать в него нельзя. false — слоя нет в графе или спавн оборван; что из
+## двух, зовущий знает сам (он и решает, жив ли вход). Глубина слоя ставится
+## только по завершении — до этого слой не считается загруженным.
+##
+## Порядок и содержимое те же, что у spawn: порция — только когда отдать кадр,
+## а погасшие лампы и места комнат от кадров не зависят.
+func spawn_async(layer_depth: int, tree: SceneTree, keep_going: Callable) -> bool:
+	var layer_nodes := graph.get_nodes_by_depth(layer_depth)
+	if layer_nodes.is_empty():
+		push_error("LayerStreamer: в графе нет узлов глубины %d" % layer_depth)
+		return false
+
+	var plan := plan_for_depth(layer_depth)
+	var started := Time.get_ticks_usec()
+	for node_data in layer_nodes:
+		if Time.get_ticks_usec() - started > SPAWN_FRAME_BUDGET_USEC:
+			await tree.process_frame
+			if not keep_going.call():
+				return false
+			started = Time.get_ticks_usec()
+		_spawn_node(node_data, plan)
+	depth = layer_depth
+	return true
+
+
+## Один узел слоя: комната — сценой, коридор — тайлами кита.
+func _spawn_node(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
+	# У коридора нет сцены: он собирается из тайлов кита по трассе плана.
+	if node_data.role == RS_LevelNode.Role.CORRIDOR:
+		_spawn_corridor(node_data, plan)
+		return
+	var entity := _instantiate_room(node_data)
+	if entity == null:
+		return
+	rooms[node_data.id] = _spawn_room(node_data, entity, plan)
 
 
 ## Снимает ВЕСЬ загруженный слой. По каждой комнате сначала вложенные сущности

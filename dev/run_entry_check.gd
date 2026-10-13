@@ -30,6 +30,7 @@ func _ready() -> void:
 	get_tree().process_frame.connect(func() -> void: _frames += 1)
 
 	await _check_same_world()
+	await _check_layer_in_portions()
 	await _check_cancelled_entry()
 	await _check_loading_screen()
 
@@ -65,6 +66,38 @@ func _check_same_world() -> void:
 		RS_RoomLayout.off_main_thread_instances == 0,
 		"промахов: %d (RS_LevelGraph.scene_paths не знает сцены)" % RS_RoomLayout.off_main_thread_instances)
 	_check("душа в мире одна", _player_count() == 1, "душ: %d" % _player_count())
+
+
+# --- 1б. Слой порциями — тот же слой, но не в одном кадре ------------------
+
+
+func _check_layer_in_portions() -> void:
+	var depth := RunManager.current_depth
+	# Эталон — синхронный спавн: слой фонового входа и сам собран порциями.
+	RunManager._despawn_layer()
+	await get_tree().process_frame
+	RunManager._spawn_layer(depth)
+	var whole := _layer_signature()
+
+	RunManager._despawn_layer()
+	await get_tree().process_frame
+	var frames_before := _frames
+	var ok: bool = await RunManager.layer.spawn_async(depth, get_tree(), func() -> bool: return true)
+	var frames_spent := _frames - frames_before
+	_check("слой порциями встаёт тем же, что за один кадр: те же узлы, комнаты на тех же местах, те же тайлы",
+		ok and RunManager.current_depth == depth and _layer_signature() == whole,
+		"%s\n— против —\n%s" % [_layer_signature().left(300), whole.left(300)])
+	_check("слой собирается за несколько кадров, а не в одном",
+		frames_spent > 1, "кадров: %d" % frames_spent)
+
+	# Обрыв после первой же порции: слой не должен считаться загруженным.
+	RunManager._despawn_layer()
+	await get_tree().process_frame
+	var stopped: bool = await RunManager.layer.spawn_async(depth, get_tree(), func() -> bool: return false)
+	_check("оборванный спавн не объявляет слой загруженным",
+		not stopped and RunManager.current_depth == RunManager.NO_DEPTH,
+		"вернул %s, глубина %d" % [stopped, RunManager.current_depth])
+	RunManager._despawn_layer()
 
 
 # --- 2. Отменённый вход не дописывает мир ----------------------------------
@@ -135,6 +168,26 @@ func _world_signature() -> String:
 		tiles += list.size()
 	parts.append("узел %s, слой %d, комнат %d, тайлов %d" % [
 		RunManager.current_node_id, RunManager.current_depth, RunManager.layer.rooms.size(), tiles])
+	return "\n".join(parts)
+
+
+## Что стоит в дереве слоя: комнаты с их местом и поворотом, тайлы коридоров
+## по клеткам. Узлы — по строке (см. _world_signature).
+func _layer_signature() -> String:
+	var parts: PackedStringArray = []
+	var ids: Array = RunManager.layer.rooms.keys()
+	ids.sort_custom(func(a, b) -> bool: return String(a) < String(b))
+	for id in ids:
+		var root := RunManager.layer.rooms[id].entity as Node as Node3D
+		parts.append("%s %s" % [id, root.global_transform if is_instance_valid(root) else "—"])
+	var corridors: Array = RunManager.layer.corridor_tiles.keys()
+	corridors.sort_custom(func(a, b) -> bool: return String(a) < String(b))
+	for id in corridors:
+		var cells: PackedStringArray = []
+		for tile in RunManager.layer.corridor_tiles[id]:
+			cells.append(str((tile as Node3D).position) if is_instance_valid(tile) else "—")
+		cells.sort()
+		parts.append("%s: %s" % [id, ", ".join(cells)])
 	return "\n".join(parts)
 
 

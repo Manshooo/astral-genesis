@@ -94,7 +94,7 @@ func enter_complex(run_seed: int = -1) -> void:
 	current_graph = RS_LevelGraph.new().generate_run(
 		run_seed, GameConfig.config.room_preset_library, _gen_config
 	)
-	_finish_entry()
+	_finish_entry(_start_node_id())
 
 
 ## Тот же вход, но граф строится в фоновом потоке, а кадры идут — под
@@ -102,13 +102,18 @@ func enter_complex(run_seed: int = -1) -> void:
 ## входа (профайлер 13.10: 1.1 с из 1.65 с кадра в редакторе), и синхронно она
 ## замораживала игру так, что показать прогресс было нельзя.
 ##
-## Душа спавнится ПОСЛЕ генерации, а не до, как в enter_complex: кадры между
-## ними идут по живому миру, и душа без пола падала бы, пока строится граф.
-## Остальной порядок тот же — complex_entered по-прежнему до _enter_node
-## (RunStats начинает забег на нём).
+## Стартовый слой тоже собирается порциями (LayerStreamer.spawn_async), по
+## нескольку узлов за кадр, — весь слой в одном кадре был ещё ~240 мс фриза под
+## шторкой. Поэтому layer_changed здесь летит раньше complex_entered, а не после,
+## как в enter_complex: его слушают только свет, окружение и мини-карта, а
+## RunStats начинает забег на complex_entered, который по-прежнему до _enter_node.
 ##
-## false — вход отменён, пока граф строился: сцену мира сменили или начат новый
-## вход. Дописывать мир тогда некуда, и граф выбрасывается.
+## Душа спавнится ПОСЛЕ слоя, а не до, как в enter_complex: кадры между ними
+## идут по живому миру, и душа без пола падала бы, пока строится граф и слой.
+##
+## false — вход отменён, пока граф строился или слой собирался: сцену мира
+## сменили или начат новый вход. Дописывать мир тогда некуда — граф выбрасывается,
+## недособранный слой снесёт следующий вход (_begin_entry).
 func enter_complex_async(run_seed: int = -1) -> bool:
 	run_seed = _begin_entry(run_seed)
 	var entry := _entry_serial
@@ -116,12 +121,26 @@ func enter_complex_async(run_seed: int = -1) -> bool:
 	current_graph = null
 	_gen_config = _run_gen_config()
 	var graph := await _generate_in_background(run_seed, _gen_config)
-	if entry != _entry_serial or not is_instance_valid(ECS.world) or not ECS.world.is_inside_tree():
+	if not _entry_alive(entry):
 		return false
-	_spawn_player()
 	current_graph = graph
-	_finish_entry()
+	var start := _start_node_id()
+	var spawned := await layer.spawn_async(
+		graph.get_node_data(start).depth, get_tree(), _entry_alive.bind(entry)
+	)
+	if not _entry_alive(entry):
+		return false
+	if spawned:
+		_after_layer_spawned()
+	_spawn_player()
+	_finish_entry(start)
 	return true
+
+
+## Жив ли ещё вход номер [param entry]: его не перебили новым, и мир, в который
+## он пишет, не ушёл вместе со сценой.
+func _entry_alive(entry: int) -> bool:
+	return entry == _entry_serial and is_instance_valid(ECS.world) and ECS.world.is_inside_tree()
 
 
 ## Начало входа в забег, общее для обоих путей; возвращает сид забега.
@@ -143,10 +162,13 @@ func _begin_entry(run_seed: int) -> int:
 
 
 ## Конец входа, общий для обоих путей: граф уже в current_graph, душа в мире.
-func _finish_entry() -> void:
+## [param start] — стартовый узел (_start_node_id): считается один раз, иначе
+## предупреждение о пропавшем узле сейва печаталось бы дважды. Слой стартового
+## узла асинхронный вход уже собрал — _enter_node увидит его загруженным.
+func _finish_entry(start: StringName) -> void:
 	complex_entered.emit(current_graph)
 	_restore_player_progress()
-	_enter_node(_start_node_id())
+	_enter_node(start)
 
 
 ## Строит граф в WorkerThreadPool и ждёт его, отдавая кадры. Генерация — чистые
@@ -593,10 +615,14 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 ## Загружает слой [param depth]: спавн — у стримера, а максимум глубины и сигнал
 ## слоя — здесь, это состояние забега.
 func _spawn_layer(depth: int) -> void:
-	if not layer.spawn(depth):
-		return
-	_max_depth_reached = maxi(_max_depth_reached, depth)
-	layer_changed.emit(depth)
+	if layer.spawn(depth):
+		_after_layer_spawned()
+
+
+## Состояние забега после того, как слой встал целиком, — на оба пути спавна.
+func _after_layer_spawned() -> void:
+	_max_depth_reached = maxi(_max_depth_reached, layer.depth)
+	layer_changed.emit(layer.depth)
 
 
 ## Снимает загруженный слой; сигнал — только если было что снимать.
