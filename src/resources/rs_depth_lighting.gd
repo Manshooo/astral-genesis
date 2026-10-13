@@ -22,7 +22,16 @@ func for_depth(depth: int) -> RS_DepthLight:
 	return layers[clampi(depth, 0, layers.size() - 1)]
 
 
+## Ресурс, загруженный при первом вызове layer(). Каждая лампа слоя спрашивает свой
+## свет при спавне и на каждой смене слоя — 150–270 вызовов за вход в забег, — а
+## load() даже из кэша ресурсов стоил ~0.7 мс (профайлер, 13.10: 106 мс на 154
+## вызова). Держим ссылку здесь: тот же экземпляр, что вернул бы load(), так что
+## правка .tres в инспекторе во время игры видна по-прежнему.
+static var _loaded: RS_DepthLighting
+
+
 ## Свет слоя из data/depth_lighting.tres; null — файла нет или слоёв в нём нет.
 static func layer(depth: int) -> RS_DepthLight:
-	var lighting := load(PATH) as RS_DepthLighting
-	return lighting.for_depth(depth) if lighting else null
+	if _loaded == null:
+		_loaded = load(PATH) as RS_DepthLighting
+	return _loaded.for_depth(depth) if _loaded else null

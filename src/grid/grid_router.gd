@@ -23,8 +23,15 @@ extends RefCounted
 ## поворота не посчитать; очередь — вёдрами по цене, цены здесь мелкие целые.
 ## Соседи перебираются по порядку сторон, и при равной цене побеждает первый
 ## найденный: трасса обязана быть одной и той же от запуска к запуску.
+##
+## [param max_cost] (−1 — без предела) — потолок цены: дороже поиск не идёт и
+## возвращает пустой путь. Путь дешевле потолка он находит тот же, что и без
+## него: вёдра до потолка заполняются в том же порядке, отбрасываются только
+## записи дороже. Нужен тому, кто заранее знает, что дорогой путь ему всё равно
+## не годится, — иначе при недостижимой цели поиск заливает всю область.
 static func find_path(
-	topology: GridTopology, start: Vector3i, goal: Callable, passable: Callable, turn_cost: int
+	topology: GridTopology, start: Vector3i, goal: Callable, passable: Callable, turn_cost: int,
+	max_cost: int = -1
 ) -> Array[Vector3i]:
 	var origin := Vector4i(start.x, start.y, start.z, GridTopology.NO_SIDE)
 	var best: Dictionary[Vector4i, int] = {origin: 0}
@@ -51,6 +58,8 @@ static func find_path(
 				var back := topology.back_side(cell, side)
 				var next_state := Vector4i(next.x, next.y, next.z, back)
 				var total := cost + step
+				if max_cost >= 0 and total > max_cost:
+					continue
 				if best.has(next_state) and best[next_state] <= total:
 					continue
 				best[next_state] = total

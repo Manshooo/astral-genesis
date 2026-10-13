@@ -106,14 +106,11 @@ func _on_revive_pressed() -> void:
 	# Новый забег: world_seed/death_count НЕ трогаем — смерть уже записана, и
 	# генерация возьмёт свежий run_seed() из (world_seed, death_count).
 	#
-	# ЗАГРУЗОЧНЫЙ ЭКРАН ПОКА ЗАГОТОВКА. Генерация комплекса синхронна
-	# (RunManager.enter_complex спавнит весь слой за один кадр), поэтому честного
-	# прогресса тут быть не может — только показать, что игра не зависла: гасим
-	# кнопку, меняем подпись и ДОЖИДАЕМСЯ ОТРИСОВАННОГО КАДРА, иначе новая
-	# подпись не успеет появиться на экране до фриза. Настоящий загрузочный экран
-	# требует разбить генерацию по кадрам — это отдельная задача.
+	# Комплекс строится уже в мире, под его загрузочным экраном (UI_LoadingScreen,
+	# RunManager.enter_complex_async), а world.tscn до него грузится в фоне
+	# (SceneLoader) — кадры идут всё время. Кнопка гаснет, чтобы второе нажатие не
+	# начало вход дважды, а подпись и бегущий штрих говорят, что игра работает.
 	_revive.disabled = true
 	_revive.busy = true
 	_revive.text = "RUN_SUMMARY_REVIVING"
-	await RenderingServer.frame_post_draw
-	get_tree().change_scene_to_file(WORLD_SCENE)
+	await SceneLoader.change_to(get_tree(), WORLD_SCENE)

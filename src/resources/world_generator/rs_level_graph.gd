@@ -70,6 +70,30 @@ func generate_run(
 	return RS_LevelGraph.new()._generate(level_seed, library, config)
 
 
+## Все сцены комнат, которые generate_run может поставить на узел и о которых
+## спросить RS_RoomLayout: пресеты библиотеки и её запасной, уникальные комнаты
+## и лестница из ручек, заглушка. Для прогрева кэшей перед генерацией в фоне
+## (RS_RoomLayout.warm_scene_cache) — здесь, рядом с генерацией, потому что
+## откуда она берёт комнаты, знает только она: новый источник сцен без строки
+## здесь даст ошибку прогрева, а не тихую гонку потоков.
+static func scene_paths(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig) -> Array[String]:
+	var presets: Array[RS_RoomPreset] = []
+	if library:
+		presets.append_array(library.presets)
+		presets.append(library.fallback)
+		presets.append(library.hub)
+	if config:
+		presets.append(config.floor_stairs)
+		for unique in config.unique_rooms:
+			if unique:
+				presets.append(unique.preset)
+	var paths: Array[String] = [PLACEHOLDER_ROOM_SCENE]
+	for preset in presets:
+		if preset and preset.scene and not paths.has(preset.scene.resource_path):
+			paths.append(preset.scene.resource_path)
+	return paths
+
+
 func get_node_data(node_id: StringName) -> RS_LevelNode:
 	return nodes.get(node_id)
 

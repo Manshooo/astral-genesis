@@ -662,19 +662,34 @@ func _straight_run(from: Vector3i, side: int) -> int:
 ## по сети она срезает. Не ставится петля, которая обволокла бы комнату
 ## (_envelops), и петля впритык к ближней сети — это второй ряд вдоль того же
 ## коридора, а не обход. Поэтому на тесном этаже петель выходит меньше заявленного.
+##
+## Перебор — от каждого тайла сети с каждой стороны, и он был горячей точкой
+## генерации: 755 мс из 1124 у generate_run (профайлер, 13.10), почти всё — в
+## поиске трасс, которые заливали свободную область и находили петлю хуже уже
+## найденной. Поэтому трасса, которая заведомо не обгонит лучшую, не ищется
+## (_loop_cost_cap, _may_beat): петля засчитывается только при выгоде СТРОГО
+## больше, так что отсечённые и раньше отбрасывались, и раскладка на тех же сидах
+## не меняется — версия генератора от этого не поднимается. Клетки впритык к
+## ближней сети считаются один раз на тайл (_near_cells), а не на каждый шаг
+## поиска.
 func _add_loops(count: int) -> void:
 	for k in count:
 		var best: Array[Vector3i] = []
 		var best_gain := 0
 		for a: Vector3i in _links.keys():
 			var dist := _distances(a)
+			var cap := _loop_cost_cap(dist, best_gain)
+			if cap < 0:
+				continue
+			var far := _far_tiles(dist)
+			var blocked := _near_cells(dist)
 			var goal := func(cell: Vector3i) -> bool: return dist.get(cell, 0) >= MIN_LOOP_GAIN
-			var passable := func(cell: Vector3i) -> bool: return _free(cell, _area) and not _near(cell, dist)
+			var passable := func(cell: Vector3i) -> bool: return _free(cell, _area) and not blocked.has(cell)
 			for side in _topology.side_count(a):
 				var start := _topology.neighbour(a, side)
-				if not _free(start, _area):
+				if not _free(start, _area) or not _may_beat(start, far, dist, best_gain):
 					continue
-				var path := GridRouter.find_path(_topology, start, goal, passable, TURN_COST)
+				var path := GridRouter.find_path(_topology, start, goal, passable, TURN_COST, cap)
 				if path.is_empty():
 					continue
 				var gain: int = dist[path[-1]] - path.size()
@@ -689,6 +704,62 @@ func _add_loops(count: int) -> void:
 		if best.is_empty():
 			return
 		_claim(best)
+
+
+## Потолок цены трассы петли от тайла с расстояниями по сети [param dist], при
+## которой петля ещё может обогнать лучшую найденную ([param best_gain]); −1 —
+## не может никакая.
+##
+## Выгода петли — расстояние до её конца по сети минус клетки трассы (шагов + 1),
+## поэтому шагов у годной трассы не больше max_steps = (дальше всего по сети) −
+## 2 − best_gain. Цена трассы — шаги плюс TURN_COST за каждый поворот, а
+## поворотов не больше, чем шагов без первого: при цене выше
+## (1 + TURN_COST) · max_steps − TURN_COST шагов заведомо больше max_steps.
+func _loop_cost_cap(dist: Dictionary[Vector3i, int], best_gain: int) -> int:
+	var reach := 0
+	for cell: Vector3i in dist:
+		reach = maxi(reach, dist[cell])
+	var max_steps := reach - 2 - best_gain
+	if max_steps < 1:
+		return -1
+	return (1 + TURN_COST) * max_steps - TURN_COST
+
+
+## Тайлы, где может кончиться петля (не ближе MIN_LOOP_GAIN по сети), — от
+## дальних к ближним, для _may_beat.
+func _far_tiles(dist: Dictionary[Vector3i, int]) -> Array[Vector3i]:
+	var far: Array[Vector3i] = []
+	for cell: Vector3i in dist:
+		if dist[cell] >= MIN_LOOP_GAIN:
+			far.append(cell)
+	far.sort_custom(func(x: Vector3i, y: Vector3i) -> bool: return dist[x] > dist[y])
+	return far
+
+
+## Может ли трасса от [param start] дать петлю с выгодой больше [param best_gain]:
+## до конца петли шагов не меньше нижней оценки топологии (GridTopology.min_steps),
+## а клеток трассы — на одну больше шагов.
+func _may_beat(start: Vector3i, far: Array[Vector3i], dist: Dictionary[Vector3i, int], best_gain: int) -> bool:
+	for cell in far:
+		if dist[cell] - 1 <= best_gain:
+			return false  # дальше по списку только ближние: им не хватит и без шагов
+		if dist[cell] - _topology.min_steps(start, cell) - 1 > best_gain:
+			return true
+	return false
+
+
+## Клетки, через которые петле от тайла с расстояниями [param dist] идти нельзя,
+## — вплотную к тайлу ближней сети, ближе MIN_LOOP_GAIN по ней: там петля шла бы
+## вторым рядом вдоль того же коридора. Считаются разом для тайла, а не на каждый
+## шаг поиска — проверка соседей на каждом шаге была второй горячей точкой петель.
+func _near_cells(dist: Dictionary[Vector3i, int]) -> Dictionary[Vector3i, bool]:
+	var cells: Dictionary[Vector3i, bool] = {}
+	for tile: Vector3i in _links:
+		if dist.get(tile, 0) >= MIN_LOOP_GAIN:
+			continue
+		for side in _topology.side_count(tile):
+			cells[_topology.neighbour(tile, side)] = true
+	return cells
 
 
 ## Тупики: отросток в одну-две клетки от тайла в свободное место, лучше — не вдоль
@@ -905,16 +976,8 @@ func _free(cell: Vector3i, area: Rect2i) -> bool:
 	)
 
 
-## Касается ли клетка тайла ближней сети — ближе MIN_LOOP_GAIN шагов от начала петли.
-func _near(cell: Vector3i, dist: Dictionary) -> bool:
-	for side in _topology.side_count(cell):
-		var next := _topology.neighbour(cell, side)
-		if _links.has(next) and dist.get(next, 0) < MIN_LOOP_GAIN:
-			return true
-	return false
-
-
-## Как _near, но клетка [param except] не в счёт: от неё трасса и начинается.
+## Касается ли клетка тайла ближней сети — ближе MIN_LOOP_GAIN шагов от начала
+## петли, — кроме клетки [param except]: от неё трасса и начинается.
 func _near_except(cell: Vector3i, dist: Dictionary, except: Vector3i) -> bool:
 	for side in _topology.side_count(cell):
 		var next := _topology.neighbour(cell, side)
