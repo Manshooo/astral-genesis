@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://c72re8o718wdg" path="res://src/levels/menu_map/l_menu_map.gd" id="1_2pq14"]
 [ext_resource type="PackedScene" uid="uid://cnof4mx1fdwwd" path="res://src/ui/main_menu/main_menu.tscn" id="2_conk4"]
 [ext_resource type="PackedScene" uid="uid://bar53m3lj6cyr" path="res://assets/levels/SM_room_P_walled_2x2x1/SM_room_P_walled_2x2x1.glb" id="3_room"]
-[ext_resource type="PackedScene" uid="uid://c5r436og78ylb" path="res://assets/props/interactive/SM_incubator/SM_incubator.glb" id="4_tank"]
+[ext_resource type="PackedScene" uid="uid://cjo8ft0onhb6u" path="res://assets/props/SM_incubator/SM_incubator.glb" id="4_tank"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="5_levelenv"]
 
 [sub_resource type="Environment" id="Environment_or"]

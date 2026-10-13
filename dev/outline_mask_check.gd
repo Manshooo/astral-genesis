@@ -120,6 +120,31 @@ func _run(world: World, mask_system: S_OutlineMask) -> void:
 	world.remove_entity(narrowed)
 	await get_tree().process_frame
 
+	# Настоящая сцена, где сужение нужно: у инкубатора интерактивна только панель,
+	# а сам бак с трубой — декор того же объекта. Без C_VisualRoot обводился бы
+	# весь стенд, и прицел на панель подсвечивал бы бак в другом конце комнаты.
+	var incubator := (
+		load("res://src/entities/incubator/e_incubator.tscn") as PackedScene
+	).instantiate() as Entity
+	world.add_entity(incubator)
+	await get_tree().process_frame
+	incubator.add_component(C_Highlighted.new())
+	await get_tree().process_frame
+	var panel := _geometries_under(incubator, "Visual")
+	var decor := _geometries_under(incubator, "Decor")
+	_check(
+		"у инкубатора обводится панель",
+		not panel.is_empty() and _all_lit(panel),
+		"панель: %s" % _layers_of(panel),
+	)
+	_check(
+		"бак и труба инкубатора не обводятся",
+		not decor.is_empty() and not _any_lit(decor),
+		"декор: %s" % _layers_of(decor),
+	)
+	world.remove_entity(incubator)
+	await get_tree().process_frame
+
 	# Сущность без единого меша: ассерта нет, падение наблюдателя — SCRIPT ERROR,
 	# и его засчитывает провалом сторож обвязки.
 	var bare := Entity.new()
@@ -284,6 +309,17 @@ func _any_lit(meshes: Array[GeometryInstance3D]) -> bool:
 		if mesh.layers & OUTLINE_BIT != 0:
 			return true
 	return false
+
+
+## Меши под узлом [param path] сущности; узла нет — пустой список, и ассерт на
+## нём провалится, а не пройдёт пустым.
+func _geometries_under(entity: Entity, path: NodePath) -> Array[GeometryInstance3D]:
+	var found: Array[GeometryInstance3D] = []
+	var root := entity.get_node_or_null(path)
+	if root:
+		for node in root.find_children("*", "GeometryInstance3D", true, false):
+			found.append(node as GeometryInstance3D)
+	return found
 
 
 func _layers_of(meshes: Array[GeometryInstance3D]) -> String:

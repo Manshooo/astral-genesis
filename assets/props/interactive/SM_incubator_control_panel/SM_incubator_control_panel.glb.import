@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c5r436og78ylb"
-path="res://.godot/imported/SM_incubator.glb-417f31ae297ef4a970be898a69b74e05.scn"
+uid="uid://b42gpvcxfs15q"
+path="res://.godot/imported/SM_incubator_control_panel.glb-ddcfbdc5b1bce55568499e6c64744f66.scn"
 
 [deps]
 
-source_file="res://assets/props/interactive/SM_incubator/SM_incubator.glb"
-dest_files=["res://.godot/imported/SM_incubator.glb-417f31ae297ef4a970be898a69b74e05.scn"]
+source_file="res://assets/props/interactive/SM_incubator_control_panel/SM_incubator_control_panel.glb"
+dest_files=["res://.godot/imported/SM_incubator_control_panel.glb-ddcfbdc5b1bce55568499e6c64744f66.scn"]
 
 [params]
 
