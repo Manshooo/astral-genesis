@@ -5,7 +5,9 @@
 [ext_resource type="Script" uid="uid://bi6krwy7ber7m" path="res://src/resources/interaction/a_open_skill_tree.gd" id="3_0scx7"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="4_0as6p"]
 [ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="5_qweb3"]
-[ext_resource type="PackedScene" uid="uid://c5r436og78ylb" path="res://assets/props/interactive/SM_incubator/SM_incubator.glb" id="6_nijex"]
+[ext_resource type="Script" uid="uid://ccb3xm8fbdion" path="res://src/components/rendering/c_visual_root.gd" id="6_vroot"]
+[ext_resource type="PackedScene" uid="uid://b42gpvcxfs15q" path="res://assets/props/interactive/SM_incubator_control_panel/SM_incubator_control_panel.glb" id="7_panel"]
+[ext_resource type="PackedScene" uid="uid://cjo8ft0onhb6u" path="res://assets/props/SM_incubator/SM_incubator.glb" id="8_decor"]
 
 [sub_resource type="Resource" id="SkillTreeAction"]
 script = ExtResource("3_0scx7")
@@ -17,20 +19,27 @@ prompt_text = "HUD_PROMPT_SKILL_TREE"
 requires_body = true
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
-[sub_resource type="BoxShape3D" id="IncubatorShape"]
-size = Vector3(2.259613, 3.2364502, 3.5)
+[sub_resource type="Resource" id="PanelOnly"]
+script = ExtResource("6_vroot")
+path = NodePath("Visual")
+
+[sub_resource type="BoxShape3D" id="PanelShape"]
+size = Vector3(1.9, 3.35, 3.35)
 
 [node name="Incubator" type="Node3D" unique_id=522577828]
 script = ExtResource("1_jjamn")
 actions = Array[ExtResource("2_nijex")]([SubResource("SkillTreeAction")])
-component_resources = Array[ExtResource("4_0as6p")]([SubResource("SkillTreePrompt")])
+component_resources = Array[ExtResource("4_0as6p")]([SubResource("SkillTreePrompt"), SubResource("PanelOnly")])
+
+[node name="Visual" parent="." unique_id=1229026779 instance=ExtResource("7_panel")]
+
+[node name="Decor" parent="." unique_id=1229026780 instance=ExtResource("8_decor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2352366, 0, 2.1108647)
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1381715465]
 collision_layer = 8
 collision_mask = 15
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=1101708281]
-transform = Transform3D(0.97450227, 0, 0.224378, 0, 1, 0, -0.224378, 0, 0.97450227, -6.343239, 1.6371216, -2.434767)
-shape = SubResource("IncubatorShape")
-
-[node name="Visual" parent="." unique_id=1229026779 instance=ExtResource("6_nijex")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.675, 0)
+shape = SubResource("PanelShape")

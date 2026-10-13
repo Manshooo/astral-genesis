@@ -29,7 +29,7 @@ component_resources = Array[ExtResource("2_component")]([SubResource("Shell")])
 [node name="Visual" parent="." unique_id=1533979703 instance=ExtResource("5_mesh")]
 
 [node name="Incubator" parent="." unique_id=1341953754 instance=ExtResource("6_8py54")]
-transform = Transform3D(0.22184277, 0, 0.9750824, 0, 1, 0, -0.9750824, 0, 0.22184277, 3.625, 0, 0.5)
+transform = Transform3D(0.22184277, 0, 0.9750824, 0, 1, 0, -0.9750824, 0, 0.22184277, 0.183491, 0, 6.111589)
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=637048266]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 0.8, -0.79322445)
