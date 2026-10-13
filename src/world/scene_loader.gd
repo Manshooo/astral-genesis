@@ -15,15 +15,22 @@ extends RefCounted
 
 
 ## Грузит [param path] в фоне и переключает на неё [param tree]. Возвращает
-## управление после переключения. Не удалась фоновая загрузка — синхронная смена,
-## как раньше, с ошибкой в лог: фриз лучше застрявшего меню.
+## управление после переключения.
 static func change_to(tree: SceneTree, path: String) -> void:
+	tree.change_scene_to_packed(await load_scene(tree, path))
+
+
+## Только загружает [param path] в фоне, отдавая кадры [param tree], и
+## возвращает сцену — для тех, кому между загрузкой и сменой надо ещё снести
+## свой мир: снеси его до загрузки, и все эти кадры игрок смотрел бы в пустоту.
+## Не удалась фоновая загрузка — синхронная, как раньше, с ошибкой в лог: фриз
+## лучше застрявшей смены сцены.
+static func load_scene(tree: SceneTree, path: String) -> PackedScene:
 	if ResourceLoader.load_threaded_request(path) == OK:
 		while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			await tree.process_frame
 		var scene := ResourceLoader.load_threaded_get(path) as PackedScene
 		if scene:
-			tree.change_scene_to_packed(scene)
-			return
-	push_error("SceneLoader: «%s» не загрузилась в фоне — меняю сцену синхронно" % path)
-	tree.change_scene_to_file(path)
+			return scene
+	push_error("SceneLoader: «%s» не загрузилась в фоне — гружу синхронно" % path)
+	return load(path) as PackedScene

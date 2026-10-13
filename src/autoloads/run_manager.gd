@@ -389,11 +389,18 @@ func finish_run() -> void:
 
 	WorldSave.clear_run()  # забег завершён: «Загрузить» начнёт этот мир заново
 	SkillManager.add_skill_points(reward)
-	_end_run()
-	run_finished.emit()
 
 	# TODO: экран концовки/победы. Пока — в меню, как «выход в меню» из паузы.
-	get_tree().change_scene_to_file(MENU_SCENE)
+	# Меню грузится в фоне (SceneLoader), а мир снимается уже после: экран на
+	# побеге не гаснет, и снесённый раньше мир показал бы на эти кадры пустоту.
+	# На время ожидания забег уже кончается — второй выход и смерть упрутся в
+	# _ending, как и при распаде.
+	_ending = true
+	var menu := await SceneLoader.load_scene(get_tree(), MENU_SCENE)
+	_end_run()
+	_ending = false
+	run_finished.emit()
+	get_tree().change_scene_to_packed(menu)
 
 
 ## Сколько прошло с последней контрольной точки — счётчик автосохранения (см.
@@ -479,7 +486,9 @@ func die() -> void:
 	died.emit()
 
 	_ending = false
-	get_tree().change_scene_to_file(DEATH_SCENE)
+	# Экран уже чёрный, так что итоги грузятся в фоне под ним (SceneLoader): кадры
+	# идут, а не замирают на последнем.
+	await SceneLoader.change_to(get_tree(), DEATH_SCENE)
 
 
 ## Общий снос забега для finish_run/die: убрать загруженный слой и обнулить граф.
