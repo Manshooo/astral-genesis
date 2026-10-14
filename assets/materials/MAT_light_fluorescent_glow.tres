@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "MAT_light_fluorescent_glow"
+albedo_color = Color(0.8, 0.85, 0.82, 1)
+emission_enabled = true
+emission = Color(0.86, 0.95, 0.9, 1)
+emission_energy_multiplier = 5.0

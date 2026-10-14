@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="Mat_brain"]
+albedo_color = Color(0.62, 0.53, 0.53, 1)
+roughness = 0.45
+
+[sub_resource type="SphereMesh" id="Mesh_lobe"]
+material = SubResource("Mat_brain")
+radius = 0.15
+height = 0.3
+
+[sub_resource type="SphereMesh" id="Mesh_cerebellum"]
+material = SubResource("Mat_brain")
+radius = 0.06
+height = 0.12
+
+[sub_resource type="CapsuleMesh" id="Mesh_stem"]
+material = SubResource("Mat_brain")
+radius = 0.025
+height = 0.16
+
+[node name="MenuSpecimenStub" type="Node3D"]
+
+[node name="LobeLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.42, 0, 0, 0, 0.62, 0, 0, 0, 1, -0.065, 0, 0)
+mesh = SubResource("Mesh_lobe")
+
+[node name="LobeRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.42, 0, 0, 0, 0.62, 0, 0, 0, 1, 0.065, 0, 0)
+mesh = SubResource("Mesh_lobe")
+
+[node name="Cerebellum" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.6, 0, 0, 0, 0.8, 0, 0, 0, 1, 0, -0.06, 0.1)
+mesh = SubResource("Mesh_cerebellum")
+
+[node name="Stem" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94, -0.34, 0, 0.34, 0.94, 0, -0.12, 0.05)
+mesh = SubResource("Mesh_stem")

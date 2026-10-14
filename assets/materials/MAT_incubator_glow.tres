@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "MAT_incubator_glow"
+albedo_color = Color(0.05, 0.04, 0.06, 1)
+emission_enabled = true
+emission = Color(0.79, 0.66, 0.95, 1)
+emission_energy_multiplier = 3.0
