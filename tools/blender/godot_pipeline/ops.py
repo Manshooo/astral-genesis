@@ -191,6 +191,16 @@ class GP_OT_split_to_collections(Operator):
         name="Mark as Godot Asset", default=False,
         description="Flag every new collection for export straight away")
     profile: EnumProperty(name="Profile", items=_profile_items)
+    # Префикс по профилю, а не по типу объекта: арматура без меша — это и
+    # персонаж, и библиотека клипов, и по объекту их не различить. Правка
+    # вручную — на смешанное выделение и на ассет вне профилей.
+    prefix_mode: EnumProperty(
+        name="Prefix",
+        items=[('PROFILE', "From Profile", "The profile's Collection Prefix (SM_, SK_, ...)", 0),
+               ('NONE', "None", "Collection named exactly after the object", 1),
+               ('CUSTOM', "Custom", "Type the prefix", 2)],
+        default='PROFILE')
+    custom_prefix: StringProperty(name="Custom Prefix", default="SM_")
 
     @classmethod
     def poll(cls, context):
@@ -205,21 +215,38 @@ class GP_OT_split_to_collections(Operator):
         layout.prop(self, "reuse_existing")
         layout.prop(self, "include_child_objects")
         layout.separator()
+        layout.prop(self, "profile")
+        layout.prop(self, "prefix_mode")
+        if self.prefix_mode == 'CUSTOM':
+            layout.prop(self, "custom_prefix")
+        layout.label(text="Collection: %s<object>" % (self._prefix(context) or ""),
+                     icon='OUTLINER_COLLECTION')
         layout.prop(self, "mark_as_asset")
-        sub = layout.column()
-        sub.active = self.mark_as_asset
-        sub.prop(self, "profile")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=340)
 
     # -- helpers ------------------------------------------------------------
 
-    def _target_name(self, obj):
+    def _prefix(self, context):
+        if self.prefix_mode == 'NONE':
+            return ""
+        if self.prefix_mode == 'CUSTOM':
+            return self.custom_prefix
+        from .prefs import get_prefs, get_profile
+        profile = get_profile(get_prefs(context), self.profile)
+        return profile.collection_prefix if profile is not None else ""
+
+    def _target_name(self, obj, prefix):
         from .naming import strip_godot_suffixes
-        if not self.strip_suffixes:
-            return obj.name
-        return strip_godot_suffixes(obj.name, keep_duplicate_marker=self.keep_duplicate_marker)
+        name = obj.name
+        if self.strip_suffixes:
+            name = strip_godot_suffixes(name, keep_duplicate_marker=self.keep_duplicate_marker)
+        # Объект, уже названный с префиксом, не даёт SM_SM_: префикс принадлежит
+        # ассету, и второй раз его не добавляют.
+        if prefix and not name.startswith(prefix):
+            name = prefix + name
+        return name
 
     @staticmethod
     def _parent_of(context, obj):
@@ -263,6 +290,7 @@ class GP_OT_split_to_collections(Operator):
         moved = 0
         already = 0
         warnings = []
+        prefix = self._prefix(context)
 
         for obj in self._roots(context):
             parent = self._parent_of(context, obj)
@@ -270,7 +298,7 @@ class GP_OT_split_to_collections(Operator):
                 warnings.append("%s is not linked to any collection" % obj.name)
                 continue
 
-            name = self._target_name(obj)
+            name = self._target_name(obj, prefix)
             if any(coll.name == name for coll in obj.users_collection):
                 already += 1
                 continue

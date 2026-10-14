@@ -76,6 +76,7 @@ def validate(context, prefs, collections):
         _check_physics(issues, name, objects, profile)
         _check_cell(issues, name, collection, objects, profile)
         _check_rig(issues, name, collection, objects, profile)
+        _check_root_type(issues, name, collection, objects, profile)
 
     return issues
 
@@ -160,6 +161,31 @@ def _check_cell(issues, asset, collection, objects, profile):
             issues.append(Issue(WARNING, asset,
                                 "geometry reaches %.3f m above the origin, over the %.2f m "
                                 "height limit of its %s footprint" % (top, height, footprint)))
+
+
+def _check_root_type(issues, asset, collection, objects, profile):
+    """Тип корня у ассета, тело которого приходит иначе (пайплайн §8).
+
+    Тело коллизии строится из метаданных, а персонаж ставится под сущность,
+    у которой тело своё. Тип корня сверху даёт второе тело — пустое, без формы
+    («не может сталкиваться»). Ловушку дважды вернул сам профиль: значение живёт
+    в нём, и аддон переписывает его в .import на каждом экспорте.
+    """
+    from . import physics
+    from .props import PHYSICS_ROOT_TYPE
+
+    if profile.root_type == 'NONE':
+        return
+    reason = None
+    if collection.godot.rig_type != 'NONE':
+        reason = "the character is placed under an entity that has its own body"
+    elif any(physics.has_physics(obj) for obj in objects):
+        reason = "its body comes from collision metadata"
+    if reason:
+        issues.append(Issue(WARNING, asset,
+                            "profile %r imports the root as %s, but %s, so Godot gets a second, "
+                            "shapeless body. Set the profile's Root Node to Node3D"
+                            % (profile.name, PHYSICS_ROOT_TYPE[profile.root_type], reason)))
 
 
 def _check_rig(issues, asset, collection, objects, profile):

@@ -481,7 +481,7 @@ check(len(rigs.schema('HUMANOID').allowed) == 56,
 check(rigs.schema('NONE') is None, "«не персонаж» эталона не имеет")
 
 humanoid = rigs.schema('HUMANOID')
-rig_coll = bpy.data.collections.new("CH_testrig")
+rig_coll = bpy.data.collections.new("SK_testrig")
 scene.collection.children.link(rig_coll)
 rig_coll.godot.is_asset = True
 rig_coll.godot.profile = "Character"
@@ -563,6 +563,67 @@ check(not rig_issues(), "у «не персонажа» контракт риг�
 rig_coll.godot.rig_type = 'CRAWLER'
 check(any("reference list" in i.message and "LeftUpperLeg" in i.message for i in rig_issues()),
       "ноги гуманоида мимо эталона ползуна")
+
+print("--- тип корня поверх тела ---")
+rig_coll.godot.rig_type = 'HUMANOID'
+bones["root.001"].name = "Root"
+character = next(p for p in prefs.profiles if p.name == "Character")
+check(character.root_type == 'NONE', "у Character по умолчанию корень Node3D")
+
+
+def root_warnings():
+    return [i.message for i in validate_mod.validate(bpy.context, prefs, [rig_coll])
+            if "shapeless body" in i.message]
+
+
+check(not root_warnings(), "корень Node3D претензий не вызывает")
+character.root_type = 'CHAR'
+check(any("CharacterBody3D" in m for m in root_warnings()),
+      "корень-тело у персонажа ловится")
+character.root_type = 'NONE'
+interactive = next(p for p in prefs.profiles if p.name == "Interactive")
+check(interactive.root_type == 'NONE',
+      "у Interactive по умолчанию корень Node3D, Reset Profile ловушку не вернёт")
+
+
+# -- 11. Collection per Object: префикс ассета ------------------------------
+
+print("\n=== 11. Collection per Object: префикс ===")
+check([p.collection_prefix for p in prefs.profiles] == ["SK_", "SM_", "SM_", "SM_"],
+      "префиксы профилей по умолчанию: Character SK_, остальные SM_ (получено %s)"
+      % [p.collection_prefix for p in prefs.profiles])
+
+split_home = bpy.data.collections.new("_split")
+scene.collection.children.link(split_home)
+
+
+def split(names, **options):
+    """Объекты с этими именами в _split, выделены, — и оператор над ними."""
+    bpy.ops.object.select_all(action='DESELECT')
+    objects = []
+    for name in names:
+        obj = bpy.data.objects.new(name, None)
+        split_home.objects.link(obj)
+        obj.select_set(True)
+        objects.append(obj)
+    bpy.context.view_layer.active_layer_collection = \
+        bpy.context.view_layer.layer_collection.children["_split"]
+    bpy.ops.godot_pipeline.split_to_collections('EXEC_DEFAULT', **options)
+    return [[c.name for c in obj.users_collection] for obj in objects]
+
+
+check(split(["chair_A"], profile="Prop") == [["SM_chair_A"]],
+      "статика получает префикс своего профиля")
+check(split(["walker"], profile="Character") == [["SK_walker"]],
+      "персонаж получает SK_")
+check(bpy.data.objects["walker"].name == "walker", "имя объекта остаётся без префикса")
+check(split(["SM_shelf_A"], profile="Prop") == [["SM_shelf_A"]], "SM_SM_ не получается")
+check(split(["desk_A-col"], profile="Prop") == [["SM_desk_A"]],
+      "суффикс Godot срезан, префикс добавлен")
+check(split(["lamp_A"], profile="Prop", prefix_mode='NONE') == [["lamp_A"]],
+      "без префикса — имя объекта как было")
+check(split(["vent_A"], profile="Prop", prefix_mode='CUSTOM', custom_prefix="PR_")
+      == [["PR_vent_A"]], "свой префикс")
 
 
 print("")
