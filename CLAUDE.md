@@ -8,6 +8,10 @@ Guidance for Claude Code (claude.ai/code) when working in this repository.
 
 **Adding knowledge: the summary and the link go here, the explanation goes in the doc.** Any section here that grows past a few lines belongs in `docs/astral-genesis/` instead. Keeping docs and code comments true to the code is the `docs-sync` skill's job.
 
+## Working rules
+
+- **Research the topic on the internet before starting a task.** Before planning or writing code, gather what is known about the subject — Godot docs for the APIs involved, established practices, known pitfalls — with web search, and only then propose the plan. Memory of an engine that moves this fast is not a source.
+
 ## Project
 
 **Astral Genesis** — a first-person roguelike dungeon-crawler set in a post-apocalyptic underground complex. Each run is a procedurally generated graph of rooms rather than a linear level, and the core mechanic is **possessing bodies**: the player cannot survive on their own for long and stays alive by taking over the bodies they find. Grim, muted sci-fi look.
@@ -33,6 +37,7 @@ Engine specifics (`project.godot`): **Godot 4.7.2**, Forward+, **Jolt Physics** 
 - **Every script opens with a class-level comment saying why it exists** — a `##` block after `extends` (it reaches Godot's built-in docs) or a `#` header above `class_name`. Two blank lines between top-level functions.
 - **Comments explain WHY, never WHAT.** A comment restating what the code already says is noise; a comment recording a hidden invariant, a rejected alternative or a workaround is the point. Comments are in Russian.
 - New scripts go through the templates in `src/script_templates/` so the base-class conventions hold.
+- **Scenes hold the structure, scripts hold only the logic.** A UI's node tree, layout, styles, materials and static text are authored in a `.tscn`; the script finds its nodes (`%UniqueName`, `@onready`) and drives them — it does not assemble the tree with `Node.new()`/`add_child()` or build materials and gradients in code. Elements whose count is known only at runtime (list rows, map labels) are instanced from their own `PackedScene`, not put together node by node. Much of the current HUD (`src/ui/hud/` — `thought_line`, `mini_map`, `hud_abilities`, `hud_mood`) still builds itself in code: that is debt to migrate, not a pattern to copy.
 
 ## Git conventions
 
