@@ -39,6 +39,11 @@
 ## Авторская экспозиция (exposure_multiplier 1.5 мира — усиление ламп) остаётся
 ## как есть. На 1 кривой нет вовсе: картинка и цена кадра — авторские.
 ##
+## Туман у слоя свой по плотности (RS_DepthLight.fog_density): у поверхности
+## дымки нет вовсе, глубже она гуще. Крутизну нарастания задаёт автор окружения
+## (fog_depth_curve): Godot считает туман как
+## pow(smoothstep(начало, конец, d), кривая) · плотность.
+##
 ## SDFGI (ступень «Ультра») при смене слоя перезапускается: поле расстояний он
 ## строит один раз и сам обновляет, только когда камера пересекает каскад, а все
 ## слои раскладываются от одной клетки — без перезапуска отражённый свет считался
@@ -89,6 +94,7 @@ var _fog_begin_share := -1.0
 var _authored_ambient_color := Color.BLACK
 var _authored_ambient_energy := 0.0
 var _authored_fog_color := Color.BLACK
+var _authored_fog_density := 1.0
 
 
 func _ready() -> void:
@@ -106,6 +112,7 @@ func _ready() -> void:
 		_authored_ambient_color = environment.ambient_light_color
 		_authored_ambient_energy = environment.ambient_light_energy
 		_authored_fog_color = environment.fog_light_color
+		_authored_fog_density = environment.fog_density
 	SettingsManager.settings_changed.connect(_on_settings_changed)
 	_on_settings_changed(SettingsManager.settings)
 	if apply_depth_lighting and environment:
@@ -120,6 +127,7 @@ func _on_layer_changed(depth: int) -> void:
 	environment.ambient_light_color = layer.ambient_color if layer else _authored_ambient_color
 	environment.ambient_light_energy = layer.ambient_energy if layer else _authored_ambient_energy
 	environment.fog_light_color = layer.fog_color if layer else _authored_fog_color
+	environment.fog_density = layer.fog_density if layer else _authored_fog_density
 
 
 ## Выключить на кадр и вернуть по настройке: так Godot строит поле заново. В один
