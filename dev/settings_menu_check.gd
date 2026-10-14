@@ -409,8 +409,7 @@ func _check_level_environment() -> void:
 	authored.fog_mode = Environment.FOG_MODE_DEPTH
 	authored.fog_depth_begin = 10.0
 	authored.fog_depth_end = 40.0
-	var attributes := CameraAttributesPractical.new()
-	attributes.exposure_multiplier = 0.8
+	authored.tonemap_exposure = 0.8
 
 	# Всё, на что смотрят ассерты, задаётся явно: настройки разработчика бывают
 	# любыми (пресет «Низкий» выключает свечение), и проверка не должна от них
@@ -423,12 +422,20 @@ func _check_level_environment() -> void:
 	SettingsManager.settings = tuned
 	var node := WorldEnvironment.new()
 	node.environment = authored
-	node.camera_attributes = attributes
 	node.set_script(LevelEnvironment)
 	add_child(node)
-	_check("яркость умножает авторскую экспозицию",
-		is_equal_approx(node.camera_attributes.exposure_multiplier, 0.8 * 1.5),
-		"%.3f" % node.camera_attributes.exposure_multiplier)
+	var curve := node.environment.adjustment_color_correction as Texture2D
+	_check("яркость поднимает тени кривой, не трогая чёрного и белого",
+		node.environment.adjustment_enabled and curve != null
+			and curve.get_image().get_pixel(6, 0).r > 6.0 / 255.0
+			and is_zero_approx(curve.get_image().get_pixel(0, 0).r)
+			and is_equal_approx(curve.get_image().get_pixel(255, 0).r, 1.0), "")
+	# Освещённое лампой — выше колена — кривая не трогает: гамма на весь кадр
+	# пересвечивала комнаты с лампами (живой прогон 14.10).
+	var lit := int(ceil(LevelEnvironment.SHADOW_KNEE * 255.0)) + 20
+	_check("освещённое лампой яркость не трогает",
+		curve != null and absf(curve.get_image().get_pixel(lit, 0).r - lit / 255.0) <= 1.0 / 255.0,
+		"%d/255 → %.0f/255" % [lit, curve.get_image().get_pixel(lit, 0).r * 255.0 if curve else -1.0])
 	_check("«Высокие» не включают эффект, которого автор не ставил",
 		node.environment.ssao_enabled and node.environment.ssil_enabled and not node.environment.ssr_enabled,
 		"ssao %s, ssil %s, ssr %s" % [node.environment.ssao_enabled, node.environment.ssil_enabled,
@@ -464,8 +471,8 @@ func _check_level_environment() -> void:
 		is_equal_approx(node.environment.fog_depth_end, LevelLight.fade_begin() + LevelLight.FADE_LENGTH)
 			and node.environment.fog_depth_end < fog_end,
 		"%.1f при прежних %.1f" % [node.environment.fog_depth_end, fog_end])
-	_check("правка не задела общий ресурс окружения и камеры",
-		authored.ssil_enabled and is_equal_approx(attributes.exposure_multiplier, 0.8), "")
+	_check("правка не задела общий ресурс окружения",
+		authored.ssil_enabled and authored.adjustment_color_correction == null, "")
 
 	SettingsManager.settings = tuned
 	_check("ступень выше возвращает снятый эффект — счёт от авторского, а не от прошлого",
@@ -474,14 +481,12 @@ func _check_level_environment() -> void:
 	# Фон меню яркость не слушает, а эффекты — слушает.
 	var menu_like := WorldEnvironment.new()
 	menu_like.environment = authored
-	menu_like.camera_attributes = attributes
 	menu_like.set_script(LevelEnvironment)
 	menu_like.set(&"apply_brightness", false)
 	add_child(menu_like)
-	_check("окружение без яркости экспозицию не трогает, а эффекты слушает",
-		is_equal_approx(menu_like.camera_attributes.exposure_multiplier, 0.8)
-			and menu_like.environment.ssil_enabled,
-		"%.3f" % menu_like.camera_attributes.exposure_multiplier)
+	_check("окружение без яркости кривую теней не ставит, а эффекты слушает",
+		menu_like.environment.adjustment_color_correction == null
+			and menu_like.environment.ssil_enabled, "")
 
 	SettingsManager.settings = before
 	node.queue_free()

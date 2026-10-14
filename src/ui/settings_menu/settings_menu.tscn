@@ -322,14 +322,13 @@ text = "SETTINGS_BRIGHTNESS"
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
-min_value = 50.0
-max_value = 200.0
-step = 5.0
-value = 100.0
+min_value = 0.5
+max_value = 3.0
+step = 0.05
+value = 1.0
 script = ExtResource("3_kktd5")
 setting_key = "brightness"
-display_multiplier = 100.0
-display_format = "%d %%"
+display_format = "%.2f"
 value_label_path = NodePath("../Value")
 
 [node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120076]
@@ -337,6 +336,24 @@ custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
+
+[node name="Calibration" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120200]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_CALIBRATION"
+
+[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration" unique_id=11120201]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_CALIBRATION"
+
+[node name="Open" type="Button" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration" unique_id=11120202]
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"EchoButtonSmall"
+text = "SETTINGS_CALIBRATION_OPEN"
+alignment = 0
+script = ExtResource("9_echo")
 
 [node name="FOV" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120034]
 layout_mode = 2
@@ -581,3 +598,5 @@ script = ExtResource("9_echo")
 [connection signal="pressed" from="Content/Footer/Reset" to="." method="_on_reset_pressed"]
 
 [connection signal="pressed" from="Content/Footer/Apply" to="." method="_on_apply_pressed"]
+
+[connection signal="pressed" from="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration/Open" to="." method="_on_calibration_pressed"]

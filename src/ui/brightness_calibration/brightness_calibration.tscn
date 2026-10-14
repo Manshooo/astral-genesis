@@ -1,0 +1,219 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/brightness_calibration/brightness_calibration.gd" id="1_calib"]
+[ext_resource type="Script" uid="uid://bf36viynb3qc5" path="res://src/ui/menu/key_hint_button.gd" id="2_hint"]
+[ext_resource type="Script" uid="uid://dg1gkitvqvfdf" path="res://src/ui/settings/slider_setting.gd" id="3_slider"]
+[ext_resource type="Script" uid="uid://cld4uli8a0ry2" path="res://src/ui/menu/echo_button.gd" id="4_echo"]
+[ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="5_levelenv"]
+[ext_resource type="Texture2D" uid="uid://dv75nbiynsk6b" path="res://assets/textures/complex-logo.jpg" id="7_logo"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sign"]
+albedo_texture = ExtResource("7_logo")
+metallic_specular = 0.0
+roughness = 1.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_sign"]
+material = SubResource("StandardMaterial3D_sign")
+size = Vector2(0.8, 0.8)
+
+[node name="BrightnessCalibration" type="Control" node_paths=PackedStringArray("first_focus", "content")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_calib")
+first_focus = NodePath("Content/Center/SliderRow/Slider")
+content = NodePath("Content")
+
+[node name="Black" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Content"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 52.0
+offset_right = 112.0
+offset_bottom = 52.0
+theme_type_variation = &"MenuWhisper"
+text = "CALIBRATION_TITLE"
+uppercase = true
+
+[node name="Back" type="Button" parent="Content"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 36.0
+grow_horizontal = 0
+script = ExtResource("2_hint")
+
+[node name="Center" type="VBoxContainer" parent="Content"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -470.0
+offset_top = -260.0
+offset_right = 470.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="Frame" type="SubViewportContainer" parent="Content/Center"]
+custom_minimum_size = Vector2(900, 300)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+stretch = true
+
+[node name="Viewport" type="SubViewport" parent="Content/Center/Frame"]
+own_world_3d = true
+handle_input_locally = false
+gui_disable_input = true
+size = Vector2i(900, 300)
+render_target_update_mode = 4
+
+[node name="Environment" type="WorldEnvironment" parent="Content/Center/Frame/Viewport"]
+unique_name_in_owner = true
+script = ExtResource("5_levelenv")
+
+[node name="Camera" type="Camera3D" parent="Content/Center/Frame/Viewport"]
+projection = 1
+current = true
+size = 1.0
+
+[node name="Clear" type="MeshInstance3D" parent="Content/Center/Frame/Viewport"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -1)
+mesh = SubResource("QuadMesh_sign")
+
+[node name="Faint" type="MeshInstance3D" parent="Content/Center/Frame/Viewport"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+mesh = SubResource("QuadMesh_sign")
+
+[node name="Hidden" type="MeshInstance3D" parent="Content/Center/Frame/Viewport"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -1)
+mesh = SubResource("QuadMesh_sign")
+
+[node name="Captions" type="HBoxContainer" parent="Content/Center"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 0
+
+[node name="Clear" type="Label" parent="Content/Center/Captions"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "CALIBRATION_CLEAR"
+horizontal_alignment = 1
+
+[node name="Faint" type="Label" parent="Content/Center/Captions"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "CALIBRATION_FAINT"
+horizontal_alignment = 1
+
+[node name="Hidden" type="Label" parent="Content/Center/Captions"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "CALIBRATION_HIDDEN"
+horizontal_alignment = 1
+
+[node name="Instruction" type="Label" parent="Content/Center"]
+custom_minimum_size = Vector2(900, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"MenuBody"
+text = "CALIBRATION_INSTRUCTION"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Note" type="Label" parent="Content/Center"]
+custom_minimum_size = Vector2(900, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"MenuCaption"
+text = "CALIBRATION_NOTE"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="SliderRow" type="HBoxContainer" parent="Content/Center"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 18
+
+[node name="Slider" type="HSlider" parent="Content/Center/SliderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 24)
+layout_mode = 2
+size_flags_vertical = 4
+min_value = 0.5
+max_value = 3.0
+step = 0.05
+value = 1.0
+script = ExtResource("3_slider")
+setting_key = "brightness"
+display_format = "%.2f"
+value_label_path = NodePath("../Value")
+
+[node name="Value" type="Label" parent="Content/Center/SliderRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuValue"
+
+[node name="Footer" type="HBoxContainer" parent="Content"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -96.0
+offset_top = -40.0
+offset_right = -96.0
+offset_bottom = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 22
+alignment = 2
+
+[node name="Done" type="Button" parent="Content/Footer"]
+layout_mode = 2
+theme_type_variation = &"EchoButtonSmall"
+text = "CALIBRATION_DONE"
+alignment = 0
+script = ExtResource("4_echo")
+
+[connection signal="pressed" from="Content/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="Content/Footer/Done" to="." method="_on_done_pressed"]

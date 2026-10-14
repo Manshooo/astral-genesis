@@ -10,6 +10,7 @@ ambient_energy = 0.35
 lamp_energy_scale = 1.15
 dead_lamp_chance = 0.0
 fog_color = Color(0.09, 0.095, 0.105, 1)
+fog_density = 0.0
 
 [sub_resource type="Resource" id="Resource_depth1"]
 script = ExtResource("2_layer")
@@ -18,6 +19,7 @@ ambient_energy = 0.25
 lamp_energy_scale = 1.05
 dead_lamp_chance = 0.05
 fog_color = Color(0.06, 0.065, 0.075, 1)
+fog_density = 0.25
 
 [sub_resource type="Resource" id="Resource_depth2"]
 script = ExtResource("2_layer")
@@ -26,6 +28,7 @@ ambient_energy = 0.17
 lamp_energy_scale = 1.0
 dead_lamp_chance = 0.12
 fog_color = Color(0.04, 0.045, 0.055, 1)
+fog_density = 0.6
 
 [sub_resource type="Resource" id="Resource_depth3"]
 script = ExtResource("2_layer")
@@ -34,6 +37,7 @@ ambient_energy = 0.11
 lamp_energy_scale = 0.95
 dead_lamp_chance = 0.2
 fog_color = Color(0.025, 0.028, 0.035, 1)
+fog_density = 0.85
 
 [sub_resource type="Resource" id="Resource_depth4"]
 script = ExtResource("2_layer")
@@ -42,7 +46,17 @@ ambient_energy = 0.06
 lamp_energy_scale = 0.85
 dead_lamp_chance = 0.32
 fog_color = Color(0.015, 0.016, 0.02, 1)
+fog_density = 1.0
+
+[sub_resource type="Resource" id="Resource_depth5"]
+script = ExtResource("2_layer")
+ambient_color = Color(0.35, 0.42, 0.62, 1)
+ambient_energy = 0.035
+lamp_energy_scale = 0.75
+dead_lamp_chance = 0.45
+fog_color = Color(0.008, 0.009, 0.012, 1)
+fog_density = 1.0
 
 [resource]
 script = ExtResource("1_lighting")
-layers = Array[ExtResource("2_layer")]([SubResource("Resource_depth0"), SubResource("Resource_depth1"), SubResource("Resource_depth2"), SubResource("Resource_depth3"), SubResource("Resource_depth4")])
+layers = Array[ExtResource("2_layer")]([SubResource("Resource_depth0"), SubResource("Resource_depth1"), SubResource("Resource_depth2"), SubResource("Resource_depth3"), SubResource("Resource_depth4"), SubResource("Resource_depth5")])

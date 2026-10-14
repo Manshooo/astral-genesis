@@ -39,6 +39,7 @@ func _ready() -> void:
 	authored.ambient_light_color = Color(0.9, 0.1, 0.1)
 	authored.ambient_light_energy = 0.5
 	authored.fog_light_color = Color(0.3, 0.3, 0.3)
+	authored.fog_density = 0.5
 	var with_depth := _environment(authored, true)
 	var without_depth := _environment(authored, false)
 
@@ -50,9 +51,11 @@ func _ready() -> void:
 	var top := await _load_layer(surface)
 	var top_ambient := with_depth.environment.ambient_light_energy
 	var top_fog := with_depth.environment.fog_light_color.get_luminance()
+	var top_fog_density := with_depth.environment.fog_density
 	var bottom := await _load_layer(deepest)
 	var bottom_ambient := with_depth.environment.ambient_light_energy
 	var bottom_fog := with_depth.environment.fog_light_color.get_luminance()
+	var bottom_fog_density := with_depth.environment.fog_density
 	var bottom_again := await _load_layer(deepest)
 
 	_check_lamps(top, bottom, bottom_again, surface, deepest)
@@ -61,6 +64,10 @@ func _ready() -> void:
 	_check("окружение мира на дне темнее, чем у поверхности: фоновый свет и туман",
 		bottom_ambient < top_ambient and bottom_fog <= top_fog,
 		"фон %.3f → %.3f, туман %.3f → %.3f" % [top_ambient, bottom_ambient, top_fog, bottom_fog])
+	# Плотность — из слоя, а не авторская 0.5: у поверхности дымки нет вовсе.
+	_check("туман у поверхности снят, на дне — плотнее",
+		is_zero_approx(top_fog_density) and bottom_fog_density > top_fog_density,
+		"плотность %.2f → %.2f" % [top_fog_density, bottom_fog_density])
 	_check("окружение без флага свет слоя не слушает",
 		without_depth.environment.ambient_light_color == authored.ambient_light_color
 			and is_equal_approx(without_depth.environment.ambient_light_energy, authored.ambient_light_energy),
@@ -71,7 +78,8 @@ func _ready() -> void:
 	_check("снятый слой возвращает окружению авторский свет",
 		with_depth.environment.ambient_light_color == authored.ambient_light_color
 			and is_equal_approx(with_depth.environment.ambient_light_energy, authored.ambient_light_energy)
-			and with_depth.environment.fog_light_color == authored.fog_light_color,
+			and with_depth.environment.fog_light_color == authored.fog_light_color
+			and is_equal_approx(with_depth.environment.fog_density, authored.fog_density),
 		"%s × %.3f" % [with_depth.environment.ambient_light_color, with_depth.environment.ambient_light_energy])
 	_check("общий ресурс окружения не задет",
 		is_equal_approx(authored.ambient_light_energy, 0.5), "%.3f" % authored.ambient_light_energy)
@@ -93,8 +101,9 @@ func _check_data() -> void:
 	if lighting == null:
 		return
 	var deepest: int = RS_LevelGraph.DEPTHS.max()
+	# Свет может опережать генератор: L5 заведён раньше, чем появился в забеге.
 	_check("у каждого слоя генератора свой свет",
-		lighting.layers.size() == deepest + 1, "%d слоёв света на %d слоёв" % [lighting.layers.size(), deepest + 1])
+		lighting.layers.size() >= deepest + 1, "%d слоёв света на %d слоёв" % [lighting.layers.size(), deepest + 1])
 	_check("глубже последнего слоя — свет последнего",
 		lighting.for_depth(deepest + 3) == lighting.layers.back(), "")
 
@@ -110,7 +119,9 @@ func _check_data() -> void:
 			problems.append("погасших на %d меньше, чем на %d" % [depth, depth - 1])
 		if lower.fog_color.get_luminance() > upper.fog_color.get_luminance():
 			problems.append("туман %d светлее %d" % [depth, depth - 1])
-	_check("глубже — не светлее: фон, лампы и туман не ярче, погасших не меньше",
+		if lower.fog_density < upper.fog_density:
+			problems.append("туман %d реже %d" % [depth, depth - 1])
+	_check("глубже — не светлее: фон, лампы и туман не ярче, туман не реже, погасших не меньше",
 		problems.is_empty(), ", ".join(problems))
 	_check("у поверхности погасших ламп нет", is_zero_approx(lighting.layers[0].dead_lamp_chance),
 		"%.2f" % lighting.layers[0].dead_lamp_chance)
