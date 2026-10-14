@@ -137,7 +137,7 @@ function Set-ImportParam {
 
 # --- чтение имён материалов из .glb ----------------------------------------
 
-function Get-GltfMaterialNames([string]$Path) {
+function Read-GltfDocument([string]$Path) {
 	$json = $null
 	if ($Path.EndsWith('.gltf', [StringComparison]::OrdinalIgnoreCase)) {
 		$json = [IO.File]::ReadAllText($Path)
@@ -152,9 +152,32 @@ function Get-GltfMaterialNames([string]$Path) {
 		$json = [Text.Encoding]::UTF8.GetString($bytes, 20, $length)
 	}
 
-	try { $doc = $json | ConvertFrom-Json } catch { return @() }
-	if ($null -eq $doc.materials) { return @() }
-	return @($doc.materials | ForEach-Object { $_.name } | Where-Object { $_ })
+	try { return $json | ConvertFrom-Json } catch { return $null }
+}
+
+
+function Get-GltfMaterialNames($Doc) {
+	if ($null -eq $Doc -or $null -eq $Doc.materials) { return @() }
+	return @($Doc.materials | ForEach-Object { $_.name } | Where-Object { $_ })
+}
+
+
+## Меши, у которых хоть один примитив без материала. Такой surface Godot красит
+## своим материалом по умолчанию, и сослаться на внешний .tres ему нечем —
+## ссылка use_external ключуется именем материала, а имени нет.
+function Get-MeshesWithoutMaterial($Doc) {
+	if ($null -eq $Doc -or $null -eq $Doc.meshes) { return @() }
+	$bare = @()
+	foreach ($mesh in $Doc.meshes) {
+		# Прокси коллизий аддона (CO_<объект>_<форма>) — не геометрия: постимпорт
+		# превращает их в формы и удаляет меш, материал им не нужен.
+		if ($mesh.name -like 'CO_*') { continue }
+		# Индекс материала 0 ложен в булевом контексте — проверяется наличие поля.
+		if (@($mesh.primitives | Where-Object { $_.PSObject.Properties.Name -notcontains 'material' }).Count -gt 0) {
+			$bare += $(if ($mesh.name) { $mesh.name } else { '<без имени>' })
+		}
+	}
+	return $bare
 }
 
 
@@ -386,6 +409,9 @@ if ($importFiles.Count -eq 0) { Fail "В $assetsDir не нашлось ни о�
 $touched = 0
 $orphans = @()
 $missingMaterials = [System.Collections.Generic.SortedSet[string]]::new()
+$bareMeshes = [System.Collections.Generic.SortedSet[string]]::new()
+$characterNames = [System.Collections.Generic.SortedSet[string]]::new()
+$charactersDir = Join-Path $assetsDir 'characters'
 
 foreach ($file in $importFiles) {
 	$source = $file.FullName -replace '\.import$', ''
@@ -421,7 +447,19 @@ foreach ($file in $importFiles) {
 	# Материал без файла оставляем движку — он создаст его на реимпорте
 	# (Extract Once), а ссылку добавит следующий прогон скрипта.
 	$links = @{}
-	foreach ($name in (Get-GltfMaterialNames $source)) {
+	$doc = Read-GltfDocument $source
+	$glbName = $file.Name -replace '\.import$', ''
+	foreach ($mesh in (Get-MeshesWithoutMaterial $doc)) {
+		$bareMeshes.Add("$mesh (в $glbName)") | Out-Null
+	}
+	# Контракт рига (Пайплайн персонажей): материал персонажа — MAT_<имя> или
+	# общий MAT_monster. Ссылку ставим и чужому имени, если .tres нашёлся, но
+	# пропустить его молча значило бы узнать о нарушении только в сборке.
+	$isCharacter = $source.StartsWith($charactersDir + [IO.Path]::DirectorySeparatorChar)
+	foreach ($name in (Get-GltfMaterialNames $doc)) {
+		if ($isCharacter -and -not $name.StartsWith('MAT_')) {
+			$characterNames.Add("$name (в $glbName)") | Out-Null
+		}
 		$found = Find-MaterialFile $Root ([IO.Path]::GetDirectoryName($source)) $name $MaterialDir
 		if ($found) {
 			$links[$name] = $found
@@ -463,6 +501,19 @@ if ($missingMaterials.Count -gt 0) {
 	Write-Host "Материалы без .tres в $MaterialDir — ссылку поставить пока не на что:" -ForegroundColor Yellow
 	$missingMaterials | ForEach-Object { Write-Note $_ }
 	Write-Note "Реимпорт создаст файлы (Extract Once); прогони скрипт ещё раз, чтобы проставить ссылки."
+}
+
+if ($bareMeshes.Count -gt 0) {
+	Write-Host ""
+	Write-Warning "Примитивы без материала — Godot покрасит их своим, внешний .tres не привязать ($($bareMeshes.Count)):"
+	$bareMeshes | ForEach-Object { Write-Note $_ }
+	Write-Note "Назначь материал в Blender (пустой слот тоже считается) и переэкспортируй."
+}
+
+if ($characterNames.Count -gt 0) {
+	Write-Host ""
+	Write-Warning "Материалы персонажей не по контракту рига — нужен MAT_<имя> или MAT_monster ($($characterNames.Count)):"
+	$characterNames | ForEach-Object { Write-Note $_ }
 }
 
 if ($touched -gt 0) {
