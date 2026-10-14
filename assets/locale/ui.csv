@@ -45,6 +45,17 @@ MAP_HINT,"Наведите на комнату, чтобы узнать о не�
 MAP_UNIQUE_HUB,Хаб,Hub
 MAP_UNIQUE_EXIT,Выход,Exit
 MAP_UNIQUE_ARCHITECT,Архитектор,Architect
+MAP_TYPE_ARSENAL,Арсенал,Arsenal
+MAP_TYPE_LAB,Лаборатория,Laboratory
+MAP_TYPE_PROVING_GROUND,Полигон,Proving ground
+MAP_TYPE_STORAGE,Склад,Storage
+MAP_TYPE_ARCHIVE,Архив,Archive
+MAP_TYPE_CANTEEN,Столовая,Canteen
+MAP_TYPE_SECURITY,Помещения охраны,Security
+MAP_TYPE_BARRACKS,Казармы,Barracks
+MAP_TYPE_CREATURE_CONTAINMENT,Содержание существ,Creature containment
+MAP_TYPE_ARTIFACT_CONTAINMENT,Содержание артефактов,Artifact containment
+MAP_TYPE_RECREATION,Отдых и досуг,Recreation
 HUD_PROMPT_PASS,Пройти,Go through
 HUD_PROMPT_UNSEAL,Открыть,Open
 HUD_PROMPT_LOCKED,Заперто,Locked

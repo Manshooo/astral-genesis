@@ -159,7 +159,7 @@ func marker_of(node_data: RS_LevelNode) -> Dictionary:
 		return {"icon": unique.map_icon, "letter": _initial(label), "label": label, "unique": true}
 	var type := _types.by_id(node_data.room_type) if _types and node_data.room_type != &"" else null
 	if type:
-		return {"icon": type.map_icon, "letter": _initial(tr(type.label())), "unique": false}
+		return {"icon": type.map_icon, "letter": _initial(tr(type.map_label())), "unique": false}
 	return {}
 
 
@@ -466,7 +466,7 @@ func _room_name(node_data: RS_LevelNode) -> String:
 			return tr(unique.map_label())
 		var type := _types.by_id(node_data.room_type) if _types and node_data.room_type != &"" else null
 		if type:
-			return tr(type.label())
+			return tr(type.map_label())
 	return tr("MAP_ROOM")
 
 

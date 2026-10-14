@@ -271,7 +271,7 @@ func _check_screen() -> void:
 	var type_marker := screen.marker_of(typed) if typed else {}
 	var type := GameConfig.config.room_preset_library.type_catalog.by_id(typed.room_type) if typed else null
 	_check("уровень 4: у комнаты с типом значок типа",
-		type != null and not type_marker.get("unique", true) and type_marker["letter"] == tr(type.label()).substr(0, 1).to_upper(),
+		type != null and not type_marker.get("unique", true) and type_marker["letter"] == tr(type.map_label()).substr(0, 1).to_upper(),
 		str(type_marker))
 	portal_conn.locked_by = &""
 	screen.free()
