@@ -326,6 +326,7 @@ def draw_collection_settings(layout, context, collection):
     col.prop_search(settings, "profile", prefs, "profiles", icon='PRESET')
     col.prop(settings, "dest_dir", placeholder=profile.dest_dir if profile else "")
     col.prop(settings, "file_name", placeholder=collection.name)
+    layout.prop(settings, "rig_type")
 
     col = layout.column(align=True)
     col.prop(settings, "at_center")

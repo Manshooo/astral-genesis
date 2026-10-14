@@ -8,6 +8,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 from .naming import COLLISION_ITEMS
+from .rigs import RIG_TYPE_ITEMS
 
 
 MATERIAL_POLICY_ITEMS = [
@@ -253,6 +254,14 @@ class GP_CollectionSettings(PropertyGroup):
     skip: BoolProperty(
         name="Skip", default=False,
         description="Temporarily exclude this asset from batch exports")
+    # Тип рига — свойство коллекции, а не профиля: экспорт у всех персонажей
+    # одинаковый, различается только схема костей. «Не персонаж» выключает
+    # проверку контракта рига целиком.
+    rig_type: EnumProperty(
+        name="Rig Type", items=RIG_TYPE_ITEMS, default='NONE',
+        description="Character rig contract this asset follows. The validator checks its bone "
+                    "names against the rig's reference list, separate head and arms objects, "
+                    "applied transforms and MAT_ materials")
 
 
 CLASSES = (

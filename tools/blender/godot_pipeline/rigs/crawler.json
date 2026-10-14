@@ -1,0 +1,23 @@
+{
+  "rig_type": "crawler",
+  "note": "Черновик 14.10: верх гуманоида без таза и ног, имена — из SkeletonProfileHumanoid. Свой SkeletonProfile ползуна заводит сессия B2. Тела: crawler.",
+  "required": [
+    "Root", "Spine", "Head",
+    "LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand",
+    "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand"
+  ],
+  "optional": [
+    "Chest", "UpperChest", "Neck",
+    "LeftEye", "RightEye", "Jaw",
+    "LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal",
+    "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",
+    "LeftMiddleProximal", "LeftMiddleIntermediate", "LeftMiddleDistal",
+    "LeftRingProximal", "LeftRingIntermediate", "LeftRingDistal",
+    "LeftLittleProximal", "LeftLittleIntermediate", "LeftLittleDistal",
+    "RightThumbMetacarpal", "RightThumbProximal", "RightThumbDistal",
+    "RightIndexProximal", "RightIndexIntermediate", "RightIndexDistal",
+    "RightMiddleProximal", "RightMiddleIntermediate", "RightMiddleDistal",
+    "RightRingProximal", "RightRingIntermediate", "RightRingDistal",
+    "RightLittleProximal", "RightLittleIntermediate", "RightLittleDistal"
+  ]
+}

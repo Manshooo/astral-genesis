@@ -380,9 +380,17 @@ tile_coll.objects.link(proxy)
 check(PREVIEW_MATERIAL not in [m.name for m in materials_of([tile, proxy])],
       "служебный материал прокси не считается материалом ассета")
 
+from godot_pipeline.naming import footprint_of                  # noqa: E402
+
+for name, expected in (("SM_room_A_shell_3x2x1", (3, 2, 1)), ("SM_room_T", (1, 1, 1)),
+                       ("SM_room_T_0x2x1", (1, 1, 1)), ("SM_stairs_1x2x2", (1, 2, 2))):
+    check(footprint_of(name) == expected,
+          "footprint из имени %s -> %s (получено %s)" % (name, expected, footprint_of(name)))
+
+# Кит 8 м: клетка-куб, footprint по умолчанию — одна клетка.
 chunk = next(p for p in prefs.profiles if p.name == "Level Chunk")
-chunk.cell_size = 18.0
-chunk.cell_height = 20.0
+chunk.cell_size = 8.0
+chunk.cell_height = 8.0
 tile_coll.godot.is_asset = True
 tile_coll.godot.profile = "Level Chunk"
 tile_coll.godot.dest_dir = "assets"
@@ -392,29 +400,41 @@ def tile_messages():
     return [i.message for i in validate_mod.validate(bpy.context, prefs, [tile_coll])]
 
 
+def move_vertex(index, axis, value):
+    setattr(piece_mesh.vertices[index].co, axis, value)
+    piece_mesh.update()
+    bpy.context.view_layer.update()
+
+
 got = tile_messages()
-check(not any("cell edge" in m or "height limit" in m for m in got),
+check(not any("past the edge" in m or "height limit" in m for m in got),
       "тайл внутри клетки претензий не вызывает")
 
-piece_mesh.vertices[1].co.x = 9.5
-piece_mesh.update()
-bpy.context.view_layer.update()
-check(any("cell edge" in m for m in tile_messages()),
+move_vertex(1, "x", 4.5)
+check(any("past the edge" in m for m in tile_messages()),
       "выступ за грань клетки ловится по вычисленному мешу")
-piece_mesh.vertices[1].co.x = 1.0
-piece_mesh.vertices[2].co.z = 21.0
-piece_mesh.update()
-bpy.context.view_layer.update()
+
+# Коробка 2×2: те же 4.5 м законны, граница — ±8.
+tile_coll.name = "SM_room_T_2x2x1"
+check(not any("past the edge" in m for m in tile_messages()),
+      "коробка 2x2 проходит там, где одна клетка нарушила бы контракт")
+move_vertex(1, "x", 8.5)
+check(any("past the edge" in m and "2x2x1" in m for m in tile_messages()),
+      "выступ за footprint 2x2 ловится")
+move_vertex(1, "x", 1.0)
+
+move_vertex(2, "z", 9.0)
 check(any("height limit" in m for m in tile_messages()), "превышение высоты ловится")
-piece_mesh.vertices[2].co.z = 0.0
-piece_mesh.update()
+tile_coll.name = "SM_room_T_1x1x2"
+check(not any("height limit" in m for m in tile_messages()),
+      "в два уровня высотой те же 9 м законны")
+tile_coll.name = "SM_room_T"
+move_vertex(2, "z", 0.0)
 
 chunk.cell_size = 0.0
 chunk.cell_height = 0.0
-piece_mesh.vertices[1].co.x = 9.5
-piece_mesh.update()
-bpy.context.view_layer.update()
-check(not any("cell edge" in m for m in tile_messages()), "с нулевой клеткой проверка молчит")
+move_vertex(1, "x", 9.5)
+check(not any("past the edge" in m for m in tile_messages()), "с нулевой клеткой проверка молчит")
 
 check(not any("same name as its file" in m for m in tile_messages()),
       "объект без префикса ассета не путается с файлом")
@@ -443,6 +463,106 @@ names = [m.get("name") for m in gltf.get("materials", [])]
 check(PREVIEW_MATERIAL not in names, "в .glb нет %s (материалы: %s)" % (PREVIEW_MATERIAL, names))
 check("MAT_kit" in names, "настоящий материал сборщика в .glb на месте")
 check(proxy.data.materials[0] == preview, "после экспорта подсветка прокси вернулась в слот")
+
+
+# -- 10. контракт рига персонажа --------------------------------------------
+# Тоже после экспорта фикстуры: персонаж здесь только валидируется.
+
+print("\n=== 10. контракт рига ===")
+from godot_pipeline import rigs                                  # noqa: E402
+
+for rig_type in ('HUMANOID', 'CRAWLER', 'QUADRUPED'):
+    schema = rigs.schema(rig_type)
+    check(schema is not None and {"Root", "Head"} <= set(schema.required)
+          and set(schema.required) <= schema.allowed,
+          "эталон %s читается, Root и Head обязательны" % rig_type.lower())
+check(len(rigs.schema('HUMANOID').allowed) == 56,
+      "гуманоид — все 56 костей SkeletonProfileHumanoid")
+check(rigs.schema('NONE') is None, "«не персонаж» эталона не имеет")
+
+humanoid = rigs.schema('HUMANOID')
+rig_coll = bpy.data.collections.new("CH_testrig")
+scene.collection.children.link(rig_coll)
+rig_coll.godot.is_asset = True
+rig_coll.godot.profile = "Character"
+rig_coll.godot.dest_dir = "assets"
+rig_coll.godot.rig_type = 'HUMANOID'
+
+bpy.ops.object.armature_add(enter_editmode=True)
+rig = bpy.context.active_object
+rig.name = "testrig"
+edit = rig.data.edit_bones
+edit[0].name = "Root"
+for index, bone_name in enumerate(humanoid.required[1:] + ("Neck",)):
+    bone = edit.new(bone_name)
+    bone.head = (0.1 * index, 0.0, 0.0)
+    bone.tail = (0.1 * index, 0.0, 0.1)
+    bone.parent = edit[0]
+bpy.ops.object.mode_set(mode='OBJECT')
+for coll in list(rig.users_collection):
+    coll.objects.unlink(rig)
+rig_coll.objects.link(rig)
+
+rig_mat = bpy.data.materials.new("MAT_testrig")
+rig_parts = {}
+for part in ("testrig_body", "testrig_head", "testrig_arms"):
+    mesh = bpy.data.meshes.new(part)
+    mesh.from_pydata([(0.0, 0.0, 0.0), (0.1, 0.0, 0.0), (0.0, 0.1, 0.0)], [], [(0, 1, 2)])
+    mesh.uv_layers.new()
+    mesh.materials.append(rig_mat)
+    obj = bpy.data.objects.new(part, mesh)
+    obj.parent = rig
+    rig_coll.objects.link(obj)
+    rig_parts[part] = obj
+bpy.context.view_layer.update()
+
+RIG_MARKERS = ("needs an armature", "not a deform bone", "duplicate suffix", "reference list",
+               "lacks required", "unapplied", "no separate", "not named MAT_")
+
+
+def rig_issues():
+    return [i for i in validate_mod.validate(bpy.context, prefs, [rig_coll])
+            if any(marker in i.message for marker in RIG_MARKERS)]
+
+
+got = rig_issues()
+check(not got, "риг по контракту претензий не вызывает (получено %s)" % [i.message for i in got])
+
+bones = rig.data.bones
+bones["LeftLowerArm"].name = "LeftLowerArm.001"
+got = rig_issues()
+check(any(i.level == 'ERROR' and "duplicate suffix" in i.message for i in got),
+      "автосуффикс .001 у кости — ошибка")
+check(any("lacks required" in i.message and "LeftLowerArm" in i.message for i in got),
+      "переименованная обязательная кость числится недостающей")
+bones["LeftLowerArm.001"].name = "forearm.l"
+check(any(i.level == 'ERROR' and "reference list" in i.message for i in rig_issues()),
+      "кость мимо эталона — ошибка")
+bones["forearm.l"].name = "LeftLowerArm"
+
+bones["Root"].use_deform = False
+check(any("Root" in i.message and "not a deform bone" in i.message for i in rig_issues()),
+      "недеформирующий Root при deform-only ловится")
+bones["Root"].use_deform = True
+
+rig_parts["testrig_head"].name = "testrig_skull"
+check(any("no separate head" in i.message for i in rig_issues()), "голова без суффикса _head ловится")
+rig_parts["testrig_head"].name = "testrig_head"
+
+rig_mat.name = "palette"
+check(any("not named MAT_" in i.message for i in rig_issues()), "материал без MAT_ ловится")
+rig_mat.name = "MAT_testrig"
+
+rig_parts["testrig_body"].rotation_euler.x = 1.5708
+bpy.context.view_layer.update()
+check(any("unapplied rotation" in i.message for i in rig_issues()), "неприменённый поворот ловится")
+
+bones["Root"].name = "root.001"
+rig_coll.godot.rig_type = 'NONE'
+check(not rig_issues(), "у «не персонажа» контракт рига молчит")
+rig_coll.godot.rig_type = 'CRAWLER'
+check(any("reference list" in i.message and "LeftUpperLeg" in i.message for i in rig_issues()),
+      "ноги гуманоида мимо эталона ползуна")
 
 
 print("")

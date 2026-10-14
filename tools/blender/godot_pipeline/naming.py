@@ -73,6 +73,20 @@ GODOT_ANIM_SUFFIX_WORDS = ("loop_mode", "loop", "cycle")
 # Characters Godot strips from node names (String::validate_node_name).
 INVALID_NODE_CHARS = '.:@/"%'
 
+# Footprint тайла в клетках — хвостом имени коллекции: SM_room_A_shell_3x2x1 —
+# 3 клетки по X, 2 по Y, 1 уровень по высоте. Источник тот же, что у check_kit.py
+# арт-репозитория: отдельное поле коллекции завело бы вторую правду, которая
+# разъедется с именем.
+_FOOTPRINT = re.compile(r"_([1-9][0-9]*)x([1-9][0-9]*)x([1-9][0-9]*)$")
+
+
+def footprint_of(name: str):
+    """(W, L, H) в клетках из хвоста имени; без хвоста — одна клетка."""
+    match = _FOOTPRINT.search(name)
+    if match is None:
+        return 1, 1, 1
+    return tuple(int(group) for group in match.groups())
+
 
 def sanitize_node_name(name: str) -> str:
     """Return `name` with characters Godot would strip replaced by '_'."""
