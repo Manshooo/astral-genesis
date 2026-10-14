@@ -97,4 +97,6 @@ func validate() -> Array[String]:
 				"«%s»: depth_min=%d больше depth_max=%d — тип не выпадет никогда"
 				% [type.id, type.depth_min, type.depth_max]
 			)
+		if type.map_name == "":
+			problems.append("«%s»: нет map_name — карта покажет игроку непереведённое имя" % type.id)
 	return problems
