@@ -23,6 +23,8 @@
 ## по-разному, читался бы как две разные вещи.
 extends UI_MenuScreen
 
+const CALIBRATION_SCENE := preload("res://src/ui/brightness_calibration/brightness_calibration.tscn")
+
 var caller_node: Control = null
 
 @onready var apply_button: Button = %Apply
@@ -229,6 +231,24 @@ func _on_apply_pressed() -> void:
 
 func _on_back_pressed() -> void:
 	UIManager.close_top()
+
+
+## Калибровка подбирает яркость черновика, а не применённую: здесь «Применить» —
+## единственная дверь в SettingsManager, и экран поверх её не обходит. Подобранное
+## возвращается в ползунок «Яркости», и он сам зажигает «Применить»: Range шлёт
+## value_changed и на присваивание из кода.
+func _on_calibration_pressed() -> void:
+	var screen := CALIBRATION_SCENE.instantiate() as UI_BrightnessCalibration
+	screen.brightness = _draft.brightness
+	screen.confirmed.connect(_on_calibration_confirmed)
+	UIManager.push_screen(screen)
+
+
+func _on_calibration_confirmed(brightness: float) -> void:
+	_draft.brightness_calibrated = true
+	for control in _controls:
+		if control.setting_key == "brightness":
+			control.set_setting_value(brightness)
 
 
 func _on_reset_pressed() -> void:

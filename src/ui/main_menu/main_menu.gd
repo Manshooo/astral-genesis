@@ -5,6 +5,7 @@
 extends UI_MenuScreen
 
 const WORLD_SCENE := "res://src/world/world.tscn"
+const CALIBRATION_SCENE := preload("res://src/ui/brightness_calibration/brightness_calibration.tscn")
 
 @onready var load_button: Button = %Load
 @onready var load_aside: Label = %LoadAside
@@ -24,6 +25,35 @@ func _ready() -> void:
 	# не-релизной CI вписывает сюда 0.7.0-dev.33+fc91d3c
 	# (.github/scripts/build_version.sh), релизу — просто 0.7.0.
 	version_label.text = tr("MENU_BUILD") % ProjectSettings.get_setting("application/config/version")
+	# Отложенно: меню входит в дерево вместе со сценой, и корень в этот момент
+	# занят — добавить экран в него сейчас нельзя.
+	if not SettingsManager.settings.brightness_calibrated:
+		_offer_calibration.call_deferred()
+
+
+## Первый запуск: калибровка яркости поверх меню, до первого входа в мир, — иначе
+## игрок подбирал бы её вслепую, по тьме забега. Подобранное применяется сразу:
+## черновика, как в настройках, тут нет.
+func _offer_calibration() -> void:
+	var screen := CALIBRATION_SCENE.instantiate() as UI_BrightnessCalibration
+	screen.brightness = SettingsManager.settings.brightness
+	screen.confirmed.connect(_commit_brightness)
+	UIManager.push_screen(screen, false, self, _on_calibration_closed)
+
+
+## Показан — значит предложен: и «Назад» ставит отметку, иначе отказавшийся
+## игрок видел бы экран каждый запуск. После «Готово» отметка уже стоит.
+func _on_calibration_closed() -> void:
+	if not SettingsManager.settings.brightness_calibrated:
+		_commit_brightness(SettingsManager.settings.brightness)
+
+
+func _commit_brightness(brightness: float) -> void:
+	var applied := SettingsManager.settings.copy()
+	applied.brightness = brightness
+	applied.brightness_calibrated = true
+	SettingsManager.settings = applied
+	SettingsManager.save()
 
 
 func _on_new_game_pressed() -> void:

@@ -85,6 +85,13 @@ MENU_LOAD_EMPTY,нет сохранений,no saved run
 MENU_SETTINGS,Настройки,Settings
 MENU_QUIT,Выйти,Quit
 MENU_BUILD,сборка %s,build %s
+CALIBRATION_TITLE,Калибровка яркости,Brightness calibration
+CALIBRATION_INSTRUCTION,"Подберите яркость: левый знак виден, средний едва различим, правый не виден.","Set the brightness so the left sign is visible, the middle one is barely visible and the right one is not."
+CALIBRATION_NOTE,"Средний знак освещён, как стена в тёмном закоулке глубокого слоя вне света лампы. Подбирайте при том свете в комнате, при котором играете.","The middle sign is lit like a wall in a dark corner of a deep layer, outside a lamp's light. Calibrate in the room lighting you play in."
+CALIBRATION_CLEAR,виден,visible
+CALIBRATION_FAINT,едва виден,barely visible
+CALIBRATION_HIDDEN,не виден,not visible
+CALIBRATION_DONE,Готово,Done
 PAUSE_TITLE,Пауза,Paused
 PAUSE_CONTINUE,Продолжить,Resume
 PAUSE_SAVE,Сохранить,Save
@@ -113,6 +120,8 @@ SETTINGS_EFFECTS_MEDIUM,Средние,Medium
 SETTINGS_EFFECTS_HIGH,Высокие,High
 SETTINGS_EFFECTS_ULTRA,Ультра,Ultra
 SETTINGS_BRIGHTNESS,Яркость,Brightness
+SETTINGS_CALIBRATION,Калибровка яркости,Brightness calibration
+SETTINGS_CALIBRATION_OPEN,Выверить по знаку,Calibrate by the sign
 SETTINGS_GLOW,Свечение,Glow
 SETTINGS_AA,Сглаживание,Anti-aliasing
 SETTINGS_AA_OFF,Выкл,Off
@@ -138,6 +147,7 @@ SETTINGS_HINT_SHADOWS,"Чёткость, мягкость краёв и даль
 SETTINGS_HINT_EFFECTS,"Затенение в углах, отражённый свет ламп и отражения на глянцевом полу; «Ультра» добавляет глобальное освещение — свет, отражённый от стен вне кадра. Каждая ступень дороже предыдущей, «Ультра» — заметно.","Ambient occlusion in corners, bounced lamp light and reflections on glossy floors; Ultra adds global illumination — light bounced off walls outside the view. Each step costs more than the last, Ultra noticeably so."
 SETTINGS_HINT_GLOW,"Ореол вокруг ламп и ярких мест. На встроенной графике заметно снижает частоту кадров.","Halo around lamps and bright spots. Noticeably lowers frame rate on integrated graphics."
 SETTINGS_HINT_BRIGHTNESS,"Подберите так, чтобы в тёмном углу едва угадывались очертания. Тьма без лампы задумана тьмой.","Set it so outlines in a dark corner are barely visible. Darkness without a lamp is meant to be dark."
+SETTINGS_HINT_CALIBRATION,"Три знака комплекса на чёрном, освещённые как стена в тёмном закоулке. Подбирает ту же «Яркость» — по картинке, а не наугад.","Three complex signs on black, lit like a wall in a dark corner. Sets the same Brightness — by a picture rather than by guess."
 SETTINGS_HINT_FPS,0 — без ограничения.,0 means unlimited.
 SETTINGS_HINT_KEYS,Клик по клавише — ждёт новую. Занятая клавиша меняется местами.,Click a key to wait for a new one. A taken key swaps places.
 ACTION_MOVE_FORWARD,Вперёд,Move forward
