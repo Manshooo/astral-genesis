@@ -6,6 +6,7 @@
 ## из (world_seed, death_count) при входе (см. RunManager.enter_complex), а сейв
 ## хранит только то, что из сида не выводится, — где игрок остановился и сколько
 ## у БФЖ осталось запаса распада.
+@tool  # читается вкладкой «Генератор мира» — «Забег из сейва»
 class_name RS_WorldSave
 extends Resource
 
@@ -76,6 +77,19 @@ extends Resource
 ## смерть (death_count++) даёт другую раскладку при том же world_seed.
 func run_seed() -> int:
 	return hash([world_seed, death_count])
+
+
+## Снимок ручек, по которому продолжится начатый забег, или null — забега нет
+## либо он начат на другом генераторе, и вход его сбросит, сняв ручки заново
+## (RunManager._run_gen_config). Правило лежит здесь, а не в RunManager, потому
+## что его спрашивает и «Генератор мира» («Забег из сейва»): разойдись копии,
+## вкладка показала бы мир, которого игра уже не строит.
+func resumable_gen_config() -> RS_WorldGenConfig:
+	if not run_in_progress or gen_config == null:
+		return null
+	if generator_version != RS_LevelGraph.GENERATOR_VERSION:
+		return null
+	return gen_config
 
 
 ## Сбрасывает прогресс забега, оставляя прохождение (world_seed/death_count).

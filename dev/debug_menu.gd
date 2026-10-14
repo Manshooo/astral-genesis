@@ -1,7 +1,7 @@
 # res://dev/debug_menu.gd
 ## Меню отладки: читы, которые удобнее нажать мышью, чем держать клавишей, —
-## начисление очков навыков и эссенции Архитектора и перенос в уникальные
-## комнаты. Открывается из отладочного оверлея и живёт экраном в стеке
+## начисление очков навыков и эссенции Архитектора, перенос в уникальные
+## комнаты и сид забега в буфер обмена. Открывается из отладочного оверлея и живёт экраном в стеке
 ## UIManager: курсор, блок ввода игрока и закрытие по Esc — те же, что у дерева
 ## навыков, своих правил у меню нет.
 ##
@@ -12,7 +12,8 @@
 ##
 ## Разделы — FoldableContainer в общей FoldableGroup, то есть аккордеон: раскрыт
 ## один раздел, остальные свёрнуты, и меню не растёт с каждым новым. Свернуть можно
-## и все — allow_folding_all.
+## и все — allow_folding_all. Кнопка сида — вне аккордеона: она одна, и за ней
+## приходят чаще всего — назвать раскладку, на которой что-то сломалось.
 ##
 ## Само меню ничего не начисляет и никуда не переносит: оно шлёт сигнал, а делает
 ## оверлей — у него же то, что работает и без меню, и подписи кнопок берутся из
@@ -25,14 +26,21 @@ extends Control
 signal travel_requested(scene_path: String, title: String)
 ## Нажата кнопка начисления — номер записи в таблице начислений оверлея.
 signal grant_requested(index: int)
+## Нажата кнопка копирования сида забега; что копировать — знает оверлей.
+signal seed_copy_requested
 
+@onready var _seed_button: Button = %SeedButton
 @onready var _grants: VBoxContainer = %Grants
 @onready var _rooms: VBoxContainer = %Rooms
 
 
 ## [param rooms] — { "title": String, "scene_path": String } на каждую кнопку
-## переноса; [param grants] — подписи кнопок начисления, по порядку таблицы.
-func setup(rooms: Array[Dictionary], grants: Array[String]) -> void:
+## переноса; [param grants] — подписи кнопок начисления, по порядку таблицы;
+## [param seed_title] — подпись кнопки сида, с самим числом.
+func setup(rooms: Array[Dictionary], grants: Array[String], seed_title: String) -> void:
+	_seed_button.text = seed_title
+	_seed_button.pressed.connect(seed_copy_requested.emit)
+
 	var grant_buttons := _fill(_grants, grants.size())
 	for i in grants.size():
 		grant_buttons[i].text = grants[i]

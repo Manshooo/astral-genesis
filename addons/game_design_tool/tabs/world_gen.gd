@@ -44,7 +44,20 @@ const SETTINGS_SECTION := "world_gen_tool"
 ## Куда идти писать описание тега — текст для тултипов облака.
 const TAG_HINT_WHERE := "вкладке «Редактор пресетов» → облако тегов"
 
+## Наибольший сид забега: randi() и hash() отдают 32 бита без знака.
+const SEED_MAX := 0xFFFFFFFF
+
+## Сейв игры. Путь берётся у владельца, а не пишется второй раз: автолоад в
+## редакторе не работает, но его константа доступна через скрипт.
+const SAVE_PATH := preload("res://src/autoloads/world_save.gd").SAVE_PATH
+
 var _seed_spin: SpinBox
+var _random_btn: Button
+## Режим «Забег из сейва»: граф строится не из поля «Сид» и data/, а из сейва
+## игры. Не запоминается между открытиями редактора намеренно: сейв меняется
+## с каждой контрольной точкой, и вкладка, молча открытая на чужом с прошлого
+## раза забеге, выглядела бы как обычный сид.
+var _save_run_toggle: Button
 var _depth_option: OptionButton
 var _visibility_menu: MenuButton
 var _status: Label
@@ -157,13 +170,42 @@ func _build_toolbar() -> Control:
 
 	row.add_child(Ui.label("Сид:"))
 	_seed_spin = SpinBox.new()
+	# Весь диапазон сида забега: и world_seed (randi()), и run_seed() (hash())
+	# 32-битные без знака. Поле в шесть знаков не принимало сид из игры, и
+	# комплекс, где что-то случилось, в редакторе было не воспроизвести. 2³²
+	# double в SpinBox хранит точно, а EditorState пишет сид целым (int64).
 	_seed_spin.min_value = 0
-	_seed_spin.max_value = 999999
+	_seed_spin.max_value = SEED_MAX
 	_seed_spin.step = 1
 	_seed_spin.value = 0
+	_seed_spin.select_all_on_focus = true
+	# Десять знаков в поле по умолчанию не влезают — видна была бы лишь их часть.
+	_seed_spin.custom_minimum_size = Vector2(130, 0)
+	# Сида мало, чтобы получить тот же мир, — и расхождение по ручкам примут за
+	# этот же баг, если о нём не сказать там, куда сид вводят.
+	_seed_spin.tooltip_text = (
+		"Сид забега — тот, что в отладочном оверлее игры («сид забега», копируется из меню отладки).\n"
+		+ "Забег строится из сида, СЛЕПКА ручек генерации и версии генератора, сохранённых\n"
+		+ "в сейве при его начале, а здесь берётся текущий data/world_gen_config.tres.\n"
+		+ "Если ручки правили после начала забега, тот же сид даст здесь другой мир —\n"
+		+ "забег, как он есть в сейве, показывает кнопка «Забег из сейва»."
+	)
 	row.add_child(_seed_spin)
-	row.add_child(Ui.button("Случайный", _on_random_seed_pressed))
+	_random_btn = Ui.button("Случайный", _on_random_seed_pressed)
+	row.add_child(_random_btn)
 	row.add_child(Ui.button("Пересобрать", _on_rebuild_pressed))
+
+	_save_run_toggle = Button.new()
+	_save_run_toggle.text = "Забег из сейва"
+	_save_run_toggle.toggle_mode = true
+	_save_run_toggle.tooltip_text = (
+		"Комплекс забега из сейва игры (%s): сид забега и слепок ручек,\n" % SAVE_PATH
+		+ "с которыми он начат, — тот же мир, что строит игра при загрузке.\n"
+		+ "Открывается слой игрока с выделенной комнатой, где он остановился.\n"
+		+ "«Пересобрать» перечитывает сейв — после новой контрольной точки."
+	)
+	_save_run_toggle.toggled.connect(_on_save_run_toggled)
+	row.add_child(_save_run_toggle)
 
 	row.add_child(VSeparator.new())
 
@@ -347,7 +389,7 @@ func _on_visibility_item_pressed(id: int) -> void:
 
 #region Генерация
 func _on_random_seed_pressed() -> void:
-	_seed_spin.value = randi() % 1000000
+	_seed_spin.value = randi()
 
 
 func _on_rebuild_pressed() -> void:
@@ -405,12 +447,76 @@ func _rebuild_graph() -> void:
 	if _library == null:
 		_set_status("⚠ Не удалось загрузить " + Library.LIBRARY_PATH)
 		return
+	if _save_run_toggle.button_pressed:
+		# Перечитывается на каждую пересборку: после новой контрольной точки игрок
+		# уже в другой комнате, а после смерти — в другом комплексе.
+		var saved := UserResourceFile.read(SAVE_PATH, RS_WorldSave, TAB_TITLE) as RS_WorldSave
+		if saved != null:
+			show_save_run(saved)
+			return
+		_save_run_toggle.set_pressed_no_signal(false)
+		_set_seed_editable(true)
+		_build_from_seed()
+		_set_status("⚠ Сейва игры нет (%s) — показан сид из поля" % SAVE_PATH)
+		return
+	_build_from_seed()
+
+
+func _build_from_seed() -> void:
 	var run_seed := int(_seed_spin.value)
 	_config = _world_gen_config()
 	_graph = RS_LevelGraph.new().generate_run(run_seed, _library, _config)
 	_rebuild_layer()
 	_set_status("Сид %d, узлов в графе: %d" % [run_seed, _graph.nodes.size()])
 	EditorState.write(SETTINGS_SECTION, "seed", run_seed)
+
+
+## Комплекс забега из сейва [param saved] — тем же правилом, что вход в игре
+## (RunManager._run_gen_config): сид из (world_seed, death_count), ручки —
+## слепок начала забега, а если его нет или забег начат на другом генераторе,
+## текущие: вход сбросит такой забег и снимет ручки заново. Открывается слой
+## игрока с его комнатой выделенной — смотрят обычно туда, где он стоит.
+##
+## Сид из сейва в EditorState не пишется: выключив режим, возвращаешься к своему.
+func show_save_run(saved: RS_WorldSave) -> void:
+	var run_seed := saved.run_seed()
+	var snapshot := saved.resumable_gen_config()
+	_config = snapshot if snapshot != null else _world_gen_config()
+	_seed_spin.value = run_seed
+	_graph = RS_LevelGraph.new().generate_run(run_seed, _library, _config)
+
+	var player_node: RS_LevelNode = null
+	if snapshot != null:
+		player_node = _graph.get_node_data(saved.current_node_id)
+	if player_node != null:
+		_depth_option.select(_depth_option.get_item_index(player_node.depth))
+	_rebuild_layer()
+	if player_node != null:
+		_host.select(player_node.id)
+		_host.focus_selected()
+
+	var where := "забег не начат — показан следующий, по текущим ручкам"
+	if saved.run_in_progress and snapshot == null:
+		where = "забег начат на другом генераторе — игра сбросит его на вход, ручки текущие"
+	elif snapshot != null:
+		where = "ручки — слепок начала забега, игрок в %s" % (
+			player_node.id if player_node != null else "узле входа"
+		)
+	_set_status("Забег из сейва: сид %d, смертей %d; %s" % [run_seed, saved.death_count, where])
+
+
+func _on_save_run_toggled(pressed: bool) -> void:
+	_set_seed_editable(not pressed)
+	if not pressed:
+		_seed_spin.value = EditorState.read(SETTINGS_SECTION, "seed", 0)
+	_rebuild_graph()
+
+
+## Сид в режиме сейва показывается, но не правится: правка молча строила бы уже
+## не забег из сейва, а кнопка оставалась бы нажатой.
+func _set_seed_editable(editable: bool) -> void:
+	_seed_spin.editable = editable
+	_random_btn.disabled = not editable
 
 
 func _current_depth() -> int:

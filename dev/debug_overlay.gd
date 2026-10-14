@@ -1,9 +1,9 @@
 # res://dev/debug_overlay.gd
 ## Отладочный оверлей: горячие клавиши, чтобы смотреть механику, не проходя ради
 ## неё забег. Экран навыков открывается где угодно, слой меняется телепортом,
-## распад БФЖ выключается; очки навыков, эссенция Архитектора и перенос в
-## уникальную комнату (хаб, выход, Архитектор) — из меню отладки
-## (dev/debug_menu.gd).
+## распад БФЖ выключается; очки навыков, эссенция Архитектора, перенос в
+## уникальную комнату (хаб, выход, Архитектор) и сид забега в буфер — из меню
+## отладки (dev/debug_menu.gd).
 ##
 ## Повод: чтобы взглянуть на правку в дереве навыков, надо было запустить игру,
 ## бегать пару минут ради очков и только потом открыть экран. Цена взгляда была
@@ -143,16 +143,28 @@ func _status_text() -> String:
 	var depth := "—"
 	if RunManager.current_depth != RunManager.NO_DEPTH:
 		depth = str(RunManager.current_depth)
-	return "слой %s · узел %s\nочки %d · эссенция %d · бессмертие %s\nсид мира %d · смертей %d\nсборка v%s" % [
+	return "слой %s · узел %s\nочки %d · эссенция %d · бессмертие %s\nсид забега %d\nсид мира %d · смертей %d\nсборка v%s" % [
 		depth,
 		RunManager.current_node_id if RunManager.current_node_id != &"" else "—",
 		SkillManager.save.skill_points,
 		ArchitectManager.save.skill_points,
 		"вкл" if _immortal else "выкл",
+		run_seed(),
 		WorldSave.save.world_seed,
 		WorldSave.save.death_count,
 		ProjectSettings.get_setting("application/config/version"),
 	]
+
+
+## Сид, из которого построен граф, — число для поля «Сид» «Генератора мира».
+## Не world_seed: граф строится из hash([world_seed, death_count]), и сид мира
+## даже у первого забега дал бы в редакторе чужой комплекс. Берётся у самого
+## графа, а не пересчитывается из сейва: вход с явным сидом (проверки dev/) сейв
+## не трогает. Вне забега — сид, из которого построится следующий.
+static func run_seed() -> int:
+	if RunManager.current_graph != null:
+		return RunManager.current_graph.run_seed
+	return WorldSave.save.run_seed()
 
 
 ## Уникальные комнаты конфига генерации — хаб, выход, Архитектор: кнопка меню на
@@ -209,9 +221,19 @@ func _open_menu() -> void:
 	var titles: Array[String] = []
 	for grant in _grants:
 		titles.append(grant["title"])
-	_menu.setup(unique_rooms(), titles)
+	_menu.setup(unique_rooms(), titles, "Скопировать сид забега %d" % run_seed())
 	_menu.travel_requested.connect(_on_menu_travel)
 	_menu.grant_requested.connect(_on_menu_grant)
+	_menu.seed_copy_requested.connect(_copy_run_seed)
+
+
+## Десять знаков с экрана переписывают с ошибкой, а ошибка в сиде молча даёт
+## другой комплекс — поэтому в буфер, а не только строкой оверлея. Меню не
+## закрывается, как и после начисления: итог виден строкой поверх него.
+func _copy_run_seed() -> void:
+	var seed_text := str(run_seed())
+	DisplayServer.clipboard_set(seed_text)
+	_say("сид %s скопирован" % seed_text)
 
 
 ## Начисление меню не закрывает, в отличие от переноса: копят пачкой, а итог

@@ -59,6 +59,7 @@ func _run() -> void:
 	await _check_unique_rooms(overlay)
 	await _check_immortality(overlay, world)
 	_check_grants(overlay)
+	await _check_run_seed(overlay)
 
 	overlay.queue_free()
 	world.queue_free()
@@ -362,6 +363,67 @@ func _check_grants(overlay: CanvasLayer) -> void:
 	_check("начисление меню не закрывает — копят пачкой",
 		is_instance_valid(menu) and menu.is_inside_tree(), "")
 	UIManager.close_top()
+
+
+## Сид забега — число для поля «Сид» «Генератора мира». Раньше оверлей показывал
+## world_seed, а граф строится из hash([world_seed, death_count]): введённый в
+## редактор, сид мира давал чужой комплекс, и ошибки при этом не было никакой.
+## Сид графа берётся за пределами шести знаков и int32 — тех, что резало прежнее
+## поле, — чтобы число не прошло через обрезку незамеченным.
+func _check_run_seed(overlay: CanvasLayer) -> void:
+	var status: Label = overlay.get_node("%Status")
+	var report: Label = overlay.get_node("%Report")
+
+	RunManager.current_graph = null
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var next_seed := WorldSave.save.run_seed()
+	_check(
+		"вне забега оверлей показывает сид, из которого построится следующий забег",
+		status.text.contains("сид забега %d\n" % next_seed),
+		"run_seed() %d, world_seed %d, строка «%s»" % [next_seed, WorldSave.save.world_seed, status.text]
+	)
+
+	var big_seed := 4_000_000_000
+	RunManager.current_graph = RS_LevelGraph.new().generate_run(
+		big_seed, GameConfig.config.room_preset_library, GameConfig.config.world_gen
+	)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check(
+		"в забеге оверлей показывает сид, из которого построен граф, без обрезки",
+		status.text.contains("сид забега %d\n" % big_seed),
+		"строка «%s»" % status.text
+	)
+
+	_press(overlay, overlay.MENU_KEY)
+	var menu: Control = overlay._menu
+	if not is_instance_valid(menu):
+		_check("меню отладки открылось для сида", false, "меню нет")
+		RunManager.current_graph = null
+		return
+	var seed_button: Button = menu.get_node("%SeedButton")
+	_check(
+		"кнопка сида в меню называет тот же сид",
+		seed_button.visible and seed_button.text.contains(str(big_seed)),
+		"«%s»" % seed_button.text
+	)
+	seed_button.pressed.emit()
+	# Буфер обмена есть не у каждого DisplayServer (headless — без него), а
+	# сообщение оверлея есть всегда: по нему видно, что дошло до копирования.
+	var copied := (
+		DisplayServer.clipboard_get() == str(big_seed)
+		if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD)
+		else true
+	)
+	_check(
+		"кнопка кладёт сид в буфер и меню не закрывает",
+		report.text == "сид %d скопирован" % big_seed and copied
+			and is_instance_valid(menu) and menu.is_inside_tree(),
+		"сообщение «%s», буфер «%s»" % [report.text, DisplayServer.clipboard_get()]
+	)
+	UIManager.close_top()
+	RunManager.current_graph = null
 
 
 # --- Вспомогательное ---------------------------------------------------------
