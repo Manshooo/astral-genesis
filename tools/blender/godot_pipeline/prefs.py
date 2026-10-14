@@ -25,6 +25,7 @@ DEFAULT_PROFILES = [
         "name": "Character",
         "description": "Rigged, animated actor. One armature per asset",
         "dest_dir": "assets/characters",
+        "collection_prefix": "SK_",
         "subfolder_per_asset": True,
         "material_policy": 'EXTERNAL',
         "apply_modifiers": False,          # keep shape keys exportable
@@ -42,6 +43,7 @@ DEFAULT_PROFILES = [
         "name": "Level Chunk",
         "description": "Room or corridor piece, collision authored with -col suffixes",
         "dest_dir": "assets/levels",
+        "collection_prefix": "SM_",
         "subfolder_per_asset": True,
         "material_policy": 'EXTERNAL',
         "apply_modifiers": True,
@@ -56,6 +58,7 @@ DEFAULT_PROFILES = [
         "name": "Prop",
         "description": "Static furniture and set dressing",
         "dest_dir": "assets/props",
+        "collection_prefix": "SM_",
         "subfolder_per_asset": True,
         "material_policy": 'EXTERNAL',
         "apply_modifiers": True,
@@ -70,13 +73,16 @@ DEFAULT_PROFILES = [
         "name": "Interactive",
         "description": "Prop with gameplay behaviour. Custom properties ride along as node metadata",
         "dest_dir": "assets/props/interactive",
+        "collection_prefix": "SM_",
         "subfolder_per_asset": True,
         "material_policy": 'EXTERNAL',
         "apply_modifiers": True,
         "export_extras": True,
         "export_animations": True,
         "animation_mode": 'ACTIONS',
-        "root_type": 'STATIC',
+        # Не StaticBody3D: тело приходит из метаданных коллизий, а тип корня дал
+        # бы второе, пустое тело над ним (пайплайн §8).
+        "root_type": 'NONE',
         "generate_lods": False,
         "create_shadow_meshes": True,
         "light_bake_mode": 'DYNAMIC',
@@ -215,6 +221,10 @@ def draw_profile(layout, profile):
     sub.prop(profile, "rest_position_armature")
     sub.prop(profile, "influences")
     sub.prop(profile, "optimize_animation")
+
+    col = box.column(align=True)
+    col.label(text="Naming", icon='SORTALPHA')
+    col.prop(profile, "collection_prefix")
 
     col = box.column(align=True)
     col.label(text="Materials and Textures", icon='MATERIAL')

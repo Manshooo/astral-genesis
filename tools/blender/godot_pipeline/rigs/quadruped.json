@@ -1,0 +1,27 @@
+{
+  "rig_type": "quadruped",
+  "note": "Черновик 14.10: скелет гуманоида (передние лапы — Arm/Hand, задние — Leg/Foot), плюс уши и хвост. Свой SkeletonProfile четвероногого заводит сессия B2. Тела: hound.",
+  "required": [
+    "Root", "Hips", "Spine", "Head",
+    "LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand",
+    "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand",
+    "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+    "RightUpperLeg", "RightLowerLeg", "RightFoot"
+  ],
+  "optional": [
+    "Chest", "UpperChest", "Neck",
+    "LeftEye", "RightEye", "Jaw", "LeftEar", "RightEar",
+    "Tail1", "Tail2", "Tail3", "Tail4",
+    "LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal",
+    "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",
+    "LeftMiddleProximal", "LeftMiddleIntermediate", "LeftMiddleDistal",
+    "LeftRingProximal", "LeftRingIntermediate", "LeftRingDistal",
+    "LeftLittleProximal", "LeftLittleIntermediate", "LeftLittleDistal",
+    "RightThumbMetacarpal", "RightThumbProximal", "RightThumbDistal",
+    "RightIndexProximal", "RightIndexIntermediate", "RightIndexDistal",
+    "RightMiddleProximal", "RightMiddleIntermediate", "RightMiddleDistal",
+    "RightRingProximal", "RightRingIntermediate", "RightRingDistal",
+    "RightLittleProximal", "RightLittleIntermediate", "RightLittleDistal",
+    "LeftToes", "RightToes"
+  ]
+}

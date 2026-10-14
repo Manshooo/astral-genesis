@@ -13,7 +13,7 @@ import bpy
 from mathutils import Vector
 
 from . import exporter, paths
-from .naming import INVALID_NODE_CHARS, has_manual_suffix, object_export_name
+from .naming import INVALID_NODE_CHARS, footprint_of, has_manual_suffix, object_export_name
 
 ERROR = 'ERROR'
 WARNING = 'WARNING'
@@ -75,6 +75,8 @@ def validate(context, prefs, collections):
         _check_materials(issues, name, objects, profile)
         _check_physics(issues, name, objects, profile)
         _check_cell(issues, name, collection, objects, profile)
+        _check_rig(issues, name, collection, objects, profile)
+        _check_root_type(issues, name, collection, objects, profile)
 
     return issues
 
@@ -115,14 +117,16 @@ def _visual_points(obj, depsgraph):
 def _check_cell(issues, asset, collection, objects, profile):
     """Контракт клетки кита: генератор ставит тайл трансформом, ничего не подгоняя.
 
-    Выступ за грань клетки даже на сантиметры при повороте тайла переезжает на
-    другую сторону и складывается с погрешностью соседа — это видимый шов, а
+    Выступ за грань footprint даже на сантиметры при повороте тайла переезжает
+    на другую сторону и складывается с погрешностью соседа — это видимый шов, а
     лучевые проверки в игре сантиметров не ловят. Поэтому габарит сверяется по
-    вершинам, с допуском в миллиметр.
+    вершинам, с допуском в миллиметр. Footprint — из имени коллекции: коробка
+    2×2 при клетке 8 м законно занимает ±8 м, а не ±4.
     """
-    half = profile.cell_size / 2.0
-    height = profile.cell_height
-    if half <= 0.0 and height <= 0.0:
+    width, length, levels = footprint_of(collection.name)
+    halves = (profile.cell_size * width / 2.0, profile.cell_size * length / 2.0)
+    height = profile.cell_height * levels
+    if profile.cell_size <= 0.0 and height <= 0.0:
         return
 
     depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -140,22 +144,125 @@ def _check_cell(issues, asset, collection, objects, profile):
         return
 
     tolerance = 1e-3
-    if half > 0.0:
-        for axis, label in ((0, "X"), (1, "Y")):
+    footprint = "%dx%dx%d" % (width, length, levels)
+    if profile.cell_size > 0.0:
+        for axis, label, half in ((0, "X", halves[0]), (1, "Y", halves[1])):
             low = min(point[axis] for point in points)
             high = max(point[axis] for point in points)
             overshoot = max(-half - low, high - half)
             if overshoot > tolerance:
                 issues.append(Issue(WARNING, asset,
-                                    "geometry spans %s %.3f..%.3f, %.3f m past the cell edge "
-                                    "(±%.2f); a rotated tile will not meet its neighbour"
-                                    % (label, low, high, overshoot, half)))
+                                    "geometry spans %s %.3f..%.3f, %.3f m past the edge of its "
+                                    "%s footprint (±%.2f); a rotated tile will not meet its "
+                                    "neighbour" % (label, low, high, overshoot, footprint, half)))
     if height > 0.0:
         top = max(point.z for point in points)
         if top > height + tolerance:
             issues.append(Issue(WARNING, asset,
                                 "geometry reaches %.3f m above the origin, over the %.2f m "
-                                "height limit" % (top, height)))
+                                "height limit of its %s footprint" % (top, height, footprint)))
+
+
+def _check_root_type(issues, asset, collection, objects, profile):
+    """Тип корня у ассета, тело которого приходит иначе (пайплайн §8).
+
+    Тело коллизии строится из метаданных, а персонаж ставится под сущность,
+    у которой тело своё. Тип корня сверху даёт второе тело — пустое, без формы
+    («не может сталкиваться»). Ловушку дважды вернул сам профиль: значение живёт
+    в нём, и аддон переписывает его в .import на каждом экспорте.
+    """
+    from . import physics
+    from .props import PHYSICS_ROOT_TYPE
+
+    if profile.root_type == 'NONE':
+        return
+    reason = None
+    if collection.godot.rig_type != 'NONE':
+        reason = "the character is placed under an entity that has its own body"
+    elif any(physics.has_physics(obj) for obj in objects):
+        reason = "its body comes from collision metadata"
+    if reason:
+        issues.append(Issue(WARNING, asset,
+                            "profile %r imports the root as %s, but %s, so Godot gets a second, "
+                            "shapeless body. Set the profile's Root Node to Node3D"
+                            % (profile.name, PHYSICS_ROOT_TYPE[profile.root_type], reason)))
+
+
+def _check_rig(issues, asset, collection, objects, profile):
+    """Контракт рига персонажа (Пайплайн персонажей, решения 29.09 и 14.10).
+
+    Ничего из этого Godot не отвергает: кость мимо схемы не двигается общим
+    клипом, голова, слитая с телом, не прячется от камеры, материал без MAT_ не
+    находит свой .tres — и всё молча. Поэтому ловится здесь, до экспорта.
+    """
+    from . import physics, rigs
+
+    schema = rigs.schema(collection.godot.rig_type)
+    if schema is None:
+        return
+    reference = os.path.basename(rigs.schema_path(collection.godot.rig_type))
+
+    armatures = [obj for obj in objects if obj.type == 'ARMATURE']
+    if not armatures:
+        issues.append(Issue(ERROR, asset,
+                            "rig type %s needs an armature, the asset has none"
+                            % schema.rig_type))
+    for arm in armatures:
+        exported = set()
+        for bone in arm.data.bones:
+            if profile.deform_bones_only and not bone.use_deform:
+                if bone.name in schema.required:
+                    issues.append(Issue(ERROR, asset,
+                                        "bone %r is required but not a deform bone, and the "
+                                        "profile exports deform bones only, so it will not "
+                                        "exist in Godot" % bone.name))
+                continue
+            exported.add(bone.name)
+            if rigs.DUPLICATE_MARKER.search(bone.name):
+                issues.append(Issue(ERROR, asset,
+                                    "bone %r carries Blender's duplicate suffix; track paths "
+                                    "drift on reimport (godot#115792). Rename it after %s"
+                                    % (bone.name, reference)))
+            elif bone.name not in schema.allowed:
+                issues.append(Issue(ERROR, asset,
+                                    "bone %r is not in the %s reference list (%s), so shared "
+                                    "clips will not move it" % (bone.name, schema.rig_type,
+                                                                reference)))
+        missing = [name for name in schema.required
+                   if name not in exported and name not in arm.data.bones]
+        if missing:
+            issues.append(Issue(ERROR, asset,
+                                "armature %r lacks required %s bone(s): %s"
+                                % (arm.name, schema.rig_type, ", ".join(missing))))
+
+    # Прокси рэгдолла привязаны к костям и в Godot становятся формами, а не
+    # частями облика: их поворот законен, а головой или руками они не бывают.
+    parts = [obj for obj in objects
+             if not physics.has_physics(obj) and not physics.is_proxy(obj)]
+    for obj in parts:
+        basis = obj.matrix_basis
+        turned = basis.to_quaternion().angle > 1e-4
+        # Масштаб арматуры уже отмечает _check_armatures.
+        scaled = obj.type != 'ARMATURE' and any(abs(v - 1.0) > 1e-4 for v in basis.to_scale())
+        if turned or scaled:
+            issues.append(Issue(WARNING, asset,
+                                "%r has unapplied %s; the rig contract wants rotation 0 and "
+                                "scale 1 (Ctrl+A)" % (obj.name, " and ".join(
+                                    word for word, bad in (("rotation", turned), ("scale", scaled))
+                                    if bad))))
+
+    meshes = [obj.name for obj in parts if obj.type == 'MESH']
+    for suffix, part in ((rigs.HEAD_SUFFIX, "head"), (rigs.ARMS_SUFFIX, "arms")):
+        if not any(name.endswith(suffix) for name in meshes):
+            issues.append(Issue(WARNING, asset,
+                                "no separate %s object (a mesh named *%s); worn by the player, "
+                                "the %s must draw as shadow only" % (part, suffix, part)))
+
+    for mat in exporter.materials_of(objects):
+        if not mat.name.startswith("MAT_"):
+            issues.append(Issue(WARNING, asset,
+                                "material %r is not named MAT_*; the rig contract keys external "
+                                "materials by that name" % mat.name))
 
 
 def _check_ragdoll_bone(issues, asset, obj, settings, profile):
