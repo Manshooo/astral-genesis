@@ -1,5 +1,5 @@
 extends "res://dev/check_harness.gd"
-## Сцены облика персонажей (assets/characters/*/CH_*.tscn) держат контракт рига
+## Сцены облика персонажей (assets/characters/*/SK_*.tscn) держат контракт рига
 ## ([[Пайплайн персонажей]]). Запуск: godot --headless dev/character_check.tscn
 ##
 ## Сцена облика наследует .glb, и всё, что на ней настроено, висит внутри
@@ -114,7 +114,7 @@ func _character_scenes() -> PackedStringArray:
 	for folder in DirAccess.get_directories_at(CHARACTERS_DIR):
 		var dir := CHARACTERS_DIR.path_join(folder)
 		for file in DirAccess.get_files_at(dir):
-			if file.begins_with("CH_") and file.get_extension() == "tscn":
+			if file.begins_with("SK_") and file.get_extension() == "tscn":
 				found.append(dir.path_join(file))
 	return found
 
@@ -165,7 +165,7 @@ func _check_synthetic() -> void:
 ## внешним материалом.
 func _synthetic_outfit(material: Material) -> Node3D:
 	var root := Node3D.new()
-	root.name = "CH_synthetic"
+	root.name = "SK_synthetic"
 	var skeleton := Skeleton3D.new()
 	skeleton.name = "Skeleton3D"
 	root.add_child(skeleton)
@@ -219,13 +219,13 @@ func _mentions(problems: PackedStringArray, text: String) -> bool:
 func _check_lost_base_node() -> void:
 	DirAccess.make_dir_recursive_absolute(SCRATCH_DIR)
 	var base_path := SCRATCH_DIR.path_join("base.tscn")
-	var outfit_path := SCRATCH_DIR.path_join("CH_outfit.tscn")
+	var outfit_path := SCRATCH_DIR.path_join("SK_outfit.tscn")
 	var outfit_text := "\n".join([
 		"[gd_scene format=3]",
 		"",
 		"[ext_resource type=\"PackedScene\" path=\"%s\" id=\"1_base\"]" % base_path,
 		"",
-		"[node name=\"CH_outfit\" instance=ExtResource(\"1_base\")]",
+		"[node name=\"SK_outfit\" instance=ExtResource(\"1_base\")]",
 		"",
 		"[node name=\"Skeleton3D\" parent=\".\"]",
 		"show_rest_only = true",
@@ -254,7 +254,7 @@ func _check_lost_base_node() -> void:
 ## База — то, что в жизни приходит из .glb: корень и скелет с костями контракта.
 func _save_base(path: String, skeleton_name: String) -> void:
 	var root := Node3D.new()
-	root.name = "CH_outfit"
+	root.name = "SK_outfit"
 	var skeleton := Skeleton3D.new()
 	skeleton.name = skeleton_name
 	skeleton.add_bone("Root")

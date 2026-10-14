@@ -759,7 +759,7 @@ headless-прогон молча ничего не проверяет. Скри�
   компонента и палитры, не литералами. Запускать после правок `S_SoulGlow`,
   `C_SoulGlow`, лампы свечения в `e_player.tscn`, `UI_HudMood.read_vitals`/`decay`.
 - **`dev/character_check.tscn`** — контракт рига на стороне Godot
-  ([[Пайплайн персонажей]]) по всем сценам облика `assets/characters/*/CH_*.tscn`:
+  ([[Пайплайн персонажей]]) по всем сценам облика `assets/characters/*/SK_*.tscn`:
   у скелета есть кости `Root` и `Head` (имена `SkeletonProfileHumanoid`); каждое
   свойство `*bone_name` узлов под скелетом — IK, CopyTransform, LookAt,
   физические кости, в том числе массивы `settings/N/...` — называет
