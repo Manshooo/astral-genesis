@@ -41,6 +41,11 @@ theme_override_constants/separation = 8
 layout_mode = 2
 text = "Меню отладки"
 
+[node name="SeedButton" type="Button" parent="Center/Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "сид забега"
+
 [node name="Progression" type="FoldableContainer" parent="Center/Panel/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2

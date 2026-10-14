@@ -213,9 +213,9 @@ class _GenerationJob:
 ## на момент старта, а не голый data/world_gen_config.tres.
 func _run_gen_config() -> RS_WorldGenConfig:
 	var saved := WorldSave.save
-	var same_generator := saved.generator_version == RS_LevelGraph.GENERATOR_VERSION
-	if saved.run_in_progress and saved.gen_config != null and same_generator:
-		return saved.gen_config
+	var resumed := saved.resumable_gen_config()
+	if resumed != null:
+		return resumed
 	if saved.run_in_progress:
 		# Забег начат на другом генераторе — до коридоров (снимка нет) или на
 		# прежней версии (RS_LevelGraph.GENERATOR_VERSION): комплекс, по которому

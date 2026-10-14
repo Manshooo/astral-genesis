@@ -53,8 +53,100 @@ func _ready() -> void:
 	_check_corridors(library, host)
 	_check_grid_overlay(library, host)
 	_check_seed_sweep()
+	_check_save_run(library)
 
 	_finish()
+
+
+## «Забег из сейва» строит тот же комплекс, что игра на загрузке этого сейва.
+## Игра берёт ручки по правилу RunManager._run_gen_config — оно и зовётся здесь
+## на подменённом в памяти сейве (на диск ничего не пишется), а вкладка — своим
+## путём. Слепок нарочно расходится с data/world_gen_config.tres числом комнат:
+## иначе «показал тот же мир» было бы правдой и для вкладки, не читающей слепок.
+func _check_save_run(library: RS_RoomPresetLibrary) -> void:
+	var base := load("res://data/world_gen_config.tres") as RS_WorldGenConfig
+	var snapshot := base.duplicate() as RS_WorldGenConfig
+	snapshot.rooms_per_floor = base.rooms_per_floor + 2
+
+	var saved := RS_WorldSave.new()
+	saved.world_seed = 4_000_000_000
+	saved.death_count = 3
+	saved.run_in_progress = true
+	saved.gen_config = snapshot
+	saved.generator_version = RS_LevelGraph.GENERATOR_VERSION
+	var probe := RS_LevelGraph.new().generate_run(saved.run_seed(), library, snapshot)
+	# Игрок — в комнате не на слое по умолчанию: вкладка обязана сама перейти
+	# на его слой, а не показать тот, что был открыт.
+	for node_data: RS_LevelNode in probe.nodes.values():
+		if node_data.depth != RS_LevelGraph.HOME_DEPTH and node_data.role == RS_LevelNode.Role.ROOM:
+			saved.current_node_id = node_data.id
+			break
+
+	var tab := WorldGen.new()
+	add_child(tab)
+	tab.show_save_run(saved)
+	var game := _game_graph_for(saved, library)
+	var player := game.get_node_data(saved.current_node_id)
+	_check(
+		"«Забег из сейва» строит тот же комплекс, что игра на загрузке сейва",
+		_graph_print(tab._graph) == _graph_print(game),
+		"узлов во вкладке %d, в игре %d" % [tab._graph.nodes.size(), game.nodes.size()]
+	)
+	_check(
+		"«Забег из сейва» берёт слепок ручек, а не текущий конфиг",
+		_graph_print(tab._graph) != _graph_print(
+			RS_LevelGraph.new().generate_run(saved.run_seed(), library, base)
+		),
+		"слепок с %d комнатами на этаж дал тот же мир, что конфиг с %d"
+		% [snapshot.rooms_per_floor, base.rooms_per_floor]
+	)
+	_check(
+		"«Забег из сейва» открывает слой игрока с его комнатой выделенной",
+		player != null and tab._current_depth() == player.depth
+			and tab._host.selected_node_id() == saved.current_node_id,
+		"узел %s, слой вкладки %d, выделен %s"
+		% [saved.current_node_id, tab._current_depth(), tab._host.selected_node_id()]
+	)
+	_check(
+		"«Забег из сейва» показывает в поле сид забега, а не сид мира",
+		int(tab._seed_spin.value) == saved.run_seed(),
+		"в поле %d, run_seed() %d" % [int(tab._seed_spin.value), saved.run_seed()]
+	)
+
+	# Забег прежнего генератора игра сбрасывает на вход и снимает ручки заново —
+	# вкладка обязана показать ЭТОТ мир, а не мир слепка, которого уже нет.
+	var stale := saved.duplicate() as RS_WorldSave
+	stale.generator_version = RS_LevelGraph.GENERATOR_VERSION - 1
+	tab.show_save_run(stale)
+	_check(
+		"забег прежнего генератора вкладка показывает так же, как его перестроит игра",
+		_graph_print(tab._graph) == _graph_print(_game_graph_for(stale, library)),
+		""
+	)
+	tab.free()
+
+
+## Граф, который построит игра на загрузке [param saved]: ручки — по правилу
+## RunManager, сид — из сейва. Сейв подменяется только в памяти и сразу
+## возвращается, а правило получает копию: на прежнем генераторе оно чистит
+## прогресс забега.
+func _game_graph_for(saved: RS_WorldSave, library: RS_RoomPresetLibrary) -> RS_LevelGraph:
+	var original := WorldSave.save
+	WorldSave.save = saved.duplicate() as RS_WorldSave
+	var config := RunManager._run_gen_config()
+	var run_seed := WorldSave.save.run_seed()
+	WorldSave.save = original
+	return RS_LevelGraph.new().generate_run(run_seed, library, config)
+
+
+## Отпечаток графа: узлы с их слоем, сценой и поворотом. Строкой с сортировкой —
+## sort() над StringName сравнивает адреса, а не текст.
+func _graph_print(graph: RS_LevelGraph) -> String:
+	var rows: Array[String] = []
+	for node_data: RS_LevelNode in graph.nodes.values():
+		rows.append("%s|%d|%s|%d" % [node_data.id, node_data.depth, node_data.room_scene_path, node_data.turns])
+	rows.sort()
+	return "\n".join(rows)
 
 
 ## «Прогон сидов» печатает метрики раскладки (RS_LayoutMetrics) — ровно те же, что

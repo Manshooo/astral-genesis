@@ -135,6 +135,12 @@ func selected_node_id() -> StringName:
 	return _selected_id
 
 
+## Выделение из кода — тем же путём, что клик: оверлеи и боковая панель узнают о
+## нём одним сигналом node_picked.
+func select(node_id: StringName) -> void:
+	_select(node_id)
+
+
 func camera_position() -> Vector3:
 	return _camera.position
 
