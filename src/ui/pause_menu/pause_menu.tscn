@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bh8lmoc7bp0ej"]
 
 [ext_resource type="Script" uid="uid://b5na6n7med7u4" path="res://src/ui/pause_menu/pause_menu.gd" id="2_ejwgg"]
-[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="3_backdrop"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/menu_backdrop.tscn" id="3_backdrop"]
 [ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="4_echo_button"]
 
 [sub_resource type="Gradient" id="Gradient_shadow"]
@@ -26,7 +26,7 @@ script = ExtResource("2_ejwgg")
 first_focus = NodePath("Content/Column/Continue")
 content = NodePath("Content")
 
-[node name="Backdrop" type="ColorRect" parent="." unique_id=2057447361]
+[node name="Backdrop" parent="." unique_id=2057447361 instance=ExtResource("3_backdrop")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,7 +34,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("3_backdrop")
 
 [node name="ThoughtShadow" type="TextureRect" parent="." unique_id=740551870]
 layout_mode = 1

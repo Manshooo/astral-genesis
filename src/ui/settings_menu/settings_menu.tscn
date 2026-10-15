@@ -8,10 +8,10 @@
 [ext_resource type="Script" path="res://src/ui/settings/aa_mode_setting.gd" id="7_aaui"]
 [ext_resource type="Script" path="res://src/ui/settings/shadow_quality_setting.gd" id="13_shadowui"]
 [ext_resource type="Script" path="res://src/ui/settings/screen_effects_setting.gd" id="14_effectsui"]
-[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="8_backdrop"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/menu_backdrop.tscn" id="8_backdrop"]
 [ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="9_echo"]
 [ext_resource type="Script" path="res://src/ui/menu/setting_row.gd" id="10_row"]
-[ext_resource type="Script" path="res://src/ui/menu/key_hint_button.gd" id="11_hint"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/key_hint_button.tscn" id="11_hint"]
 [ext_resource type="Script" path="res://src/ui/settings/window_mode_setting.gd" id="14_window"]
 [ext_resource type="Script" path="res://src/ui/settings/resolution_setting.gd" id="15_resolution"]
 [ext_resource type="Script" path="res://src/ui/settings/ui_scale_setting.gd" id="16_uiscale"]
@@ -29,7 +29,7 @@ script = ExtResource("2_sett")
 first_focus = NodePath("Content/TabButtons/Graphics")
 content = NodePath("Content")
 
-[node name="Backdrop" type="ColorRect" parent="." unique_id=11120002]
+[node name="Backdrop" parent="." unique_id=11120002 instance=ExtResource("8_backdrop")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -37,7 +37,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("8_backdrop")
 
 [node name="Content" type="Control" parent="." unique_id=11120003]
 layout_mode = 1
@@ -58,7 +57,7 @@ theme_type_variation = &"MenuWhisper"
 text = "SETTINGS_TITLE"
 uppercase = true
 
-[node name="Back" type="Button" parent="Content" unique_id=11120005]
+[node name="Back" parent="Content" unique_id=11120005 instance=ExtResource("11_hint")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -68,7 +67,6 @@ offset_top = 36.0
 offset_right = -40.0
 offset_bottom = 36.0
 grow_horizontal = 0
-script = ExtResource("11_hint")
 
 [node name="TabButtons" type="HBoxContainer" parent="Content" unique_id=11120006]
 unique_name_in_owner = true
@@ -521,6 +519,19 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 script = ExtResource("4_keybd")
+
+[node name="Grid" type="GridContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Keybinds"]
+layout_mode = 2
+theme_override_constants/h_separation = 56
+theme_override_constants/v_separation = 0
+columns = 2
+
+[node name="Status" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Keybinds"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuCaption"
+vertical_alignment = 2
 
 [node name="Hint" type="VBoxContainer" parent="Content" unique_id=11120059]
 layout_mode = 0

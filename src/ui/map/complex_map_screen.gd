@@ -26,6 +26,12 @@ const MAX_STEP := 34.0
 const PLAN_GAP := 28.0
 const PLAN_TITLE := 24.0
 
+## Полосы среза и подписи этажей — по числу слоёв и этажей в графе, поэтому
+## экземплярами своих сцен («Конвенции проекта» §7). Планы этажей (UI_MapFloor)
+## — .new(): это один рисующий узел без детей, собирать там нечего.
+const STRATUM_SCENE := preload("res://src/ui/map/map_stratum.tscn")
+const FLOOR_TITLE_SCENE := preload("res://src/ui/map/floor_title.tscn")
+
 @onready var _level_label: Label = %LevelLabel
 @onready var _slice: VBoxContainer = %Slice
 @onready var _slice_links: Control = %SliceLinks
@@ -189,7 +195,7 @@ func _build_layer_list() -> void:
 	_slice_portals.clear()
 	var depths := _depths_from_surface()
 	for depth: int in depths:
-		var stratum := UI_MapStratum.new()
+		var stratum: UI_MapStratum = STRATUM_SCENE.instantiate()
 		_slice.add_child(stratum)
 		var is_open := MapKnowledge.is_layer_open(_level, depth, _current_depth)
 		var subtitle := ""
@@ -381,10 +387,7 @@ func _build_floors() -> void:
 		var columns: int = grid["columns"]
 		var cell: Vector2 = grid["cell"]
 		var origin := Vector2((i % columns) * (cell.x + PLAN_GAP), (i / columns) * (cell.y + PLAN_GAP))
-		var title := Label.new()
-		title.theme_type_variation = &"MenuMapLabel"
-		title.uppercase = true
-		title.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		var title: Label = FLOOR_TITLE_SCENE.instantiate()
 		title.text = tr("MAP_FLOOR") % (floor_index + 1)
 		title.position = origin
 		_plans.add_child(title)

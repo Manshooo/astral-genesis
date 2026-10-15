@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Shader" uid="uid://b8e53l5vl41rd" path="res://src/ui/menu/menu_backdrop.gdshader" id="1_shader"]
+[ext_resource type="Script" uid="uid://c2t6dt4sn68qy" path="res://src/ui/menu/menu_backdrop.gd" id="2_script"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_backdrop"]
+resource_local_to_scene = true
+shader = ExtResource("1_shader")
+shader_parameter/amount = 0.0
+shader_parameter/void_amount = 0.0
+
+[node name="Backdrop" type="ColorRect"]
+material = SubResource("ShaderMaterial_backdrop")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_script")

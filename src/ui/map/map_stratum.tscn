@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://b7xo3hrevqbnc" path="res://src/ui/map/map_stratum.gd" id="1_stratum"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+[node name="MapStratum" type="Button"]
+custom_minimum_size = Vector2(364, 86)
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+flat = true
+script = ExtResource("1_stratum")
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+auto_translate_mode = 2
+theme_type_variation = &"MenuStratum"
+
+[node name="Sub" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 34.0
+offset_top = 3.0
+offset_right = 34.0
+offset_bottom = 3.0
+auto_translate_mode = 2
+theme_type_variation = &"MenuSmall"

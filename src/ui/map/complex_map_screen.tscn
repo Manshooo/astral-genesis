@@ -1,8 +1,8 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/ui/map/complex_map_screen.gd" id="1_screen"]
-[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="2_backdrop"]
-[ext_resource type="Script" path="res://src/ui/menu/key_hint_button.gd" id="3_hint"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/menu_backdrop.tscn" id="2_backdrop"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/key_hint_button.tscn" id="3_hint"]
 
 [node name="ComplexMap" type="Control" node_paths=PackedStringArray("content")]
 layout_mode = 3
@@ -14,7 +14,7 @@ grow_vertical = 2
 script = ExtResource("1_screen")
 content = NodePath("Content")
 
-[node name="Backdrop" type="ColorRect" parent="."]
+[node name="Backdrop" parent="." instance=ExtResource("2_backdrop")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,7 +22,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("2_backdrop")
 
 [node name="Content" type="Control" parent="."]
 layout_mode = 1
@@ -43,7 +42,7 @@ theme_type_variation = &"MenuWhisper"
 text = "MAP_TITLE"
 uppercase = true
 
-[node name="Close" type="Button" parent="Content"]
+[node name="Close" parent="Content" instance=ExtResource("3_hint")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -53,7 +52,6 @@ offset_top = 36.0
 offset_right = -40.0
 offset_bottom = 36.0
 grow_horizontal = 0
-script = ExtResource("3_hint")
 action_key = "MAP_CLOSE"
 
 [node name="SliceCaption" type="Label" parent="Content"]

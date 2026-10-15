@@ -9,11 +9,13 @@
 ## и не выбирается: игрок видит, что знание можно докупить, а не гадает, сколько
 ## слоёв вообще бывает. Что именно рисовать, считает экран (UI_ComplexMap) —
 ## полоса только кладёт отданное на себя, как UI_MapFloor на плане.
+##
+## Устройство — в map_stratum.tscn: размер полосы 364 × 86 (§4 «Карта»), пустой
+## стиль фокуса (фокус — подчёркивание имени в _draw) и две подписи слоя. Полос
+## столько, сколько слоёв в графе, — экран создаёт их instantiate() из сцены.
 class_name UI_MapStratum
 extends Button
 
-## Высота полосы и её внутренние поля (§4 «Карта»).
-const HEIGHT := 86.0
 ## Где начинаются линии этажей: левее — имя слоя.
 const LINES_X := 46.0
 ## Сверху — место под подпись слоя.
@@ -35,27 +37,8 @@ var floors: Array = []
 var player_floor := -1
 var player_x := 0.0
 
-var _name: Label
-var _sub: Label
-
-
-func _ready() -> void:
-	flat = true
-	toggle_mode = false
-	custom_minimum_size = Vector2(364.0, HEIGHT)
-	add_theme_stylebox_override(&"focus", StyleBoxEmpty.new())
-	_name = _make_label(&"MenuStratum", Vector2(0, 0))
-	_sub = _make_label(&"MenuSmall", Vector2(34, 3))
-
-
-func _make_label(variation: StringName, at: Vector2) -> Label:
-	var label := Label.new()
-	label.theme_type_variation = variation
-	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.position = at
-	add_child(label)
-	return label
+@onready var _name: Label = %Name
+@onready var _sub: Label = %Sub
 
 
 ## [param subtitle] — «поверхность», «глубина» или «нет данных», пусто — без
@@ -82,7 +65,7 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	var width := size.x
-	var bottom := HEIGHT - 4.0
+	var bottom := size.y - 4.0
 	if selected:
 		draw_circle(Vector2(-12.0, 11.0), 2.5, UI_HudMood.SOUL)
 	if has_focus():
@@ -110,7 +93,7 @@ func _draw() -> void:
 				draw_circle(center, 7.0 * lerpf(0.92, 1.08, k), Color(UI_HudMood.DOT, 0.14))
 				draw_circle(center, 3.2, UI_HudMood.DOT)
 	# Граница слоёв — пунктир 1:3, как пустой трек дуги HUD.
-	UI_MenuStyle.draw_dotted(self, Vector2(0, HEIGHT - 0.5), Vector2(width, HEIGHT - 0.5), Color(UI_MenuStyle.TEXT, 0.16))
+	UI_MenuStyle.draw_dotted(self, Vector2(0, size.y - 0.5), Vector2(width, size.y - 0.5), Color(UI_MenuStyle.TEXT, 0.16))
 
 
 ## Штриховка −28° поверх неизвестного слоя: «здесь что-то есть, но не для тебя».

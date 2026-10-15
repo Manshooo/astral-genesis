@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="BranchLabel" type="Label"]
+auto_translate_mode = 2
+theme_type_variation = &"MenuBranchLabel"
+uppercase = true

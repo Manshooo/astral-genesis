@@ -19,7 +19,7 @@ func _ready() -> void:
 	add_child(ShadowBudget.new())
 	_add_debug_overlay()
 	# Комплекс строится в фоне, кадры идут под шторкой (UI_LoadingScreen).
-	var loading := UI_LoadingScreen.new()
+	var loading := UI_LoadingScreen.create()
 	add_child(loading)
 	if not await RunManager.enter_complex_async():
 		return  # вход отменён — сцену уже сменили

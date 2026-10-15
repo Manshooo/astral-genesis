@@ -60,7 +60,9 @@ Godot («Custom drawing in 2D») называет `_draw()` штатным пу�
 сообщения — `golos_regular.tres`, тот же шрифт, что у вариации `HudMessage`
 в теме: меняется вместе с ним. `UI_HudMood.blur_material()` и
 `thought_shadow_texture()` удалены; `SHADOW_BLOB` остаётся — им красит своё
-пятно меню (`UI_MenuStyle.thought_shadow()`).
+пятно меню (`UI_MenuStyle.thought_shadow()`). Тот вызовов не имел и удалён
+15.10 ([[Меню — сцены вместо сборки кодом]]); константа осталась токеном
+палитры.
 
 Попутно из `_ready()` убраны `mouse_filter = IGNORE` там, где сцена уже
 ставит его сама.

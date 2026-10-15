@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://ceetfxygth3x7" path="res://src/ui/skill_tree/requirement_row.gd" id="1_row"]
+
+[node name="RequirementRow" type="HBoxContainer"]
+theme_override_constants/separation = 10
+script = ExtResource("1_row")
+
+[node name="Mark" type="Control" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+auto_translate_mode = 2
+theme_type_variation = &"MenuReq"
+autowrap_mode = 3

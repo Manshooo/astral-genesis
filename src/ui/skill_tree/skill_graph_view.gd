@@ -46,6 +46,11 @@ const BREATH_PERIOD := 3.2
 ## Нейроны не дальше этого от края кадра при вписывании — под подписи.
 const LABEL_MARGIN := Vector2(150.0, 40.0)
 
+## Нейроны и подписи веток — по числу навыков и веток в данных, поэтому
+## экземплярами своих сцен («Конвенции проекта» §7).
+const NEURON_SCENE := preload("res://src/ui/skill_tree/skill_neuron.tscn")
+const BRANCH_LABEL_SCENE := preload("res://src/ui/skill_tree/branch_label.tscn")
+
 var _manager
 var _tree_data: RS_SkillTree
 var _layout: SkillGraphLayout
@@ -106,12 +111,8 @@ func setup(manager, tree_data: RS_SkillTree, show_sign: bool = false) -> void:
 
 func _build_branch_labels() -> void:
 	for branch in _layout.branches:
-		var label := Label.new()
-		label.theme_type_variation = &"MenuBranchLabel"
-		label.uppercase = true
-		label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		var label: Label = BRANCH_LABEL_SCENE.instantiate()
 		label.text = tr(_tree_data.branch_display_name(branch["branch"]))
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.set_meta(&"branch", branch["branch"])
 		_labels_host.add_child(label)
 		label.size = label.get_combined_minimum_size()
@@ -142,11 +143,11 @@ func refresh() -> void:
 
 
 func _create_neuron(def: RS_SkillDefinition) -> UI_SkillNeuron:
-	var neuron := UI_SkillNeuron.new()
+	var neuron: UI_SkillNeuron = NEURON_SCENE.instantiate()
 	_nodes_host.add_child(neuron)
 	var center: Vector2 = _layout.positions.get(def.id, Vector2.ZERO)
 	neuron.setup(def, _label_side(def))
-	neuron.position = center - UI_SkillNeuron.SIZE / 2.0
+	neuron.position = center - neuron.size / 2.0
 	neuron.pressed.connect(select.bind(def.id))
 	neuron.focus_entered.connect(select.bind(def.id))
 	neuron.selected = def.id == _selected

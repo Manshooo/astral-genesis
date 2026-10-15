@@ -10,6 +10,11 @@
 ##
 ## Нейрон ничего не решает сам: состояние ему приносит граф вызовом refresh().
 ## Так у «можно ли купить» остаётся один источник правды — can_unlock.
+##
+## Устройство — в skill_neuron.tscn: размер 44 × 44 (центр рисунка — середина
+## кнопки), пустой стиль фокуса (фокус рисует сам нейрон) и подписи имени и
+## ранга. Нейронов столько, сколько навыков в данных, — граф создаёт их
+## instantiate() из сцены; .new() дал бы нейрон без подписей.
 class_name UI_SkillNeuron
 extends Button
 
@@ -17,7 +22,6 @@ enum State { LOCKED, AVAILABLE, PARTIAL, MAXED }
 ## Где подпись: сбоку (наружу сети) или под нейроном.
 enum LabelSide { RIGHT, LEFT, BELOW }
 
-const SIZE := Vector2(44.0, 44.0)
 const CORE_RADIUS := 7.0
 const RING_RADIUS := 17.0
 ## Зазор между сегментами кольца рангов, в градусах.
@@ -39,37 +43,14 @@ var selected := false:
 		queue_redraw()
 
 var _rank := 0
-var _labels: VBoxContainer
-var _name: Label
-var _rank_label: Label
 var _pulse := -1.0
 var _press := 0.0
 var _painted: Array = []
 var _flashing := false
 
-
-func _ready() -> void:
-	flat = true
-	focus_mode = Control.FOCUS_ALL
-	custom_minimum_size = SIZE
-	size = SIZE
-	pivot_offset = SIZE / 2.0
-	add_theme_stylebox_override(&"focus", StyleBoxEmpty.new())
-	_labels = VBoxContainer.new()
-	_labels.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_labels.add_theme_constant_override(&"separation", 0)
-	add_child(_labels)
-	_name = _make_label(&"MenuNodeName")
-	_rank_label = _make_label(&"MenuSmall")
-
-
-func _make_label(variation: StringName) -> Label:
-	var label := Label.new()
-	label.theme_type_variation = variation
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_labels.add_child(label)
-	return label
+@onready var _labels: VBoxContainer = %Labels
+@onready var _name: Label = %Name
+@onready var _rank_label: Label = %Rank
 
 
 ## [param side] — где подпись. Выбирает граф: сбоку она смотрит наружу сети, а
@@ -90,11 +71,11 @@ func setup(def: RS_SkillDefinition, side: LabelSide) -> void:
 	_labels.size = _labels.get_combined_minimum_size()
 	match side:
 		LabelSide.RIGHT:
-			_labels.position = Vector2(SIZE.x / 2.0 + LABEL_OFFSET, 2.0)
+			_labels.position = Vector2(size.x / 2.0 + LABEL_OFFSET, 2.0)
 		LabelSide.LEFT:
-			_labels.position = Vector2(SIZE.x / 2.0 - LABEL_OFFSET - _labels.size.x, 2.0)
+			_labels.position = Vector2(size.x / 2.0 - LABEL_OFFSET - _labels.size.x, 2.0)
 		LabelSide.BELOW:
-			_labels.position = Vector2((SIZE.x - _labels.size.x) / 2.0, SIZE.y / 2.0 + LABEL_OFFSET - 6.0)
+			_labels.position = Vector2((size.x - _labels.size.x) / 2.0, size.y / 2.0 + LABEL_OFFSET - 6.0)
 
 
 func refresh(rank: int, unlockable: bool, is_previewed: bool) -> void:
@@ -160,7 +141,7 @@ func _paint_name() -> void:
 
 
 func _draw() -> void:
-	var c := SIZE / 2.0
+	var c := size / 2.0
 	var hot := is_hovered() or has_focus()
 	# Ореол выбранного и освоенного.
 	if selected:

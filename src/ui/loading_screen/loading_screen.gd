@@ -8,15 +8,15 @@
 ## отличает загрузку от зависания; раньше на этом месте кадр просто замирал на
 ## секунду-две.
 ##
-## Сцены под него нет по той же причине, что у шторки UIManager.fade_to_black:
-## прямоугольник и подпись, открывать в редакторе нечего. Вид — вариация темы
-## (MenuWhisper), а не своя тема ([[Конвенции проекта]] §3).
+## Устройство — в loading_screen.tscn: слой 120 — над HUD (его слои −1 и −3) и
+## под отладочным оверлеем (128), читы нужны и во время загрузки; process_mode
+## «всегда» — загрузка не должна вставать, если что-то поставит дерево на
+## паузу. Вид — вариация темы (MenuWhisper), а не своя тема ([[Конвенции
+## проекта]] §3). Создавать — create(): .new() дал бы слой без шторки.
 class_name UI_LoadingScreen
 extends CanvasLayer
 
-## Над HUD (его слои −1 и −3) и под отладочным оверлеем (128): читы нужны и во
-## время загрузки.
-const LAYER := 120
+const SCENE_PATH := "res://src/ui/loading_screen/loading_screen.tscn"
 ## Сколько кадров шторка держится после входа: первый кадр нового слоя
 ## компилирует пайплайны шейдеров и бьёт рывком — пусть он пройдёт под шторкой.
 const SETTLE_FRAMES := 2
@@ -24,31 +24,16 @@ const FADE_OUT := 0.25
 ## Период «дыхания» строки, секунды.
 const PULSE_PERIOD := 1.6
 
-var _root: Control
-var _label: Label
+@onready var _root: Control = %Root
+@onready var _label: Label = %Label
+
 var _time := 0.0
 
 
-func _init() -> void:
-	layer = LAYER
-	# Загрузка не должна вставать, если что-то поставит дерево на паузу.
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_root)
-
-	var backdrop := ColorRect.new()
-	backdrop.color = UI_MenuStyle.BG_VOID
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_root.add_child(backdrop)
-
-	_label = Label.new()
-	_label.theme_type_variation = &"MenuWhisper"
-	_label.text = "LOADING_COMPLEX"
-	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_root.add_child(_label)
+## load(), а не preload(): сцена ссылается на этот же скрипт, и preload
+## собственной сцены из него — циклическая зависимость при разборе.
+static func create() -> UI_LoadingScreen:
+	return (load(SCENE_PATH) as PackedScene).instantiate()
 
 
 func _process(delta: float) -> void:
