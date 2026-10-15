@@ -29,8 +29,15 @@ ARCHITECT_ESSENCE_ONE,эссенция,essence
 ARCHITECT_ESSENCE_FEW,эссенции,essence
 ARCHITECT_ESSENCE_MANY,эссенций,essence
 ARCHITECT_BRANCH_KNOWLEDGE,Знание,Knowledge
+ARCHITECT_BRANCH_LAYOUT,Раскладка,Layout
 ARCHITECT_MAP,Карта комплекса,Complex map
 ARCHITECT_MAP_DESC,"Архитектор делится планом комплекса. Каждый ранг открывает следующий уровень карты: посещённое на слое, весь слой, все слои, содержимое комнат. Карта целиком — на терминале в хабе, с последним рангом — по клавише где угодно.","The Architect shares the plan of the complex. Each rank opens the next map level: visited rooms of the layer, the whole layer, all layers, room contents. The full map is at the hub terminal; with the last rank, on a key press anywhere."
+ARCHITECT_DEAD_ENDS,Меньше тупиков,Fewer dead ends
+ARCHITECT_DEAD_ENDS_DESC,"Архитектор убирает ответвления, ведущие в никуда. Каждый ранг снимает один тупик с этажа, но последний остаётся: в тупиках прячут тайники. Действует со следующего забега, начатый комплекс не меняется.","The Architect removes branches that lead nowhere. Each rank takes one dead end off a floor, but the last one stays: caches are hidden in dead ends. Takes effect from the next run; the complex of a run in progress does not change."
+ARCHITECT_LOOPS,Короткие пути,Short ways
+ARCHITECT_LOOPS_DESC,"Архитектор пробивает обходные коридоры между далёкими концами этажа. Каждый ранг добавляет по одному на этаж, и путь из комнаты в комнату становится короче. Действует со следующего забега, начатый комплекс не меняется.","The Architect cuts bypass corridors between the far ends of a floor. Each rank adds one per floor, so the way from room to room gets shorter. Takes effect from the next run; the complex of a run in progress does not change."
+ARCHITECT_TRANSIT,Переходы ближе ко входу,Transits near the entrance
+ARCHITECT_TRANSIT_DESC,"Архитектор сводит лестницы и порталы между слоями на этаж, куда приходит игрок. Каждый ранг сильнее притягивает их к входу; на последнем путь вниз не требует подъёмов и спусков внутри слоя. Действует со следующего забега, начатый комплекс не меняется.","The Architect pulls the stairs and portals between layers onto the floor where the player arrives. Each rank draws them closer to the entrance; at the last rank the way down needs no climbing within a layer. Takes effect from the next run; the complex of a run in progress does not change."
 MAP_TITLE,Карта комплекса,Complex map
 MAP_TERMINAL_PROMPT,Карта комплекса,Complex map
 MAP_NO_LINK,Нет связи с Архитектором: карта недоступна,No link to the Architect: the map is unavailable
