@@ -1,10 +1,12 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/shared/shaders/glass_refraction.gdshader" id="1_glass"]
 
 [resource]
 resource_name = "MAT_incubator_glass"
-transparency = 1
-albedo_color = Color(0.78, 0.82, 0.86, 0.14)
-metallic_specular = 0.9
-roughness = 0.18
-refraction_enabled = true
-refraction_scale = 0.03
+render_priority = 0
+shader = ExtResource("1_glass")
+shader_parameter/albedo = Color(0.78, 0.82, 0.86, 0.14)
+shader_parameter/specular = 0.9
+shader_parameter/roughness = 0.18
+shader_parameter/refraction_shift = 0.1
