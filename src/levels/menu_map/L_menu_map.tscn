@@ -25,7 +25,6 @@ glow_enabled = true
 glow_intensity = 0.7
 glow_bloom = 0.08
 fog_enabled = true
-fog_mode = 0
 fog_light_color = Color(0.03, 0.028, 0.038, 1)
 fog_density = 0.06
 volumetric_fog_enabled = true
@@ -58,13 +57,13 @@ emission_ring_axis = Vector3(0, 1, 0)
 emission_ring_height = 0.02
 emission_ring_radius = 0.6
 emission_ring_inner_radius = 0.0
+emission_ring_cone_angle = 90.0
 direction = Vector3(0, 1, 0)
 spread = 3.0
 initial_velocity_min = 0.35
 initial_velocity_max = 0.6
 gravity = Vector3(0, 0.15, 0)
 scale_min = 0.4
-scale_max = 1.0
 color_ramp = SubResource("Ramp_bubble_life")
 
 [sub_resource type="Gradient" id="Grad_bubble_ring"]
@@ -95,100 +94,100 @@ particles_anim_loop = false
 material = SubResource("Mat_bubble")
 size = Vector2(0.06, 0.06)
 
-[node name="MenuMap" type="Node3D"]
+[node name="MenuMap" type="Node3D" unique_id=1397178608]
 script = ExtResource("1_2pq14")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=810561842]
 environment = SubResource("Environment_lab")
 camera_attributes = SubResource("Attributes_dof")
 script = ExtResource("5_levelenv")
 apply_brightness = false
 
-[node name="Room" parent="." instance=ExtResource("3_room")]
+[node name="Room" parent="." unique_id=108559739 instance=ExtResource("3_room")]
 
-[node name="Incubator" type="Node3D" parent="."]
+[node name="Incubator" type="Node3D" parent="." unique_id=359043596]
 transform = Transform3D(-0.74, 0, -0.67, 0, 1, 0, 0.67, 0, -0.74, -2.4, 0, 3)
 
-[node name="Model" parent="Incubator" instance=ExtResource("4_tank")]
+[node name="Model" parent="Incubator" unique_id=1174679655 instance=ExtResource("4_tank")]
+transform = Transform3D(0.99999994, 0, 2.9802322e-08, 0, 1, 0, -2.9802322e-08, 0, 0.99999994, 0, 0.62926805, 0)
 
-[node name="Glow" type="OmniLight3D" parent="Incubator"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+[node name="Glow" type="OmniLight3D" parent="Incubator" unique_id=1655580119]
+transform = Transform3D(1.0017545, 0, 0, 0, 1, 0, 0, 0, 1.0017545, 0, 1.7678751, 0)
 light_color = Color(0.79, 0.66, 0.95, 1)
 light_energy = 1.6
 omni_range = 6.0
 
-[node name="GlowFog" type="FogVolume" parent="Incubator"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
-size = Vector3(1.6, 3.4, 1.6)
+[node name="GlowFog" type="FogVolume" parent="Incubator" unique_id=401947566]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 1.7416089, 0)
+size = Vector3(1.6, 2.2576172, 1.6)
 shape = 2
 material = SubResource("Fog_flask")
 
-[node name="Bubbles" type="GPUParticles3D" parent="Incubator"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+[node name="Bubbles" type="GPUParticles3D" parent="Incubator" unique_id=2116393361]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 0.9266734, 0)
 amount = 36
-lifetime = 6.0
+lifetime = 3.0
 preprocess = 6.0
 process_material = SubResource("Proc_bubbles")
 draw_pass_1 = SubResource("Mesh_bubble")
 
-[node name="Specimen" parent="Incubator" instance=ExtResource("6_specimen")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+[node name="Specimen" parent="Incubator" unique_id=1963739676 instance=ExtResource("6_specimen")]
+transform = Transform3D(-0.6260561, 0, 0.7797779, 0, 1, 0, -0.7797779, 0, -0.6260561, 0, 1.7517805, 0)
 
-[node name="Lab" type="Node3D" parent="."]
+[node name="Lab" type="Node3D" parent="." unique_id=2002035298]
 
-[node name="Hound" parent="Lab" instance=ExtResource("8_hound")]
+[node name="Hound" parent="Lab" unique_id=1467555041 instance=ExtResource("8_hound")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -3.3, 0, -1.9)
 metadata/menu_action = "eat"
 
-[node name="ScientistEaten" parent="Lab" instance=ExtResource("7_scientist")]
+[node name="ScientistEaten" parent="Lab" unique_id=1585663280 instance=ExtResource("7_scientist")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7, 0, -1.9)
 metadata/menu_action = "pose_back"
 
-[node name="ScientistCurled" parent="Lab" instance=ExtResource("7_scientist")]
+[node name="ScientistCurled" parent="Lab" unique_id=285086334 instance=ExtResource("7_scientist")]
 transform = Transform3D(0.77, 0, 0.64, 0, 1, 0, -0.64, 0, 0.77, 0.2, 0, -5)
 metadata/menu_action = "pose_side"
 
-[node name="ScientistCrawled" parent="Lab" instance=ExtResource("7_scientist")]
+[node name="ScientistCrawled" parent="Lab" unique_id=1100531842 instance=ExtResource("7_scientist")]
 transform = Transform3D(-0.94, 0, -0.34, 0, 1, 0, 0.34, 0, -0.94, -5.5, 0, -3.5)
 metadata/menu_action = "pose_face_down"
 
-[node name="Blood" type="Node3D" parent="Lab"]
+[node name="Blood" type="Node3D" parent="Lab" unique_id=1349058353]
 
-[node name="PoolEaten" type="Decal" parent="Lab/Blood"]
+[node name="PoolEaten" type="Decal" parent="Lab/Blood" unique_id=910661252]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7, 0, -1.9)
 size = Vector3(1.9, 0.6, 1.6)
 
-[node name="DragTrail" type="Decal" parent="Lab/Blood"]
+[node name="DragTrail" type="Decal" parent="Lab/Blood" unique_id=170017212]
 transform = Transform3D(0.496, 0, 0.868, 0, 1, 0, -0.868, 0, 0.496, -4.1, 0, -2.7)
 size = Vector3(0.5, 0.6, 3.2)
 
-[node name="SplatterHound" type="Decal" parent="Lab/Blood"]
+[node name="SplatterHound" type="Decal" parent="Lab/Blood" unique_id=1086105002]
 transform = Transform3D(0.5, 0, 0.866, 0, 1, 0, -0.866, 0, 0.5, -3.6, 0, -2.3)
 size = Vector3(0.8, 0.6, 0.8)
 
-[node name="PoolCurled" type="Decal" parent="Lab/Blood"]
+[node name="PoolCurled" type="Decal" parent="Lab/Blood" unique_id=1980308224]
 transform = Transform3D(0.77, 0, 0.64, 0, 1, 0, -0.64, 0, 0.77, 0.1, 0, -4.7)
 size = Vector3(1.4, 0.6, 1.4)
 
-[node name="FluorescentLamp" type="Node3D" parent="."]
+[node name="FluorescentLamp" type="Node3D" parent="." unique_id=1695126365]
 transform = Transform3D(1, 0, 0, 0, 0.927, -0.375, 0, 0.375, 0.927, -2.9, 6, -2.4)
 
-[node name="Model" parent="FluorescentLamp" instance=ExtResource("9_lamp")]
+[node name="Model" parent="FluorescentLamp" unique_id=333850707 instance=ExtResource("9_lamp")]
 
-[node name="Light" type="OmniLight3D" parent="FluorescentLamp"]
+[node name="Light" type="OmniLight3D" parent="FluorescentLamp" unique_id=1763351767]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.15, 0)
 light_color = Color(0.86, 0.95, 0.9, 1)
 light_energy = 3.0
-light_volumetric_fog_energy = 1.0
 shadow_enabled = true
 omni_range = 9.0
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6, 3, 5.9)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=664291122]
+transform = Transform3D(0.94176453, 0.020274581, -0.33566162, 0.017799756, 0.99377596, 0.10996661, 0.33580196, -0.10953735, 0.935542, -5.2302713, 2.105722, 4.93337)
 current = true
 fov = 55.0
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=522174002]
 follow_viewport_enabled = true
 
-[node name="MainMenuUi" parent="CanvasLayer" instance=ExtResource("2_conk4")]
+[node name="MainMenuUi" parent="CanvasLayer" unique_id=7691044 instance=ExtResource("2_conk4")]

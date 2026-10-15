@@ -9,8 +9,8 @@
 [ext_resource type="PackedScene" uid="uid://f5i4a5l3ph2j" path="res://src/entities/body/e_body_walker.tscn" id="10_walker"]
 [ext_resource type="PackedScene" uid="uid://dtsbk0vab2ynp" path="res://src/entities/enemy/e_enemy.tscn" id="11_enemy"]
 [ext_resource type="PackedScene" uid="uid://d3t4v6ivh52c6" path="res://src/entities/map_terminal/e_map_terminal.tscn" id="12_map_terminal"]
-[ext_resource type="PackedScene" path="res://src/levels/lamp.tscn" id="lamp"]
-[ext_resource type="Script" path="res://src/levels/decay_shelter.gd" id="13_shelter"]
+[ext_resource type="Script" uid="uid://dv87dllyhfji1" path="res://src/levels/decay_shelter.gd" id="13_shelter"]
+[ext_resource type="PackedScene" uid="uid://d3pd6nm71pxia" path="res://src/levels/lamp.tscn" id="lamp"]
 
 [sub_resource type="Resource" id="Shell"]
 script = ExtResource("3_shell")
@@ -29,7 +29,7 @@ component_resources = Array[ExtResource("2_component")]([SubResource("Shell")])
 [node name="Visual" parent="." unique_id=1533979703 instance=ExtResource("5_mesh")]
 
 [node name="Incubator" parent="." unique_id=1341953754 instance=ExtResource("6_8py54")]
-transform = Transform3D(0.22184277, 0, 0.9750824, 0, 1, 0, -0.9750824, 0, 0.22184277, 0.183491, 0, 6.111589)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.183491, 0, 7.2450595)
 
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=637048266]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38543534, 0.8, -0.79322445)

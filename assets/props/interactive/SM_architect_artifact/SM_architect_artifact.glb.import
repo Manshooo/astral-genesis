@@ -13,7 +13,7 @@ dest_files=["res://.godot/imported/SM_architect_artifact.glb-6e794e97ba82ae3f34b
 
 [params]
 
-nodes/root_type="StaticBody3D"
+nodes/root_type=""
 nodes/root_name=""
 nodes/root_script=null
 mesh_library/use_node_names_as_mesh_names=false

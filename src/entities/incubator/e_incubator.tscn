@@ -24,7 +24,7 @@ script = ExtResource("6_vroot")
 path = NodePath("Visual")
 
 [sub_resource type="BoxShape3D" id="PanelShape"]
-size = Vector3(1.9, 3.35, 3.35)
+size = Vector3(1.0332031, 1.965039, 1.8125)
 
 [node name="Incubator" type="Node3D" unique_id=522577828]
 script = ExtResource("1_jjamn")
@@ -34,12 +34,12 @@ component_resources = Array[ExtResource("4_0as6p")]([SubResource("SkillTreePromp
 [node name="Visual" parent="." unique_id=1229026779 instance=ExtResource("7_panel")]
 
 [node name="Decor" parent="." unique_id=1229026780 instance=ExtResource("8_decor")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2352366, 0, 2.1108647)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6352365, 0.6421068, 1.1108646)
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1381715465]
 collision_layer = 8
 collision_mask = 15
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=1101708281]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.675, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9825195, 0)
 shape = SubResource("PanelShape")
