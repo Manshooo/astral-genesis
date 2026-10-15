@@ -19,7 +19,7 @@ func _ready() -> void:
 	soul_save.ranks = {&"body_snatch": 1, &"lifespan": 2, &"decay_capacity": 1, &"steady_legs": 1}
 	SkillManager.save = soul_save
 	var arch_save := PlayerSkillSave.new()
-	arch_save.skill_points = 1400
+	arch_save.skill_points = 4500
 	arch_save.met = true
 	ArchitectManager.save = arch_save
 

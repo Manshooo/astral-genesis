@@ -17,7 +17,7 @@
 class_name LayerStreamer
 extends RefCounted
 
-## «Слой не загружен». Глубины графа — 0..4 (RS_LevelGraph.DEPTHS), так что -1
+## «Слой не загружен». Глубины графа — 0..5 (RS_LevelGraph.DEPTHS), так что -1
 ## никогда не совпадёт с реальной.
 const NO_DEPTH := -1
 

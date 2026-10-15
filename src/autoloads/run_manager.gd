@@ -209,8 +209,11 @@ class _GenerationJob:
 ## первой же контрольной точкой, вместе с run_in_progress, так что забег без
 ## единой точки на диске и снимка не оставит, и начнётся заново по свежим ручкам.
 ##
-## Сюда же лягут улучшения Архитектора: снимок — это база ПЛЮС его модификаторы
-## на момент старта, а не голый data/world_gen_config.tres.
+## Снимок — это база ПЛЮС улучшения Архитектора на момент старта
+## (ArchitectManager.apply_to_gen_config), а не голый data/world_gen_config.tres.
+## Продолжение забега улучшений не применяет: снимок из сейва уже содержит то, с
+## чем комплекс был построен, а купленное посреди забега (хаб — часть комплекса)
+## начнёт действовать со следующего.
 func _run_gen_config() -> RS_WorldGenConfig:
 	var saved := WorldSave.save
 	var resumed := saved.resumable_gen_config()
@@ -235,6 +238,7 @@ func _run_gen_config() -> RS_WorldGenConfig:
 	# Мелкая копия намеренно: записи уникальных комнат — данные, их не правят,
 	# а глубокая копия утащила бы в сейв ещё и пресеты со сценами.
 	saved.gen_config = base.duplicate() as RS_WorldGenConfig
+	ArchitectManager.apply_to_gen_config(saved.gen_config)
 	saved.generator_version = RS_LevelGraph.GENERATOR_VERSION
 	return saved.gen_config
 

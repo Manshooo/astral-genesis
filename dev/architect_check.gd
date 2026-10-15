@@ -88,7 +88,7 @@ func _check_progression() -> void:
 	_check("без улучшений экрана карты нет", ArchitectManager.map_level() == 0,
 		"уровень %d" % ArchitectManager.map_level())
 
-	ArchitectManager.save.skill_points = 100
+	ArchitectManager.save.skill_points = 100000
 	var levels: Array[int] = []
 	for i in ArchitectStats.MAP_LEVEL_MAX:
 		ArchitectManager.unlock(ArchitectStats.MAP_LEVEL)
@@ -99,6 +99,23 @@ func _check_progression() -> void:
 		SkillManager.save.skill_points == 3 and SkillManager.save.ranks.is_empty(),
 		"очки %d, ранги %s" % [SkillManager.save.skill_points, SkillManager.save.ranks],
 	)
+
+	# Шкала эссенции — тысячи (карточка «Игровой цикл — от и до», §4.3): цена в
+	# единицы осталась бы от прежней шкалы, где встреча давала одну эссенцию, и
+	# дерево скупалось бы за забег.
+	var cheap: Array[String] = []
+	var first_price := 1 << 30
+	for def in tree.skills:
+		for price in def.cost_per_rank:
+			first_price = mini(first_price, price)
+			if price < 500:
+				cheap.append("%s: %d" % [def.id, price])
+	_check("цены рангов в сотнях и тысячах", cheap.is_empty(), ", ".join(cheap))
+	_check("первое улучшение стоит около тысячи", first_price >= 500 and first_price <= 1000, "от %d" % first_price)
+	_check("дерево Архитектора без ошибок данных", tree.validate().is_empty(), "; ".join(tree.validate()))
+	var reward := GameConfig.config.architect_essence_reward
+	_check("встреча даёт долю первого улучшения, а не всё сразу",
+		reward >= 100 and reward * 3 <= first_price * 2, "награда %d, первое улучшение %d" % [reward, first_price])
 
 	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = 7
 	_check("лишний ранг в данных не открывает несуществующий уровень",
