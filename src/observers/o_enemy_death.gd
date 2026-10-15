@@ -19,9 +19,11 @@
 # тем же приёмом, что у O_ExpelFromBody.
 #
 # Состояние убитых врагов в сейв НЕ пишется: комплекс восстанавливается из сида
-# покомнатно-заново (как и съеденные тела — но у тех есть C_BodyOrigin с id,
-# а у трупа врага id нет), и враг, убитый до сохранения, после загрузки
-# возродится на месте. Хвост задачи «Бой — начало».
+# покомнатно-заново, и враг, убитый до сохранения, после загрузки возродится на
+# месте. Исключение одно и частичное: враг с маркера ростера несёт C_BodyOrigin
+# (id маркера), и труп наследует его — съеденный захватом труп попадает в
+# consumed_body_ids, и маркер перестаёт разыгрываться. Убитый, но не съеденный
+# враг по-прежнему возродится. Хвост задачи «Бой — начало».
 class_name O_EnemyDeath
 extends Observer
 
@@ -44,6 +46,8 @@ static func replace_with_corpse(enemy: Entity) -> void:
 	var parent := node.get_parent()
 	var placement := node.global_transform
 	var scene: PackedScene = (enemy as E_Enemy).corpse_scene if enemy is E_Enemy else null
+	var origin := enemy.get_component(C_BodyOrigin) as C_BodyOrigin
+	var origin_id: StringName = origin.body_id if origin else &""
 
 	ECS.world.remove_entity(enemy)
 	if scene == null or parent == null:
@@ -56,6 +60,11 @@ static func replace_with_corpse(enemy: Entity) -> void:
 	parent.add_child(corpse)
 	(corpse as Node as Node3D).global_transform = placement
 	ECS.world.add_entity(corpse)
+	if origin_id != &"":
+		# Тот же id, что у маркера, — см. шапку. Читаем его ДО снятия врага с мира.
+		var inherited := C_BodyOrigin.new()
+		inherited.body_id = origin_id
+		corpse.add_component(inherited)
 	_release_with_room(corpse)
 
 

@@ -100,6 +100,10 @@ var _shown: Dictionary[StringName, bool] = {}
 ## одном коридоре, раскладка отдаёт развилку прямому (RS_CorridorPlanner).
 const VISIBLE_HOPS := 2
 
+## Метаданные врага ростера: id маркера, с которого он встал (см.
+## _spawn_roster_enemies). Сущность с этим id получает C_BodyOrigin.
+const ROSTER_ID_META := &"roster_marker_id"
+
 ## Сколько spawn_async тратит на спавн за кадр, микросекунды. Меньше кадра в
 ## 60 FPS с запасом: под шторкой загрузки кадр должен успеть ещё и нарисоваться.
 const SPAWN_FRAME_BUDGET_USEC := 8000
@@ -389,6 +393,11 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 		else:
 			push_error("LayerStreamer: у коробки '%s' нет кита стен" % node_data.room_scene_path)
 
+	# Враги ростера — детьми комнаты до add_entity: тогда обход вложенных сущностей
+	# (_register_room_children) подхватит их вместе с остальными, и снесёт их тот же
+	# despawn, без отдельного учёта.
+	_spawn_roster_enemies(entity, node_data)
+
 	ECS.world.add_entity(entity)
 
 	var spawned := SpawnedRoom.new()
@@ -442,7 +451,39 @@ func _register_room_children(room_entity: Entity, node_id: StringName) -> Array[
 			var origin := C_BodyOrigin.new()
 			origin.body_id = _body_id(node_id, room_entity, body)
 			body.add_component(origin)
+		elif e.has_meta(ROSTER_ID_META):
+			# Враг ростера несёт id своего маркера, и O_EnemyDeath передаст его
+			# трупу: съеденный труп помечает id в сейве, и маркер больше не
+			# разыгрывается (_spawn_roster_enemies).
+			var origin := C_BodyOrigin.new()
+			origin.body_id = e.get_meta(ROSTER_ID_META)
+			e.add_component(origin)
 	return children
+
+
+## Ставит врагов ростера на маркеры [code]EnemySpawn*[/code] сцены комнаты. Кто
+## встанет, решает RS_EnemyRoster.roll — функция сида, слоя, узла и маркера, —
+## поэтому слой, собранный заново, возвращает тех же врагов на те же места.
+## Маркер, чей враг уже съеден (труп поглощён, см. O_EnemyDeath), не разыгрывается.
+func _spawn_roster_enemies(room_entity: Entity, node_data: RS_LevelNode) -> void:
+	var room_node := room_entity as Node as Node3D
+	if room_node == null:
+		return
+	var roster := RS_EnemyRoster.current()
+	for node in room_entity.find_children("EnemySpawn*", "Marker3D", true, false):
+		var marker_id := StringName("%s/%s" % [node_data.id, room_entity.get_path_to(node)])
+		if WorldSave.save.consumed_body_ids.has(marker_id):
+			continue
+		var scene := roster.roll(graph.run_seed, node_data.depth, node_data.id, node.name)
+		if scene == null:
+			continue
+		var enemy := scene.instantiate() as Entity
+		if enemy == null:
+			continue
+		enemy.set_meta(ROSTER_ID_META, marker_id)
+		room_entity.add_child(enemy)
+		# Позиция — от комнаты, а не глобальная: комната ещё не в дереве.
+		(enemy as Node as Node3D).transform = RS_EntityVisuals.transform_relative_to(node, room_entity)
 
 
 ## Стабильный id авторского тела: узел графа плюс путь узла внутри комнаты.

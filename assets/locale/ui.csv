@@ -37,6 +37,7 @@ BODY_CRAWLER,Ползун,Crawler
 BODY_HOUND,Гончая,Hound
 BODY_SCIENTIST,Учёный,Scientist
 BODY_SOLDIER,Военный,Soldier
+BODY_L5,Существо дна,Deep creature
 THOUGHT_DEFAULT,"Чужая память шепчет одно: наверх.","A stranger's memory whispers one thing: up."
 THOUGHT_BODY_WALKER,Наверх. Выход на нулевом.,Up. The exit is on zero.
 THOUGHT_BODY_CORPSE,"Меня не вынесли. А дверь была рядом, наверху.","Nobody carried me out. And the door was close, upstairs."
