@@ -20,6 +20,18 @@ extends System
 ## Чем бьём — атрибуция удара для сводки забега (S_Health.Damage.means).
 const MEANS := &"attack"
 
+## Класс угрозы существ дна. Удар тела ниже этого класса по существу этого класса
+## ослаблен (L5_RESISTANCE).
+const L5_CLASS := 5
+
+## Во сколько раз слабее бьёт тело класса ниже L5 по существу L5. L5 уничтожает
+## только другой L5 ([[Игровой цикл — от и до]], §2, решение 15.10): чтобы пройти
+## сбежавших к выходу, нужно тело с самого дна. Не ноль, а десятая доля: нулевой
+## урон неотличим от бага («бью — ничего не происходит»), а так слабое тело
+## хотя бы видимо царапает, и игрок понимает, что бьёт не тем. Число черновое,
+## подгоняет game-balance.
+const L5_RESISTANCE := 0.1
+
 ## Слой enemies (бит 2): на нём стоят и живые враги, и кости трупов.
 const ENEMIES_BIT := 1 << 2
 
@@ -92,12 +104,33 @@ func _swallow(entities: Array[Entity], _components: Array, _delta: float) -> voi
 
 ## Сколько урона реально получит [param target] от этого удара.
 ##
-## ЕДИНСТВЕННОЕ МЕСТО, где урон удара может зависеть от цели. Сейчас он равен
-## числу тела, но правило «существо класса L5 почти неуязвимо для слабых»
-## ([[Игровой цикл — от и до]], §2) ляжет именно сюда — сравнением класса
-## нападающего и цели, — а не в каждую боевую систему отдельно.
-static func damage_against(_attacker: Entity, _target: Entity, attack: C_Attack) -> float:
+## ЕДИНСТВЕННОЕ МЕСТО, где урон удара может зависеть от цели: правило «существо
+## L5 почти неуязвимо для слабых» ([[Игровой цикл — от и до]], §2) лежит здесь, а
+## не в каждой боевой системе отдельно. Класс нападающего — класс тела, в котором
+## он сидит (C_Embodied.body_scene_path, тот же путь сцены, по которому считаются
+## очки за захват); класс цели — класс трупа врага (E_Enemy.threat_class). Без
+## тела (нет C_Embodied) нападающий — класс 0: бить он и так не умеет, но
+## функция публичная, и «неизвестное тело» обязано быть слабым, а не сильным.
+static func damage_against(attacker: Entity, target: Entity, attack: C_Attack) -> float:
+	if target_class(target) >= L5_CLASS and attacker_class(attacker) < L5_CLASS:
+		return attack.damage * L5_RESISTANCE
 	return attack.damage
+
+
+## Класс тела, в котором сидит [param attacker]; 0 — вне тела.
+static func attacker_class(attacker: Entity) -> int:
+	if attacker == null:
+		return 0
+	var embodied := attacker.get_component(C_Embodied) as C_Embodied
+	if embodied == null:
+		return 0
+	return E_Body.class_of_scene(embodied.body_scene_path)
+
+
+## Класс угрозы цели; 0 — это не враг (у прочего живого нет шкалы L0..L5).
+static func target_class(target: Entity) -> int:
+	var enemy := target as E_Enemy
+	return enemy.threat_class() if enemy else 0
 
 
 ## Луч из камеры вперёд (−Z) на [param reach] метров: ближайшая живая цель удара

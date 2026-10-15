@@ -27,3 +27,13 @@ extends Entity
 ## её же component_resources, поэтому «полное HP у трупа» не требует ни строки
 ## кода. Пусто — враг умирает, ничего не оставив.
 @export var corpse_scene: PackedScene
+
+
+## Класс угрозы врага по шкале L0..L5 — класс его трупа. Отдельного поля у врага
+## нет намеренно: «кто это» один раз записано в сцене трупа (E_Body.body_class),
+## и второе число рядом разошлось бы с первым при первой же правке баланса.
+## 0, если трупа нет: безымянный враг не получает ни сопротивления, ни награды.
+func threat_class() -> int:
+	if corpse_scene == null:
+		return 0
+	return E_Body.class_of_scene(corpse_scene.resource_path)

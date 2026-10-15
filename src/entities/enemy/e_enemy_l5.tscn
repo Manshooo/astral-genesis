@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://src/entities/enemy/e_enemy_hound.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
+[ext_resource type="Script" uid="uid://dt7g6v8bchojd" path="res://src/components/gameplay/c_enemy_ai.gd" id="3_ai"]
+[ext_resource type="Script" uid="uid://ye3ihee7rux0" path="res://src/components/gameplay/c_enemy_input.gd" id="4_input"]
+[ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="5_velocity"]
+[ext_resource type="Script" uid="uid://dknqwce2loh3r" path="res://src/components/gameplay/skills/c_walk.gd" id="6_walk"]
+[ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="7_health"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_footsteps.gd" id="8_footsteps"]
+[ext_resource type="PackedScene" path="res://src/entities/body/e_body_l5.tscn" id="9_corpse"]
+[ext_resource type="Material" path="res://assets/shared/materials/palette_l5.tres" id="10_tone"]
+
+[sub_resource type="Resource" id="Resource_ai"]
+script = ExtResource("3_ai")
+aggro_range = 18.0
+attack_range = 2.4
+attack_damage = 30.0
+attack_interval = 0.7
+
+[sub_resource type="Resource" id="Resource_input"]
+script = ExtResource("4_input")
+
+[sub_resource type="Resource" id="Resource_velocity"]
+script = ExtResource("5_velocity")
+
+[sub_resource type="Resource" id="Resource_walk"]
+script = ExtResource("6_walk")
+speed = 6.5
+
+[sub_resource type="Resource" id="Resource_health"]
+script = ExtResource("7_health")
+maximum = 240.0
+current = 240.0
+
+[sub_resource type="Resource" id="Resource_footsteps"]
+script = ExtResource("8_footsteps")
+stride = 1.75
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_l5"]
+radius = 0.44
+height = 2.56
+
+[node name="Enemy" unique_id=1735200205 instance=ExtResource("1_base")]
+corpse_scene = ExtResource("9_corpse")
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_ai"), SubResource("Resource_input"), SubResource("Resource_velocity"), SubResource("Resource_walk"), SubResource("Resource_health"), SubResource("Resource_footsteps")])
+
+[node name="CollisionShape3D" parent="." index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.28, 0)
+shape = SubResource("CapsuleShape3D_l5")
+
+[node name="Visual" parent="." index="1"]
+transform = Transform3D(-1.4, 0, 0, 0, 1.4, 0, 0, 0, -1.4, 0, 0, 0)
+material_override = ExtResource("10_tone")

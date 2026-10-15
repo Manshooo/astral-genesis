@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="RS_EnemyRoster" format=3]
+
+[ext_resource type="Script" path="res://src/resources/rs_enemy_roster.gd" id="1_roster"]
+[ext_resource type="Script" path="res://src/resources/rs_enemy_roster_entry.gd" id="2_entry"]
+[ext_resource type="PackedScene" path="res://src/entities/enemy/e_enemy_hound.tscn" id="3_e_enemy_hound"]
+[ext_resource type="PackedScene" path="res://src/entities/enemy/e_enemy_l5.tscn" id="4_e_enemy_l5"]
+[ext_resource type="PackedScene" path="res://src/entities/enemy/e_enemy_scientist.tscn" id="5_e_enemy_scientist"]
+[ext_resource type="PackedScene" path="res://src/entities/enemy/e_enemy_soldier.tscn" id="6_e_enemy_soldier"]
+
+[sub_resource type="Resource" id="Resource_scientist_a"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("5_e_enemy_scientist")
+weight = 1.0
+depth_min = 0
+depth_max = 1
+
+[sub_resource type="Resource" id="Resource_scientist_b"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("5_e_enemy_scientist")
+weight = 3.0
+depth_min = 2
+depth_max = 2
+
+[sub_resource type="Resource" id="Resource_soldier_guard"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("6_e_enemy_soldier")
+weight = 1.0
+depth_min = 2
+depth_max = 2
+
+[sub_resource type="Resource" id="Resource_soldier_l3"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("6_e_enemy_soldier")
+weight = 1.0
+depth_min = 3
+depth_max = 3
+
+[sub_resource type="Resource" id="Resource_soldier_l4"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("6_e_enemy_soldier")
+weight = 3.0
+depth_min = 4
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_hound_l4"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("3_e_enemy_hound")
+weight = 2.0
+depth_min = 4
+depth_max = 4
+
+[sub_resource type="Resource" id="Resource_creature_l5"]
+script = ExtResource("2_entry")
+enemy_scene = ExtResource("4_e_enemy_l5")
+weight = 1.0
+depth_min = 5
+depth_max = 5
+
+[resource]
+script = ExtResource("1_roster")
+entries = Array[ExtResource("2_entry")]([SubResource("Resource_scientist_a"), SubResource("Resource_scientist_b"), SubResource("Resource_soldier_guard"), SubResource("Resource_soldier_l3"), SubResource("Resource_soldier_l4"), SubResource("Resource_hound_l4"), SubResource("Resource_creature_l5")])
+empty_chance = PackedFloat32Array(0.6, 0.5, 0.45, 0.4, 0.3, 0.35)
