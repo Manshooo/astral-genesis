@@ -26,12 +26,6 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 script = ExtResource("6_vroot")
 path = NodePath("Visual")
 
-[sub_resource type="FogMaterial" id="FogMaterial_do4ao"]
-density = 0.22
-albedo = Color(0.79, 0.66, 0.95, 1)
-emission = Color(0.3, 0.25, 0.38, 1)
-edge_fade = 0.35
-
 [sub_resource type="Curve" id="Curve_bubble_life"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.12, 1), 0.0, 0.0, 0, 0, Vector2(0.85, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 4
@@ -85,12 +79,6 @@ script = ExtResource("11_flask")
 light_color = Color(0.79, 0.66, 0.95, 1)
 light_energy = 1.6
 omni_range = 5.0656867
-
-[node name="GlowFog" type="FogVolume" parent="Flask" unique_id=1361344432]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.038259, 0)
-size = Vector3(1.6, 2.2576172, 1.6)
-shape = 2
-material = SubResource("FogMaterial_do4ao")
 
 [node name="Bubbles" type="GPUParticles3D" parent="Flask" unique_id=902973414]
 amount = 36

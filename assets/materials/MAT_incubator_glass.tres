@@ -2,6 +2,16 @@
 
 [ext_resource type="Shader" path="res://assets/shared/shaders/glass_refraction.gdshader" id="1_glass"]
 
+[sub_resource type="FastNoiseLite" id="Noise_sway"]
+noise_type = 3
+frequency = 0.02
+
+[sub_resource type="NoiseTexture2D" id="Tex_sway"]
+width = 128
+height = 128
+seamless = true
+noise = SubResource("Noise_sway")
+
 [resource]
 resource_name = "MAT_incubator_glass"
 render_priority = 0
@@ -10,3 +20,11 @@ shader_parameter/albedo = Color(0.78, 0.82, 0.86, 0.14)
 shader_parameter/specular = 0.9
 shader_parameter/roughness = 0.18
 shader_parameter/refraction_shift = 0.1
+shader_parameter/liquid_color = Color(0.3, 0.24, 0.42, 1)
+shader_parameter/liquid_energy = 1.0
+shader_parameter/liquid_density = 0.8
+shader_parameter/murk_blur = 1.5
+shader_parameter/sway_noise = SubResource("Tex_sway")
+shader_parameter/sway_shift = 0.012
+shader_parameter/sway_scale = 0.8
+shader_parameter/sway_speed = 0.04

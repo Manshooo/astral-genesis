@@ -11,6 +11,11 @@
 ## MAT_incubator_glow, а не через узел: модель, у которой слот назван так же,
 ## получит тот же .tres по ссылке из .import и задышит сама.
 ##
+## Мутная светящаяся жидкость — в шейдере стекла (glass_refraction.gdshader), а
+## не FogVolume: объёмный туман включён только в окружении меню, и в хабе колба
+## с туманом была пустой. Колба передаёт своему экземпляру стекла диаметр (не
+## толще него жидкость) и пульс свечения — instance uniform, общий .tres цел.
+##
 ## Пузырьки — непрозрачные сферы, а не полупрозрачные спрайты, и появляются и
 ## гаснут масштабом, а не альфой. Стекло с преломлением рисует то, что за ним,
 ## из копии экрана, снятой ДО прохода прозрачных, и само пишет глубину
@@ -46,11 +51,14 @@ const SPECIMEN_TURN := 0.05
 ## с запасом внутрь. Не подгонка под болванку, а последнее, на что опереться:
 ## пришедшее стекло перекроет это число своим объёмом.
 const FLASK_FALLBACK := AABB(Vector3(-0.85, 1.15, -0.85), Vector3(1.7, 3.75, 1.7))
-## Туман и пузырьки держатся чуть внутри стекла — иначе их край лёг бы на него.
+## Пузырьки держатся чуть внутри стекла — иначе их край лёг бы на него.
 const FLASK_INSET := 0.92
 const GLASS_MATERIAL := "MAT_incubator_glass"
 const BODY_ANCHOR := "BodyAnchor"
 const BUBBLE_SOURCE := "BubbleSource"
+## instance uniform шейдера стекла.
+const GLASS_GLOW := &"glow"
+const GLASS_LIQUID_DEPTH := &"liquid_depth"
 
 ## Материал слота свечения — тот самый ресурс, на который сошлётся .import
 ## пришедшей модели. Полем, а не const: в константу GDScript писать не даёт.
@@ -58,19 +66,19 @@ var _ring_glow: StandardMaterial3D = preload("res://assets/materials/MAT_incubat
 
 @onready var _model: Node3D = $Model
 @onready var _glow: Light3D = $Glow
-@onready var _glow_fog: FogVolume = $GlowFog
 @onready var _bubbles: GPUParticles3D = $Bubbles
 @onready var specimen: Node3D = $Specimen
 
 var _noise := FastNoiseLite.new()
 var _time := 0.0
 var _specimen_base := Vector3.ZERO
+## Меш со стеклом модели, а без стекла — null: тогда и жидкости нет.
+var _glass: MeshInstance3D = null
 
 ## Авторские значения — множители считаются от них, а не от прошлого кадра.
 ## Материал слота — общий .tres, поэтому его значение возвращается на выходе:
 ## иначе следующая сцена сняла бы «авторское» с последнего перелива.
 var _glow_energy := 0.0
-var _fog_emission := Color.BLACK
 var _ring_energy := 0.0
 
 
@@ -82,9 +90,6 @@ func _ready() -> void:
 
 	_fit()
 	_glow_energy = _glow.light_energy
-	# Материал тумана правится каждый кадр — своя копия, а не ресурс сцены.
-	_glow_fog.material = _glow_fog.material.duplicate()
-	_fog_emission = (_glow_fog.material as FogMaterial).emission
 	_ring_energy = _ring_glow.emission_energy_multiplier
 
 
@@ -96,7 +101,8 @@ func _process(delta: float) -> void:
 	_time += delta
 	var glow := glow_factor(_time)
 	_glow.light_energy = _glow_energy * glow
-	(_glow_fog.material as FogMaterial).emission = _fog_emission * glow
+	if _glass:
+		_glass.set_instance_shader_parameter(GLASS_GLOW, glow)
 	_ring_glow.emission_energy_multiplier = _ring_energy * glow
 
 	specimen.position = _specimen_base \
@@ -112,17 +118,25 @@ func glow_factor(t: float) -> float:
 
 ## Объём колбы в пространстве этого узла: по стеклу модели, а без стекла — запасной.
 func flask_box() -> AABB:
-	var to_local := global_transform.affine_inverse()
+	var glass := _glass_surface()
+	if glass.is_empty():
+		return FLASK_FALLBACK
+	var mesh: MeshInstance3D = glass[0]
+	return _surface_box(mesh, glass[1], global_transform.affine_inverse() * mesh.global_transform)
+
+
+## [меш, номер поверхности] со стеклом модели, а без стекла — пусто.
+func _glass_surface() -> Array:
 	for mesh: MeshInstance3D in _model.find_children("*", "MeshInstance3D", true, false):
 		if mesh.mesh == null:
 			continue
 		for surface in mesh.mesh.get_surface_count():
 			if _is_glass(mesh.get_active_material(surface)):
-				return _surface_box(mesh, surface, to_local * mesh.global_transform)
-	return FLASK_FALLBACK
+				return [mesh, surface]
+	return []
 
 
-## Туман, свет, пузырьки и мозг — в объём колбы и на метки модели.
+## Свет, жидкость, пузырьки и мозг — в объём колбы и на метки модели.
 func _fit() -> void:
 	var box := flask_box()
 	var center := box.get_center()
@@ -130,9 +144,10 @@ func _fit() -> void:
 	var height := box.size.y * FLASK_INSET
 
 	_glow.position = center
-	_glow_fog.position = center
-	_glow_fog.shape = RenderingServer.FOG_VOLUME_SHAPE_CYLINDER
-	_glow_fog.size = Vector3(radius * 2.0, height, radius * 2.0)
+	var glass := _glass_surface()
+	_glass = glass[0] if not glass.is_empty() else null
+	if _glass:
+		_glass.set_instance_shader_parameter(GLASS_LIQUID_DEPTH, minf(box.size.x, box.size.z))
 
 	specimen.position = _marker_position(BODY_ANCHOR, center)
 	_specimen_base = specimen.position

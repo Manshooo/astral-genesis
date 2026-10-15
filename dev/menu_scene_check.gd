@@ -5,10 +5,10 @@ extends "res://dev/check_harness.gd"
 ## Запускать: godot --headless dev/menu_scene_check.tscn
 ##
 ## Ломается здесь всё тихо. Метка BodyAnchor, переименованная в модели, — и мозг
-## молча висит в запасной точке; стекло под другим именем — и туман колбы не
-## совпадает с ней; лампа, у которой спутан порядок вспышек, — горит ровно или
+## молча висит в запасной точке; стекло под другим именем — и жидкости в колбе
+## нет, а пузырьки встают мимо; лампа, у которой спутан порядок вспышек, — горит ровно или
 ## не горит вовсе. Ошибкой ничего из этого не выглядит. Пикселей headless не
-## рисует, поэтому сверяется вход картинки: энергия света, размеры тумана,
+## рисует, поэтому сверяется вход картинки: энергия света, объём колбы, параметры жидкости,
 ## позиции, назначенные текстуры.
 ##
 ## Своё отличие от обвязки — сторож ловит ЛЮБУЮ ошибку движка, а не только
@@ -149,14 +149,24 @@ func _check_glow() -> void:
 	var menu := await _spawn()
 	var flask: Node3D = menu.get_node("Incubator/Flask")
 	var light: Light3D = flask.get_node("Glow")
+	var glass: MeshInstance3D = flask._glass
 	var base: float = flask._glow_energy
 	var lo := INF
 	var hi := -INF
+	var liquid_off := 0.0
 	flask.set_process(false)
 	for i in 2400:
 		flask._process(0.05)
 		lo = minf(lo, light.light_energy / base)
 		hi = maxf(hi, light.light_energy / base)
+		if glass:
+			liquid_off = maxf(liquid_off, absf(
+					float(glass.get_instance_shader_parameter(FLASK_SCRIPT.GLASS_GLOW)) - light.light_energy / base))
+	_check(
+		"жидкость светится в такт со светом колбы",
+		glass != null and liquid_off < 0.001,
+		"стекла нет" if glass == null else "расхождение до %.3f" % liquid_off
+	)
 	_check(
 		"свечение колбы не выходит за ±15 %",
 		lo >= 0.85 - 0.001 and hi <= 1.15 + 0.001,
@@ -242,9 +252,17 @@ func _check_real_model() -> void:
 		bubble_material != null and bubble_material.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED,
 		"прозрачность пузырьков %s" % [bubble_material.transparency if bubble_material else "—"]
 	)
+	var box: AABB = flask.flask_box()
+	var glass: MeshInstance3D = flask._glass
+	var diameter := minf(box.size.x, box.size.z)
+	_check(
+		"жидкость не толще колбы — диаметр по стеклу",
+		glass != null and is_equal_approx(float(glass.get_instance_shader_parameter(FLASK_SCRIPT.GLASS_LIQUID_DEPTH)), diameter),
+		"стекла нет" if glass == null else "толщина %s, диаметр %.2f" % [
+			glass.get_instance_shader_parameter(FLASK_SCRIPT.GLASS_LIQUID_DEPTH), diameter]
+	)
 	var process := bubbles.process_material as ParticleProcessMaterial
-	var fog: FogVolume = flask.get_node("GlowFog")
-	var top := fog.position.y + fog.size.y * 0.5
+	var top := box.get_center().y + box.size.y * FLASK_SCRIPT.FLASK_INSET * 0.5
 	var t := bubbles.lifetime
 	var fastest_end := bubbles.position.y + process.initial_velocity_max * t + 0.5 * process.gravity.y * t * t
 	_check(
@@ -259,29 +277,35 @@ func _check_real_model() -> void:
 # --- 5. Без стекла и меток — запасная колба, мозг и пузырьки внутри неё ------
 func _check_fallback_flask() -> void:
 	var menu := await _spawn(_strip_model_contract)
-	var fog: FogVolume = menu.get_node("Incubator/Flask/GlowFog")
-	var specimen: Node3D = menu.get_node("Incubator/Flask/Specimen")
-	var bubbles: GPUParticles3D = menu.get_node("Incubator/Flask/Bubbles")
+	var flask: Node3D = menu.get_node("Incubator/Flask")
+	var box: AABB = flask.flask_box()
+	var specimen: Node3D = flask.get_node("Specimen")
+	var bubbles: GPUParticles3D = flask.get_node("Bubbles")
 	_check(
-		"туман колбы — цилиндр",
-		fog.shape == RenderingServer.FOG_VOLUME_SHAPE_CYLINDER,
-		"форма %d" % fog.shape
+		"без стекла — запасная колба, а жидкости нет",
+		box == FLASK_SCRIPT.FLASK_FALLBACK and flask._glass == null,
+		"объём %s, стекло %s" % [box, flask._glass]
 	)
 	_check(
-		"мозг внутри тумана колбы",
-		_inside_cylinder(specimen.position, fog),
-		"мозг %s, туман %s размером %s" % [specimen.position, fog.position, fog.size]
+		"мозг внутри колбы",
+		_inside_flask(specimen.position, box),
+		"мозг %s, колба %s" % [specimen.position, box]
+	)
+	_check(
+		"свет колбы — в её середине",
+		(flask.get_node("Glow") as Node3D).position.is_equal_approx(box.get_center()),
+		"свет %s, середина %s" % [(flask.get_node("Glow") as Node3D).position, box.get_center()]
 	)
 	_check(
 		"пузырьки рождаются внутри колбы и ниже мозга",
-		_inside_cylinder(bubbles.position, fog, 0.05) and bubbles.position.y < specimen.position.y,
+		_inside_flask(bubbles.position, box, 0.05) and bubbles.position.y < specimen.position.y,
 		"пузырьки %s, мозг %s" % [bubbles.position, specimen.position]
 	)
 	var radius: float = (bubbles.process_material as ParticleProcessMaterial).emission_ring_radius
 	_check(
 		"кольцо пузырьков уже колбы",
-		radius > 0.0 and radius < fog.size.x * 0.5,
-		"кольцо %.2f, радиус тумана %.2f" % [radius, fog.size.x * 0.5]
+		radius > 0.0 and radius < minf(box.size.x, box.size.z) * 0.5,
+		"кольцо %.2f, колба %s" % [radius, box.size]
 	)
 	var decals := menu.get_node("Lab/Blood").find_children("*", "Decal", true, false)
 	var bare := decals.filter(func(d: Decal) -> bool: return d.texture_albedo == null)
@@ -338,12 +362,19 @@ func _check_model_contract() -> void:
 		player.add_animation_library(&"", library)
 		m.get_node("Lab/Hound").add_child(player))
 
-	var fog: FogVolume = menu.get_node("Incubator/Flask/GlowFog")
+	var flask: Node3D = menu.get_node("Incubator/Flask")
+	var box: AABB = flask.flask_box()
 	_check(
-		"туман колбы берёт объём у стекла модели",
-		fog.position.is_equal_approx(glass_center) and absf(fog.size.x - 1.0 * FLASK_SCRIPT.FLASK_INSET) < 0.02 \
-				and absf(fog.size.y - 2.0 * FLASK_SCRIPT.FLASK_INSET) < 0.02,
-		"туман %s размером %s, стекло r 0.5 h 2 в %s" % [fog.position, fog.size, glass_center]
+		"колба берёт объём у подложенного стекла, и свет — в его середине",
+		box.get_center().is_equal_approx(glass_center) and box.size.is_equal_approx(Vector3(1.0, 2.0, 1.0)) \
+				and (flask.get_node("Glow") as Node3D).position.is_equal_approx(glass_center),
+		"объём %s, стекло r 0.5 h 2 в %s" % [box, glass_center]
+	)
+	_check(
+		"подложенное стекло получает жидкость по своему диаметру",
+		flask._glass != null and is_equal_approx(
+				float(flask._glass.get_instance_shader_parameter(FLASK_SCRIPT.GLASS_LIQUID_DEPTH)), 1.0),
+		"стекло %s" % flask._glass
 	)
 	var specimen: Node3D = menu.get_node("Incubator/Flask/Specimen")
 	_check(
@@ -372,8 +403,9 @@ func _check_model_contract() -> void:
 	await get_tree().process_frame
 
 
-static func _inside_cylinder(point: Vector3, fog: FogVolume, margin: float = 0.0) -> bool:
-	var local := point - fog.position
-	var radius := fog.size.x * 0.5 + margin
-	var half := fog.size.y * 0.5 + margin
+## Внутри цилиндра колбы с отступом FLASK_INSET — там, где живут мозг и пузырьки.
+static func _inside_flask(point: Vector3, box: AABB, margin: float = 0.0) -> bool:
+	var local := point - box.get_center()
+	var radius := minf(box.size.x, box.size.z) * 0.5 * FLASK_SCRIPT.FLASK_INSET + margin
+	var half := box.size.y * 0.5 * FLASK_SCRIPT.FLASK_INSET + margin
 	return Vector2(local.x, local.z).length() <= radius and absf(local.y) <= half
