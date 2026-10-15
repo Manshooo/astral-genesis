@@ -48,6 +48,10 @@ const SPRINT_MULTIPLIER := &"sprint_multiplier"
 const LEAVE_BODY_GAIN := &"leave_body_gain"
 const OVERFLOW_LEAK := &"overflow_leak"        ## RS_GameConfig.lifespan_overflow_leak
 const DEATH_KEEP := &"death_keep"              ## RS_GameConfig.lifespan_death_fraction
+## Доля номинала эссенции из находок и тайников, которую получает игрок. База —
+## RS_GameConfig.essence_gain_base (0.3), навык «Сбор эссенции» поднимает её до 1.0.
+## Касание Архитектора не множит.
+const ESSENCE_GAIN := &"essence_gain"
 
 const ALL: Array[StringName] = [
 	CAPTURE_RANGE,
@@ -61,6 +65,7 @@ const ALL: Array[StringName] = [
 	LEAVE_BODY_GAIN,
 	OVERFLOW_LEAK,
 	DEATH_KEEP,
+	ESSENCE_GAIN,
 ]
 
 ## источник → {"flat": {стат: сумма}, "mult": {стат: произведение}}.

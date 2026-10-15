@@ -274,8 +274,26 @@ ability = &"sprint"
 cost_per_rank = Array[int]([80, 160, 240])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
+[sub_resource type="Resource" id="Resource_mod_essence_gain"]
+script = ExtResource("4_stmod")
+stat = &"essence_gain"
+values = Array[float]([0.2, 0.45, 0.7])
+display_percent = true
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_essence_gathering"]
+script = ExtResource("2_ign7e")
+id = &"essence_gathering"
+display_name = "SKILL_ESSENCE_GATHERING_NAME"
+description = "SKILL_ESSENCE_GATHERING_DESC"
+branch = &"possession"
+requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
+modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_essence_gain")])
+cost_per_rank = Array[int]([40, 80, 120])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
 [resource]
 script = ExtResource("1_r03fv")
-skills = Array[ExtResource("2_ign7e")]([SubResource("Resource_11kxi"), SubResource("Resource_capture_precision"), SubResource("Resource_o3xjp"), SubResource("Resource_decay_capacity"), SubResource("Resource_graceful_exit"), SubResource("Resource_overflow_control"), SubResource("Resource_last_breath"), SubResource("Resource_steady_legs"), SubResource("Resource_spring_step"), SubResource("Resource_resilient_flesh"), SubResource("Resource_second_wind")])
+skills = Array[ExtResource("2_ign7e")]([SubResource("Resource_11kxi"), SubResource("Resource_capture_precision"), SubResource("Resource_o3xjp"), SubResource("Resource_decay_capacity"), SubResource("Resource_graceful_exit"), SubResource("Resource_overflow_control"), SubResource("Resource_last_breath"), SubResource("Resource_steady_legs"), SubResource("Resource_spring_step"), SubResource("Resource_resilient_flesh"), SubResource("Resource_second_wind"), SubResource("Resource_essence_gathering")])
 branches = Array[ExtResource("5_branch")]([SubResource("Resource_branch_possession"), SubResource("Resource_branch_survival"), SubResource("Resource_branch_embodiment")])
 metadata/_custom_type_script = "uid://1b4pm2xpbsvc"

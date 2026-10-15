@@ -83,6 +83,10 @@ var rooms: Dictionary[StringName, SpawnedRoom] = {}
 ## регистрировать незачем. Держим ради сноса слоя и ради «заспавнен ли узел» —
 ## присутствие игрока в коридоре меняет текущий узел так же, как в комнате.
 var corridor_tiles: Dictionary[StringName, Array] = {}
+## Тайники эссенции в тупиках загруженного слоя (LayerFinds). Отдельно от тайлов:
+## у тайла нет сущности, а находка — сущность, и снимать её надо из мира явно.
+## Находки в комнатах здесь не числятся — они дети комнаты и уходят с ней.
+var cache_finds: Array[Entity] = []
 
 ## Общий родитель тайлов под ECS.world — см. _corridor_parent.
 var _corridor_root: Node3D
@@ -215,6 +219,7 @@ func despawn() -> bool:
 			if is_instance_valid(tile):
 				(tile as Node).free()
 	corridor_tiles.clear()
+	LayerFinds.remove_all(cache_finds)
 	_shown.clear()
 	var was_loaded := depth != NO_DEPTH
 	depth = NO_DEPTH
@@ -307,6 +312,7 @@ func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 		parent.add_child(tile)
 		tiles.append(tile)
 	corridor_tiles[node_data.id] = tiles
+	cache_finds.append_array(LayerFinds.place_caches(node_data, plan, graph.run_seed))
 
 
 ## Погасла ли лампа тайла — от сида мира, слоя и клетки, своим ГСЧ, а не общим:
@@ -388,6 +394,10 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 			assembled = shell.walls.assemble(spatial, node_data.id, plan)
 		else:
 			push_error("LayerStreamer: у коробки '%s' нет кита стен" % node_data.room_scene_path)
+
+	# Находки эссенции на маркерах комнаты — до add_entity, дочерними сущностями
+	# (см. LayerFinds.place_in_room).
+	LayerFinds.place_in_room(entity, node_data, graph.run_seed)
 
 	ECS.world.add_entity(entity)
 
