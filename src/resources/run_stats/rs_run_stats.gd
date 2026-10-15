@@ -25,9 +25,8 @@ const DAMAGE_TAKEN := &"damage_taken"
 const DAMAGE_DEALT := &"damage_dealt"
 const SKILL_POINTS := &"skill_points"  ## награда за этот забег
 
-## Чем кончился забег. Пока экран итогов один — на смерть; побег (`finish_run`)
-## забег тоже завершает, и когда у победы появится свой экран, ей понадобится
-## ровно этот же снимок, только с другим заголовком.
+## Чем кончился забег. Смерть показывает экран итогов, побег (`finish_run`) —
+## экран концовки (src/ui/ending/), который читает тот же снимок, коротко.
 const OUTCOME_DEATH := &"death"
 const OUTCOME_ESCAPE := &"escape"
 

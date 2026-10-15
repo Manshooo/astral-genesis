@@ -199,10 +199,13 @@ func _build_layer_list() -> void:
 		_slice.add_child(stratum)
 		var is_open := MapKnowledge.is_layer_open(_level, depth, _current_depth)
 		var subtitle := ""
-		if not is_open:
+		if depth == depths.front():
+			# Выход подписан всегда: даже на нулевом уровне Архитектора срез
+			# говорит, где цель, — задача игрока только путь (§6 «Игровой цикл —
+			# от и до»). Закрытый слой остаётся штриховкой, но не безымянной.
+			subtitle = _surface_subtitle(is_open)
+		elif not is_open:
 			subtitle = tr("MAP_LAYER_CLOSED")
-		elif depth == depths.front():
-			subtitle = tr("MAP_LAYER_SURFACE")
 		elif depth == depths.back():
 			subtitle = tr("MAP_LAYER_DEPTH")
 		stratum.setup(depth, is_open, subtitle)
@@ -317,11 +320,19 @@ static func _depths_from_surface() -> Array:
 	return depths
 
 
+## Подпись слоя-поверхности: «выход» — всегда, «поверхность» — когда слой открыт
+## (на закрытом сказать о нём больше нечего).
+func _surface_subtitle(is_open: bool) -> String:
+	if not is_open:
+		return tr("MAP_LAYER_EXIT")
+	return "%s · %s" % [tr("MAP_LAYER_EXIT"), tr("MAP_LAYER_SURFACE")]
+
+
 func _layer_name(depth: int) -> String:
 	var depths := _depths_from_surface()
 	var title := tr("MAP_LAYER") % depth
 	if depth == depths.front():
-		title += " · " + tr("MAP_LAYER_SURFACE")
+		title += " · " + _surface_subtitle(true)
 	elif depth == depths.back():
 		title += " · " + tr("MAP_LAYER_DEPTH")
 	return title

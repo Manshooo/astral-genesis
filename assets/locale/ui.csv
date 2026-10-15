@@ -57,6 +57,11 @@ MAP_CORRIDOR,Коридор,Corridor
 MAP_VISITED,посещено,visited
 MAP_UNEXPLORED,не исследовано,unexplored
 MAP_PORTAL_UP,портал вверх,portal up
+EXIT_SIGN_DOOR,ВЫХОД,EXIT
+EXIT_SIGN_ROUTE,ВЫХОД ↑ L%d,EXIT ↑ L%d
+EXIT_SIGN_LAYER,УРОВЕНЬ L%d,LEVEL L%d
+EXIT_SIGN_PORTAL_UP,ВВЕРХ ↑ L%d,UP ↑ L%d
+EXIT_SIGN_PORTAL_DOWN,ВНИЗ ↓ L%d,DOWN ↓ L%d
 MAP_PORTAL_DOWN,портал вниз,portal down
 MAP_PORTAL_TARGET,"→ L%d, этаж %d","→ L%d, floor %d"
 MAP_LOCKED,заперт: нужен %s,locked: needs %s
@@ -239,6 +244,7 @@ SKILL_REQ_BRANCH,"Рангов в ветке «%s»: %d","Ranks in “%s”: %d"
 SKILL_HINT_PAN,"Тащите за пустое место, колесо — масштаб","Drag empty space to pan, wheel to zoom"
 MAP_SLICE,Срез,Cross-section
 MAP_LAYER_SURFACE,поверхность,surface
+MAP_LAYER_EXIT,выход,exit
 MAP_LAYER_DEPTH,глубина,the depths
 SETTINGS_WINDOW_MODE,Режим окна,Window mode
 SETTINGS_WINDOW_FULLSCREEN,Полноэкранный,Fullscreen
