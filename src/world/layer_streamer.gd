@@ -375,6 +375,10 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	if spatial:
 		spatial.transform = plan.room_transform(node_data.id)
 
+	# Номер слоя на табличках комнаты — по узлу, а не по current_depth: слой
+	# спавнится целиком, пока глубина самого стримера ещё старая (см. ExitSign).
+	ExitSign.stamp_depth(entity, node_data.depth)
+
 	# Стены и двери сборной комнаты — тоже до add_entity: двери должны попасть в
 	# обход вложенных сущностей (_register_room_children) вместе с остальными.
 	var shell := RS_RoomLayout.shell_of(entity)
@@ -516,6 +520,7 @@ func _bind_portals(spawned: SpawnedRoom, node_data: RS_LevelNode) -> void:
 			continue
 		var portal: Entity = free_portals.pop_front()
 		_stamp_portal(portal, conn)
+		ExitSign.stamp_destination(portal, target.depth)
 		_set_door_prompt(portal, _portal_prompt(node_data, target, conn))
 
 	for portal in free_portals:

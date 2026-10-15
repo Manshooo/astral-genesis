@@ -4,6 +4,20 @@ RUN_SUMMARY_SUBTITLE_DEATH,"БФЖ распался, не найдя новог�
 RUN_SUMMARY_HEADING,ИТОГИ ЗАБЕГА,RUN SUMMARY
 RUN_SUMMARY_REVIVE,Возродиться,Revive
 RUN_SUMMARY_REVIVING,Возрождение…,Reviving…
+ENDING_LINE_1,Дверь открылась — и над ним впервые нет потолка.,The door opened — and for the first time there is no ceiling above it.
+ENDING_LINE_2,"В нём сотни чужих голосов, и все просят об одном: наружу.","Hundreds of borrowed voices inside it, and all ask for one thing: out."
+ENDING_LINE_3,БФЖ выходит на поверхность. Всё живое здесь станет им.,The incorporeal one steps onto the surface. Everything alive here will become it.
+ENDING_LINE_4,А потом — тишина.,And then — silence.
+ENDING_CREDITS_TITLE,Astral Genesis,Astral Genesis
+ENDING_CREDITS_DESIGN,Геймдизайн,Game design
+ENDING_CREDITS_CODE,Программирование,Programming
+ENDING_CREDITS_ART,Художники,Art
+ENDING_CREDITS_SOUND,Звук,Sound
+ENDING_CREDITS_NAME,Имя Фамилия,Name Surname
+ENDING_CREDITS_THANKS,Спасибо за игру,Thanks for playing
+ENDING_SKIP_HINT,Esc — пропустить,Esc — skip
+ENDING_HEADING,ПОБЕГ,ESCAPE
+ENDING_TO_MENU,В меню,To the menu
 LOADING_COMPLEX,Комплекс перестраивается…,The complex is reshaping itself…
 RUN_STAT_TIME,Время забега,Run time
 RUN_STAT_ROOMS,Комнат пройдено,Rooms visited
@@ -23,6 +37,13 @@ BODY_CRAWLER,Ползун,Crawler
 BODY_HOUND,Гончая,Hound
 BODY_SCIENTIST,Учёный,Scientist
 BODY_SOLDIER,Военный,Soldier
+THOUGHT_DEFAULT,"Чужая память шепчет одно: наверх.","A stranger's memory whispers one thing: up."
+THOUGHT_BODY_WALKER,Наверх. Выход на нулевом.,Up. The exit is on zero.
+THOUGHT_BODY_CORPSE,"Меня не вынесли. А дверь была рядом, наверху.","Nobody carried me out. And the door was close, upstairs."
+THOUGHT_BODY_CRAWLER,"Тесно. Шахта идёт вверх — там воздух.","Cramped. The shaft goes up — there is air."
+THOUGHT_BODY_HOUND,"Цепь, клетка, железо. Наверху пахнет ветром.","Chain, cage, iron. Upstairs it smells of wind."
+THOUGHT_BODY_SCIENTIST,"Пропуск третьего уровня. Лифт не работает — значит, лестницы.","Level three pass. The lift is dead — stairs, then."
+THOUGHT_BODY_SOLDIER,"Приказ был держать периметр. Периметр — наверху.","The order was to hold the perimeter. The perimeter is upstairs."
 ARCHITECT_PROMPT,Архитектор,Architect
 ARCHITECT_POINTS,Эссенция: %d,Essence: %d
 ARCHITECT_ESSENCE_ONE,эссенция,essence
@@ -52,6 +73,11 @@ MAP_CORRIDOR,Коридор,Corridor
 MAP_VISITED,посещено,visited
 MAP_UNEXPLORED,не исследовано,unexplored
 MAP_PORTAL_UP,портал вверх,portal up
+EXIT_SIGN_DOOR,ВЫХОД,EXIT
+EXIT_SIGN_ROUTE,ВЫХОД ↑ L%d,EXIT ↑ L%d
+EXIT_SIGN_LAYER,УРОВЕНЬ L%d,LEVEL L%d
+EXIT_SIGN_PORTAL_UP,ВВЕРХ ↑ L%d,UP ↑ L%d
+EXIT_SIGN_PORTAL_DOWN,ВНИЗ ↓ L%d,DOWN ↓ L%d
 MAP_PORTAL_DOWN,портал вниз,portal down
 MAP_PORTAL_TARGET,"→ L%d, этаж %d","→ L%d, floor %d"
 MAP_LOCKED,заперт: нужен %s,locked: needs %s
@@ -115,6 +141,7 @@ MENU_LOAD_EMPTY,нет сохранений,no saved run
 MENU_SETTINGS,Настройки,Settings
 MENU_QUIT,Выйти,Quit
 MENU_BUILD,сборка %s,build %s
+MENU_COMPLETED,Комплекс покинут,The complex is left behind
 CALIBRATION_TITLE,Калибровка яркости,Brightness calibration
 CALIBRATION_INSTRUCTION,"Подберите яркость: левый знак виден, средний едва различим, правый не виден.","Set the brightness so the left sign is visible, the middle one is barely visible and the right one is not."
 CALIBRATION_NOTE,"Средний знак освещён, как стена в тёмном закоулке глубокого слоя вне света лампы. Подбирайте при том свете в комнате, при котором играете.","The middle sign is lit like a wall in a dark corner of a deep layer, outside a lamp's light. Calibrate in the room lighting you play in."
@@ -249,6 +276,7 @@ SKILL_ABILITY_OFF,Не действует в этом теле,Inactive in this 
 SKILL_HINT_PAN,"Тащите за пустое место, колесо — масштаб","Drag empty space to pan, wheel to zoom"
 MAP_SLICE,Срез,Cross-section
 MAP_LAYER_SURFACE,поверхность,surface
+MAP_LAYER_EXIT,выход,exit
 MAP_LAYER_DEPTH,глубина,the depths
 SETTINGS_WINDOW_MODE,Режим окна,Window mode
 SETTINGS_WINDOW_FULLSCREEN,Полноэкранный,Fullscreen

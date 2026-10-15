@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/levels/props/exit_sign.gd" id="1_script"]
+[ext_resource type="FontVariation" path="res://assets/fonts/golos_semibold.tres" id="2_font"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_plate"]
+albedo_color = Color(0.025, 0.04, 0.03, 1)
+roughness = 1.0
+emission_enabled = true
+emission = Color(0.05, 0.25, 0.12, 1)
+emission_energy_multiplier = 0.3
+
+[sub_resource type="QuadMesh" id="QuadMesh_plate"]
+material = SubResource("StandardMaterial3D_plate")
+size = Vector2(2.6, 0.95)
+
+[node name="ExitSign" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Plate" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+cast_shadow = 0
+mesh = SubResource("QuadMesh_plate")
+
+[node name="ExitLabel" type="Label3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17, 0.02)
+modulate = Color(0.5, 0.95, 0.65, 0.9)
+outline_modulate = Color(0, 0.05, 0.02, 0.8)
+text = "EXIT_SIGN_DOOR"
+font = ExtResource("2_font")
+font_size = 56
+outline_size = 8
+pixel_size = 0.006
+double_sided = false
+
+[node name="LayerLabel" type="Label3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.02)
+modulate = Color(0.68, 0.8, 0.72, 0.8)
+outline_modulate = Color(0, 0.05, 0.02, 0.8)
+text = "EXIT_SIGN_LAYER"
+font = ExtResource("2_font")
+font_size = 36
+outline_size = 6
+pixel_size = 0.006
+double_sided = false
