@@ -365,6 +365,7 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 		var outward := face.w >= 0 and face.w < SquareGridTopology.SIDE_COUNT
 		if not box.has(cell) or not outward or box.has(topology.neighbour(cell, face.w)):
 			problems.append("'%s': сокет %s — не наружная грань footprint %s" % [label, face, shell.size])
+	problems.append_array(_validate_exits(label, shell, box, topology))
 	var sockets := RS_RoomLayout.socket_count_of_scene(preset.scene.resource_path)
 	if preset.doors_min < 1 or preset.doors_min > preset.doors_max or preset.doors_max > sockets:
 		problems.append(
@@ -381,6 +382,28 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 			"'%s': дверей до %d, а сторон с сокетами %d — дверь ставится по одной на сторону"
 			% [label, preset.doors_max, sides]
 		)
+	return problems
+
+
+## Грань выхода наружу (C_RoomShell.exit_sockets) ломается так же тихо, как
+## сокет: не на периметре — двери наружу негде встать; совпала с сокетом — к ней
+## придёт коридор; без объявленных сокетов её отдали бы раскладке все грани
+## периметра; без exit_door в ките сборка оставит голый проём.
+func _validate_exits(label: String, shell: C_RoomShell, box: Array[Vector3i], topology: SquareGridTopology) -> Array[String]:
+	var problems: Array[String] = []
+	if shell.exit_sockets.is_empty():
+		return problems
+	if shell.door_sockets.is_empty():
+		problems.append("'%s': у коробки есть выход наружу, но сокеты не объявлены (C_RoomShell.door_sockets)" % label)
+	if shell.walls and shell.walls.exit_door == null:
+		problems.append("'%s': у коробки есть выход наружу, а в ките стен нет exit_door" % label)
+	for face in shell.exit_sockets:
+		var cell := GridTopology.face_cell(face)
+		var outward := face.w >= 0 and face.w < SquareGridTopology.SIDE_COUNT
+		if not box.has(cell) or not outward or box.has(topology.neighbour(cell, face.w)):
+			problems.append("'%s': выход %s — не наружная грань footprint %s" % [label, face, shell.size])
+		elif shell.door_sockets.has(face):
+			problems.append("'%s': выход %s совпадает с сокетом двери" % [label, face])
 	return problems
 
 

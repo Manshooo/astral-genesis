@@ -6,7 +6,7 @@ extends "res://dev/check_harness.gd"
 ## повёрнутая не в ту сторону, ставит проём в глухую сторону. Ни одно из этого не
 ## падает с ошибкой.
 ##
-## Четыре части:
+## Пять частей:
 ##   1. все комнаты генератора — коробки, и коробка каждой = footprint × клетка;
 ##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5) и не
 ##      выходят за footprint коробки (в толщу стены — можно);
@@ -14,7 +14,8 @@ extends "res://dev/check_harness.gd"
 ##      2×2×1 и веткой, стены и торцы по маске — и лучи по коллизии, как у
 ##      corridor_spawn_check; у коробки со стенами в меше — заглушки на
 ##      невыбранных сокетах и ни одной стены поверх нарисованных;
-##   4. валидация пресета на такой коробке ловит то, что сборка молча стерпела бы.
+##   4. валидация пресета на такой коробке ловит то, что сборка молча стерпела бы;
+##   5. в собранной комнате выхода есть дверь наружу — в проёме своей грани.
 ##
 ## Запускать: godot --headless dev/room_shell_check.tscn
 
@@ -65,6 +66,8 @@ func _ready() -> void:
 		for turns in [0, 1]:
 			await _check_assembly(kit_room, turns)
 	_check_walled_validation()
+	for turns in [0, 1]:
+		_check_exit_room(turns)
 	_finish()
 
 
@@ -309,6 +312,71 @@ func _check_assembly(kit_room: String, turns: int) -> void:
 	# Сразу, а не в конце кадра: следующая сборка встаёт на то же место, и её лучи
 	# не должны задеть коллизию этой.
 	root.free()
+
+
+## Комната выхода из конфига: после сборки в ней есть интерактив, кончающий забег
+## (A_FinishRun), он стоит на середине грани выхода, за ним стена с проёмом, а не
+## глухая, и раскладка не повела к этой грани коридор. Выход однажды молча
+## пропал при переезде комнаты на коробку кита P — игрок дошёл бы до выхода и
+## не нашёл двери.
+func _check_exit_room(turns: int) -> void:
+	var path := ""
+	for unique: RS_UniqueRoom in (load(CONFIG_PATH) as RS_WorldGenConfig).unique_rooms:
+		if unique and unique.exit and unique.preset and unique.preset.scene:
+			path = unique.preset.scene.resource_path
+	var tag := "комната выхода, поворот %d" % turns
+	_check("%s: есть в конфиге" % tag, path != "", CONFIG_PATH)
+	if path == "":
+		return
+	var room_node := RS_LevelNode.new()
+	room_node.id = &"exit"
+	room_node.room_scene_path = path
+	room_node.socket_doors = 2
+	room_node.turns = turns
+	var rooms: Array[RS_LevelNode] = [room_node]
+	for i in 2:
+		var neighbour := RS_LevelNode.new()
+		neighbour.id = StringName("neighbour_%d" % i)
+		neighbour.room_scene_path = KIT_P_ROOM
+		neighbour.socket_doors = 1
+		rooms.append(neighbour)
+	var config := RS_WorldGenConfig.new()
+	config.corridor_loops = 0
+	config.dead_ends = 0
+	var plan := RS_LayerPlan.new()
+	RS_CorridorPlanner.plan_floor(plan, rooms, "corridor_", 0, config, RandomNumberGenerator.new())
+
+	var room := (load(path) as PackedScene).instantiate() as Node3D
+	room.transform = plan.room_transform(room_node.id)
+	var shell := RS_RoomLayout.shell_of(room)
+	shell.walls.assemble(room, room_node.id, plan)
+	var exits: Array[Node3D] = []
+	for node in room.find_children("*", "Entity", true, false):
+		var interactive := node as E_InteractableObject
+		if interactive and interactive.actions.any(func(a: RS_InteractionAction) -> bool: return a is A_FinishRun):
+			exits.append(interactive)
+	_check("%s: есть дверь наружу (A_FinishRun)" % tag, exits.size() == shell.exit_sockets.size() and not exits.is_empty(),
+		"дверей наружу %d, граней выхода %d" % [exits.size(), shell.exit_sockets.size()])
+	var faces: Dictionary = plan.door_faces.get(room_node.id, {})
+	var problems: Array[String] = []
+	for socket in shell.exit_sockets:
+		var face := RS_RoomLayout.face_in_plan(socket, shell.size, turns, plan.cells[room_node.id])
+		var cell := GridTopology.face_cell(face)
+		var mid := (plan.embedding.cell_origin(cell) + plan.embedding.cell_origin(plan.topology.neighbour(cell, face.w))) * 0.5
+		if faces.has(face):
+			problems.append("к выходу %s ведёт коридор" % face)
+		if not exits.any(func(door: Node3D) -> bool: return (room.transform * door.position).distance_to(mid) <= EPSILON):
+			problems.append("на середине грани %s нет двери наружу" % face)
+		var centre := plan.embedding.cell_origin(cell)
+		var facing := plan.embedding.turn_basis(RS_RoomLayout.north_piece_turns(face.w))
+		var opening := room.get_children().any(func(child: Node) -> bool:
+			return child.scene_file_path == shell.walls.door_wall.resource_path \
+				and (room.transform * (child as Node3D).position).distance_to(centre) <= EPSILON \
+				and (room.transform.basis * (child as Node3D).basis).is_equal_approx(facing))
+		if not opening:
+			problems.append("за выходом %s нет стены с проёмом" % face)
+	_check("%s: дверь наружу в проёме своей грани, и коридор к ней не идёт" % tag, problems.is_empty(), ", ".join(problems))
+	room.free()
 
 
 ## Коробка со стенами в меше: сборка не ставит ни одной стены — ни с проёмом, ни
