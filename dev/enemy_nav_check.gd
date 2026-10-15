@@ -29,6 +29,10 @@ const EYE := 1.6
 ## Полоса арены под каждый сценарий: враги разных блоков не мешают друг другу.
 const OPEN_Z := -20.0
 const WALL_Z := 20.0
+## Балка в углу арены, вдали от полос сценариев: точка пола под её серединой.
+const BEAM_CENTER := Vector3(20.0, 0.0, -27.0)
+## Низ балки: выше обычного агента навмеша (2.0), ниже крупного (2.75).
+const BEAM_BOTTOM := 2.3
 
 var _world: World
 var _player: E_Player
@@ -69,6 +73,7 @@ func _run() -> void:
 	await _check_memory()
 	await _check_path_around_obstacle()
 	_check_template_covers_enemies()
+	await _check_sizes()
 	await _check_real_layer()
 
 
@@ -87,6 +92,8 @@ func _build_arena() -> void:
 	_box(Vector3(0.0, 0.5, -4.0), Vector3(0.5, 1.0, 16.0))
 	# Высокая стенка в полосе WALL_Z: закрывает и обзор.
 	_box(Vector3(0.0, 1.5, WALL_Z), Vector3(0.5, 3.0, 12.0))
+	# Балка над полом (низ на BEAM_BOTTOM): обычный враг под ней проходит, крупный — нет.
+	_box(BEAM_CENTER + Vector3(0.0, BEAM_BOTTOM + 0.25, 0.0), Vector3(4.0, 0.5, 3.0))
 
 
 func _box(center: Vector3, size: Vector3) -> void:
@@ -327,12 +334,14 @@ func _check_path_around_obstacle() -> void:
 	if not _nav.is_ready():
 		return
 	print("  замер арены: разбор %.1f мс, запекание %.1f мс" % [_nav.parse_usec / 1000.0, _nav.bake_usec / 1000.0])
-	var map := _world.get_viewport().find_world_3d().navigation_map
-	_check(
-		"ячейка навмеша совпала с картой навигации",
-		is_equal_approx(_nav.region.navigation_mesh.cell_size, NavigationServer3D.map_get_cell_size(map)),
-		"%f против %f" % [_nav.region.navigation_mesh.cell_size, NavigationServer3D.map_get_cell_size(map)]
-	)
+	var cell_wrong: Array[String] = []
+	for path: String in _nav.regions:
+		var region := _nav.regions[path]
+		var map := region.get_navigation_map()
+		if not is_equal_approx(region.navigation_mesh.cell_size, NavigationServer3D.map_get_cell_size(map)) \
+				or not is_equal_approx(region.navigation_mesh.cell_height, NavigationServer3D.map_get_cell_height(map)):
+			cell_wrong.append(path.get_file())
+	_check("ячейка каждого навмеша совпала со своей картой", cell_wrong.is_empty(), ", ".join(cell_wrong))
 
 	var max_z := -INF
 	var reached := false
@@ -356,7 +365,7 @@ func _check_path_around_obstacle() -> void:
 
 	# Навмеш слоя уходит вместе со слоем: снятый регион не остаётся в карте.
 	_nav.clear()
-	_check("clear() снимает регион", _nav.region == null, "")
+	_check("clear() снимает регионы", _nav.regions.is_empty(), "")
 	await _physics(2)
 
 
@@ -364,41 +373,107 @@ func _check_path_around_obstacle() -> void:
 ## там, где капсула врага не пройдёт, и маска геометрии разошлась бы с тем, во что
 ## враг упирается физически.
 func _check_template_covers_enemies() -> void:
-	var template := load(LayerNavigation.TEMPLATE_PATH) as NavigationMesh
-	var radius := 0.0
-	var height := 0.0
+	var first := load(LayerNavigation.PROFILES[0]) as NavigationMesh
+	var parse_wrong: Array[String] = []
+	for path in LayerNavigation.PROFILES:
+		var other := load(path) as NavigationMesh
+		if other.geometry_parsed_geometry_type != first.geometry_parsed_geometry_type \
+				or other.geometry_collision_mask != first.geometry_collision_mask \
+				or other.geometry_source_geometry_mode != first.geometry_source_geometry_mode:
+			parse_wrong.append(path.get_file())
+	# Геометрия разбирается один раз, по первому шаблону: расхождение в разборе
+	# у другого шаблона молча не применилось бы.
+	_check("разбор геометрии у всех шаблонов навмеша общий", parse_wrong.is_empty(), ", ".join(parse_wrong))
+
+	var unknown: Array[String] = []
+	var uncovered: Array[String] = []
 	var mask_wrong: Array[String] = []
+	var used := {}
 	var scenes := 0
 	for file in DirAccess.get_files_at(ENEMY_DIR):
 		if not file.begins_with("e_enemy") or not file.ends_with(".tscn"):
 			continue
 		scenes += 1
 		var enemy := (load(ENEMY_DIR + file) as PackedScene).instantiate() as E_Enemy
+		var profile: NavigationMesh = null
+		for component in enemy.component_resources:
+			if component is C_EnemyAI:
+				profile = (component as C_EnemyAI).nav_profile
+		if profile == null or not LayerNavigation.PROFILES.has(profile.resource_path):
+			unknown.append(file)
+			(enemy as Node).free()
+			continue
+		used[profile.resource_path] = true
 		for shape_node in enemy.find_children("*", "CollisionShape3D", true, false):
 			var capsule := (shape_node as CollisionShape3D).shape as CapsuleShape3D
-			if capsule != null:
-				radius = maxf(radius, capsule.radius)
-				height = maxf(height, capsule.height)
+			if capsule != null and (capsule.radius > profile.agent_radius or capsule.height > profile.agent_height):
+				uncovered.append("%s (капсула %.2f×%.2f, агент %.2f×%.2f)" % [
+					file, capsule.radius, capsule.height, profile.agent_radius, profile.agent_height])
 		var solid := (enemy as Node as CharacterBody3D).collision_mask & ~PLAYER_LAYER
-		if solid != template.geometry_collision_mask:
+		if solid != profile.geometry_collision_mask:
 			mask_wrong.append(file)
 		(enemy as Node).free()
-	_check("найдены сцены врагов", scenes >= 4, "найдено %d" % scenes)
-	_check(
-		"радиус агента навмеша покрывает самую толстую капсулу врага",
-		template.agent_radius >= radius,
-		"агент %.2f, капсула %.2f" % [template.agent_radius, radius]
-	)
-	_check(
-		"высота агента навмеша покрывает самую высокую капсулу врага",
-		template.agent_height >= height,
-		"агент %.2f, капсула %.2f" % [template.agent_height, height]
-	)
+	_check("найдены сцены врагов", scenes >= 5, "найдено %d" % scenes)
+	_check("у каждого врага шаблон навмеша из LayerNavigation.PROFILES", unknown.is_empty(), ", ".join(unknown))
+	_check("шаблон навмеша врага покрывает его капсулу", uncovered.is_empty(), "; ".join(uncovered))
 	_check(
 		"маска геометрии навмеша — это то, во что враг упирается, кроме игрока",
 		mask_wrong.is_empty(),
-		"расходятся: %s, маска навмеша %d" % [", ".join(mask_wrong), template.geometry_collision_mask]
+		"расходятся: %s" % ", ".join(mask_wrong)
 	)
+	_check("каждый шаблон кому-то нужен", used.size() == LayerNavigation.PROFILES.size(), str(used.keys()))
+
+
+## Навмеш на каждый размер: под балкой, низ которой выше обычного агента и ниже
+## крупного, навмеш обычного размера есть, крупного — нет, и у размеров разные
+## карты. Ради этого навмеши и разделены: один общий по самому крупному выбросил
+## бы такое место и для мелких врагов.
+func _check_sizes() -> void:
+	_nav.bake(_world)
+	var guard := 0
+	while not _nav.is_ready() and guard < 600:
+		await _physics(1)
+		guard += 1
+	_check("навмеши всех размеров запеклись", _nav.is_ready(), "ждали %d физкадров" % guard)
+	if not _nav.is_ready():
+		return
+	var small := _nav.regions[LayerNavigation.PROFILES[0]].get_navigation_map()
+	var large := _nav.regions[LayerNavigation.PROFILES[1]].get_navigation_map()
+	_check("у каждого размера своя карта", small != large, "")
+
+	# Ближайшая точка навмеша к полу под серединой балки. Пол «на навмеше», если она
+	# рядом по горизонтали и внизу: навмеш лежит чуть выше пола, а верх балки тоже
+	# проходим, и у крупного ближайшей может оказаться точка на нём.
+	var near_small := NavigationServer3D.map_get_closest_point(small, BEAM_CENTER)
+	var near_large := NavigationServer3D.map_get_closest_point(large, BEAM_CENTER)
+	_check(
+		"под балкой %.1f м обычный враг проходит" % BEAM_BOTTOM,
+		_on_floor_under_beam(near_small),
+		"ближайшая точка %s" % near_small
+	)
+	_check(
+		"под балкой %.1f м крупному навмеша нет" % BEAM_BOTTOM,
+		not _on_floor_under_beam(near_large),
+		"ближайшая точка %s" % near_large
+	)
+
+	var enemy := (load(ENEMY_SCENE) as PackedScene).instantiate() as E_Enemy
+	_world.add_entity(enemy)
+	var profile := (enemy.get_component(C_EnemyAI) as C_EnemyAI).nav_profile
+	_check("враг получает карту своего размера", LayerNavigation.map_for(enemy as Node, profile) == small, "")
+	await _drop(enemy)
+
+	_nav.clear()
+	_check(
+		"после clear() карты размера нет — враг идёт по прямой",
+		not LayerNavigation.map_for(_world, load(LayerNavigation.PROFILES[0]) as NavigationMesh).is_valid(),
+		""
+	)
+	await _physics(2)
+
+
+func _on_floor_under_beam(point: Vector3) -> bool:
+	return _flat(point, BEAM_CENTER) < 0.3 and point.y < BEAM_BOTTOM * 0.5
 
 
 # ---------------------------------------------------------------------------
@@ -435,7 +510,7 @@ func _check_real_layer() -> void:
 		layer.depth, layer.rooms.size(), layer.corridor_tiles.size(),
 		layer.navigation.parse_usec / 1000.0, layer.navigation.bake_usec / 1000.0])
 
-	var map := layer.navigation.region.get_navigation_map()
+	var map := layer.navigation.regions[LayerNavigation.PROFILES[0]].get_navigation_map()
 	var uncovered: Array[String] = []
 	for id: StringName in layer.rooms:
 		var origin := (layer.rooms[id].entity as Node as Node3D).global_position
@@ -449,10 +524,18 @@ func _check_real_layer() -> void:
 		", ".join(uncovered.slice(0, 4))
 	)
 
-	var region := layer.navigation.region
+	var regions := layer.navigation.regions.values()
 	var depth := layer.depth
 	layer.despawn()
-	_check("снос слоя снимает регион навмеша", not is_instance_valid(region) and layer.navigation.region == null, "")
+	var alive := 0
+	for region: Variant in regions:
+		if is_instance_valid(region):
+			alive += 1
+	_check(
+		"снос слоя снимает регионы навмеша",
+		alive == 0 and layer.navigation.regions.is_empty(),
+		"живых регионов %d" % alive
+	)
 
 	# Запекание, которое не дождалось сноса: слой снесён, пока поток считал, и
 	# результат прошлого слоя не должен лечь в карту нового.
@@ -461,7 +544,7 @@ func _check_real_layer() -> void:
 	await _physics(60)
 	_check(
 		"запекание, перебитое сносом слоя, региона не оставляет",
-		layer.navigation.region == null and not is_instance_valid(_world.get_node_or_null("LayerNavigation")),
+		layer.navigation.regions.is_empty() and get_tree().get_nodes_in_group(LayerNavigation.GROUP).is_empty(),
 		""
 	)
 

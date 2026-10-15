@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_footsteps.gd" id="8_footsteps"]
 [ext_resource type="PackedScene" path="res://src/entities/body/e_body_l5.tscn" id="9_corpse"]
 [ext_resource type="Material" path="res://assets/shared/materials/palette_l5.tres" id="10_tone"]
+[ext_resource type="NavigationMesh" path="res://data/enemy_navmesh_large.tres" id="11_nav"]
 
 [sub_resource type="Resource" id="Resource_ai"]
 script = ExtResource("3_ai")
@@ -17,6 +18,7 @@ aggro_range = 18.0
 attack_range = 2.4
 attack_damage = 30.0
 attack_interval = 0.7
+nav_profile = ExtResource("11_nav")
 
 [sub_resource type="Resource" id="Resource_input"]
 script = ExtResource("4_input")

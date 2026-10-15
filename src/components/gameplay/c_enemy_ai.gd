@@ -71,6 +71,11 @@ enum State {
 @export var waypoint_reach: float = 0.6
 ## Дистанция до места, где видел цель, с которой оно считается достигнутым, м.
 @export var arrive_distance: float = 1.0
+## Шаблон навмеша по размеру этого врага — один из LayerNavigation.PROFILES. Свой
+## размер, а не общий по самому крупному: агент выше нужного выбрасывает из навмеша
+## всё под нависаниями, куда мелкий враг пролез бы. dev/enemy_nav_check сверяет,
+## что шаблон покрывает капсулу врага.
+@export var nav_profile: NavigationMesh = preload("res://data/enemy_navmesh.tres")
 
 ## Текущее состояние — читается HUD/будущими системами, пишет только S_EnemyAI.
 @export var state: State = State.IDLE

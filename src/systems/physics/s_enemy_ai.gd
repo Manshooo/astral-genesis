@@ -32,8 +32,9 @@
 # (SEARCHING), стоит там linger_time и сдаётся (IDLE). Увидел снова на пути —
 # гонится дальше. Враг не знает, куда цель делась потом: ни слуха, ни следов.
 #
-# ПУТЬ идёт по навмешу слоя (LayerNavigation: запекается на спавне слоя из
-# коллизии, а не в редакторе) — NavigationServer3D.map_get_path, не каждый кадр
+# ПУТЬ идёт по навмешу слоя своего размера (LayerNavigation: запекается на спавне
+# слоя из коллизии, а не в редакторе; шаблон — C_EnemyAI.nav_profile, у каждого
+# размера своя карта) — NavigationServer3D.map_get_path, не каждый кадр
 # (repath_interval), по точкам. Пока навмеш не готов или цели на нём нет, карта
 # отдаёт пустой путь, и враг идёт по прямой, как шёл без навигации: упрётся в
 # стену через move_and_slide(), но не встанет столбом.
@@ -232,10 +233,10 @@ func _steer(
 	ai.repath_left -= delta
 	if ai.repath_left <= 0.0:
 		ai.repath_left = ai.repath_interval
-		var map := node.get_world_3d().navigation_map
+		var map := LayerNavigation.map_for(node, ai.nav_profile)
 		# До первой синхронизации карта на запрос отвечает ошибкой в лог, а не
 		# пустым путём: пока она не отработала, пути просто нет.
-		if NavigationServer3D.map_get_iteration_id(map) == 0:
+		if not map.is_valid() or NavigationServer3D.map_get_iteration_id(map) == 0:
 			ai.path = PackedVector3Array()
 		else:
 			ai.path = NavigationServer3D.map_get_path(map, node.global_position, goal, true)
