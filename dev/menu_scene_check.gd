@@ -235,12 +235,22 @@ func _check_real_model() -> void:
 			marker != null and node.global_position.distance_to(marker.global_position) < 0.05,
 			"пустышки нет" if marker == null else "%s, пустышка %s" % [node.global_position, marker.global_position]
 		)
-	var bubble_material := (flask.get_node("Bubbles") as GPUParticles3D).draw_pass_1.surface_get_material(0)
+	var bubbles: GPUParticles3D = flask.get_node("Bubbles")
+	var bubble_material := bubbles.draw_pass_1.surface_get_material(0) as BaseMaterial3D
 	_check(
-		"пузырьки рисуются после стекла — копия экрана для преломления их не видит",
-		bubble_material != null and bubble_material.render_priority > GLASS.render_priority,
-		"приоритет пузырьков %s, стекла %d" % [
-			bubble_material.render_priority if bubble_material else "—", GLASS.render_priority]
+		"пузырьки непрозрачны — прозрачные стекло с преломлением прячет при любом порядке",
+		bubble_material != null and bubble_material.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED,
+		"прозрачность пузырьков %s" % [bubble_material.transparency if bubble_material else "—"]
+	)
+	var process := bubbles.process_material as ParticleProcessMaterial
+	var fog: FogVolume = flask.get_node("GlowFog")
+	var top := fog.position.y + fog.size.y * 0.5
+	var t := bubbles.lifetime
+	var fastest_end := bubbles.position.y + process.initial_velocity_max * t + 0.5 * process.gravity.y * t * t
+	_check(
+		"самый быстрый пузырёк гаснет у крышки колбы, а не над ней",
+		absf(fastest_end - top) < 0.05,
+		"гаснет на %.2f, крышка на %.2f" % [fastest_end, top]
 	)
 	menu.queue_free()
 	await get_tree().process_frame

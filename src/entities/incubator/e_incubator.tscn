@@ -32,12 +32,12 @@ albedo = Color(0.79, 0.66, 0.95, 1)
 emission = Color(0.3, 0.25, 0.38, 1)
 edge_fade = 0.35
 
-[sub_resource type="Gradient" id="Gradient_hxkhd"]
-offsets = PackedFloat32Array(0, 0.15, 0.85, 1)
-colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+[sub_resource type="Curve" id="Curve_bubble_life"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.12, 1), 0.0, 0.0, 0, 0, Vector2(0.85, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 4
 
-[sub_resource type="GradientTexture1D" id="Ramp_bubble_life"]
-gradient = SubResource("Gradient_hxkhd")
+[sub_resource type="CurveTexture" id="Scale_bubble_life"]
+curve = SubResource("Curve_bubble_life")
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_jn0qy"]
 emission_shape = 6
@@ -52,36 +52,18 @@ initial_velocity_min = 0.35
 initial_velocity_max = 0.6
 gravity = Vector3(0, 0.15, 0)
 scale_min = 0.4
-color_ramp = SubResource("Ramp_bubble_life")
-
-[sub_resource type="Gradient" id="Grad_bubble_ring"]
-offsets = PackedFloat32Array(0, 0.6, 0.85, 1)
-colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0.25, 1, 1, 1, 1, 1, 1, 1, 0)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_w261y"]
-gradient = SubResource("Grad_bubble_ring")
-width = 32
-height = 32
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(1, 0.5)
+scale_curve = SubResource("Scale_bubble_life")
 
 [sub_resource type="StandardMaterial3D" id="Mat_bubble"]
-render_priority = 1
-transparency = 1
-blend_mode = 1
 shading_mode = 0
-vertex_color_use_as_albedo = true
-albedo_color = Color(0.9, 0.85, 1, 0.7)
-albedo_texture = SubResource("GradientTexture2D_w261y")
-billboard_mode = 3
-particles_anim_h_frames = 1
-particles_anim_v_frames = 1
-particles_anim_loop = false
+albedo_color = Color(0.9, 0.85, 1, 1)
 
-[sub_resource type="QuadMesh" id="QuadMesh_trc5g"]
+[sub_resource type="SphereMesh" id="Mesh_bubble"]
 material = SubResource("Mat_bubble")
-size = Vector2(0.06, 0.06)
+radius = 0.02
+height = 0.04
+radial_segments = 8
+rings = 4
 
 [sub_resource type="BoxShape3D" id="PanelShape"]
 size = Vector3(1.0332031, 1.965039, 1.8125)
@@ -115,7 +97,7 @@ amount = 36
 lifetime = 3.0
 preprocess = 6.0
 process_material = SubResource("ParticleProcessMaterial_jn0qy")
-draw_pass_1 = SubResource("QuadMesh_trc5g")
+draw_pass_1 = SubResource("Mesh_bubble")
 
 [node name="Specimen" parent="Flask" unique_id=1498843046 instance=ExtResource("10_specimen")]
 transform = Transform3D(-0.6260561, 0, 0.7797779, 0, 1, 0, -0.7797779, 0, -0.6260561, 0, 1.2767081, 0)
