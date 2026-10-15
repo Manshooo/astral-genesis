@@ -33,21 +33,18 @@ const BLUR_OUT := 5.0
 @onready var _shadow: TextureRect = $Blur/ThoughtShadow
 @onready var _label: UI_ThoughtLabel = $Blur/Text
 @onready var _blur: CanvasGroup = $Blur
+## Межбуквенный интервал анимируется только у этой строки, поэтому шрифт у неё
+## свой — FontVariation поверх шрифта вариации HudMessage, переопределённый в
+## hud.tscn с resource_local_to_scene: у каждого экземпляра HUD своя копия.
+## Основа в сцене повторяет шрифт вариации в теме — меняется вместе с ним.
+@onready var _font := _label.get_theme_font(&"font") as FontVariation
 
 ## Время показа по часам HUD; -INF — сообщения нет.
 var _started := -INF
-## Своя копия шрифта: межбуквенный интервал анимируется только у этой строки.
-var _font: FontVariation
 var _blur_now := 0.0
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_shadow.texture = UI_HudMood.thought_shadow_texture()
-	_blur.material = UI_HudMood.blur_material()
-	_font = FontVariation.new()
-	_font.base_font = _label.get_theme_font(&"font")
-	_label.add_theme_font_override(&"font", _font)
 	visible = false
 	if ECS.world:
 		_connect_world_signals(ECS.world)

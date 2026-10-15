@@ -363,7 +363,7 @@ func _check_visibility(where: String) -> void:
 ## рисует, а ломается карта тихо: ветка, не попавшая в «известные», просто не
 ## нарисуется, маркер за краем просто не виден.
 func _check_minimap() -> void:
-	var map := UI_MiniMap.new()
+	var map := (load("res://src/ui/hud/mini_map.tscn") as PackedScene).instantiate() as UI_MiniMap
 	map.size = Vector2(240.0, 240.0)
 	add_child(map)
 	await get_tree().process_frame
