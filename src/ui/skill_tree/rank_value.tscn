@@ -1,0 +1,5 @@
+[gd_scene format=3]
+
+[node name="RankValue" type="Label"]
+auto_translate_mode = 2
+theme_type_variation = &"MenuStatValue"

@@ -11,7 +11,12 @@ RUN_STAT_BODIES,Тел занято,Bodies taken
 RUN_STAT_BODY_LIST,Какие тела,Which bodies
 RUN_STAT_DAMAGE_TAKEN,Урона получено,Damage taken
 RUN_STAT_DAMAGE_DEALT,Урона нанесено,Damage dealt
-RUN_STAT_SKILL_POINTS,Очков навыков получено,Skill points earned
+RUN_STAT_SKILL_POINTS,Очков души получено,Soul points earned
+RUN_STAT_POINTS_ABSORB,· за поглощение сознаний,· from absorbed minds
+RUN_STAT_POINTS_CLEAN_EXIT,· за чистый выход,· from a clean exit
+RUN_STAT_ESSENCE,Эссенции получено,Essence earned
+RUN_STAT_ESSENCE_ARCHITECT,· от Архитектора,· from the Architect
+RUN_STAT_ESSENCE_PICKUP,· за находки,· from finds
 BODY_CORPSE,Труп,Corpse
 BODY_WALKER,Ходок,Walker
 BODY_CRAWLER,Ползун,Crawler
@@ -76,6 +81,7 @@ HUD_MSG_NO_SPRINT,Это тело не умеет бегать,This body can't r
 HUD_MSG_NO_ATTACK,Этому телу нечем бить,This body has nothing to strike with
 HUD_MSG_HIT,Удар достиг цели,The blow lands
 HUD_MSG_NO_ROOM,Тело здесь не поместится,The body won't fit here
+HUD_MSG_SKILL_CONDITION,Душа усвоила: %s,The soul has learned: %s
 ITEM_LEVEL_ACCESS_KEY,ключ доступа к уровню,a level access key
 HUD_CTRL_MOVE,Ход,Move
 HUD_CTRL_FLIGHT,Полёт,Flight
@@ -213,8 +219,8 @@ SKILL_OVERFLOW_CONTROL_NAME,Контроль избытка,Overflow control
 SKILL_OVERFLOW_CONTROL_DESC,Снижает потери излишка запаса души сверх собственного максимума.,Reduces the loss of soul reserve held above its own maximum.
 SKILL_LAST_BREATH_NAME,Последний вдох,Last breath
 SKILL_LAST_BREATH_DESC,Больше запаса души сохраняется при гибели захваченного тела.,More of the soul’s reserve survives when the captured body dies.
-SKILL_STEADY_LEGS_NAME,Твёрдая поступь,Steady stride
-SKILL_STEADY_LEGS_DESC,Увеличивает скорость ходьбы в захваченном теле.,Raises walking speed in a captured body.
+SKILL_STEADY_LEGS_NAME,Скорость,Speed
+SKILL_STEADY_LEGS_DESC,Увеличивает скорость ходьбы в теле с ногами.,Raises walking speed in a body that has legs.
 SKILL_SPRING_STEP_NAME,Пружинный шаг,Spring step
 SKILL_SPRING_STEP_DESC,Увеличивает силу прыжка в захваченном теле.,Raises jump strength in a captured body.
 SKILL_RESILIENT_FLESH_NAME,Живучесть,Resilience
@@ -222,6 +228,17 @@ SKILL_RESILIENT_FLESH_DESC,Увеличивает запас прочности 
 SKILL_SECOND_WIND_NAME,Второе дыхание,Second wind
 SKILL_SECOND_WIND_DESC,Увеличивает скорость бега в захваченном теле.,Raises sprint speed in a captured body.
 SKILL_REQ_BRANCH,"Рангов в ветке «%s»: %d","Ranks in “%s”: %d"
+SKILL_VALUES,Значение по рангам,Value by rank
+SKILL_BONUS_PENDING,"Условие ранга даёт +%s к значению ранга","Meeting the rank condition adds +%s to the rank value"
+SKILL_BONUS_ACTIVE,"Условие выполнено: значение ранга усилено на %s","Condition met: the rank value is boosted by %s"
+SKILL_CONDITIONS,Условие,Condition
+SKILL_COND_ROW,Ранг %d: %s (%s),Rank %d: %s (%s)
+SKILL_COND_DISTANCE,Пройти %s по новым клеткам,Walk %s through cells new this run
+SKILL_COND_CAPTURE_KINDS,"Захватить разные виды тел: %d, класс не ниже L%d","Capture different kinds of body: %d, class L%d or higher"
+SKILL_COND_KM,%s км,%s km
+SKILL_COND_PROGRESS,%s из %s,%s of %s
+SKILL_ABILITY_NOTE,Навык способности: действует только в теле с этой способностью,Ability skill: works only in a body with that ability
+SKILL_ABILITY_OFF,Не действует в этом теле,Inactive in this body
 SKILL_HINT_PAN,"Тащите за пустое место, колесо — масштаб","Drag empty space to pan, wheel to zoom"
 MAP_SLICE,Срез,Cross-section
 MAP_LAYER_SURFACE,поверхность,surface

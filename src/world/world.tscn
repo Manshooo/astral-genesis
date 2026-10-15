@@ -39,6 +39,7 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_decay_shelter.gd" id="37_shelter"]
 [ext_resource type="Script" path="res://src/systems/physics/s_attack.gd" id="38_attack"]
 [ext_resource type="Script" path="res://src/observers/o_enemy_death.gd" id="39_enemydeath"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_skill_conditions.gd" id="40_skillcond"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -110,6 +111,10 @@ group = &"gameplay"
 
 [node name="S_RoomPresence" type="Node" parent="World/Systems/gameplay" unique_id=1979994352]
 script = ExtResource("26_presence")
+group = &"gameplay"
+
+[node name="S_SkillConditions" type="Node" parent="World/Systems/gameplay" unique_id=1979994360]
+script = ExtResource("40_skillcond")
 group = &"gameplay"
 
 [node name="S_SoulGlow" type="Node" parent="World/Systems/gameplay" unique_id=1979994353]

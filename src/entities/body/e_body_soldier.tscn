@@ -49,6 +49,7 @@ interval = 1.1
 
 [node name="e_body_soldier" unique_id=1735200102 instance=ExtResource("1_base")]
 display_name_key = &"BODY_SOLDIER"
+body_class = 3
 component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack")])
 
 [node name="body" parent="Skeleton3D" index="0"]

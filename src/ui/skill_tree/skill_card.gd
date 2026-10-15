@@ -22,6 +22,7 @@ class Currency:
 	var no_money_key := "SKILL_NO_POINTS"
 
 const REQUIREMENT_ROW_SCENE := preload("res://src/ui/skill_tree/requirement_row.tscn")
+const RANK_VALUE_SCENE := preload("res://src/ui/skill_tree/rank_value.tscn")
 
 @onready var _branch: Label = %Branch
 @onready var _title: Label = %CardTitle
@@ -31,6 +32,12 @@ const REQUIREMENT_ROW_SCENE := preload("res://src/ui/skill_tree/requirement_row.
 @onready var _cost_row: Control = %CostRow
 @onready var _cost: Label = %Cost
 @onready var _reqs: VBoxContainer = %Reqs
+@onready var _ability_note: Label = %AbilityNote
+@onready var _values_block: Control = %ValuesBlock
+@onready var _values_row: HBoxContainer = %ValuesRow
+@onready var _bonus: Label = %Bonus
+@onready var _cond_block: Control = %CondBlock
+@onready var _conds: VBoxContainer = %Conds
 @onready var _button: UI_EchoButton = %Unlock
 
 var _id: StringName = &""
@@ -62,6 +69,9 @@ func show_skill(def: RS_SkillDefinition, tree: RS_SkillTree, manager, currency: 
 		_cost.text = currency.cost_text.call(def.cost_for_next_rank(_rank_value))
 
 	_fill_requirements(def, tree, manager)
+	_fill_values(def, manager)
+	_fill_conditions(def, manager)
+	_fill_ability(def)
 
 	var met: bool = manager.requirements_met(def.id)
 	if maxed:
@@ -107,10 +117,89 @@ func _fill_requirements(def: RS_SkillDefinition, tree: RS_SkillTree, manager) ->
 		_add_requirement(tr("SKILL_NO_REQ"), true)
 
 
-func _add_requirement(text: String, met: bool) -> void:
+func _add_requirement(text: String, met: bool, parent: Control = null) -> void:
 	var row: UI_RequirementRow = REQUIREMENT_ROW_SCENE.instantiate()
-	_reqs.add_child(row)
+	(parent if parent != null else _reqs).add_child(row)
 	row.setup(text, met)
+
+
+## Значения навыка по рангам: ранг, который у игрока сейчас, выделен, остальные
+## приглушены. Показывается первый модификатор навыка — у навыков дерева он один,
+## а числа двух разных статов в одной строке читались бы как один ряд.
+func _fill_values(def: RS_SkillDefinition, manager) -> void:
+	_clear(_values_row)
+	var modifier := _primary_modifier(def)
+	_values_block.visible = modifier != null
+	if modifier == null:
+		return
+	for rank in range(1, def.max_rank + 1):
+		var cell: Label = RANK_VALUE_SCENE.instantiate()
+		_values_row.add_child(cell)
+		cell.text = modifier.format_value(modifier.value_at(rank))
+		if rank == _rank_value:
+			cell.add_theme_color_override(&"font_color", UI_HudMood.SOUL)
+		else:
+			cell.modulate.a = 0.5
+
+	# Бонус условия — строкой под значениями: что он даёт и сработал ли.
+	_bonus.visible = def.condition_bonus > 0.0
+	if not _bonus.visible:
+		return
+	var current_rank := maxi(_rank_value, 1)
+	if _rank_value > 0 and manager.is_condition_met(def.id, _rank_value):
+		var boosted := modifier.value_at(_rank_value) * (1.0 + def.condition_bonus)
+		_bonus.text = tr("SKILL_BONUS_ACTIVE") % modifier.format_value(boosted)
+	else:
+		_bonus.text = tr("SKILL_BONUS_PENDING") % ("%d%%" % roundi(def.condition_bonus * 100.0))
+	# Подпись не должна обещать бонус рангу, у которого условия нет.
+	_bonus.visible = def.condition_for_rank(current_rank) != null
+
+
+## Условия текущего и следующего рангов с прогрессом — тем же рядом строк, что и
+## требования. Условие ранга, которого у игрока ещё нет, показано заранее: игроку
+## надо знать, что делать, чтобы бонус заработал, ещё до покупки ранга.
+func _fill_conditions(def: RS_SkillDefinition, manager) -> void:
+	_clear(_conds)
+	var shown := 0
+	for rank in [_rank_value, _rank_value + 1]:
+		var condition := def.condition_for_rank(rank)
+		if condition == null or rank > def.max_rank:
+			continue
+		var progress: float = manager.get_condition_progress(def.id, rank)
+		_add_requirement(
+			tr("SKILL_COND_ROW") % [rank, condition.describe(), condition.progress_text(progress)],
+			condition.is_met(progress), _conds
+		)
+		shown += 1
+	_cond_block.visible = shown > 0
+
+
+## Навык способности честно говорит, что без способности он молчит. Тело спрашиваем
+## у живого игрока; вне мира (экран из меню) игрока нет, и «не действует» сказать
+## не о чем — остаётся только общее пояснение.
+func _fill_ability(def: RS_SkillDefinition) -> void:
+	var component := def.ability_component()
+	_ability_note.visible = component != null
+	if component == null:
+		return
+	var text := tr("SKILL_ABILITY_NOTE")
+	var player := E_Player.find()
+	if player != null and not player.has_component(component):
+		text += "\n" + tr("SKILL_ABILITY_OFF")
+	_ability_note.text = text
+
+
+func _primary_modifier(def: RS_SkillDefinition) -> RS_StatModifier:
+	for modifier in def.modifiers:
+		if modifier != null:
+			return modifier
+	return null
+
+
+func _clear(box: Control) -> void:
+	for child in box.get_children():
+		box.remove_child(child)
+		child.queue_free()
 
 
 ## Ранги точками Ø7: открытые — сиреневые, остальные — пунктирные кружки.
