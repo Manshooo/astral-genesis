@@ -3,11 +3,11 @@
 [ext_resource type="Script" uid="uid://c72re8o718wdg" path="res://src/levels/menu_map/l_menu_map.gd" id="1_2pq14"]
 [ext_resource type="PackedScene" uid="uid://cnof4mx1fdwwd" path="res://src/ui/main_menu/main_menu.tscn" id="2_conk4"]
 [ext_resource type="PackedScene" uid="uid://bar53m3lj6cyr" path="res://assets/levels/SM_room_P_walled_2x2x1/SM_room_P_walled_2x2x1.glb" id="3_room"]
-[ext_resource type="PackedScene" uid="uid://cjo8ft0onhb6u" path="res://assets/props/SM_incubator/SM_incubator.glb" id="4_tank"]
+[ext_resource type="PackedScene" uid="uid://1d4bjood4d0l" path="res://src/entities/incubator/e_incubator.tscn" id="4_htmip"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="5_levelenv"]
-[ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_specimen_stub.tscn" id="6_specimen"]
 [ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_scientist_stub.tscn" id="7_scientist"]
 [ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_hound_stub.tscn" id="8_hound"]
+[ext_resource type="PackedScene" uid="uid://djmjulnyrgth6" path="res://assets/props/interactive/SM_door_double/SM_door_double.glb" id="9_1m5cf"]
 [ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_fluorescent_stub.tscn" id="9_lamp"]
 
 [sub_resource type="Environment" id="Environment_lab"]
@@ -38,62 +38,6 @@ dof_blur_far_distance = 5.4
 dof_blur_far_transition = 3.0
 dof_blur_amount = 0.12
 
-[sub_resource type="FogMaterial" id="Fog_flask"]
-density = 0.22
-albedo = Color(0.79, 0.66, 0.95, 1)
-emission = Color(0.3, 0.25, 0.38, 1)
-edge_fade = 0.35
-
-[sub_resource type="Gradient" id="Grad_bubble_life"]
-offsets = PackedFloat32Array(0, 0.15, 0.85, 1)
-colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-
-[sub_resource type="GradientTexture1D" id="Ramp_bubble_life"]
-gradient = SubResource("Grad_bubble_life")
-
-[sub_resource type="ParticleProcessMaterial" id="Proc_bubbles"]
-emission_shape = 6
-emission_ring_axis = Vector3(0, 1, 0)
-emission_ring_height = 0.02
-emission_ring_radius = 0.6
-emission_ring_inner_radius = 0.0
-emission_ring_cone_angle = 90.0
-direction = Vector3(0, 1, 0)
-spread = 3.0
-initial_velocity_min = 0.35
-initial_velocity_max = 0.6
-gravity = Vector3(0, 0.15, 0)
-scale_min = 0.4
-color_ramp = SubResource("Ramp_bubble_life")
-
-[sub_resource type="Gradient" id="Grad_bubble_ring"]
-offsets = PackedFloat32Array(0, 0.6, 0.85, 1)
-colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0.25, 1, 1, 1, 1, 1, 1, 1, 0)
-
-[sub_resource type="GradientTexture2D" id="Tex_bubble"]
-gradient = SubResource("Grad_bubble_ring")
-width = 32
-height = 32
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(1, 0.5)
-
-[sub_resource type="StandardMaterial3D" id="Mat_bubble"]
-transparency = 1
-blend_mode = 1
-shading_mode = 0
-vertex_color_use_as_albedo = true
-albedo_color = Color(0.9, 0.85, 1, 0.7)
-albedo_texture = SubResource("Tex_bubble")
-billboard_mode = 3
-particles_anim_h_frames = 1
-particles_anim_v_frames = 1
-particles_anim_loop = false
-
-[sub_resource type="QuadMesh" id="Mesh_bubble"]
-material = SubResource("Mat_bubble")
-size = Vector2(0.06, 0.06)
-
 [node name="MenuMap" type="Node3D" unique_id=1397178608]
 script = ExtResource("1_2pq14")
 
@@ -105,34 +49,8 @@ apply_brightness = false
 
 [node name="Room" parent="." unique_id=108559739 instance=ExtResource("3_room")]
 
-[node name="Incubator" type="Node3D" parent="." unique_id=359043596]
-transform = Transform3D(-0.74, 0, -0.67, 0, 1, 0, 0.67, 0, -0.74, -2.4, 0, 3)
-
-[node name="Model" parent="Incubator" unique_id=1174679655 instance=ExtResource("4_tank")]
-transform = Transform3D(0.99999994, 0, 2.9802322e-08, 0, 1, 0, -2.9802322e-08, 0, 0.99999994, 0, 0.62926805, 0)
-
-[node name="Glow" type="OmniLight3D" parent="Incubator" unique_id=1655580119]
-transform = Transform3D(1.0017545, 0, 0, 0, 1, 0, 0, 0, 1.0017545, 0, 1.7678751, 0)
-light_color = Color(0.79, 0.66, 0.95, 1)
-light_energy = 1.6
-omni_range = 6.0
-
-[node name="GlowFog" type="FogVolume" parent="Incubator" unique_id=401947566]
-transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 1.7416089, 0)
-size = Vector3(1.6, 2.2576172, 1.6)
-shape = 2
-material = SubResource("Fog_flask")
-
-[node name="Bubbles" type="GPUParticles3D" parent="Incubator" unique_id=2116393361]
-transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 0.9266734, 0)
-amount = 36
-lifetime = 3.0
-preprocess = 6.0
-process_material = SubResource("Proc_bubbles")
-draw_pass_1 = SubResource("Mesh_bubble")
-
-[node name="Specimen" parent="Incubator" unique_id=1963739676 instance=ExtResource("6_specimen")]
-transform = Transform3D(-0.6260561, 0, 0.7797779, 0, 1, 0, -0.7797779, 0, -0.6260561, 0, 1.7517805, 0)
+[node name="Incubator" parent="." unique_id=522577828 instance=ExtResource("4_htmip")]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, -7.266845, 2.3841858e-07, 0.97305965)
 
 [node name="Lab" type="Node3D" parent="." unique_id=2002035298]
 
@@ -183,7 +101,7 @@ shadow_enabled = true
 omni_range = 9.0
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=664291122]
-transform = Transform3D(0.94176453, 0.020274581, -0.33566162, 0.017799756, 0.99377596, 0.10996661, 0.33580196, -0.10953735, 0.935542, -5.2302713, 2.105722, 4.93337)
+transform = Transform3D(0.962175, 0.06241898, -0.26518512, 0.024310216, 0.9498437, 0.3117784, 0.27134526, -0.30643213, 0.9123986, -6.163161, 2.399943, 3.8017337)
 current = true
 fov = 55.0
 
@@ -191,3 +109,6 @@ fov = 55.0
 follow_viewport_enabled = true
 
 [node name="MainMenuUi" parent="CanvasLayer" unique_id=7691044 instance=ExtResource("2_conk4")]
+
+[node name="SM_door_double" parent="." unique_id=74968818 instance=ExtResource("9_1m5cf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.020218, 1.1920929e-07, -7.978514)

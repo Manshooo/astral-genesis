@@ -8,6 +8,8 @@
 [ext_resource type="Script" uid="uid://ccb3xm8fbdion" path="res://src/components/rendering/c_visual_root.gd" id="6_vroot"]
 [ext_resource type="PackedScene" uid="uid://b42gpvcxfs15q" path="res://assets/props/interactive/SM_incubator_control_panel/SM_incubator_control_panel.glb" id="7_panel"]
 [ext_resource type="PackedScene" uid="uid://cjo8ft0onhb6u" path="res://assets/props/SM_incubator/SM_incubator.glb" id="8_decor"]
+[ext_resource type="PackedScene" uid="uid://dhvlp5x2nbm4n" path="res://assets/props/SM_incubator_pipe/SM_incubator_pipe.glb" id="9_qweb3"]
+[ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_specimen_stub.tscn" id="9_ykyue"]
 
 [sub_resource type="Resource" id="SkillTreeAction"]
 script = ExtResource("3_0scx7")
@@ -23,6 +25,62 @@ metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 script = ExtResource("6_vroot")
 path = NodePath("Visual")
 
+[sub_resource type="FogMaterial" id="FogMaterial_do4ao"]
+density = 0.22
+albedo = Color(0.79, 0.66, 0.95, 1)
+emission = Color(0.3, 0.25, 0.38, 1)
+edge_fade = 0.35
+
+[sub_resource type="Gradient" id="Gradient_hxkhd"]
+offsets = PackedFloat32Array(0, 0.15, 0.85, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="Ramp_bubble_life"]
+gradient = SubResource("Gradient_hxkhd")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_jn0qy"]
+emission_shape = 6
+emission_ring_axis = Vector3(0, 1, 0)
+emission_ring_height = 0.02
+emission_ring_radius = 0.6
+emission_ring_inner_radius = 0.0
+emission_ring_cone_angle = 90.0
+direction = Vector3(0, 1, 0)
+spread = 3.0
+initial_velocity_min = 0.35
+initial_velocity_max = 0.6
+gravity = Vector3(0, 0.15, 0)
+scale_min = 0.4
+color_ramp = SubResource("Ramp_bubble_life")
+
+[sub_resource type="Gradient" id="Grad_bubble_ring"]
+offsets = PackedFloat32Array(0, 0.6, 0.85, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0.25, 1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_w261y"]
+gradient = SubResource("Grad_bubble_ring")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bubble"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.9, 0.85, 1, 0.7)
+albedo_texture = SubResource("GradientTexture2D_w261y")
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_trc5g"]
+material = SubResource("Mat_bubble")
+size = Vector2(0.06, 0.06)
+
 [sub_resource type="BoxShape3D" id="PanelShape"]
 size = Vector3(1.0332031, 1.965039, 1.8125)
 
@@ -33,8 +91,31 @@ component_resources = Array[ExtResource("4_0as6p")]([SubResource("SkillTreePromp
 
 [node name="Visual" parent="." unique_id=1229026779 instance=ExtResource("7_panel")]
 
-[node name="Decor" parent="." unique_id=1229026780 instance=ExtResource("8_decor")]
+[node name="Incubator" type="Node3D" parent="." unique_id=393099631]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6352365, 0.6421068, 1.1108646)
+
+[node name="Model" parent="Incubator" unique_id=1772920426 instance=ExtResource("8_decor")]
+
+[node name="Glow" type="OmniLight3D" parent="Incubator" unique_id=847897843]
+light_color = Color(0.79, 0.66, 0.95, 1)
+light_energy = 1.6
+omni_range = 5.0656867
+
+[node name="GlowFog" type="FogVolume" parent="Incubator" unique_id=1361344432]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.038259, 0)
+size = Vector3(1.6, 2.2576172, 1.6)
+shape = 2
+material = SubResource("FogMaterial_do4ao")
+
+[node name="Bubbles" type="GPUParticles3D" parent="Incubator" unique_id=902973414]
+amount = 36
+lifetime = 3.0
+preprocess = 6.0
+process_material = SubResource("ParticleProcessMaterial_jn0qy")
+draw_pass_1 = SubResource("QuadMesh_trc5g")
+
+[node name="Specimen" parent="Incubator" unique_id=1498843046 instance=ExtResource("9_ykyue")]
+transform = Transform3D(-0.6260561, 0, 0.7797779, 0, 1, 0, -0.7797779, 0, -0.6260561, 0, 1.2767081, 0)
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1381715465]
 collision_layer = 8
@@ -43,3 +124,6 @@ collision_mask = 15
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractBody" unique_id=1101708281]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9825195, 0)
 shape = SubResource("PanelShape")
+
+[node name="SM_incubator_pipe" parent="." unique_id=456764685 instance=ExtResource("9_qweb3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.428361, 2.6195323, 1.4324348)
