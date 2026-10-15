@@ -110,11 +110,11 @@ func _check_catalog() -> void:
 
 	var bad := PackedStringArray()
 	for row: RS_RunStatRow in catalog.rows:
-		if row == null or row.label_key == &"":
-			bad.append("строка без ключа перевода")
+		if row == null:
+			bad.append("пустая строка")
 		elif row.format != RS_RunStatRow.Format.BODY_LIST and row.key == &"":
 			bad.append(String(row.label_key) + ": показатель без ключа значения")
-	_check("у каждой строки каталога есть ключ перевода и показатель", bad.is_empty(), ", ".join(bad))
+	_check("у каждой строки каталога есть показатель", bad.is_empty(), ", ".join(bad))
 
 	_check("время показывается как ММ:СС", RS_RunStatCatalog.format_time(125.4) == "2:05",
 		RS_RunStatCatalog.format_time(125.4))

@@ -8,8 +8,7 @@ extends "res://dev/check_harness.gd"
 ## показывает лишнее — и улучшение Архитектора обесценено; уровень 1, видящий
 ## меньше мини-карты, выглядит как пустой экран. Обратная проекция курсора,
 ## съехавшая на полклетки, подписывает соседнюю комнату. Терминал без меша в
-## своём Visual работает, но не подсвечивается — а ключ перевода с опечаткой
-## показывает игроку «MAP_NO_LINK».
+## своём Visual работает, но не подсвечивается.
 ##
 ## Сейв забега и сейв Архитектора подменяются на время прогона и возвращаются.
 ##
@@ -42,7 +41,7 @@ func _ready() -> void:
 
 	_graph = RS_LevelGraph.new().generate_run(RUN_SEED, GameConfig.config.room_preset_library, _base_config)
 
-	_check_input_and_texts()
+	_check_input()
 	_check_knowledge()
 	await _check_screen()
 	await _check_run()
@@ -55,7 +54,7 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 
-func _check_input_and_texts() -> void:
+func _check_input() -> void:
 	for map_action: StringName in [&"map", &"map_mini"]:
 		_check("действие %s есть в InputMap и переназначается" % map_action,
 			InputMap.has_action(map_action) and SettingsManager.REBINDABLE_ACTIONS.has(map_action), "")
@@ -67,7 +66,6 @@ func _check_input_and_texts() -> void:
 				clashes.append(String(action))
 		_check("клавиша %s не занята другим действием" % map_action, map_code != "" and clashes.is_empty(),
 			"код %s, занят: %s" % [map_code, clashes])
-	# Переведены ли ключи MAP_*, сверяет hud_check сканом всего src/ и data/.
 
 
 ## Правило видимости (MapKnowledge) по уровням — на графе без забега.

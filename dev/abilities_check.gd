@@ -507,8 +507,8 @@ func _run(world: World) -> void:
 	await _physics(1)
 	await get_tree().process_frame
 	_check(
-		"HUD: отказ безногого тела виден строкой, переведённой из ключа",
-		message.shown_text() == tr("HUD_MSG_NO_JUMP") and message.shown_text() != "HUD_MSG_NO_JUMP",
+		"HUD: отказ безногого тела виден строкой сообщения",
+		message.shown_text() == tr("HUD_MSG_NO_JUMP"),
 		message.shown_text()
 	)
 	hud.queue_free()

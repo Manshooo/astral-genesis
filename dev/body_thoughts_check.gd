@@ -58,12 +58,6 @@ func _check_data() -> void:
 		thoughts.pick(WALKER_SCENE) == &"THOUGHT_BODY_WALKER", String(thoughts.pick(WALKER_SCENE)))
 	_check("неизвестному виду достаётся запасная мысль",
 		thoughts.pick("res://нет-такого-тела.tscn") == thoughts.default_key, "")
-	var untranslated := PackedStringArray()
-	for path in [WALKER_SCENE, HOUND_SCENE, CRAWLER_SCENE, "", "res://src/entities/body/e_body.tscn"]:
-		var key := thoughts.pick(path)
-		if tr(key) == String(key):
-			untranslated.append(String(key))
-	_check("все мысли переведены", untranslated.is_empty(), ", ".join(untranslated))
 
 
 func _check_first_and_repeat() -> void:

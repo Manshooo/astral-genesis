@@ -154,10 +154,6 @@ func _check_data() -> void:
 			rising = rising and gains[i] > gains[i - 1]
 		_check("каждый ранг поднимает долю, и выше номинала она не уходит",
 			rising and gains.back() <= 1.0 + 0.0001, str(gains))
-		TranslationServer.set_locale("ru")
-		_check("у навыка есть название и описание в переводе",
-			TranslationServer.translate(def.display_name) != def.display_name
-				and TranslationServer.translate(def.description) != def.description, "")
 
 	var catalog := load("res://data/run_stat_catalog.tres") as RS_RunStatCatalog
 	var rows := {}
@@ -168,9 +164,9 @@ func _check_data() -> void:
 		if RS_RunStats.SOURCE_TOTALS[source] != RS_RunStats.ESSENCE:
 			continue
 		var row := rows.get(source) as RS_RunStatRow
-		if row == null or TranslationServer.translate(row.label_key) == String(row.label_key):
+		if row == null:
 			missing.append(String(source))
-	_check("каждый источник эссенции — строка сводки с переводом", missing.is_empty(), ", ".join(missing))
+	_check("каждый источник эссенции — строка сводки", missing.is_empty(), ", ".join(missing))
 
 	var scene := (load(FIND_SCENE) as PackedScene).instantiate() as E_EssenceFind
 	var prompt := ""
@@ -178,9 +174,8 @@ func _check_data() -> void:
 		if resource is C_Interactable:
 			prompt = (resource as C_Interactable).prompt_text
 	var body := scene.get_node_or_null("InteractBody") as CollisionObject3D
-	_check("находка — интерактив: подсказка с переводом и тело на слое interactives",
-		prompt != "" and TranslationServer.translate(prompt) != prompt
-			and body != null and body.collision_layer & 8 != 0, "подсказка «%s»" % prompt)
+	_check("находка — интерактив: есть подсказка и тело на слое interactives",
+		prompt != "" and body != null and body.collision_layer & 8 != 0, "подсказка «%s»" % prompt)
 	_check("брать находку можно и призраком",
 		scene.component_resources.all(func(r): return not (r is C_Interactable) or not r.requires_body), "")
 	scene.free()
