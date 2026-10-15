@@ -83,6 +83,8 @@ var rooms: Dictionary[StringName, SpawnedRoom] = {}
 ## регистрировать незачем. Держим ради сноса слоя и ради «заспавнен ли узел» —
 ## присутствие игрока в коридоре меняет текущий узел так же, как в комнате.
 var corridor_tiles: Dictionary[StringName, Array] = {}
+## Навмеш загруженного слоя: запекается по готовности слоя, снимается вместе с ним.
+var navigation := LayerNavigation.new()
 
 ## Общий родитель тайлов под ECS.world — см. _corridor_parent.
 var _corridor_root: Node3D
@@ -145,6 +147,7 @@ func spawn(layer_depth: int) -> bool:
 	for node_data in layer_nodes:
 		_spawn_node(node_data, plan)
 	depth = layer_depth
+	navigation.bake(ECS.world)
 	return true
 
 
@@ -177,6 +180,7 @@ func spawn_async(layer_depth: int, tree: SceneTree, keep_going: Callable) -> boo
 			started = Time.get_ticks_usec()
 		_spawn_node(node_data, plan)
 	depth = layer_depth
+	navigation.bake(ECS.world)
 	return true
 
 
@@ -202,6 +206,7 @@ func _spawn_node(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 ## типизирован — freed-объект роняет проверку типа ещё ДО тела функции, поэтому
 ## отсеиваем невалидные заранее.
 func despawn() -> bool:
+	navigation.clear()
 	for spawned: SpawnedRoom in rooms.values():
 		_remove_valid_entities(spawned.children)
 		if is_instance_valid(spawned.entity):

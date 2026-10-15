@@ -114,6 +114,9 @@ func _run(world: World) -> void:
 	# --- 4. В радиусе аггро, вне атаки — разворачивается и реально идёт -----
 	var chase_distance := (ai.aggro_range + ai.attack_range) * 0.5
 	player_node.position = enemy_node.global_position + Vector3(0.0, 0.0, chase_distance)
+	# Замечает только то, что перед глазами (угол обзора): цель за спиной врага,
+	# смотрящего по умолчанию в −Z, он бы не заметил — это проверяет enemy_nav_check.
+	enemy_node.look_at(player_node.global_position, Vector3.UP)
 	var dist_start := _xz_distance(enemy_node, player_node)
 	await _physics(30)
 	_check(
@@ -135,6 +138,10 @@ func _run(world: World) -> void:
 	health.current = health.effective_maximum(player)
 	player_node.position = enemy_node.global_position + Vector3(ai.attack_range * 0.5, 0.0, 0.0)
 	ai.attack_cooldown_left = 0.0
+	# Обзор проверяется раз в sight_interval, а после блока 4 цель уходила далеко
+	# и враг её потерял: чтобы бить сразу, а не после очередной проверки, просим
+	# проверку на этом же кадре.
+	ai.sight_left = 0.0
 	await _physics(1)
 	var health_after_first_hit := health.current
 	_check(
@@ -196,6 +203,8 @@ func _check_rotated_room(world: World, player_node: Node3D) -> void:
 		# ответом случайно ни при каком turns.
 		var offset := Vector3(1.0, 0.0, 2.0).normalized() * (ai.aggro_range + ai.attack_range) * 0.5
 		player_node.position = enemy_node.global_position + offset
+		# Лицом к цели: замечает только то, что в конусе обзора.
+		enemy_node.look_at(player_node.global_position, Vector3.UP)
 		await _physics(1)
 
 		var vel := (enemy.get_component(C_Velocity) as C_Velocity).velocity
