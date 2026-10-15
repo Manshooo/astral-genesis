@@ -202,11 +202,11 @@ func _check_loading_screen() -> void:
 	var overlay_layer := (overlay as CanvasLayer).layer
 	hud.free()
 	overlay.free()
+	var screen := UI_LoadingScreen.create()
 	_check("шторка выше всех слоёв HUD и ниже отладочного оверлея",
-		UI_LoadingScreen.LAYER > hud_top and UI_LoadingScreen.LAYER < overlay_layer,
-		"шторка %d, HUD до %d, оверлей %d" % [UI_LoadingScreen.LAYER, hud_top, overlay_layer])
+		screen.layer > hud_top and screen.layer < overlay_layer,
+		"шторка %d, HUD до %d, оверлей %d" % [screen.layer, hud_top, overlay_layer])
 
-	var screen := UI_LoadingScreen.new()
 	add_child(screen)
 	await screen.dismiss()
 	await get_tree().process_frame

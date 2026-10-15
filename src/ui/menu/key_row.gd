@@ -5,60 +5,27 @@
 ##
 ## Имя клавиши приходит значением (SettingsManager.code_display_name), не текстом
 ## макета: «ЛКМ», «Пробел» и «W» — одна и та же подстановка.
+##
+## Устройство — в key_row.tscn: ширина 412 — колонка, две колонки с зазором 56
+## занимают строку 880 (§4); отступы строки повторяют поля StyleBox
+## «MenuKeyRow» темы (24 слева, 8 справа). Число строк — из данных, поэтому их
+## создают instantiate() из сцены — .new() дал бы кнопку без подписей.
 class_name UI_KeyRow
 extends Button
 
-## Ширина колонки: две колонки по 412 с зазором 56 занимают строку 880 (§4).
-const WIDTH := 412.0
-const HEIGHT := 40.0
 const DOT_X := 8.0
 ## Мигание ожидания (§7: цикл 1 с, ступенькой).
 const BLINK_PERIOD := 1.0
 ## Вспышка обмена клавиш: over → soul_key за 1.2 с.
 const FLASH_TIME := 1.2
 
-var _action: Label
-var _wait: Label
-var _key: Label
+@onready var _action: Label = %Action
+@onready var _wait: Label = %Wait
+@onready var _key: Label = %Key
+
 var _waiting := false
 var _hot := false
 var _flash_tween: Tween
-
-
-func _ready() -> void:
-	theme_type_variation = &"MenuKeyRow"
-	custom_minimum_size = Vector2(WIDTH, HEIGHT)
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var style := get_theme_stylebox(&"normal")
-	row.offset_left = style.get_margin(SIDE_LEFT)
-	row.offset_right = -style.get_margin(SIDE_RIGHT)
-	row.add_theme_constant_override(&"separation", 2)
-	add_child(row)
-
-	_action = _add(row, &"MenuRowLabel", "")
-	_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_action.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_wait = _add(row, &"MenuCaption", tr("SETTINGS_REBIND_WAIT"))
-	_wait.visible = false
-	_add(row, &"MenuKeyBracket", "[")
-	_key = _add(row, &"MenuKey", "")
-	_key.custom_minimum_size.x = 12.0
-	_key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_add(row, &"MenuKeyBracket", "]")
-
-
-func _add(row: HBoxContainer, variation: StringName, value: String) -> Label:
-	var label := Label.new()
-	label.theme_type_variation = variation
-	label.text = value
-	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.size_flags_vertical = Control.SIZE_FILL
-	row.add_child(label)
-	return label
 
 
 func set_action(action_name: String) -> void:

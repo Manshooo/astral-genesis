@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://vyrrm7ausj2l" path="res://src/ui/death_screen/stat_row.gd" id="1_row"]
+[ext_resource type="Script" uid="uid://dk7b2vehmge0p" path="res://src/ui/menu/stat_leader.gd" id="2_leader"]
+
+[node name="StatRow" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 34)
+theme_override_constants/separation = 10
+script = ExtResource("1_row")
+
+[node name="Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuStatLabel"
+vertical_alignment = 1
+
+[node name="Leader" type="Control" parent="."]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+script = ExtResource("2_leader")
+
+[node name="Value" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuStatValue"
+horizontal_alignment = 2
+vertical_alignment = 1

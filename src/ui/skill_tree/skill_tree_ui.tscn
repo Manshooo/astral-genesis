@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://hqbvgrlg6emm" path="res://src/ui/skill_tree/skill_tree_ui.gd" id="1_4ij35"]
 [ext_resource type="PackedScene" path="res://src/ui/skill_tree/skill_graph_view.tscn" id="2_graph"]
-[ext_resource type="Script" path="res://src/ui/menu/menu_backdrop.gd" id="3_backdrop"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/menu_backdrop.tscn" id="3_backdrop"]
 [ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="4_echo"]
-[ext_resource type="Script" path="res://src/ui/menu/key_hint_button.gd" id="5_hint"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/key_hint_button.tscn" id="5_hint"]
 [ext_resource type="Script" path="res://src/ui/skill_tree/skill_card.gd" id="6_card"]
 [ext_resource type="Script" path="res://src/ui/menu/echo_label.gd" id="7_echo_label"]
 
@@ -20,7 +20,7 @@ grow_vertical = 2
 script = ExtResource("1_4ij35")
 content = NodePath("Content")
 
-[node name="Backdrop" type="ColorRect" parent="." unique_id=1017318689]
+[node name="Backdrop" parent="." unique_id=1017318689 instance=ExtResource("3_backdrop")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,7 +28,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("3_backdrop")
 
 [node name="Content" type="Control" parent="." unique_id=333464628]
 layout_mode = 1
@@ -89,7 +88,7 @@ text = "SKILL_TAB_ARCHITECT"
 alignment = 0
 script = ExtResource("4_echo")
 
-[node name="Back" type="Button" parent="Content" unique_id=848668512]
+[node name="Back" parent="Content" unique_id=848668512 instance=ExtResource("5_hint")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -99,7 +98,6 @@ offset_top = 36.0
 offset_right = -40.0
 offset_bottom = 36.0
 grow_horizontal = 0
-script = ExtResource("5_hint")
 
 [node name="Wallet" type="VBoxContainer" parent="Content" unique_id=335534320]
 layout_mode = 0

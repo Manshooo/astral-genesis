@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bf36viynb3qc5" path="res://src/ui/menu/key_hint_button.gd" id="1_hint"]
+
+[node name="KeyHintButton" type="Button"]
+theme_type_variation = &"MenuHintButton"
+script = ExtResource("1_hint")
+
+[node name="Row" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 10.0
+offset_top = 6.0
+offset_right = 10.0
+offset_bottom = 6.0
+mouse_filter = 2
+theme_override_constants/separation = 1
+
+[node name="Open" type="Label" parent="Row"]
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuHintBracket"
+text = "["
+
+[node name="Key" type="Label" parent="Row"]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuHintKey"
+text = "Esc"
+
+[node name="Close" type="Label" parent="Row"]
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuHintBracket"
+text = "]"
+
+[node name="Action" type="Label" parent="Row"]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuHint"

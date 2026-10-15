@@ -87,27 +87,3 @@ static func draw_dotted(canvas: CanvasItem, from: Vector2, to: Vector2, color: C
 	while x < to.x:
 		canvas.draw_rect(Rect2(x, from.y - 0.5, 1.0, 1.0), color)
 		x += 4.0
-
-
-## Пятно «тени мысли» за группой строк: радиальный градиент без формы. Свой
-## у меню, а не HUD-овский: за меню пятно гуще и плавнее гаснет (.86 → .5 → 0).
-static func thought_shadow(peak_alpha: float, mid_alpha: float = -1.0) -> GradientTexture2D:
-	var gradient := Gradient.new()
-	var color := UI_HudMood.SHADOW_BLOB
-	color.a = peak_alpha
-	gradient.set_color(0, color)
-	var clear := color
-	clear.a = 0.0
-	gradient.set_color(1, clear)
-	if mid_alpha >= 0.0:
-		var mid := color
-		mid.a = mid_alpha
-		gradient.add_point(0.55, mid)
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	texture.width = 128
-	texture.height = 128
-	return texture

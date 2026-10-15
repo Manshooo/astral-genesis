@@ -21,6 +21,8 @@ class Currency:
 	var cost_text: Callable  ## int -> String
 	var no_money_key := "SKILL_NO_POINTS"
 
+const REQUIREMENT_ROW_SCENE := preload("res://src/ui/skill_tree/requirement_row.tscn")
+
 @onready var _branch: Label = %Branch
 @onready var _title: Label = %CardTitle
 @onready var _pips: Control = %Pips
@@ -106,34 +108,9 @@ func _fill_requirements(def: RS_SkillDefinition, tree: RS_SkillTree, manager) ->
 
 
 func _add_requirement(text: String, met: bool) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override(&"separation", 10)
-	var mark := Control.new()
-	mark.custom_minimum_size = Vector2(12, 12)
-	mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mark.draw.connect(_draw_requirement_mark.bind(mark, met))
-	row.add_child(mark)
-	var label := Label.new()
-	label.theme_type_variation = &"MenuReq"
-	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	if not met:
-		label.modulate.a = 0.5
-	row.add_child(label)
+	var row: UI_RequirementRow = REQUIREMENT_ROW_SCENE.instantiate()
 	_reqs.add_child(row)
-
-
-func _draw_requirement_mark(mark: Control, met: bool) -> void:
-	var c := Vector2(6, 6)
-	if met:
-		mark.draw_circle(c, 4.0, UI_HudMood.SOUL)
-	else:
-		var a := 0.0
-		while a < TAU:
-			mark.draw_arc(c, 4.0, a, a + 0.25, 3, Color(UI_MenuStyle.TEXT, 0.5), 1.0, true)
-			a += 0.75
+	row.setup(text, met)
 
 
 ## Ранги точками Ø7: открытые — сиреневые, остальные — пунктирные кружки.

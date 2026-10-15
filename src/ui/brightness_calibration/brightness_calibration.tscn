@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/ui/brightness_calibration/brightness_calibration.gd" id="1_calib"]
-[ext_resource type="Script" uid="uid://bf36viynb3qc5" path="res://src/ui/menu/key_hint_button.gd" id="2_hint"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/key_hint_button.tscn" id="2_hint"]
 [ext_resource type="Script" uid="uid://dg1gkitvqvfdf" path="res://src/ui/settings/slider_setting.gd" id="3_slider"]
 [ext_resource type="Script" uid="uid://cld4uli8a0ry2" path="res://src/ui/menu/echo_button.gd" id="4_echo"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="5_levelenv"]
@@ -56,7 +56,7 @@ theme_type_variation = &"MenuWhisper"
 text = "CALIBRATION_TITLE"
 uppercase = true
 
-[node name="Back" type="Button" parent="Content"]
+[node name="Back" parent="Content" instance=ExtResource("2_hint")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -66,7 +66,6 @@ offset_top = 36.0
 offset_right = -40.0
 offset_bottom = 36.0
 grow_horizontal = 0
-script = ExtResource("2_hint")
 
 [node name="Center" type="VBoxContainer" parent="Content"]
 layout_mode = 1

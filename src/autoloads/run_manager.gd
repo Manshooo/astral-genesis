@@ -534,7 +534,7 @@ func travel_through_portal(node_id: StringName) -> void:
 	var config := GameConfig.config
 	var curtain: UI_LoadingScreen = null
 	if config.portal_transition == RS_GameConfig.PortalTransition.CURTAIN:
-		curtain = UI_LoadingScreen.new()
+		curtain = UI_LoadingScreen.create()
 		get_tree().current_scene.add_child(curtain)
 	else:
 		await UIManager.fade_to_black(config.portal_fade_duration)

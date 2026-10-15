@@ -5,6 +5,9 @@
 ## спека»), под ними строка-сообщение: как отменить ожидание и кто с кем
 ## поменялся клавишами.
 ##
+## Сетка колонок (зазор 56, §4) и строка-сообщение — дети узла в
+## settings_menu.tscn; кодом создаются только строки, экземплярами key_row.tscn.
+##
 ## Для settings_menu это ОДИН контрол: раз он реализует get/set_setting_value и
 ## сигнал setting_changed, _collect_controls внутрь не спускается, и весь словарь
 ## keybinds ходит в черновик/из черновика целиком (как одно значение настройки).
@@ -16,10 +19,10 @@ extends VBoxContainer
 
 signal setting_changed(control: KeybindsSetting)
 
-## Зазор между колонками (§4).
-const COLUMN_GAP := 56
 ## Сколько держится сообщение об обмене клавишами.
 const SWAP_MESSAGE_SECONDS := 3.0
+
+const KEY_ROW_SCENE := preload("res://src/ui/menu/key_row.tscn")
 
 ## Черновик переопределений: action → код события. Только ОТЛИЧИЯ от
 ## project.godot (см. RS_Settings.keybinds), поэтому пустой словарь = дефолт.
@@ -27,29 +30,19 @@ var _codes: Dictionary[StringName, String] = {}
 var _rows: Dictionary[StringName, UI_KeyRow] = {}
 ## Действие, для которого сейчас ловим нажатие (&"" — не ловим).
 var _capturing: StringName = &""
-var _status: Label
 var _status_serial := 0
+
+@onready var _grid: GridContainer = $Grid
+@onready var _status: Label = $Status
 
 
 func _ready() -> void:
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override(&"h_separation", COLUMN_GAP)
-	grid.add_theme_constant_override(&"v_separation", 0)
-	add_child(grid)
 	for action: StringName in SettingsManager.REBINDABLE_ACTIONS:
-		var row := UI_KeyRow.new()
-		grid.add_child(row)
+		var row: UI_KeyRow = KEY_ROW_SCENE.instantiate()
+		_grid.add_child(row)
 		row.set_action(tr(SettingsManager.REBINDABLE_ACTIONS[action]))
 		row.pressed.connect(_begin_capture.bind(action))
 		_rows[action] = row
-
-	_status = Label.new()
-	_status.theme_type_variation = &"MenuCaption"
-	_status.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_status.custom_minimum_size.y = 26.0
-	_status.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	add_child(_status)
 	_refresh_rows()
 
 

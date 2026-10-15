@@ -1,0 +1,60 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bfyoesigukxdj" path="res://src/ui/menu/key_row.gd" id="1_row"]
+
+[node name="KeyRow" type="Button"]
+custom_minimum_size = Vector2(412, 40)
+theme_type_variation = &"MenuKeyRow"
+script = ExtResource("1_row")
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_right = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Action" type="Label" parent="Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+auto_translate_mode = 2
+theme_type_variation = &"MenuRowLabel"
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="Wait" type="Label" parent="Row"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "SETTINGS_REBIND_WAIT"
+vertical_alignment = 1
+
+[node name="Open" type="Label" parent="Row"]
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuKeyBracket"
+text = "["
+vertical_alignment = 1
+
+[node name="Key" type="Label" parent="Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(12, 0)
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuKey"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Close" type="Label" parent="Row"]
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuKeyBracket"
+text = "]"
+vertical_alignment = 1

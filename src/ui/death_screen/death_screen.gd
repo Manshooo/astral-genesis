@@ -27,12 +27,10 @@ const CATALOG_PATH := "res://data/run_stat_catalog.tres"
 ## затемнения: гаснущий мир — это событие, а появление итогов — просто переход.
 const FADE_IN := 0.35
 
+const STAT_ROW_SCENE := preload("res://src/ui/death_screen/stat_row.tscn")
+
 @onready var _rows: VBoxContainer = %StatRows
 @onready var _revive: UI_EchoButton = %Revive
-
-## Высота строки сводки и ширина значения (§4).
-const STAT_ROW_HEIGHT := 34.0
-const STAT_VALUE_MAX_WIDTH := 300.0
 
 
 func _ready() -> void:
@@ -61,45 +59,13 @@ func _fill_summary() -> void:
 	if stats == null or catalog == null:
 		return
 
+	# Строки — экземплярами stat_row.tscn, а не в сцене экрана: их состав
+	# зависит от забега (пустые показатели не показываются) и будет пополняться
+	# каталогом.
 	for row: RS_RunStatRow in catalog.visible_rows(stats):
-		_rows.add_child(_make_row(tr(row.label_key), catalog.value_text(row, stats)))
-
-
-## Строки сводки собираются кодом, а не лежат в сцене: их состав зависит от
-## забега (пустые показатели не показываются) и будет пополняться каталогом.
-## Строка — «показатель ···· значение»: выноска тянется на всё, что осталось,
-## поэтому длинное английское имя показателя просто укорачивает её.
-func _make_row(label_text: String, value_text: String) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.custom_minimum_size.y = STAT_ROW_HEIGHT
-	row.add_theme_constant_override(&"separation", 10)
-	row.add_child(_make_label(label_text, &"MenuStatLabel"))
-	var leader := UI_StatLeader.new()
-	leader.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	leader.custom_minimum_size.x = 24.0
-	row.add_child(leader)
-	var value := _make_label(value_text, &"MenuStatValue")
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	# Значение — список тел бывает длинным: дальше 300 px оно переносится, а
-	# не выталкивает выноску в ноль.
-	var width := value.get_theme_font(&"font").get_string_size(
-			value_text, HORIZONTAL_ALIGNMENT_LEFT, -1, value.get_theme_font_size(&"font_size")).x
-	if width > STAT_VALUE_MAX_WIDTH:
-		value.custom_minimum_size.x = STAT_VALUE_MAX_WIDTH
-		value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	row.add_child(value)
-	return row
-
-
-func _make_label(text: String, variation: StringName) -> Label:
-	var label := Label.new()
-	label.theme_type_variation = variation
-	label.text = text
-	# Текст уже переведён вызывающим (tr) или переводу не подлежит (число):
-	# второй прогон через автоперевод искал бы ключ «12» и «Ходок».
-	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
+		var stat_row: UI_StatRow = STAT_ROW_SCENE.instantiate()
+		_rows.add_child(stat_row)
+		stat_row.setup(tr(row.label_key), catalog.value_text(row, stats))
 
 
 func _on_revive_pressed() -> void:
