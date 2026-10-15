@@ -1,0 +1,275 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/ending/ending_screen.gd" id="1_script"]
+[ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="2_echo_button"]
+
+[node name="EndingScreen" type="Control" node_paths=PackedStringArray("first_focus", "content")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+first_focus = NodePath("Content/Final/Column/ToMenu")
+content = NodePath("Content")
+
+[node name="Void" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.043, 0.039, 0.051, 1)
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Story" type="VBoxContainer" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -110.0
+offset_right = 400.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 22
+
+[node name="Line1" type="Label" parent="Content/Story"]
+custom_minimum_size = Vector2(800, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_LINE_1"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Line2" type="Label" parent="Content/Story"]
+custom_minimum_size = Vector2(800, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_LINE_2"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Line3" type="Label" parent="Content/Story"]
+custom_minimum_size = Vector2(800, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_LINE_3"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Line4" type="Label" parent="Content/Story"]
+custom_minimum_size = Vector2(800, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_LINE_4"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Credits" type="Control" parent="Content"]
+unique_name_in_owner = true
+visible = false
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CreditsRoll" type="VBoxContainer" parent="Content/Credits"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuTitle"
+text = "ENDING_CREDITS_TITLE"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="TitleGap" type="Control" parent="Content/Credits/CreditsRoll"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DesignRole" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuWhisper"
+text = "ENDING_CREDITS_DESIGN"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="DesignName" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_CREDITS_NAME"
+horizontal_alignment = 1
+
+[node name="DesignGap" type="Control" parent="Content/Credits/CreditsRoll"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CodeRole" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuWhisper"
+text = "ENDING_CREDITS_CODE"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="CodeName" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_CREDITS_NAME"
+horizontal_alignment = 1
+
+[node name="CodeGap" type="Control" parent="Content/Credits/CreditsRoll"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ArtRole" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuWhisper"
+text = "ENDING_CREDITS_ART"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="ArtName" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_CREDITS_NAME"
+horizontal_alignment = 1
+
+[node name="ArtGap" type="Control" parent="Content/Credits/CreditsRoll"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="SoundRole" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuWhisper"
+text = "ENDING_CREDITS_SOUND"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="SoundName" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_CREDITS_NAME"
+horizontal_alignment = 1
+
+[node name="ThanksGap" type="Control" parent="Content/Credits/CreditsRoll"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Thanks" type="Label" parent="Content/Credits/CreditsRoll"]
+layout_mode = 2
+theme_type_variation = &"MenuCardTitle"
+text = "ENDING_CREDITS_THANKS"
+horizontal_alignment = 1
+
+[node name="Final" type="Control" parent="Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Column" type="VBoxContainer" parent="Content/Final"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -320.0
+offset_top = 140.0
+offset_right = 320.0
+offset_bottom = 140.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Heading" type="Label" parent="Content/Final/Column"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"MenuTitle"
+text = "ENDING_HEADING"
+uppercase = true
+
+[node name="StatsGap" type="Control" parent="Content/Final/Column"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StatRows" type="VBoxContainer" parent="Content/Final/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 0
+
+[node name="ToMenuGap" type="Control" parent="Content/Final/Column"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ToMenu" type="Button" parent="Content/Final/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"EchoButton"
+text = "ENDING_TO_MENU"
+alignment = 0
+script = ExtResource("2_echo_button")
+
+[node name="SkipHint" type="Label" parent="."]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.55)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -40.0
+offset_right = 120.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"MenuSmall"
+text = "ENDING_SKIP_HINT"
+horizontal_alignment = 1
+
+[connection signal="pressed" from="Content/Final/Column/ToMenu" to="." method="_on_to_menu_pressed"]

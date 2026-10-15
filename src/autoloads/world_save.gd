@@ -122,6 +122,15 @@ func clear_run() -> void:
 	_save()
 
 
+## Побег на поверхность — финал игры: прохождение помечается пройденным. Сейв
+## остаётся (а не стирается, как у «Новой игры»), чтобы главное меню помнило
+## концовку; «Загрузить» после неё начнёт новый забег в том же мире, а чистый
+## лист даст «Новая игра». Прогресс забега снимает отдельный clear_run().
+func mark_game_completed() -> void:
+	save.game_completed = true
+	_save()
+
+
 func _save() -> void:
 	if UserResourceFile.write(save, SAVE_PATH, "WorldSave"):
 		has_save_file = true
