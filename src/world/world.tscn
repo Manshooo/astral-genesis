@@ -29,6 +29,7 @@
 [ext_resource type="Script" uid="uid://ba2j76ofkb3y3" path="res://src/observers/o_soul_traits.gd" id="22_soultraits"]
 [ext_resource type="Script" uid="uid://q0edrod0xky3" path="res://src/systems/gameplay/s_outline_mask.gd" id="23_outline"]
 [ext_resource type="Script" uid="uid://dgf2o7ah8ye2b" path="res://src/observers/o_run_stats.gd" id="24_runstats"]
+[ext_resource type="Script" path="res://src/observers/o_body_thoughts.gd" id="88_bodythoughts"]
 [ext_resource type="Script" uid="uid://bvmnlyanw1vd8" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
 [ext_resource type="Script" uid="uid://ce1egkovweis2" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
 [ext_resource type="Script" uid="uid://djr3ni2jldn8y" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
@@ -198,6 +199,9 @@ metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="O_RunStats" type="Node" parent="World/Systems" unique_id=2034243215]
 script = ExtResource("24_runstats")
+
+[node name="O_BodyThoughts" type="Node" parent="World/Systems"]
+script = ExtResource("88_bodythoughts")
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]
 script = ExtResource("8_a20vb")

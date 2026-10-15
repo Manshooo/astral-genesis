@@ -30,6 +30,11 @@ BODY_CORPSE,Труп,Corpse
 BODY_WALKER,Ходок,Walker
 BODY_CRAWLER,Ползун,Crawler
 BODY_HOUND,Гончая,Hound
+THOUGHT_DEFAULT,"Чужая память шепчет одно: наверх.","A stranger's memory whispers one thing: up."
+THOUGHT_BODY_WALKER,Наверх. Выход на нулевом.,Up. The exit is on zero.
+THOUGHT_BODY_CORPSE,"Меня не вынесли. А дверь была рядом, наверху.","Nobody carried me out. And the door was close, upstairs."
+THOUGHT_BODY_CRAWLER,"Тесно. Шахта идёт вверх — там воздух.","Cramped. The shaft goes up — there is air."
+THOUGHT_BODY_HOUND,"Цепь, клетка, железо. Наверху пахнет ветром.","Chain, cage, iron. Upstairs it smells of wind."
 ARCHITECT_PROMPT,Архитектор,Architect
 ARCHITECT_POINTS,Эссенция: %d,Essence: %d
 ARCHITECT_ESSENCE_ONE,эссенция,essence
