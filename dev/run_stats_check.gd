@@ -223,20 +223,32 @@ func _check_world(world: World) -> void:
 	_check("урон по игроку не засчитан как нанесённый им",
 		is_zero_approx(stats.value(RS_RunStats.DAMAGE_DEALT)), "")
 
-	# Бить в ответ пока нечем и некого: у E_Enemy нет C_Health вовсе (боевой
-	# системы ещё нет, см. «Система боя» в бэклоге). Проверяем оба факта разом —
-	# что удар по неуязвимому не считается и не роняет игру, и что сам путь
-	# «нанесено» работает, когда прочность у цели есть.
+	# Бить в ответ есть чем: у врага теперь своя прочность, и удар по нему идёт
+	# той же воронкой, что и по телу.
+	var enemy_health := enemy.get_component(C_Health) as C_Health
+	var enemy_before := enemy_health.current
 	S_Health.deal_damage(enemy, 4.0, player, &"")
+	_check("урон игрока по врагу — «нанесено»",
+		is_equal_approx(stats.value(RS_RunStats.DAMAGE_DEALT), 4.0),
+		"%.2f" % stats.value(RS_RunStats.DAMAGE_DEALT))
+	_check("удар по врагу снял его прочность",
+		is_equal_approx(enemy_health.current, enemy_before - 4.0),
+		"%.2f -> %.2f" % [enemy_before, enemy_health.current])
+
+	# Цель без прочности (стена, душа) удар не принимает и игру не роняет.
+	var no_health := Entity.new()
+	world.add_entity(no_health)
+	await get_tree().process_frame
+	S_Health.deal_damage(no_health, 4.0, player, &"")
 	_check("удар по цели без прочности ничего не пишет и не роняет игру",
-		is_zero_approx(stats.value(RS_RunStats.DAMAGE_DEALT)),
+		is_equal_approx(stats.value(RS_RunStats.DAMAGE_DEALT), 4.0),
 		"%.2f" % stats.value(RS_RunStats.DAMAGE_DEALT))
 
 	var target_body := _spawn_body(world, WALKER_SCENE, Vector3(-20.0, 0.0, -20.0), false)
 	await get_tree().process_frame
 	S_Health.deal_damage(target_body, 4.0, player, &"")
-	_check("урон игрока по цели с прочностью — «нанесено»",
-		is_equal_approx(stats.value(RS_RunStats.DAMAGE_DEALT), 4.0),
+	_check("урон игрока по телу с прочностью складывается с нанесённым",
+		is_equal_approx(stats.value(RS_RunStats.DAMAGE_DEALT), 8.0),
 		"%.2f" % stats.value(RS_RunStats.DAMAGE_DEALT))
 
 	# Лечение и прочие правки HP мимо воронки в сводку попадать не должны —

@@ -212,6 +212,14 @@ shadow_margin = Vector2(30, 8)
 centered = false
 echo_phase = 3.0
 
+[node name="Attack" parent="Hud/Abilities" unique_id=1051855783 instance=ExtResource("11_line")]
+unique_name_in_owner = true
+layout_mode = 0
+style = 1
+shadow_margin = Vector2(30, 8)
+centered = false
+echo_phase = 4.0
+
 [node name="SaveIndicator" type="TextureRect" parent="Hud" unique_id=1700000006]
 layout_mode = 1
 anchors_preset = 1

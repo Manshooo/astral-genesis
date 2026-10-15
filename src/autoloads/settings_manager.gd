@@ -26,6 +26,7 @@ const REBINDABLE_ACTIONS := {
 	&"sprint": "ACTION_SPRINT",
 	&"interact": "ACTION_INTERACT",
 	&"snatch_body": "ACTION_SNATCH_BODY",
+	&"attack": "ACTION_ATTACK",
 	&"leave_body": "ACTION_LEAVE_BODY",
 	&"map": "ACTION_MAP",
 	&"map_mini": "ACTION_MAP_MINI",

@@ -147,6 +147,13 @@ func _input(event: InputEvent) -> void:
 		if inp:
 			inp.sprint_pressed = true
 
+	# Удар — только фронт нажатия, как у прыжка: что с ним делать, решает S_Attack
+	# (бьёт тот, у кого есть C_Attack, остальным — отказ «нечем»).
+	if event.is_action_pressed("attack") and not event.is_echo():
+		var inp := get_component(C_PlayerInput) as C_PlayerInput
+		if inp:
+			inp.attack_pressed = true
+
 	# Захват тела — действие "snatch_body" (по умолчанию ЛКМ, задаётся в
 	# project.godot [input], переназначаемо). Здесь только ставим запрос-флаг;
 	# сам захват (луч/бросок/вселение) выполняет S_BodySnatch по C_BodySnatch.capture_requested.
