@@ -131,7 +131,8 @@ func _run(world: World, mask_system: S_OutlineMask) -> void:
 	incubator.add_component(C_Highlighted.new())
 	await get_tree().process_frame
 	var panel := _geometries_under(incubator, "Visual")
-	var decor := _geometries_under(incubator, "Decor")
+	var decor := _geometries_under(incubator, "Flask")
+	decor.append_array(_geometries_under(incubator, "Pipe"))
 	_check(
 		"у инкубатора обводится панель",
 		not panel.is_empty() and _all_lit(panel),

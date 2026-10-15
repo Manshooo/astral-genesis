@@ -8,8 +8,9 @@
 [ext_resource type="Script" uid="uid://ccb3xm8fbdion" path="res://src/components/rendering/c_visual_root.gd" id="6_vroot"]
 [ext_resource type="PackedScene" uid="uid://b42gpvcxfs15q" path="res://assets/props/interactive/SM_incubator_control_panel/SM_incubator_control_panel.glb" id="7_panel"]
 [ext_resource type="PackedScene" uid="uid://cjo8ft0onhb6u" path="res://assets/props/SM_incubator/SM_incubator.glb" id="8_decor"]
-[ext_resource type="PackedScene" uid="uid://dhvlp5x2nbm4n" path="res://assets/props/SM_incubator_pipe/SM_incubator_pipe.glb" id="9_qweb3"]
-[ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_specimen_stub.tscn" id="9_ykyue"]
+[ext_resource type="PackedScene" uid="uid://dhvlp5x2nbm4n" path="res://assets/props/SM_incubator_pipe/SM_incubator_pipe.glb" id="9_pipe"]
+[ext_resource type="PackedScene" path="res://src/entities/incubator/incubator_specimen_stub.tscn" id="10_specimen"]
+[ext_resource type="Script" path="res://src/entities/incubator/incubator_flask.gd" id="11_flask"]
 
 [sub_resource type="Resource" id="SkillTreeAction"]
 script = ExtResource("3_0scx7")
@@ -66,6 +67,7 @@ fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(1, 0.5)
 
 [sub_resource type="StandardMaterial3D" id="Mat_bubble"]
+render_priority = 1
 transparency = 1
 blend_mode = 1
 shading_mode = 0
@@ -91,30 +93,31 @@ component_resources = Array[ExtResource("4_0as6p")]([SubResource("SkillTreePromp
 
 [node name="Visual" parent="." unique_id=1229026779 instance=ExtResource("7_panel")]
 
-[node name="Incubator" type="Node3D" parent="." unique_id=393099631]
+[node name="Flask" type="Node3D" parent="." unique_id=393099631]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6352365, 0.6421068, 1.1108646)
+script = ExtResource("11_flask")
 
-[node name="Model" parent="Incubator" unique_id=1772920426 instance=ExtResource("8_decor")]
+[node name="Model" parent="Flask" unique_id=1772920426 instance=ExtResource("8_decor")]
 
-[node name="Glow" type="OmniLight3D" parent="Incubator" unique_id=847897843]
+[node name="Glow" type="OmniLight3D" parent="Flask" unique_id=847897843]
 light_color = Color(0.79, 0.66, 0.95, 1)
 light_energy = 1.6
 omni_range = 5.0656867
 
-[node name="GlowFog" type="FogVolume" parent="Incubator" unique_id=1361344432]
+[node name="GlowFog" type="FogVolume" parent="Flask" unique_id=1361344432]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.038259, 0)
 size = Vector3(1.6, 2.2576172, 1.6)
 shape = 2
 material = SubResource("FogMaterial_do4ao")
 
-[node name="Bubbles" type="GPUParticles3D" parent="Incubator" unique_id=902973414]
+[node name="Bubbles" type="GPUParticles3D" parent="Flask" unique_id=902973414]
 amount = 36
 lifetime = 3.0
 preprocess = 6.0
 process_material = SubResource("ParticleProcessMaterial_jn0qy")
 draw_pass_1 = SubResource("QuadMesh_trc5g")
 
-[node name="Specimen" parent="Incubator" unique_id=1498843046 instance=ExtResource("9_ykyue")]
+[node name="Specimen" parent="Flask" unique_id=1498843046 instance=ExtResource("10_specimen")]
 transform = Transform3D(-0.6260561, 0, 0.7797779, 0, 1, 0, -0.7797779, 0, -0.6260561, 0, 1.2767081, 0)
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1381715465]
@@ -125,5 +128,5 @@ collision_mask = 15
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9825195, 0)
 shape = SubResource("PanelShape")
 
-[node name="SM_incubator_pipe" parent="." unique_id=456764685 instance=ExtResource("9_qweb3")]
+[node name="Pipe" parent="." unique_id=456764685 instance=ExtResource("9_pipe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.428361, 2.6195323, 1.4324348)

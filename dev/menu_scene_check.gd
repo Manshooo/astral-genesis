@@ -16,9 +16,9 @@ extends "res://dev/check_harness.gd"
 ## или неверный путь узла в ней — тоже провал.
 
 const MENU := preload("res://src/levels/menu_map/L_menu_map.tscn")
-## Имена меток и доля колбы — у скрипта сцены, а не литералами здесь: сверять
+## Имена меток и доля колбы — у скрипта колбы, а не литералами здесь: сверять
 ## надо то, чего ждёт сцена, а не то, что когда-то в неё вписали.
-const MENU_SCRIPT := preload("res://src/levels/menu_map/l_menu_map.gd")
+const FLASK_SCRIPT := preload("res://src/entities/incubator/incubator_flask.gd")
 const GLASS := preload("res://assets/materials/MAT_incubator_glass.tres")
 
 var _engine_errors := _EngineErrorCounter.new()
@@ -26,6 +26,7 @@ var _engine_errors := _EngineErrorCounter.new()
 ## разборе, и `CONST.emission_energy_multiplier` вечно читал бы значение из .tres,
 ## а не живого ресурса, — ассерт про возврат материала зеленел бы на мутации.
 var _lamp_glow: StandardMaterial3D = preload("res://assets/materials/MAT_light_fluorescent_glow.tres")
+var _ring_glow: StandardMaterial3D = preload("res://assets/materials/MAT_incubator_glow.tres")
 
 
 ## Считает ошибки движка любого вида, кроме предупреждений.
@@ -73,10 +74,12 @@ class _EngineErrorCounter:
 func _ready() -> void:
 	OS.add_logger(_engine_errors)
 	var authored_lamp_glow := _lamp_glow.emission_energy_multiplier
+	var authored_ring_glow := _ring_glow.emission_energy_multiplier
 
 	await _check_loads_clean()
 	await _check_glow()
 	await _check_flicker()
+	await _check_real_model()
 	await _check_fallback_flask()
 	await _check_model_contract()
 
@@ -85,6 +88,12 @@ func _ready() -> void:
 		is_equal_approx(_lamp_glow.emission_energy_multiplier, authored_lamp_glow),
 		"%.3f, а в .tres %.3f: следующее меню сняло бы «авторское» со вспышки" % [
 			_lamp_glow.emission_energy_multiplier, authored_lamp_glow]
+	)
+	_check(
+		"материал кольца колбы после меню — авторский",
+		is_equal_approx(_ring_glow.emission_energy_multiplier, authored_ring_glow),
+		"%.3f, а в .tres %.3f: хаб снял бы «авторское» с перелива" % [
+			_ring_glow.emission_energy_multiplier, authored_ring_glow]
 	)
 	OS.remove_logger(_engine_errors)
 	_finish()
@@ -97,6 +106,20 @@ func _spawn(prepare: Callable = Callable()) -> Node3D:
 	add_child(menu)
 	await get_tree().process_frame
 	return menu
+
+
+## Снимает с модели колбы то, что она несёт из Blender, — стекло и метки, —
+## чтобы проверить запасной путь и подложенные метки: find_child нашёл бы
+## настоящие раньше подложенных.
+static func _strip_model_contract(menu: Node3D) -> void:
+	var model: Node3D = menu.get_node("Incubator/Flask/Model")
+	for marker_name in [FLASK_SCRIPT.BODY_ANCHOR, FLASK_SCRIPT.BUBBLE_SOURCE]:
+		var marker := model.find_child(marker_name, true, false)
+		if marker:
+			marker.free()
+	var plain := StandardMaterial3D.new()
+	for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		mesh.material_override = plain
 
 
 # --- 1. Грузится и крутится без ошибок -------------------------------------
@@ -124,13 +147,14 @@ func _check_loads_clean() -> void:
 # --- 2. Свечение колбы плавает на 10–15 % ---------------------------------
 func _check_glow() -> void:
 	var menu := await _spawn()
-	var light: Light3D = menu.get_node("Incubator/Glow")
-	var base: float = menu._glow_energy
+	var flask: Node3D = menu.get_node("Incubator/Flask")
+	var light: Light3D = flask.get_node("Glow")
+	var base: float = flask._glow_energy
 	var lo := INF
 	var hi := -INF
-	menu.set_process(false)
+	flask.set_process(false)
 	for i in 2400:
-		menu._process(0.05)
+		flask._process(0.05)
 		lo = minf(lo, light.light_energy / base)
 		hi = maxf(hi, light.light_energy / base)
 	_check(
@@ -193,12 +217,41 @@ func _check_flicker() -> void:
 	await get_tree().process_frame
 
 
-# --- 4. Без стекла и меток — запасная колба, мозг и пузырьки внутри неё ------
-func _check_fallback_flask() -> void:
+# --- 4. Модель из Blender: мозг и пузырьки — на её пустышках ---------------
+func _check_real_model() -> void:
 	var menu := await _spawn()
-	var fog: FogVolume = menu.get_node("Incubator/GlowFog")
-	var specimen: Node3D = menu.get_node("Incubator/Specimen")
-	var bubbles: GPUParticles3D = menu.get_node("Incubator/Bubbles")
+	var flask: Node3D = menu.get_node("Incubator/Flask")
+	var model: Node3D = flask.get_node("Model")
+	_check(
+		"колба берёт объём у стекла модели, а не запасной",
+		flask.flask_box() != FLASK_SCRIPT.FLASK_FALLBACK,
+		"у модели нет поверхности %s" % FLASK_SCRIPT.GLASS_MATERIAL
+	)
+	for pair in [[FLASK_SCRIPT.BODY_ANCHOR, "Specimen"], [FLASK_SCRIPT.BUBBLE_SOURCE, "Bubbles"]]:
+		var marker := model.find_child(pair[0], true, false) as Node3D
+		var node: Node3D = flask.get_node(pair[1])
+		_check(
+			"%s встаёт на пустышку %s модели" % [pair[1], pair[0]],
+			marker != null and node.global_position.distance_to(marker.global_position) < 0.05,
+			"пустышки нет" if marker == null else "%s, пустышка %s" % [node.global_position, marker.global_position]
+		)
+	var bubble_material := (flask.get_node("Bubbles") as GPUParticles3D).draw_pass_1.surface_get_material(0)
+	_check(
+		"пузырьки рисуются после стекла — копия экрана для преломления их не видит",
+		bubble_material != null and bubble_material.render_priority > GLASS.render_priority,
+		"приоритет пузырьков %s, стекла %d" % [
+			bubble_material.render_priority if bubble_material else "—", GLASS.render_priority]
+	)
+	menu.queue_free()
+	await get_tree().process_frame
+
+
+# --- 5. Без стекла и меток — запасная колба, мозг и пузырьки внутри неё ------
+func _check_fallback_flask() -> void:
+	var menu := await _spawn(_strip_model_contract)
+	var fog: FogVolume = menu.get_node("Incubator/Flask/GlowFog")
+	var specimen: Node3D = menu.get_node("Incubator/Flask/Specimen")
+	var bubbles: GPUParticles3D = menu.get_node("Incubator/Flask/Bubbles")
 	_check(
 		"туман колбы — цилиндр",
 		fog.shape == RenderingServer.FOG_VOLUME_SHAPE_CYLINDER,
@@ -240,14 +293,15 @@ func _check_fallback_flask() -> void:
 	await get_tree().process_frame
 
 
-# --- 5. Пришедшая модель: стекло, метки, атлас, анимация — без правки сцены --
+# --- 6. Пришедшая модель: стекло, метки, атлас, анимация — без правки сцены --
 func _check_model_contract() -> void:
 	var anchor_at := Vector3(0.1, 2.6, -0.05)
 	var source_at := Vector3(0.0, 1.7, 0.0)
 	var glass_center := Vector3(0.0, 2.5, 0.0)
 	var atlas := ImageTexture.create_from_image(Image.create_empty(4, 4, false, Image.FORMAT_RGBA8))
 	var menu := await _spawn(func(m: Node3D) -> void:
-		var model: Node3D = m.get_node("Incubator/Model")
+		_strip_model_contract(m)
+		var model: Node3D = m.get_node("Incubator/Flask/Model")
 		var glass := MeshInstance3D.new()
 		var cylinder := CylinderMesh.new()
 		cylinder.top_radius = 0.5
@@ -257,7 +311,7 @@ func _check_model_contract() -> void:
 		glass.material_override = GLASS
 		glass.position = glass_center
 		model.add_child(glass)
-		for marker in [[MENU_SCRIPT.BODY_ANCHOR, anchor_at], [MENU_SCRIPT.BUBBLE_SOURCE, source_at]]:
+		for marker in [[FLASK_SCRIPT.BODY_ANCHOR, anchor_at], [FLASK_SCRIPT.BUBBLE_SOURCE, source_at]]:
 			var node := Node3D.new()
 			node.name = marker[0]
 			node.position = marker[1]
@@ -274,20 +328,20 @@ func _check_model_contract() -> void:
 		player.add_animation_library(&"", library)
 		m.get_node("Lab/Hound").add_child(player))
 
-	var fog: FogVolume = menu.get_node("Incubator/GlowFog")
+	var fog: FogVolume = menu.get_node("Incubator/Flask/GlowFog")
 	_check(
 		"туман колбы берёт объём у стекла модели",
-		fog.position.is_equal_approx(glass_center) and absf(fog.size.x - 1.0 * MENU_SCRIPT.FLASK_INSET) < 0.02 \
-				and absf(fog.size.y - 2.0 * MENU_SCRIPT.FLASK_INSET) < 0.02,
+		fog.position.is_equal_approx(glass_center) and absf(fog.size.x - 1.0 * FLASK_SCRIPT.FLASK_INSET) < 0.02 \
+				and absf(fog.size.y - 2.0 * FLASK_SCRIPT.FLASK_INSET) < 0.02,
 		"туман %s размером %s, стекло r 0.5 h 2 в %s" % [fog.position, fog.size, glass_center]
 	)
-	var specimen: Node3D = menu.get_node("Incubator/Specimen")
+	var specimen: Node3D = menu.get_node("Incubator/Flask/Specimen")
 	_check(
 		"мозг встаёт на метку BodyAnchor",
 		specimen.position.distance_to(anchor_at) < 0.05,
 		"мозг %s, метка %s" % [specimen.position, anchor_at]
 	)
-	var bubbles: Node3D = menu.get_node("Incubator/Bubbles")
+	var bubbles: Node3D = menu.get_node("Incubator/Flask/Bubbles")
 	_check(
 		"пузырьки идут от метки BubbleSource",
 		bubbles.position.is_equal_approx(source_at),
