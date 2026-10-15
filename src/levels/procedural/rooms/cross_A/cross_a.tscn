@@ -21,7 +21,13 @@ component_resources = Array[ExtResource("2_bbxbi")]([SubResource("Resource_i1oqg
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1640102972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 0.79999995, -0.8966466)
 
-[node name="Light" parent="." unique_id=150737249 instance=ExtResource("lamp")]
+[node name="EssenceSpot1" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, 5.5)
+
+[node name="EssenceSpot2" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0, -5.5)
+
+[node name="Light"parent="." unique_id=150737249 instance=ExtResource("lamp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
 
 [node name="EnemySpawn1" type="Marker3D" parent="."]

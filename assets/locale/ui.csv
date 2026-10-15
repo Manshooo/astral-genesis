@@ -31,6 +31,7 @@ RUN_STAT_POINTS_CLEAN_EXIT,· за чистый выход,· from a clean exit
 RUN_STAT_ESSENCE,Эссенции получено,Essence earned
 RUN_STAT_ESSENCE_ARCHITECT,· от Архитектора,· from the Architect
 RUN_STAT_ESSENCE_PICKUP,· за находки,· from finds
+RUN_STAT_ESSENCE_CACHE,· за тайники,· from caches
 BODY_CORPSE,Труп,Corpse
 BODY_WALKER,Ходок,Walker
 BODY_CRAWLER,Ползун,Crawler
@@ -116,6 +117,8 @@ HUD_MSG_NO_ATTACK,Этому телу нечем бить,This body has nothing 
 HUD_MSG_HIT,Удар достиг цели,The blow lands
 HUD_MSG_NO_ROOM,Тело здесь не поместится,The body won't fit here
 HUD_MSG_SKILL_CONDITION,Душа усвоила: %s,The soul has learned: %s
+HUD_MSG_ESSENCE_FOUND,Эссенция: +%d,Essence: +%d
+ESSENCE_FIND_PROMPT,Забрать эссенцию,Take the essence
 ITEM_LEVEL_ACCESS_KEY,ключ доступа к уровню,a level access key
 HUD_CTRL_MOVE,Ход,Move
 HUD_CTRL_FLIGHT,Полёт,Flight
@@ -262,6 +265,8 @@ SKILL_RESILIENT_FLESH_NAME,Живучесть,Resilience
 SKILL_RESILIENT_FLESH_DESC,Увеличивает запас прочности захваченного тела.,Raises the durability of a captured body.
 SKILL_SECOND_WIND_NAME,Второе дыхание,Second wind
 SKILL_SECOND_WIND_DESC,Увеличивает скорость бега в захваченном теле.,Raises sprint speed in a captured body.
+SKILL_ESSENCE_GATHERING_NAME,Сбор эссенции,Essence gathering
+SKILL_ESSENCE_GATHERING_DESC,Больше эссенции из находок и тайников: без навыка душа берёт лишь малую долю.,More essence from finds and caches: without the skill the soul takes only a small share.
 SKILL_REQ_BRANCH,"Рангов в ветке «%s»: %d","Ranks in “%s”: %d"
 SKILL_VALUES,Значение по рангам,Value by rank
 SKILL_BONUS_PENDING,"Условие ранга даёт +%s к значению ранга","Meeting the rank condition adds +%s to the rank value"

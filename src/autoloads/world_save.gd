@@ -115,6 +115,12 @@ func claim_node_reward(node_id: StringName) -> bool:
 	return true
 
 
+## Взята ли уже награда [param node_id] в этом забеге — чтобы взятая находка не
+## появлялась при повторном спавне слоя. Только чтение; забирает claim_node_reward.
+func is_node_reward_claimed(node_id: StringName) -> bool:
+	return save.rewarded_node_ids.has(node_id)
+
+
 ## Забег закончился штатно (побег на поверхность) — прохождение остаётся, но
 ## продолжать нечего. Для смерти есть record_death: там ещё и death_count++.
 func clear_run() -> void:

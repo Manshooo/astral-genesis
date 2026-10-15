@@ -33,9 +33,8 @@ const ESSENCE := &"essence"  ## эссенция за этот забег — с
 const POINTS_ABSORB := &"points_absorb"  ## захват тела (поглощение сознания)
 const POINTS_CLEAN_EXIT := &"points_clean_exit"  ## «чистый выход» из выжатого тела
 const ESSENCE_ARCHITECT := &"essence_architect"  ## касание Архитектора
-## Находки в комнатах. Пишет следующая волна (источники эссенции); ключ и запись
-## заведены сейчас, чтобы строка сводки и API уже были на месте.
-const ESSENCE_PICKUP := &"essence_pickup"
+const ESSENCE_PICKUP := &"essence_pickup"  ## находка в комнате (LayerFinds)
+const ESSENCE_CACHE := &"essence_cache"  ## тайник в тупике коридора (LayerFinds)
 
 ## Источник -> итог его валюты. Одно место, где сказано, какая валюта у источника:
 ## новый источник без записи здесь не попадёт ни в один итог, и тихо.
@@ -44,6 +43,7 @@ const SOURCE_TOTALS := {
 	POINTS_CLEAN_EXIT: SKILL_POINTS,
 	ESSENCE_ARCHITECT: ESSENCE,
 	ESSENCE_PICKUP: ESSENCE,
+	ESSENCE_CACHE: ESSENCE,
 }
 
 ## Чем кончился забег. Смерть показывает экран итогов, побег (`finish_run`) —

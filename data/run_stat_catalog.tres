@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="RS_RunStatCatalog" load_steps=15 format=3]
+[gd_resource type="Resource" script_class="RS_RunStatCatalog" load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://src/resources/run_stats/rs_run_stat_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://src/resources/run_stats/rs_run_stat_row.gd" id="2_row"]
@@ -87,6 +87,13 @@ label_key = &"RUN_STAT_ESSENCE_PICKUP"
 format = 0
 hide_when_empty = true
 
+[sub_resource type="Resource" id="Resource_essence_cache"]
+script = ExtResource("2_row")
+key = &"essence_cache"
+label_key = &"RUN_STAT_ESSENCE_CACHE"
+format = 0
+hide_when_empty = true
+
 [resource]
 script = ExtResource("1_catalog")
-rows = Array[ExtResource("2_row")]([SubResource("Resource_time"), SubResource("Resource_rooms"), SubResource("Resource_bodies"), SubResource("Resource_body_list"), SubResource("Resource_damage_taken"), SubResource("Resource_damage_dealt"), SubResource("Resource_skill_points"), SubResource("Resource_points_absorb"), SubResource("Resource_points_clean_exit"), SubResource("Resource_essence"), SubResource("Resource_essence_architect"), SubResource("Resource_essence_pickup")])
+rows = Array[ExtResource("2_row")]([SubResource("Resource_time"), SubResource("Resource_rooms"), SubResource("Resource_bodies"), SubResource("Resource_body_list"), SubResource("Resource_damage_taken"), SubResource("Resource_damage_dealt"), SubResource("Resource_skill_points"), SubResource("Resource_points_absorb"), SubResource("Resource_points_clean_exit"), SubResource("Resource_essence"), SubResource("Resource_essence_architect"), SubResource("Resource_essence_pickup"), SubResource("Resource_essence_cache")])

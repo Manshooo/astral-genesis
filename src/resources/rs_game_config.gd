@@ -62,6 +62,29 @@ enum PortalTransition { FADE, CURTAIN }
 ## Числа черновые, считать их будет game-balance.
 @export_range(0, 10000) var architect_essence_reward: int = 150
 
+@export_group("Находки эссенции")
+## Источники эссенции в мире (карточка «Источники эссенции», §4.3 «Игрового
+## цикла»). Все числа черновые — считать их будет game-balance. Суммы здесь —
+## НОМИНАЛ: игрок получает номинал × стат души «essence_gain», а без навыка этот
+## стат равен [member essence_gain_base].
+##
+## Шанс, что на маркере комнаты (Marker3D «EssenceSpot*» в сцене комнаты) лежит
+## находка. «Награда — иногда» (решение 01.10): не каждый маркер занят.
+@export_range(0.0, 1.0, 0.01) var essence_find_chance: float = 0.6
+## Номинал находки в комнате: от и до, включительно.
+@export_range(0, 10000) var essence_find_min: int = 100
+@export_range(0, 10000) var essence_find_max: int = 300
+## Шанс тайника в КАЖДОМ тупике коридора (RS_LayerPlan.dead_ends). Выше шанса
+## находки: тупик — это ещё и крюк с кратчайшего пути, который надо окупить.
+@export_range(0.0, 1.0, 0.01) var essence_cache_chance: float = 0.75
+@export_range(0, 10000) var essence_cache_min: int = 200
+@export_range(0, 10000) var essence_cache_max: int = 400
+## Доля номинала без навыка «Сбор эссенции» — база стата `essence_gain`.
+## «Честный минимум без навыка ~30 %» (карточка §4.3): первые забеги дают
+## эссенцию, но заметно меньше, чем будущий билд. Касание Архитектора её не
+## множит — оно остаётся гарантированной долей.
+@export_range(0.0, 1.0, 0.01) var essence_gain_base: float = 0.3
+
 @export_group("World generation")
 ## Библиотека пресетов комнат для процедурной генерации.
 ## Пусто = все узлы получают placeholder-комнату (поведение до появления
