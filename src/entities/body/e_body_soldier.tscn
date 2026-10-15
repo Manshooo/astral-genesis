@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://src/entities/body/e_body_walker.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
+[ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="3_health"]
+[ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="4_snatch"]
+[ext_resource type="Script" uid="uid://dknqwce2loh3r" path="res://src/components/gameplay/skills/c_walk.gd" id="5_walk"]
+[ext_resource type="Script" uid="uid://brejetk5bt2cr" path="res://src/components/gameplay/skills/c_body_decay.gd" id="6_decay"]
+[ext_resource type="Script" uid="uid://buxoowbmksowk" path="res://src/components/gameplay/skills/c_jump.gd" id="7_jump"]
+[ext_resource type="Script" uid="uid://2brst6hy73o0" path="res://src/components/gameplay/skills/c_sprint.gd" id="8_sprint"]
+[ext_resource type="Script" uid="uid://ctjphmeky1e32" path="res://src/components/gameplay/skills/c_footsteps.gd" id="9_footsteps"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_attack.gd" id="10_attack"]
+[ext_resource type="Material" path="res://assets/shared/materials/palette_soldier.tres" id="11_tone"]
+
+[sub_resource type="Resource" id="Resource_health"]
+script = ExtResource("3_health")
+maximum = 130.0
+current = 130.0
+
+[sub_resource type="Resource" id="Resource_snatch"]
+script = ExtResource("4_snatch")
+
+[sub_resource type="Resource" id="Resource_walk"]
+script = ExtResource("5_walk")
+speed = 4.6
+
+[sub_resource type="Resource" id="Resource_decay"]
+script = ExtResource("6_decay")
+maximum = 60.0
+
+[sub_resource type="Resource" id="Resource_jump"]
+script = ExtResource("7_jump")
+
+[sub_resource type="Resource" id="Resource_sprint"]
+script = ExtResource("8_sprint")
+speed_multiplier = 1.6
+
+[sub_resource type="Resource" id="Resource_footsteps"]
+script = ExtResource("9_footsteps")
+event_path = "event:/sfx/walk"
+playback = 1
+tempo_parameter = "Param1"
+
+[sub_resource type="Resource" id="Resource_attack"]
+script = ExtResource("10_attack")
+damage = 22.0
+reach = 2.0
+interval = 1.1
+
+[node name="e_body_soldier" unique_id=1735200102 instance=ExtResource("1_base")]
+display_name_key = &"BODY_SOLDIER"
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack")])
+
+[node name="body" parent="Skeleton3D" index="0"]
+material_override = ExtResource("11_tone")

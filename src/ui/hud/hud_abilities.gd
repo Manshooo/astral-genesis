@@ -1,8 +1,9 @@
 # res://src/ui/hud/hud_abilities.gd
 ## Раскладка управления «на сейчас»: что риг умеет ПРЯМО СЕЙЧАС, а не полный
 ## список действий игры. Ход/полёт показываем всегда (движение доступно в любом
-## состоянии, меняется только его смысл), прыжок и бег — только пока на риге
-## есть C_Jump/C_Sprint: у безногого тела строки нет вовсе, а не серая.
+## состоянии, меняется только его смысл), прыжок, бег и удар — только пока на
+## риге есть C_Jump/C_Sprint/C_Attack: у безногого тела строки прыжка нет вовсе,
+## а не серая.
 ##
 ## Видна не всегда (§6 «HUD — спека»): несколько секунд после того, как набор
 ## сменился — вселение, выход, пересадка, тело без ног, — потом гаснет. Набор
@@ -17,7 +18,7 @@
 ## Реагируем на component_added/component_removed, а не поллим каждый кадр:
 ## набор возможностей — дискретное состояние, а не непрерывное число.
 ##
-## Три строки (UI_ThoughtLine) лежат в hud.tscn — их число постоянное, и стиль
+## Четыре строки (UI_ThoughtLine) лежат в hud.tscn — их число постоянное, и стиль
 ## управления, отступ тени и фаза эха заданы там же. Раскладка — кодом: строки
 ## въезжают по одной со сдвигом, а контейнер переставлял бы их обратно.
 class_name UI_HudAbilities
@@ -36,6 +37,7 @@ const LINE_HEIGHT := 22.0
 @onready var _move: UI_ThoughtLine = %Move
 @onready var _jump: UI_ThoughtLine = %Jump
 @onready var _sprint: UI_ThoughtLine = %Sprint
+@onready var _attack: UI_ThoughtLine = %Attack
 ## Время, когда набор сменился в последний раз; -INF — показывать нечего.
 var _started := -INF
 ## Набор, который сейчас показан: «полёт/ход, прыжок?, бег?». Сравниваем его, а
@@ -72,6 +74,7 @@ func _on_component_changed(_entity: Entity, component: Variant) -> void:
 		or component is C_Flight
 		or component is C_Jump
 		or component is C_Sprint
+		or component is C_Attack
 		or component is C_Embodied
 	):
 		_render()
@@ -103,7 +106,14 @@ func _render() -> void:
 	if sprint != null:
 		_sprint.set_line(SettingsManager.action_display_name(sprint.action_name), tr("HUD_CTRL_SPRINT"))
 
-	var signature := "%s|%s|%s|%s" % [flying, jump != null, sprint != null, player.has_component(C_Embodied)]
+	var attack := player.get_component(C_Attack) as C_Attack
+	_attack.visible = attack != null
+	if attack != null:
+		_attack.set_line(SettingsManager.action_display_name(attack.action_name), tr("HUD_CTRL_ATTACK"))
+
+	var signature := "%s|%s|%s|%s|%s" % [
+		flying, jump != null, sprint != null, attack != null, player.has_component(C_Embodied)
+	]
 	if signature != _signature:
 		_signature = signature
 		_started = UI_HudMood.now()
@@ -124,7 +134,7 @@ func is_showing() -> bool:
 
 func _lines() -> Array[UI_ThoughtLine]:
 	var lines: Array[UI_ThoughtLine] = []
-	for line: UI_ThoughtLine in [_move, _jump, _sprint]:
+	for line: UI_ThoughtLine in [_move, _jump, _sprint, _attack]:
 		if line.visible:
 			lines.append(line)
 	return lines

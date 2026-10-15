@@ -27,7 +27,7 @@ const BEFORE_MOVEMENT := [
 	"S_Phasing", "S_Gravity", "S_EnemyAI", "S_Sprint", "S_Walk", "S_Jump", "S_Flight",
 ]
 ## Кто кастует луч от камеры — и потому обязан идти после перемещения.
-const CAMERA_RAYS := ["S_InteractionDetector", "S_SnatchTargetDetector"]
+const CAMERA_RAYS := ["S_InteractionDetector", "S_SnatchTargetDetector", "S_Attack"]
 
 
 func _ready() -> void:

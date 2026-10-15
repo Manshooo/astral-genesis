@@ -38,7 +38,10 @@ func deps() -> Dictionary[int, Array]:
 
 
 func query() -> QueryBuilder:
-	return q.with_all([C_EnemyAI, C_EnemyInput, C_Velocity, C_Walk])
+	# C_Dead исключён: S_Health вешает его, как только HP упало до нуля, а труп на
+	# место врага встаёт отложенно (O_EnemyDeath) — в это окно мёртвый не должен
+	# ни бить, ни идти.
+	return q.with_all([C_EnemyAI, C_EnemyInput, C_Velocity, C_Walk]).with_none([C_Dead])
 
 
 func process(entities: Array[Entity], _components: Array, delta: float) -> void:

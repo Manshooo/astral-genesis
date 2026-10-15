@@ -16,6 +16,8 @@ BODY_CORPSE,Труп,Corpse
 BODY_WALKER,Ходок,Walker
 BODY_CRAWLER,Ползун,Crawler
 BODY_HOUND,Гончая,Hound
+BODY_SCIENTIST,Учёный,Scientist
+BODY_SOLDIER,Военный,Soldier
 ARCHITECT_PROMPT,Архитектор,Architect
 ARCHITECT_POINTS,Эссенция: %d,Essence: %d
 ARCHITECT_ESSENCE_ONE,эссенция,essence
@@ -71,12 +73,15 @@ HUD_MSG_LOCKED_NEEDS,Заперто. Нужен %s,Locked. Requires %s
 HUD_MSG_SEALED,Прохода нет: проём заварен,No way through: the doorway is welded shut
 HUD_MSG_NO_JUMP,Этому телу нечем прыгать,This body has nothing to jump with
 HUD_MSG_NO_SPRINT,Это тело не умеет бегать,This body can't run
+HUD_MSG_NO_ATTACK,Этому телу нечем бить,This body has nothing to strike with
+HUD_MSG_HIT,Удар достиг цели,The blow lands
 HUD_MSG_NO_ROOM,Тело здесь не поместится,The body won't fit here
 ITEM_LEVEL_ACCESS_KEY,ключ доступа к уровню,a level access key
 HUD_CTRL_MOVE,Ход,Move
 HUD_CTRL_FLIGHT,Полёт,Flight
 HUD_CTRL_JUMP,Прыжок,Jump
 HUD_CTRL_SPRINT,Бег,Sprint
+HUD_CTRL_ATTACK,Удар,Strike
 KEY_MOUSE_LEFT,ЛКМ,LMB
 KEY_MOUSE_RIGHT,ПКМ,RMB
 KEY_MOUSE_MIDDLE,СКМ,MMB
@@ -170,6 +175,7 @@ ACTION_JUMP,Прыжок,Jump
 ACTION_SPRINT,Бег,Sprint
 ACTION_INTERACT,Взаимодействие,Interact
 ACTION_SNATCH_BODY,Захват тела,Possess a body
+ACTION_ATTACK,Удар,Strike
 ACTION_LEAVE_BODY,Покинуть тело,Leave the body
 ACTION_MAP,Карта,Map
 HINT_BACK,Назад,Back
