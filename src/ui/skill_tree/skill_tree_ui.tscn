@@ -180,6 +180,41 @@ auto_translate_mode = 2
 theme_type_variation = &"MenuBody"
 autowrap_mode = 3
 
+[node name="AbilityNote" type="Label" parent="Content/Card"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuCaption"
+autowrap_mode = 3
+
+[node name="ValuesGap" type="Control" parent="Content/Card"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ValuesBlock" type="VBoxContainer" parent="Content/Card"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ValuesLabel" type="Label" parent="Content/Card/ValuesBlock"]
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "SKILL_VALUES"
+
+[node name="ValuesRow" type="HBoxContainer" parent="Content/Card/ValuesBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Bonus" type="Label" parent="Content/Card/ValuesBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"MenuCaption"
+autowrap_mode = 3
+
 [node name="CostGap" type="Control" parent="Content/Card" unique_id=335534338]
 custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
@@ -212,6 +247,26 @@ theme_type_variation = &"MenuCaption"
 text = "SKILL_REQUIRES"
 
 [node name="Reqs" type="VBoxContainer" parent="Content/Card" unique_id=335534344]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="CondBlock" type="VBoxContainer" parent="Content/Card"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="CondGap" type="Control" parent="Content/Card/CondBlock"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CondLabel" type="Label" parent="Content/Card/CondBlock"]
+layout_mode = 2
+theme_type_variation = &"MenuCaption"
+text = "SKILL_CONDITIONS"
+
+[node name="Conds" type="VBoxContainer" parent="Content/Card/CondBlock"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 2

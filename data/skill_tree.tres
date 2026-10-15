@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://cf7n86al5ghfw" path="res://src/resources/skills/rs_skill_requirement.gd" id="3_ign7e"]
 [ext_resource type="Script" uid="uid://bftpqmqlvmglj" path="res://src/resources/skills/rs_stat_modifier.gd" id="4_stmod"]
 [ext_resource type="Script" uid="uid://blq3s1sboyo4d" path="res://src/resources/skills/rs_skill_branch.gd" id="5_branch"]
+[ext_resource type="Script" path="res://src/resources/skills/rs_skill_condition.gd" id="6_cond"]
 
 [sub_resource type="Resource" id="Resource_branch_possession"]
 script = ExtResource("5_branch")
@@ -24,6 +25,35 @@ id = &"embodiment"
 display_name = "SKILL_BRANCH_EMBODIMENT"
 color = Color(0.76, 0.5, 0.5, 1)
 
+[sub_resource type="Resource" id="Resource_cond_walk1"]
+script = ExtResource("6_cond")
+target = 1000.0
+
+[sub_resource type="Resource" id="Resource_cond_walk2"]
+script = ExtResource("6_cond")
+target = 2000.0
+
+[sub_resource type="Resource" id="Resource_cond_walk3"]
+script = ExtResource("6_cond")
+target = 3000.0
+
+[sub_resource type="Resource" id="Resource_cond_cap1"]
+script = ExtResource("6_cond")
+type = 1
+target = 2.0
+
+[sub_resource type="Resource" id="Resource_cond_cap2"]
+script = ExtResource("6_cond")
+type = 1
+target = 3.0
+min_body_class = 1
+
+[sub_resource type="Resource" id="Resource_cond_cap3"]
+script = ExtResource("6_cond")
+type = 1
+target = 2.0
+min_body_class = 2
+
 [sub_resource type="Resource" id="Resource_mod_range"]
 script = ExtResource("4_stmod")
 stat = &"capture_range"
@@ -37,12 +67,14 @@ display_name = "SKILL_BODY_SNATCH_NAME"
 description = "SKILL_BODY_SNATCH_DESC"
 branch = &"possession"
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_range")])
+cost_per_rank = Array[int]([30, 60, 100])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_chance"]
 script = ExtResource("4_stmod")
 stat = &"capture_chance"
-per_rank = 0.1
+values = Array[float]([0.1, 0.15, 0.2])
+display_percent = true
 metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 
 [sub_resource type="Resource" id="Resource_tcr6r"]
@@ -58,6 +90,9 @@ description = "SKILL_CAPTURE_PRECISION_DESC"
 branch = &"possession"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_chance")])
+condition_bonus = 0.2
+rank_conditions = Array[ExtResource("6_cond")]([SubResource("Resource_cond_cap1"), SubResource("Resource_cond_cap2"), SubResource("Resource_cond_cap3")])
+cost_per_rank = Array[int]([40, 80, 120])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_life"]
@@ -74,6 +109,7 @@ description = "SKILL_LIFESPAN_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_life")])
+cost_per_rank = Array[int]([40, 80, 120])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_decay"]
@@ -96,6 +132,7 @@ description = "SKILL_DECAY_CAPACITY_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_decay")])
+cost_per_rank = Array[int]([60, 120, 180])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_leave_gain"]
@@ -113,6 +150,7 @@ description = "SKILL_GRACEFUL_EXIT_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_leave_gain")])
+cost_per_rank = Array[int]([60, 120, 180])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_overflow"]
@@ -136,6 +174,7 @@ description = "SKILL_OVERFLOW_CONTROL_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan2")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_overflow")])
+cost_per_rank = Array[int]([80, 160, 240])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_death_keep"]
@@ -152,12 +191,14 @@ description = "SKILL_LAST_BREATH_DESC"
 branch = &"survival"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_lifespan2")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_death_keep")])
+cost_per_rank = Array[int]([80, 160, 240])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_walk"]
 script = ExtResource("4_stmod")
 stat = &"walk_speed"
-per_rank = 0.3
+op = 1
+values = Array[float]([0.1, 0.12, 0.15])
 metadata/_custom_type_script = "uid://bftpqmqlvmglj"
 
 [sub_resource type="Resource" id="Resource_steady_legs"]
@@ -168,6 +209,10 @@ description = "SKILL_STEADY_LEGS_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_tcr6r")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_walk")])
+condition_bonus = 0.2
+rank_conditions = Array[ExtResource("6_cond")]([SubResource("Resource_cond_walk1"), SubResource("Resource_cond_walk2"), SubResource("Resource_cond_walk3")])
+ability = &"walk"
+cost_per_rank = Array[int]([40, 80, 120])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_jump"]
@@ -189,6 +234,8 @@ description = "SKILL_SPRING_STEP_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_jump")])
+ability = &"jump"
+cost_per_rank = Array[int]([60, 120, 180])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_body_health"]
@@ -206,6 +253,7 @@ description = "SKILL_RESILIENT_FLESH_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_body_health")])
+cost_per_rank = Array[int]([60, 120, 180])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [sub_resource type="Resource" id="Resource_mod_sprint"]
@@ -222,6 +270,8 @@ description = "SKILL_SECOND_WIND_DESC"
 branch = &"embodiment"
 requires = Array[ExtResource("3_ign7e")]([SubResource("Resource_req_steady_legs1")])
 modifiers = Array[ExtResource("4_stmod")]([SubResource("Resource_mod_sprint")])
+ability = &"sprint"
+cost_per_rank = Array[int]([80, 160, 240])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [resource]

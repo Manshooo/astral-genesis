@@ -79,10 +79,50 @@ func _on_room_changed(_node_id: StringName) -> void:
 ## Захват тела. Имя берётся из СЦЕНЫ тела ключом перевода (см.
 ## `E_Body.name_key_of_scene`): к этому моменту самой сущности уже нет — захват
 ## её поглотил.
+##
+## Здесь же поглощённое сознание превращается в очки души и в прогресс условий
+## навыков: событие захвата приходит сюда одним путём (O_RunStats), и второго
+## обработчика на него заводить нельзя — очки начислились бы дважды.
 func record_body(scene_path: String) -> void:
-	if current == null or scene_path.is_empty():
+	if scene_path.is_empty():
 		return
+	var body_class := E_Body.class_of_scene(scene_path)
+	# Условия навыков копятся между забегами и от самого забега не зависят.
+	SkillManager.note_capture(scene_path, body_class)
+	if current == null:
+		return
+	# Повторы считаем ДО записи этого захвата: первый захват вида — ноль прежних.
+	var prior := current.captures_of_kind(scene_path)
 	current.note_body(scene_path, E_Body.name_key_of_scene(scene_path))
+	award_soul_points(
+		RS_RunStats.POINTS_ABSORB, RS_SoulPointsTable.current().points_for(body_class, prior)
+	)
+
+
+## Выдать очки души и записать, откуда они. Сразу в кошелёк, а не в конце забега:
+## очки — результат действия, и смерть сразу после захвата не должна их отнимать.
+func award_soul_points(source: StringName, amount: int) -> void:
+	if amount <= 0:
+		return
+	SkillManager.add_skill_points(amount)
+	credit(source, amount)
+
+
+## Выдать эссенцию Архитектору и записать, откуда она. API под источники эссенции
+## (находки, тайники): им достаточно позвать его с ключом из RS_RunStats.
+func award_essence(source: StringName, amount: int) -> void:
+	if amount <= 0:
+		return
+	ArchitectManager.add_skill_points(amount)
+	credit(source, amount)
+
+
+## Только запись в разбивку забега — для источников, которые сами выдают валюту.
+## Вне забега писать некуда, и это не ошибка (Архитектора можно коснуться и вне
+## комплекса).
+func credit(source: StringName, amount: float) -> void:
+	if current != null:
+		current.credit(source, amount)
 
 
 ## Одно нанесение урона — из единственной воронки (`S_Health.deal_damage`).
@@ -103,16 +143,16 @@ func record_damage(damage: S_Health.Damage) -> void:
 
 ## Забег окончен: замораживаем накопитель и откладываем его для экрана итогов.
 ## Зовётся ДО `WorldSave.record_death()` и `RunManager._end_run()` — после них
-## ни графа, ни посещённых комнат уже нет.
-## [param skill_points] награда за забег: её начисляет RunManager, и знать о ней
-## накопитель может только с его слов.
-func finish(outcome: StringName, skill_points: int) -> void:
+## ни графа, ни посещённых комнат уже нет. Награды здесь нет: очки душа получает
+## по ходу, за поглощение (record_body), а не в конце забега за глубину.
+func finish(outcome: StringName) -> void:
 	if current == null:
 		return
 	current.outcome = outcome
-	current.add(RS_RunStats.SKILL_POINTS, float(skill_points))
 	last = current
 	current = null
+	# Прогресс условий копился кадрами и мог не дойти до диска.
+	SkillManager.flush()
 	# Сразу на диск, а не «когда-нибудь потом»: следующий шаг зовущего —
 	# record_death()/clear_run(), который ссылку сейва на текущий забег отпустит,
 	# и незаписанные итоги остались бы жить только в памяти процесса.

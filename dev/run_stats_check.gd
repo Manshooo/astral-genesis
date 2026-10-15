@@ -24,6 +24,9 @@ var _saves := 0
 ## (иначе контрольную точку не проверить), и чужой забег он ронять не должен.
 var _save_backup := PackedByteArray()
 var _had_save := false
+## Сейв навыков игрока: захват теперь начисляет очки души (SkillManager пишет на
+## диск), и проверка не должна оставить в user://skills.tres свои числа.
+var _original_skill_save: PlayerSkillSave
 
 
 func _ready() -> void:
@@ -31,6 +34,9 @@ func _ready() -> void:
 	# бэкап, снятый позже, застал бы уже испорченный файл.
 	_save_backup = FileAccess.get_file_as_bytes(WorldSave.SAVE_PATH)
 	_had_save = not _save_backup.is_empty()
+
+	_original_skill_save = SkillManager.save
+	SkillManager.save = PlayerSkillSave.new()
 
 	var world := _new_world()
 
@@ -56,6 +62,8 @@ func _ready() -> void:
 	_check_autosave()
 	await _check_save_indicator()
 	_restore_save()
+	SkillManager.save = _original_skill_save
+	SkillManager._save()
 
 	_finish()
 
@@ -204,6 +212,15 @@ func _check_world(world: World) -> void:
 	await get_tree().process_frame
 
 	_check("захват в мире дошёл до сводки записью", stats.bodies.size() == 1, str(stats.bodies.size()))
+	# Очки души за поглощение (вместо награды за глубину): ходок — первый захват вида.
+	var expected := RS_SoulPointsTable.current().points_for(E_Body.class_of_scene(WALKER_SCENE), 0)
+	_check("захват начислил очки души по классу тела, ×2 за первый вид",
+		expected > 0 and SkillManager.save.skill_points == expected,
+		"%d, ждали %d" % [SkillManager.save.skill_points, expected])
+	_check("очки за поглощение записаны в разбивку и в итог",
+		is_equal_approx(stats.value(RS_RunStats.POINTS_ABSORB), float(expected))
+		and is_equal_approx(stats.value(RS_RunStats.SKILL_POINTS), float(expected)),
+		"%.0f / %.0f" % [stats.value(RS_RunStats.POINTS_ABSORB), stats.value(RS_RunStats.SKILL_POINTS)])
 	# Тело к этому моменту из мира уже убрано захватом — имя в записи держится
 	# без него.
 	_check(
@@ -276,11 +293,11 @@ func _check_run_boundaries() -> void:
 		"%.2f" % RunStats.current.value(RS_RunStats.TIME))
 
 	# Конец забега: снимок отложен, текущего накопителя больше нет.
-	RunStats.finish(RS_RunStats.OUTCOME_DEATH, 3)
+	RunStats.finish(RS_RunStats.OUTCOME_DEATH)
 	_check("снимок забега отложен для экрана итогов", RunStats.last == started, "")
 	_check("после конца забега копить некуда", RunStats.current == null, "")
-	_check("награда за забег попала в сводку",
-		is_equal_approx(RunStats.last.value(RS_RunStats.SKILL_POINTS), 3.0),
+	_check("конец забега наград не прибавляет: очки приходят по ходу",
+		is_zero_approx(RunStats.last.value(RS_RunStats.SKILL_POINTS)),
 		"%.2f" % RunStats.last.value(RS_RunStats.SKILL_POINTS))
 	_check("исход забега записан", RunStats.last.outcome == RS_RunStats.OUTCOME_DEATH,
 		String(RunStats.last.outcome))

@@ -20,6 +20,10 @@ signal skill_unlocked(id: StringName, new_rank: int)
 ## него skill_unlocked по разу на каждый уже открытый навык (так делал
 ## reapply_all) значило бы врать UI о событиях, которых не было.
 signal skills_changed
+## Условие ранга выполнено — значение этого ранга усилено бонусом навыка. Отдельный
+## сигнал, а не skills_changed: тому, кто покажет игроку «душа усвоила», нужно
+## знать, ЧТО именно выполнено, а пересчёт модификаторов этого не говорит.
+signal condition_completed(id: StringName, rank: int)
 
 ## Не preload: preload резолвится на компиляции и в debug/export-сборке падает на
 ## кастомном ресурсе («Cannot get class ''», godotengine/godot#100100). Грузим в
@@ -30,6 +34,10 @@ var SKILL_TREE: RS_SkillTree
 var save: PlayerSkillSave
 
 var _save_path: String
+## В памяти есть прогресс условий, ещё не записанный на диск. Прогресс идёт
+## кадрами (дистанция), а писать ресурс каждый кадр незачем — flush() зовут
+## контрольные точки, выполнение условия пишет сразу.
+var _dirty := false
 
 
 func _init(save_path: String, default_save_path: String, tree_path: String) -> void:
@@ -177,7 +185,10 @@ func fold_modifiers(flat: Dictionary, mult: Dictionary) -> void:
 	for definition in SKILL_TREE.skills:
 		var rank := get_rank(definition.id)
 		if rank > 0:
-			RS_StatModifier.fold(definition.modifiers, rank, flat, mult)
+			# Бонус условия — ЗНАЧЕНИЮ текущего ранга и только если условие именно
+			# этого ранга выполнено: что сделано под другой ранг, на него не влияет.
+			var bonus := definition.bonus_for_rank(rank) if is_condition_met(definition.id, rank) else 0.0
+			RS_StatModifier.fold(definition.modifiers, rank, flat, mult, bonus)
 
 
 ## Эффективное значение стата, который принадлежит не сущности, а миру (уровень
@@ -189,6 +200,84 @@ func stat(stat_id: StringName, base: float) -> float:
 	var mult := {}
 	fold_modifiers(flat, mult)
 	return RS_StatModifier.resolve(stat_id, base, flat, mult)
+
+
+## Накопленный прогресс условия ранга [param rank] навыка [param id].
+func get_condition_progress(id: StringName, rank: int) -> float:
+	return float(save.condition_progress.get(condition_key(id, rank), 0.0))
+
+
+## Выполнено ли условие ранга. У ранга без условия — false: «выполнено» значило
+## бы бонус, а бонус без условия не за что давать.
+func is_condition_met(id: StringName, rank: int) -> bool:
+	var def := SKILL_TREE.get_definition(id)
+	if def == null:
+		return false
+	var condition := def.condition_for_rank(rank)
+	return condition != null and condition.is_met(get_condition_progress(id, rank))
+
+
+static func condition_key(id: StringName, rank: int) -> String:
+	return "%s:%d" % [id, rank]
+
+
+## Душа прошла [param meters] по новым клеткам. Зачитывается условиям DISTANCE_NEW_CELLS
+## ТЕКУЩИХ рангов: прогресс по рангу, которого у игрока ещё нет, копить некому —
+## условие начинает считаться с покупки ранга.
+func add_distance(meters: float) -> void:
+	if meters <= 0.0:
+		return
+	for definition in SKILL_TREE.skills:
+		var rank := get_rank(definition.id)
+		var condition := definition.condition_for_rank(rank) if rank > 0 else null
+		if condition == null or condition.type != RS_SkillCondition.Type.DISTANCE_NEW_CELLS:
+			continue
+		var key := condition_key(definition.id, rank)
+		var before := float(save.condition_progress.get(key, 0.0))
+		if condition.is_met(before):
+			continue
+		_set_progress(definition, rank, condition, minf(before + meters, condition.target))
+
+
+## Захвачено тело вида [param scene_path] класса [param body_class]. Каждому
+## условию CAPTURE_KINDS вид засчитывается один раз; слабые тела — не засчитываются.
+func note_capture(scene_path: String, body_class: int) -> void:
+	if scene_path.is_empty():
+		return
+	for definition in SKILL_TREE.skills:
+		var rank := get_rank(definition.id)
+		var condition := definition.condition_for_rank(rank) if rank > 0 else null
+		if condition == null or condition.type != RS_SkillCondition.Type.CAPTURE_KINDS:
+			continue
+		if not condition.accepts_body_class(body_class):
+			continue
+		var key := condition_key(definition.id, rank)
+		var seen: Array = save.condition_seen.get(key, [])
+		if seen.has(scene_path) or condition.is_met(float(seen.size())):
+			continue
+		seen.append(scene_path)
+		save.condition_seen[key] = seen
+		_set_progress(definition, rank, condition, float(seen.size()))
+
+
+## Дописать на диск прогресс, накопленный кадрами. Дёшево, если писать нечего.
+func flush() -> void:
+	if _dirty:
+		_save()
+
+
+func _set_progress(
+	definition: RS_SkillDefinition, rank: int, condition: RS_SkillCondition, value: float
+) -> void:
+	save.condition_progress[condition_key(definition.id, rank)] = value
+	if not condition.is_met(value):
+		_dirty = true
+		return
+	# Выполнение — событие: пишем сразу (иначе вылет сразу после «подвига» его
+	# теряет) и пересчитываем модификаторы, потому что значение ранга выросло.
+	_save()
+	condition_completed.emit(definition.id, rank)
+	skills_changed.emit()
 
 
 func _requirement_met(req: RS_SkillRequirement) -> bool:
@@ -221,6 +310,7 @@ func _requirement_within_one_step(req: RS_SkillRequirement) -> bool:
 
 
 func _save() -> void:
+	_dirty = false
 	UserResourceFile.write(save, _save_path, name)
 
 
@@ -237,4 +327,7 @@ func _load() -> PlayerSkillSave:
 func _fresh_save() -> PlayerSkillSave:
 	var fresh := DEFAULT_SAVE.duplicate()
 	fresh.ranks = DEFAULT_SAVE.ranks.duplicate()
+	# Прогресс условий — тот же Dictionary-по-ссылке, и по той же причине.
+	fresh.condition_progress = DEFAULT_SAVE.condition_progress.duplicate(true)
+	fresh.condition_seen = DEFAULT_SAVE.condition_seen.duplicate(true)
 	return fresh

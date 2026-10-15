@@ -42,6 +42,7 @@ func _run() -> void:
 		await _check_card_fits(locale)
 	TranslationServer.set_locale("ru")
 	await _check_reasons()
+	await _check_rank_card()
 	await _check_architect_tab()
 
 
@@ -95,9 +96,47 @@ func _check_reasons() -> void:
 	screen._show_card(&"overflow_control")
 	_check("за требованием — «Сначала выполните требования»", button.text == "SKILL_LOCKED" and button.disabled, button.text)
 
-	soul.skill_points = 5
+	soul.skill_points = 500
 	screen._show_card(&"capture_precision")
 	_check("с очками — «Открыть ранг 1»", button.text == tr("SKILL_UNLOCK") % 1 and not button.disabled, button.text)
+	screen.queue_free()
+	await get_tree().process_frame
+
+
+## Карточка навыка с рангами и условиями (карточка «Игровой цикл» §4.1): значения
+## по рангам с выделенным текущим, бонус, условия текущего и следующего ранга с
+## прогрессом и пометка навыка способности. Смотрим на то, что карточка
+## ПОКАЗЫВАЕТ, а не на то, как узлы лежат.
+func _check_rank_card() -> void:
+	var soul := PlayerSkillSave.new()
+	soul.skill_points = 500
+	soul.ranks = {&"body_snatch": 1, &"steady_legs": 1}
+	soul.condition_progress = {SkillManager.condition_key(&"steady_legs", 1): 400.0}
+	SkillManager.save = soul
+	var screen := await _open(SkillManager)
+	var card := screen._card
+
+	screen._show_card(&"steady_legs")
+	_check("значения по рангам: по ячейке на ранг", card._values_row.get_child_count() == 3,
+			str(card._values_row.get_child_count()))
+	_check("значение первого ранга — «+10%»", (card._values_row.get_child(0) as Label).text == "+10%",
+			(card._values_row.get_child(0) as Label).text)
+	_check("текущий ранг выделен, остальные приглушены",
+			(card._values_row.get_child(0) as Label).modulate.a == 1.0
+			and (card._values_row.get_child(1) as Label).modulate.a < 1.0, "")
+	_check("бонус называет свою долю", card._bonus.visible and card._bonus.text.contains("20%"), card._bonus.text)
+	_check("условия текущего и следующего рангов", card._conds.get_child_count() == 2,
+			str(card._conds.get_child_count()))
+	_check("условие показывает прогресс", (card._conds.get_child(0).get_node("%Label") as Label).text.contains("0,4"),
+			(card._conds.get_child(0).get_node("%Label") as Label).text)
+	_check("навык способности помечен", card._ability_note.visible, "")
+
+	soul.condition_progress[SkillManager.condition_key(&"steady_legs", 1)] = 1000.0
+	screen._show_card(&"steady_legs")
+	_check("выполненное условие меняет подпись бонуса", card._bonus.text.contains("12%"), card._bonus.text)
+
+	screen._show_card(&"lifespan")
+	_check("у навыка без значений и условий блоков нет", not card._cond_block.visible and not card._ability_note.visible, "")
 	screen.queue_free()
 	await get_tree().process_frame
 

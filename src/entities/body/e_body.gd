@@ -32,6 +32,14 @@ extends Entity
 ## габарит, которые тоже берутся из неё (visual_of/form_of), а не из чисел в коде.
 @export var display_name_key: StringName = &""
 
+## Класс тела по шкале угроз комплекса: 0..5 — L0..L5 (карточка «Игровой цикл —
+## от и до» §2). От него зависят очки души за поглощение сознания
+## (RS_SoulPointsTable) и то, зачтётся ли захват условию навыка («тела не слабее
+## класса»). Свойство сцены по той же причине, что и имя: ни одна система не
+## читает его в кадре, а после захвата самого тела уже нет — класс спрашивают у
+## пути сцены (class_of_scene).
+@export_range(0, 5) var body_class: int = 0
+
 
 ## Облик тела: меш, переопределение материала и трансформ его основной геометрии.
 ##
@@ -209,6 +217,23 @@ static func name_key_of_scene(path: String) -> StringName:
 	var key: StringName = body.display_name_key if body else &""
 	probe.free()
 	return key
+
+
+## Класс тела по пути его сцены — тем же приёмом, что name_key_of_scene. 0 (самый
+## слабый), если сцены нет: неизвестное тело не должно приносить больше очков, чем
+## известное.
+static func class_of_scene(path: String) -> int:
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return 0
+	var scene := load(path) as PackedScene
+	if scene == null:
+		return 0
+
+	var probe := scene.instantiate()
+	var body := probe as E_Body
+	var body_class_value: int = body.body_class if body else 0
+	probe.free()
+	return body_class_value
 
 
 ## Носится ли компонент телом — ЕДИНСТВЕННОЕ определение этого правила (см.

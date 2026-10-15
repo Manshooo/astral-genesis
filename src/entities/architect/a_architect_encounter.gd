@@ -15,6 +15,10 @@ func execute(_entity: Entity, _interactor: Node = null) -> void:
 	# Текущий узел меняет присутствие, так что у самого артефакта это всегда его
 	# комната. Пустой он только вне забега — тогда награды нет, а экран есть.
 	if WorldSave.claim_node_reward(RunManager.current_node_id):
-		ArchitectManager.add_skill_points(GameConfig.config.architect_essence_reward)
+		var reward: int = GameConfig.config.architect_essence_reward
+		ArchitectManager.add_skill_points(reward)
+		# В разбивку сводки забега: эссенция приходит из нескольких источников, и
+		# без записи по источнику график прогрессии не сверить.
+		RunStats.credit(RS_RunStats.ESSENCE_ARCHITECT, reward)
 	ArchitectManager.mark_met()
 	UIManager.open_skill_tree(ArchitectManager, ArchitectManager.SKILL_TREE)
