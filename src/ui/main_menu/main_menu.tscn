@@ -58,6 +58,18 @@ text = "MENU_TITLE"
 uppercase = true
 script = ExtResource("2_echo_label")
 
+[node name="CompletedNote" type="Label" parent="Content"]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0.8)
+layout_mode = 0
+offset_left = 114.0
+offset_top = 232.0
+offset_right = 114.0
+offset_bottom = 232.0
+theme_type_variation = &"MenuCaption"
+text = "MENU_COMPLETED"
+
 [node name="Items" type="VBoxContainer" parent="Content" unique_id=1612598280]
 layout_mode = 0
 offset_left = 82.0

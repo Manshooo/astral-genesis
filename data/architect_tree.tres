@@ -11,6 +11,12 @@ id = &"knowledge"
 display_name = "ARCHITECT_BRANCH_KNOWLEDGE"
 color = Color(0.56, 0.6, 0.86, 1)
 
+[sub_resource type="Resource" id="Resource_branch_layout"]
+script = ExtResource("4_branch")
+id = &"layout"
+display_name = "ARCHITECT_BRANCH_LAYOUT"
+color = Color(0.86, 0.62, 0.42, 1)
+
 [sub_resource type="Resource" id="Resource_mod_map_level"]
 script = ExtResource("3_mod")
 stat = &"map_level"
@@ -24,14 +30,65 @@ display_name = "ARCHITECT_MAP"
 description = "ARCHITECT_MAP_DESC"
 branch = &"knowledge"
 max_rank = 4
-cost_per_rank = Array[int]([1, 1, 2, 2])
+cost_per_rank = Array[int]([1000, 1000, 2000, 2000])
 modifiers = Array[ExtResource("3_mod")]([SubResource("Resource_mod_map_level")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_dead_ends_cut"]
+script = ExtResource("3_mod")
+stat = &"dead_ends_cut"
+per_rank = 1.0
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_dead_ends_cut"]
+script = ExtResource("2_def")
+id = &"dead_ends_cut"
+display_name = "ARCHITECT_DEAD_ENDS"
+description = "ARCHITECT_DEAD_ENDS_DESC"
+branch = &"layout"
+max_rank = 2
+cost_per_rank = Array[int]([800, 1500])
+modifiers = Array[ExtResource("3_mod")]([SubResource("Resource_mod_dead_ends_cut")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_loops_add"]
+script = ExtResource("3_mod")
+stat = &"corridor_loops_add"
+per_rank = 1.0
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_loops_add"]
+script = ExtResource("2_def")
+id = &"corridor_loops_add"
+display_name = "ARCHITECT_LOOPS"
+description = "ARCHITECT_LOOPS_DESC"
+branch = &"layout"
+max_rank = 3
+cost_per_rank = Array[int]([600, 1200, 1800])
+modifiers = Array[ExtResource("3_mod")]([SubResource("Resource_mod_loops_add")])
+metadata/_custom_type_script = "uid://csxedle0e5j8g"
+
+[sub_resource type="Resource" id="Resource_mod_transit_near_entry"]
+script = ExtResource("3_mod")
+stat = &"transit_near_entry"
+per_rank = 0.35
+metadata/_custom_type_script = "uid://bftpqmqlvmglj"
+
+[sub_resource type="Resource" id="Resource_transit_near_entry"]
+script = ExtResource("2_def")
+id = &"transit_near_entry"
+display_name = "ARCHITECT_TRANSIT"
+description = "ARCHITECT_TRANSIT_DESC"
+branch = &"layout"
+max_rank = 3
+cost_per_rank = Array[int]([1200, 2000, 3000])
+modifiers = Array[ExtResource("3_mod")]([SubResource("Resource_mod_transit_near_entry")])
 metadata/_custom_type_script = "uid://csxedle0e5j8g"
 
 [resource]
 script = ExtResource("1_tree")
-skills = Array[ExtResource("2_def")]([SubResource("Resource_map_level")])
-branches = Array[ExtResource("4_branch")]([SubResource("Resource_branch_knowledge")])
+skills = Array[ExtResource("2_def")]([SubResource("Resource_map_level"), SubResource("Resource_dead_ends_cut"), SubResource("Resource_loops_add"), SubResource("Resource_transit_near_entry")])
+branches = Array[ExtResource("4_branch")]([SubResource("Resource_branch_knowledge"), SubResource("Resource_branch_layout")])
 points_format = "ARCHITECT_POINTS"
 currency_forms = Array[String](["ARCHITECT_ESSENCE_ONE", "ARCHITECT_ESSENCE_FEW", "ARCHITECT_ESSENCE_MANY"])
 metadata/_custom_type_script = "uid://1b4pm2xpbsvc"

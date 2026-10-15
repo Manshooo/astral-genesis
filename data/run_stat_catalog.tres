@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="RS_RunStatCatalog" load_steps=10 format=3]
+[gd_resource type="Resource" script_class="RS_RunStatCatalog" load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://src/resources/run_stats/rs_run_stat_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://src/resources/run_stats/rs_run_stat_row.gd" id="2_row"]
@@ -52,6 +52,48 @@ label_key = &"RUN_STAT_SKILL_POINTS"
 format = 0
 hide_when_empty = true
 
+[sub_resource type="Resource" id="Resource_points_absorb"]
+script = ExtResource("2_row")
+key = &"points_absorb"
+label_key = &"RUN_STAT_POINTS_ABSORB"
+format = 0
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_points_clean_exit"]
+script = ExtResource("2_row")
+key = &"points_clean_exit"
+label_key = &"RUN_STAT_POINTS_CLEAN_EXIT"
+format = 0
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_essence"]
+script = ExtResource("2_row")
+key = &"essence"
+label_key = &"RUN_STAT_ESSENCE"
+format = 0
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_essence_architect"]
+script = ExtResource("2_row")
+key = &"essence_architect"
+label_key = &"RUN_STAT_ESSENCE_ARCHITECT"
+format = 0
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_essence_pickup"]
+script = ExtResource("2_row")
+key = &"essence_pickup"
+label_key = &"RUN_STAT_ESSENCE_PICKUP"
+format = 0
+hide_when_empty = true
+
+[sub_resource type="Resource" id="Resource_essence_cache"]
+script = ExtResource("2_row")
+key = &"essence_cache"
+label_key = &"RUN_STAT_ESSENCE_CACHE"
+format = 0
+hide_when_empty = true
+
 [resource]
 script = ExtResource("1_catalog")
-rows = Array[ExtResource("2_row")]([SubResource("Resource_time"), SubResource("Resource_rooms"), SubResource("Resource_bodies"), SubResource("Resource_body_list"), SubResource("Resource_damage_taken"), SubResource("Resource_damage_dealt"), SubResource("Resource_skill_points")])
+rows = Array[ExtResource("2_row")]([SubResource("Resource_time"), SubResource("Resource_rooms"), SubResource("Resource_bodies"), SubResource("Resource_body_list"), SubResource("Resource_damage_taken"), SubResource("Resource_damage_dealt"), SubResource("Resource_skill_points"), SubResource("Resource_points_absorb"), SubResource("Resource_points_clean_exit"), SubResource("Resource_essence"), SubResource("Resource_essence_architect"), SubResource("Resource_essence_pickup"), SubResource("Resource_essence_cache")])

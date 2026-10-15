@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://cf6cx3bnpefhp" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_mesh"]
 [ext_resource type="PackedScene" uid="uid://1d4bjood4d0l" path="res://src/entities/incubator/e_incubator.tscn" id="6_8py54"]
 [ext_resource type="PackedScene" uid="uid://f5i4a5l3ph2j" path="res://src/entities/body/e_body_walker.tscn" id="10_walker"]
-[ext_resource type="PackedScene" uid="uid://dtsbk0vab2ynp" path="res://src/entities/enemy/e_enemy.tscn" id="11_enemy"]
+[ext_resource type="PackedScene" path="res://src/entities/enemy/e_enemy_scientist.tscn" id="11_enemy"]
 [ext_resource type="PackedScene" uid="uid://d3t4v6ivh52c6" path="res://src/entities/map_terminal/e_map_terminal.tscn" id="12_map_terminal"]
 [ext_resource type="Script" uid="uid://dv87dllyhfji1" path="res://src/levels/decay_shelter.gd" id="13_shelter"]
 [ext_resource type="PackedScene" uid="uid://d3pd6nm71pxia" path="res://src/levels/lamp.tscn" id="lamp"]

@@ -10,6 +10,7 @@ const CALIBRATION_SCENE := preload("res://src/ui/brightness_calibration/brightne
 @onready var load_button: Button = %Load
 @onready var load_aside: Label = %LoadAside
 @onready var version_label: Label = %Version
+@onready var completed_note: Label = %CompletedNote
 
 
 func _ready() -> void:
@@ -21,6 +22,9 @@ func _ready() -> void:
 	# пункт объясняет себя словами рядом (§1), а не только тусклым цветом.
 	load_button.disabled = not WorldSave.has_save_file
 	load_aside.visible = load_button.disabled
+	# Тихая отметка вместо плашки «Пройдено»: игра после финала продолжается как
+	# обычно («Новая игра» — чистый лист), но концовку меню помнит.
+	completed_note.visible = WorldSave.save.game_completed
 	# Номер — чтобы по скриншоту бага было видно, из какого коммита сборка:
 	# не-релизной CI вписывает сюда 0.7.0-dev.33+fc91d3c
 	# (.github/scripts/build_version.sh), релизу — просто 0.7.0.

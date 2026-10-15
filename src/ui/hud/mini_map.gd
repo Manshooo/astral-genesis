@@ -451,7 +451,11 @@ func title_text() -> String:
 	var floor_text: String = tr("MAP_FLOOR") % (floor_index + 1)
 	if _level < MapKnowledge.LEVEL_LAYER or _view.is_empty():
 		return floor_text
-	return "%s · %s" % [tr("MAP_LAYER") % _view.depth, floor_text]
+	var layer_text: String = tr("MAP_LAYER") % _view.depth
+	# Подпись выхода и здесь: мини-карта показывает слой тем же языком, что срез.
+	if MapKnowledge.is_surface(_view.depth):
+		layer_text += " · " + tr("MAP_LAYER_EXIT")
+	return "%s · %s" % [layer_text, floor_text]
 
 
 ## Стрелки лестниц и порталов — с ранга LEVEL_COMPLEX, того же, с которого

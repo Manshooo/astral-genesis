@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://brejetk5bt2cr" path="res://src/components/gameplay/skills/c_body_decay.gd" id="8_decay"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_footsteps.gd" id="ext_footsteps"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_sprint.gd" id="ext_sprint"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_attack.gd" id="ext_attack"]
 
 [sub_resource type="Resource" id="Resource_swvon"]
 script = ExtResource("3_3akvt")
@@ -276,12 +277,19 @@ playback = 1
 stride = 1.25
 tempo_parameter = "Param1"
 
+[sub_resource type="Resource" id="Resource_attack"]
+script = ExtResource("ext_attack")
+damage = 9.0
+reach = 1.6
+interval = 0.45
+
 [node name="headog_skeleton" type="StaticBody3D" unique_id=1516563894]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("1_y0plc")
 display_name_key = &"BODY_HOUND"
-component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_swvon"), SubResource("Resource_qxb0x"), SubResource("Resource_hound_decay"), SubResource("Resource_w3ko0"), SubResource("Resource_a0cgm"), SubResource("Resource_hound_sprint"), SubResource("Resource_footsteps")])
+body_class = 3
+component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_swvon"), SubResource("Resource_qxb0x"), SubResource("Resource_hound_decay"), SubResource("Resource_w3ko0"), SubResource("Resource_a0cgm"), SubResource("Resource_hound_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack")])
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=944537717]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

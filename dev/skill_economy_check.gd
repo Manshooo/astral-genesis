@@ -5,10 +5,9 @@ extends "res://dev/check_harness.gd"
 ## навыком, validate() ловит дыры).
 ## Запускать: godot --headless dev/skill_economy_check.tscn
 ##
-## Награда за глубину (RunManager.finish_run()/die()) здесь не проверяется: оба
-## меняют сцену и оборвали бы headless-процесс. Прежний ассерт на
-## _max_depth_reached сам крутил maxi() в своём цикле и сверял собственный
-## результат — RunManager в нём не участвовал, поэтому он удалён.
+## Награды за глубину больше нет (очки души дают поглощения, их проверяет
+## soul_progression_check); finish_run()/die() здесь не зовутся: оба меняют сцену
+## и оборвали бы headless-процесс.
 ##
 ## SkillManager.save НА ВРЕМЯ проверки подменяется заглушкой (как и в
 ## stat_modifiers_check.gd), но, в отличие от него, здесь реально зовётся
@@ -45,33 +44,36 @@ func _run(world: World) -> void:
 	_wear_body(soul, 40.0)  # 40/60 = 33% выжато — ниже порога
 	O_ExpelFromBody.expel(soul, true)
 	_check(
-		"чистый выход ниже 50% выжатости очка не даёт",
+		"чистый выход ниже 50% выжатости награды не даёт",
 		stub.skill_points == 0,
 		"skill_points=%d" % stub.skill_points
 	)
 
+	# Награда — из таблицы очков души, а не константа в наблюдателе: шкалу
+	# пересчитывает баланс, и проверка не должна ломаться на каждом пересчёте.
+	var bonus := RS_SoulPointsTable.current().clean_exit_points
 	_wear_body(soul, 30.0)  # 30/60 = ровно 50% — порог включительно
 	O_ExpelFromBody.expel(soul, true)
 	_check(
-		"чистый выход РОВНО на 50% выжатости даёт очко",
-		stub.skill_points == 1,
-		"skill_points=%d" % stub.skill_points
+		"чистый выход РОВНО на 50% выжатости даёт награду",
+		stub.skill_points == bonus,
+		"skill_points=%d, ждали %d" % [stub.skill_points, bonus]
 	)
 
 	_wear_body(soul, 10.0)  # 10/60 = 83% выжато — заметно выше порога
 	O_ExpelFromBody.expel(soul, true)
 	_check(
-		"чистый выход сильно выжатого тела даёт очко",
-		stub.skill_points == 2,
-		"skill_points=%d" % stub.skill_points
+		"чистый выход сильно выжатого тела даёт награду",
+		stub.skill_points == 2 * bonus,
+		"skill_points=%d, ждали %d" % [stub.skill_points, 2 * bonus]
 	)
 
 	# --- 2. Гибель тела (voluntary=false) очков не даёт вообще -----------------
 	_wear_body(soul, 0.0)  # тело выжато полностью — самый "щедрый" случай для порога
 	O_ExpelFromBody.expel(soul, false)
 	_check(
-		"гибель тела очко не даёт, даже полностью выжатого",
-		stub.skill_points == 2,
+		"гибель тела награды не даёт, даже полностью выжатого",
+		stub.skill_points == 2 * bonus,
 		"skill_points=%d" % stub.skill_points
 	)
 

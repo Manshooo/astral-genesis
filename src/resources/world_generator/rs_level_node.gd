@@ -15,7 +15,7 @@ enum Role { ROOM, CORRIDOR }
 
 @export var id: StringName = &""
 @export var role: Role = Role.ROOM
-## L4 (самый глубокий) ... L0 (поверхность). Домашний слой игрока — L3.
+## L5 (дно) ... L0 (поверхность). Домашний слой игрока — L3.
 @export var depth: int = 3
 ## Этаж ВНУТРИ слоя (0-indexed). В SceneTree одновременно существует весь
 ## слой целиком — все его этажи разом, поэтому это скорее метка для

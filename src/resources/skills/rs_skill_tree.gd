@@ -53,6 +53,10 @@ func validate() -> Array[String]:
 			)
 
 	for skill in skills:
+		if skill != null:
+			problems.append_array(_validate_ranks(skill))
+
+	for skill in skills:
 		if skill == null:
 			continue
 		for req in skill.requires:
@@ -65,6 +69,29 @@ func validate() -> Array[String]:
 
 	for skill_id: StringName in _cyclic_skills(ids):
 		problems.append("«%s» замкнут в цикл требований — не откроется никогда" % skill_id)
+	return problems
+
+
+## Расхождения рангов навыка: значения и условия, не доходящие до max_rank или
+## выходящие за него. Тихо ломается ровно там, где игрок это замечает последним:
+## ранг без своего значения читает последнее (его число застывает), условие
+## сверх max_rank просто никогда не покажется.
+func _validate_ranks(skill: RS_SkillDefinition) -> Array[String]:
+	var problems: Array[String] = []
+	for modifier in skill.modifiers:
+		if modifier != null and not modifier.values.is_empty() and modifier.values.size() < skill.max_rank:
+			problems.append(
+				"«%s»: значений по рангам %d, а max_rank=%d" % [skill.id, modifier.values.size(), skill.max_rank]
+			)
+	if skill.rank_conditions.size() > skill.max_rank:
+		problems.append("«%s»: условий %d, а max_rank=%d" % [skill.id, skill.rank_conditions.size(), skill.max_rank])
+	if skill.condition_bonus > 0.0 and skill.rank_conditions.is_empty():
+		problems.append("«%s»: бонус за условие без единого условия" % skill.id)
+	for condition in skill.rank_conditions:
+		if condition != null and condition.target <= 0.0:
+			problems.append("«%s»: цель условия должна быть больше нуля" % skill.id)
+	if skill.ability != &"" and skill.ability_component() == null:
+		problems.append("«%s»: неизвестная способность «%s»" % [skill.id, skill.ability])
 	return problems
 
 

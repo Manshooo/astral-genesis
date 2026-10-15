@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RS_BodyThoughts" format=3]
+
+[ext_resource type="Script" path="res://src/resources/rs_body_thoughts.gd" id="1_thoughts"]
+
+[resource]
+script = ExtResource("1_thoughts")
+default_key = &"THOUGHT_DEFAULT"
+thoughts = Dictionary[String, PackedStringArray]({
+"res://src/entities/body/e_body.tscn": PackedStringArray("THOUGHT_BODY_CORPSE"),
+"res://src/entities/body/e_body_crawler.tscn": PackedStringArray("THOUGHT_BODY_CRAWLER"),
+"res://src/entities/body/e_body_hound.tscn": PackedStringArray("THOUGHT_BODY_HOUND"),
+"res://src/entities/body/e_body_scientist.tscn": PackedStringArray("THOUGHT_BODY_SCIENTIST"),
+"res://src/entities/body/e_body_soldier.tscn": PackedStringArray("THOUGHT_BODY_SOLDIER"),
+"res://src/entities/body/e_body_walker.tscn": PackedStringArray("THOUGHT_BODY_WALKER")
+})

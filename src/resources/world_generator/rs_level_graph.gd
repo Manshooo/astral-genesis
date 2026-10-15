@@ -30,9 +30,12 @@ extends Resource
 ## без пользы снимается (решение 08.10, RS_CorridorPlanner._pick_sockets); 8 — в
 ## библиотеке пресетов виварий (08.10); 9 — комната Архитектора 1×1×2 вместо 2×2×1
 ## (08.10); 10 — у комнаты выхода грань наружу на севере, двери в коридоры
-## только на остальных стенах (15.10). Все — v0.7.0. Веса пресетов в снимок ручек не входят, поэтому их правка
+## только на остальных стенах (15.10); 11 — шестой слой, L5: первый цикл по DEPTHS
+## бросает число этажей из общего rng, и слой в его голове сдвигает весь граф
+## (карточка «Игровой цикл — от и до», §2); добавлена ручка transit_near_entry.
+## Все — v0.7.0. Веса пресетов в снимок ручек не входят, поэтому их правка
 ## меняет мир и начатого забега — отсюда и подъём версии.
-const GENERATOR_VERSION := 10
+const GENERATOR_VERSION := 11
 
 ## Глубина -> план раскладки слоя. Считается при генерации, а не по запросу:
 ## рёбра «дверь → ветка» граф берёт из раскладки, и план — её же результат, а не
@@ -53,8 +56,10 @@ const HUB_ROOM_SCENE := "res://src/levels/hub/hub.tscn"
 ## Ручки по умолчанию, если зовущий их не передал (инструменты, проверки).
 const DEFAULT_CONFIG_PATH := "res://data/world_gen_config.tres"
 
-## От самого глубокого к поверхности (поверхность — 0).
-const DEPTHS := [4, 3, 2, 1, 0]
+## От самого глубокого к поверхности (поверхность — 0, дно — 5). Порядок
+## обязателен: по нему идут броски общего rng и пары слоёв в
+## _connect_layers_vertically.
+const DEPTHS := [5, 4, 3, 2, 1, 0]
 ## Глубина хаба — для инструментов и отладки (слой по умолчанию во вкладке
 ## «Генератор мира»). Генератор её не читает: хаб ставит уникальная комната
 ## конфига, и расхождение с ней ловит dev/corridor_graph_check.
@@ -450,7 +455,8 @@ func _connect_layers_vertically(
 		var needs_down: bool = depth != DEPTHS[0]  # глубже самого глубокого некуда
 		var needs_up: bool = depth != DEPTHS[DEPTHS.size() - 1]  # выше поверхности некуда
 		var prefer_down := true
-		for node in _shuffled_array(rng, free):
+		var anchor := _arrival_floor(depth)
+		for node in _prefer_floor(_shuffled_array(rng, free), anchor, config.transit_near_entry):
 			var take_down: bool = needs_down and down.size() < config.layer_connectors
 			var take_up: bool = needs_up and up.size() < config.layer_connectors
 			if take_down and (prefer_down or not take_up):
@@ -475,6 +481,41 @@ func _connect_layers_vertically(
 			var lock_roll := rng.randf()
 			var locked := c > 0 and lock_roll < config.layer_lock_chance
 			_link_vertical(from[c], to[c], type, &"level_access_key" if locked else &"", -1)
+
+
+## Этаж, к которому жмутся переходы слоя [param depth] (RS_WorldGenConfig.
+## transit_near_entry): на слое хаба — этаж входа, игрок начинает с него; на
+## остальных — нижний, 0: куда приходит переход сверху, до раскладки не известно,
+## а общий для всех слоёв этаж даёт тот же результат — вход и выход слоя на одном.
+func _arrival_floor(depth: int) -> int:
+	var entry := get_node_data(entry_node_id)
+	return entry.floor_index if entry != null and entry.depth == depth else 0
+
+
+## Переставляет кандидатов [param candidates] (уже перетасованных) ближе к этажу
+## [param floor_index]: ключ — смесь места в тасовке и расстояния по этажам,
+## [param strength] 0 оставляет порядок как есть, 1 сортирует по этажам, а
+## равные расстояния идут в порядке тасовки. Броска здесь нет, поэтому rng
+## тратится одинаково при любой силе. Расстояние в этажах, а не в метрах и не в
+## клетках: этаж — это лестница и коридоры, самая дорогая часть пути по графу.
+static func _prefer_floor(candidates: Array, floor_index: int, strength: float) -> Array:
+	if strength <= 0.0 or candidates.size() < 2:
+		return candidates
+	var span := 1.0
+	for node: RS_LevelNode in candidates:
+		span = maxf(span, absf(node.floor_index - floor_index))
+	var keyed: Array = []
+	for i in candidates.size():
+		var node: RS_LevelNode = candidates[i]
+		var key := lerpf(float(i) / candidates.size(), absf(node.floor_index - floor_index) / span, strength)
+		keyed.append([key, i, node])
+	# Номер в тасовке — второй ключ: sort_custom нестабилен, а равные ключи
+	# обязаны ложиться одинаково на каждом запуске.
+	keyed.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	var result: Array = []
+	for entry: Array in keyed:
+		result.append(entry[2])
+	return result
 
 
 ## Комнаты этажа, которым ещё можно дать портал: не уникальные (их сцена задана

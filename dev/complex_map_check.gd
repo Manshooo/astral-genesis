@@ -8,8 +8,7 @@ extends "res://dev/check_harness.gd"
 ## показывает лишнее — и улучшение Архитектора обесценено; уровень 1, видящий
 ## меньше мини-карты, выглядит как пустой экран. Обратная проекция курсора,
 ## съехавшая на полклетки, подписывает соседнюю комнату. Терминал без меша в
-## своём Visual работает, но не подсвечивается — а ключ перевода с опечаткой
-## показывает игроку «MAP_NO_LINK».
+## своём Visual работает, но не подсвечивается.
 ##
 ## Сейв забега и сейв Архитектора подменяются на время прогона и возвращаются.
 ##
@@ -42,7 +41,7 @@ func _ready() -> void:
 
 	_graph = RS_LevelGraph.new().generate_run(RUN_SEED, GameConfig.config.room_preset_library, _base_config)
 
-	_check_input_and_texts()
+	_check_input()
 	_check_knowledge()
 	await _check_screen()
 	await _check_run()
@@ -55,7 +54,7 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 
-func _check_input_and_texts() -> void:
+func _check_input() -> void:
 	for map_action: StringName in [&"map", &"map_mini"]:
 		_check("действие %s есть в InputMap и переназначается" % map_action,
 			InputMap.has_action(map_action) and SettingsManager.REBINDABLE_ACTIONS.has(map_action), "")
@@ -67,7 +66,6 @@ func _check_input_and_texts() -> void:
 				clashes.append(String(action))
 		_check("клавиша %s не занята другим действием" % map_action, map_code != "" and clashes.is_empty(),
 			"код %s, занят: %s" % [map_code, clashes])
-	# Переведены ли ключи MAP_*, сверяет hud_check сканом всего src/ и data/.
 
 
 ## Правило видимости (MapKnowledge) по уровням — на графе без забега.
@@ -136,6 +134,13 @@ func _check_screen() -> void:
 			enabled.append(depth)
 	_check("уровень 1: активна только кнопка своего слоя", enabled == [HUB_DEPTH] and screen.selected_layer() == HUB_DEPTH,
 		"активны %s" % [enabled])
+	# Выход подписан всегда — даже когда слой поверхности закрыт знанием карты.
+	var surface := screen._layer_buttons[MapKnowledge.surface_depth()] as UI_MapStratum
+	_check("уровень 1: закрытая полоса поверхности всё равно подписана «выход»",
+		not surface.open and surface._sub.text == tr("MAP_LAYER_EXIT"), surface._sub.text)
+	var deepest := screen._layer_buttons[RS_LevelGraph.DEPTHS.max()] as UI_MapStratum
+	_check("уровень 1: прочие закрытые слои — по-прежнему «нет данных»",
+		deepest._sub.text == tr("MAP_LAYER_CLOSED"), deepest._sub.text)
 	var hub_shown := false
 	for view in screen.floor_views():
 		hub_shown = hub_shown or view.shows(hub)
@@ -226,6 +231,10 @@ func _check_screen() -> void:
 	for depth: int in screen._layer_buttons:
 		all_enabled = all_enabled and not screen._layer_buttons[depth].disabled
 	_check("уровень 3: все слои доступны", all_enabled and screen._layer_buttons.size() == RS_LevelGraph.DEPTHS.size(), "")
+	var open_surface := screen._layer_buttons[MapKnowledge.surface_depth()] as UI_MapStratum
+	_check("уровень 3: открытая поверхность — «выход» и «поверхность»",
+		open_surface._sub.text.contains(tr("MAP_LAYER_EXIT")) and open_surface._sub.text.contains(tr("MAP_LAYER_SURFACE")),
+		open_surface._sub.text)
 	# Порталы между слоями в срезе — только между соседними и открытыми слоями:
 	# пунктир через пропущенный слой нарисовался бы поверх его полосы.
 	var adjacent := not screen._slice_portals.is_empty()
@@ -538,6 +547,15 @@ func _check_mini_map(mini: UI_MiniMap) -> void:
 	_check("ранг 2: заголовок называет слой и этаж, стрелок ещё нет",
 		mini._title.text.contains(floor_text) and mini._title.text.contains(tr("MAP_LAYER") % view.depth)
 		and not mini.shows_arrows(), mini._title.text)
+	# Слой-поверхность мини-карта подписывает выходом, как и срез.
+	var shown_view = mini._view
+	mini._view = {"depth": MapKnowledge.surface_depth()}
+	_check("ранг 2: на поверхности заголовок мини-карты называет выход",
+		mini.title_text().contains(tr("MAP_LAYER_EXIT")), mini.title_text())
+	mini._view = {"depth": RS_LevelGraph.DEPTHS.max()}
+	_check("ранг 2: на других слоях выхода в заголовке нет",
+		not mini.title_text().contains(tr("MAP_LAYER_EXIT")), mini.title_text())
+	mini._view = shown_view
 	_check("подсказка: «[Tab] Свернуть»", mini._hint_hide.plain_text() == "[Tab] %s" % tr("HUD_MAP_HIDE"),
 		mini._hint_hide.plain_text())
 	var frame := mini.frame_rect()

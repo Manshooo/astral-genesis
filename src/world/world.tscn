@@ -29,6 +29,7 @@
 [ext_resource type="Script" uid="uid://ba2j76ofkb3y3" path="res://src/observers/o_soul_traits.gd" id="22_soultraits"]
 [ext_resource type="Script" uid="uid://q0edrod0xky3" path="res://src/systems/gameplay/s_outline_mask.gd" id="23_outline"]
 [ext_resource type="Script" uid="uid://dgf2o7ah8ye2b" path="res://src/observers/o_run_stats.gd" id="24_runstats"]
+[ext_resource type="Script" path="res://src/observers/o_body_thoughts.gd" id="88_bodythoughts"]
 [ext_resource type="Script" uid="uid://bvmnlyanw1vd8" path="res://src/systems/gameplay/s_void_fall.gd" id="24_voidfall"]
 [ext_resource type="Script" uid="uid://ce1egkovweis2" path="res://src/systems/physics/s_sprint.gd" id="25_sprint"]
 [ext_resource type="Script" uid="uid://djr3ni2jldn8y" path="res://src/systems/gameplay/s_room_presence.gd" id="26_presence"]
@@ -37,6 +38,9 @@
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="35_levelenv"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_soul_glow.gd" id="36_soulglow"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_decay_shelter.gd" id="37_shelter"]
+[ext_resource type="Script" path="res://src/systems/physics/s_attack.gd" id="38_attack"]
+[ext_resource type="Script" path="res://src/observers/o_enemy_death.gd" id="39_enemydeath"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_skill_conditions.gd" id="40_skillcond"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -110,6 +114,10 @@ group = &"gameplay"
 script = ExtResource("26_presence")
 group = &"gameplay"
 
+[node name="S_SkillConditions" type="Node" parent="World/Systems/gameplay" unique_id=1979994360]
+script = ExtResource("40_skillcond")
+group = &"gameplay"
+
 [node name="S_SoulGlow" type="Node" parent="World/Systems/gameplay" unique_id=1979994353]
 script = ExtResource("36_soulglow")
 group = &"gameplay"
@@ -175,6 +183,10 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 script = ExtResource("27_dooropen")
 group = &"physics"
 
+[node name="S_Attack" type="Node" parent="World/Systems/physics" unique_id=2051314060]
+script = ExtResource("38_attack")
+group = &"physics"
+
 [node name="O_OutlineVisual" type="Node" parent="World/Systems" unique_id=229755935]
 script = ExtResource("13_a20vb")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
@@ -192,12 +204,18 @@ script = ExtResource("22_soultraits")
 script = ExtResource("16_expel")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
+[node name="O_EnemyDeath" type="Node" parent="World/Systems" unique_id=1109337745]
+script = ExtResource("39_enemydeath")
+
 [node name="O_RunEnded" type="Node" parent="World/Systems" unique_id=1632513265]
 script = ExtResource("17_runend")
 metadata/_custom_type_script = "uid://dd3umv3f8qyx5"
 
 [node name="O_RunStats" type="Node" parent="World/Systems" unique_id=2034243215]
 script = ExtResource("24_runstats")
+
+[node name="O_BodyThoughts" type="Node" parent="World/Systems"]
+script = ExtResource("88_bodythoughts")
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]
 script = ExtResource("8_a20vb")

@@ -36,6 +36,16 @@ static func known_nodes(nodes: Array[RS_LevelNode], visited: Array[StringName]) 
 	return known
 
 
+## Слой-поверхность — самый верхний из слоёв графа (L0): число слоёв растёт, а
+## поверхность остаётся первой. Через него карта подписывает «выход».
+static func surface_depth() -> int:
+	return RS_LevelGraph.DEPTHS.min()
+
+
+static func is_surface(depth: int) -> bool:
+	return depth == surface_depth()
+
+
 ## Открыт ли слой [param depth] на этом уровне. Чужие слои — только с третьего:
 ## до него карта знает лишь то, где игрок стоит.
 static func is_layer_open(level: int, depth: int, current_depth: int) -> bool:

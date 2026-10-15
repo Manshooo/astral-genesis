@@ -12,6 +12,24 @@ extends RefCounted
 const MAP_LEVEL := &"map_level"
 const MAP_LEVEL_MAX := 4
 
+## Улучшения раскладки — ручки генерации (RS_WorldGenConfig), которые Архитектор
+## сдвигает в снимке нового забега (ArchitectManager.apply_to_gen_config). Величина
+## стата — сдвиг базы, а не готовое значение ручки: база живёт в
+## data/world_gen_config.tres, и правка её не должна ломать данные дерева.
+##
+## Сколько тупиков на этаже снимается с базы. До нуля не доходит: в тупике
+## лежит тайник с эссенцией (карточка «Источники эссенции»), и этаж без него
+## отнял бы у игрока второй источник.
+const DEAD_ENDS_CUT := &"dead_ends_cut"
+## Сколько петель по коридору добавляется к базе: обходов больше, путь короче.
+const LOOPS_ADD := &"corridor_loops_add"
+## Сила предпочтения «переходы ближе ко входу»: прибавка к
+## RS_WorldGenConfig.transit_near_entry, 1 — все переходы на этаже прихода.
+const TRANSIT_NEAR_ENTRY := &"transit_near_entry"
+
 const ALL: Array[StringName] = [
 	MAP_LEVEL,
+	DEAD_ENDS_CUT,
+	LOOPS_ADD,
+	TRANSIT_NEAR_ENTRY,
 ]

@@ -4,6 +4,20 @@ RUN_SUMMARY_SUBTITLE_DEATH,"БФЖ распался, не найдя новог�
 RUN_SUMMARY_HEADING,ИТОГИ ЗАБЕГА,RUN SUMMARY
 RUN_SUMMARY_REVIVE,Возродиться,Revive
 RUN_SUMMARY_REVIVING,Возрождение…,Reviving…
+ENDING_LINE_1,Дверь открылась — и над ним впервые нет потолка.,The door opened — and for the first time there is no ceiling above it.
+ENDING_LINE_2,"В нём сотни чужих голосов, и все просят об одном: наружу.","Hundreds of borrowed voices inside it, and all ask for one thing: out."
+ENDING_LINE_3,БФЖ выходит на поверхность. Всё живое здесь станет им.,The incorporeal one steps onto the surface. Everything alive here will become it.
+ENDING_LINE_4,А потом — тишина.,And then — silence.
+ENDING_CREDITS_TITLE,Astral Genesis,Astral Genesis
+ENDING_CREDITS_DESIGN,Геймдизайн,Game design
+ENDING_CREDITS_CODE,Программирование,Programming
+ENDING_CREDITS_ART,Художники,Art
+ENDING_CREDITS_SOUND,Звук,Sound
+ENDING_CREDITS_NAME,Имя Фамилия,Name Surname
+ENDING_CREDITS_THANKS,Спасибо за игру,Thanks for playing
+ENDING_SKIP_HINT,Esc — пропустить,Esc — skip
+ENDING_HEADING,ПОБЕГ,ESCAPE
+ENDING_TO_MENU,В меню,To the menu
 LOADING_COMPLEX,Комплекс перестраивается…,The complex is reshaping itself…
 RUN_STAT_TIME,Время забега,Run time
 RUN_STAT_ROOMS,Комнат пройдено,Rooms visited
@@ -11,19 +25,42 @@ RUN_STAT_BODIES,Тел занято,Bodies taken
 RUN_STAT_BODY_LIST,Какие тела,Which bodies
 RUN_STAT_DAMAGE_TAKEN,Урона получено,Damage taken
 RUN_STAT_DAMAGE_DEALT,Урона нанесено,Damage dealt
-RUN_STAT_SKILL_POINTS,Очков навыков получено,Skill points earned
+RUN_STAT_SKILL_POINTS,Очков души получено,Soul points earned
+RUN_STAT_POINTS_ABSORB,· за поглощение сознаний,· from absorbed minds
+RUN_STAT_POINTS_CLEAN_EXIT,· за чистый выход,· from a clean exit
+RUN_STAT_ESSENCE,Эссенции получено,Essence earned
+RUN_STAT_ESSENCE_ARCHITECT,· от Архитектора,· from the Architect
+RUN_STAT_ESSENCE_PICKUP,· за находки,· from finds
+RUN_STAT_ESSENCE_CACHE,· за тайники,· from caches
 BODY_CORPSE,Труп,Corpse
 BODY_WALKER,Ходок,Walker
 BODY_CRAWLER,Ползун,Crawler
 BODY_HOUND,Гончая,Hound
+BODY_SCIENTIST,Учёный,Scientist
+BODY_SOLDIER,Военный,Soldier
+BODY_L5,Существо дна,Deep creature
+THOUGHT_DEFAULT,"Чужая память шепчет одно: наверх.","A stranger's memory whispers one thing: up."
+THOUGHT_BODY_WALKER,Наверх. Выход на нулевом.,Up. The exit is on zero.
+THOUGHT_BODY_CORPSE,"Меня не вынесли. А дверь была рядом, наверху.","Nobody carried me out. And the door was close, upstairs."
+THOUGHT_BODY_CRAWLER,"Тесно. Шахта идёт вверх — там воздух.","Cramped. The shaft goes up — there is air."
+THOUGHT_BODY_HOUND,"Цепь, клетка, железо. Наверху пахнет ветром.","Chain, cage, iron. Upstairs it smells of wind."
+THOUGHT_BODY_SCIENTIST,"Пропуск третьего уровня. Лифт не работает — значит, лестницы.","Level three pass. The lift is dead — stairs, then."
+THOUGHT_BODY_SOLDIER,"Приказ был держать периметр. Периметр — наверху.","The order was to hold the perimeter. The perimeter is upstairs."
 ARCHITECT_PROMPT,Архитектор,Architect
 ARCHITECT_POINTS,Эссенция: %d,Essence: %d
 ARCHITECT_ESSENCE_ONE,эссенция,essence
 ARCHITECT_ESSENCE_FEW,эссенции,essence
 ARCHITECT_ESSENCE_MANY,эссенций,essence
 ARCHITECT_BRANCH_KNOWLEDGE,Знание,Knowledge
+ARCHITECT_BRANCH_LAYOUT,Раскладка,Layout
 ARCHITECT_MAP,Карта комплекса,Complex map
 ARCHITECT_MAP_DESC,"Архитектор делится планом комплекса. Каждый ранг открывает следующий уровень карты: посещённое на слое, весь слой, все слои, содержимое комнат. Карта целиком — на терминале в хабе, с последним рангом — по клавише где угодно.","The Architect shares the plan of the complex. Each rank opens the next map level: visited rooms of the layer, the whole layer, all layers, room contents. The full map is at the hub terminal; with the last rank, on a key press anywhere."
+ARCHITECT_DEAD_ENDS,Меньше тупиков,Fewer dead ends
+ARCHITECT_DEAD_ENDS_DESC,"Архитектор убирает ответвления, ведущие в никуда. Каждый ранг снимает один тупик с этажа, но последний остаётся: в тупиках прячут тайники. Действует со следующего забега, начатый комплекс не меняется.","The Architect removes branches that lead nowhere. Each rank takes one dead end off a floor, but the last one stays: caches are hidden in dead ends. Takes effect from the next run; the complex of a run in progress does not change."
+ARCHITECT_LOOPS,Короткие пути,Short ways
+ARCHITECT_LOOPS_DESC,"Архитектор пробивает обходные коридоры между далёкими концами этажа. Каждый ранг добавляет по одному на этаж, и путь из комнаты в комнату становится короче. Действует со следующего забега, начатый комплекс не меняется.","The Architect cuts bypass corridors between the far ends of a floor. Each rank adds one per floor, so the way from room to room gets shorter. Takes effect from the next run; the complex of a run in progress does not change."
+ARCHITECT_TRANSIT,Переходы ближе ко входу,Transits near the entrance
+ARCHITECT_TRANSIT_DESC,"Архитектор сводит лестницы и порталы между слоями на этаж, куда приходит игрок. Каждый ранг сильнее притягивает их к входу; на последнем путь вниз не требует подъёмов и спусков внутри слоя. Действует со следующего забега, начатый комплекс не меняется.","The Architect pulls the stairs and portals between layers onto the floor where the player arrives. Each rank draws them closer to the entrance; at the last rank the way down needs no climbing within a layer. Takes effect from the next run; the complex of a run in progress does not change."
 MAP_TITLE,Карта комплекса,Complex map
 MAP_TERMINAL_PROMPT,Карта комплекса,Complex map
 MAP_NO_LINK,Нет связи с Архитектором: карта недоступна,No link to the Architect: the map is unavailable
@@ -38,6 +75,11 @@ MAP_CORRIDOR,Коридор,Corridor
 MAP_VISITED,посещено,visited
 MAP_UNEXPLORED,не исследовано,unexplored
 MAP_PORTAL_UP,портал вверх,portal up
+EXIT_SIGN_DOOR,ВЫХОД,EXIT
+EXIT_SIGN_ROUTE,ВЫХОД ↑ L%d,EXIT ↑ L%d
+EXIT_SIGN_LAYER,УРОВЕНЬ L%d,LEVEL L%d
+EXIT_SIGN_PORTAL_UP,ВВЕРХ ↑ L%d,UP ↑ L%d
+EXIT_SIGN_PORTAL_DOWN,ВНИЗ ↓ L%d,DOWN ↓ L%d
 MAP_PORTAL_DOWN,портал вниз,portal down
 MAP_PORTAL_TARGET,"→ L%d, этаж %d","→ L%d, floor %d"
 MAP_LOCKED,заперт: нужен %s,locked: needs %s
@@ -71,12 +113,18 @@ HUD_MSG_LOCKED_NEEDS,Заперто. Нужен %s,Locked. Requires %s
 HUD_MSG_SEALED,Прохода нет: проём заварен,No way through: the doorway is welded shut
 HUD_MSG_NO_JUMP,Этому телу нечем прыгать,This body has nothing to jump with
 HUD_MSG_NO_SPRINT,Это тело не умеет бегать,This body can't run
+HUD_MSG_NO_ATTACK,Этому телу нечем бить,This body has nothing to strike with
+HUD_MSG_HIT,Удар достиг цели,The blow lands
 HUD_MSG_NO_ROOM,Тело здесь не поместится,The body won't fit here
+HUD_MSG_SKILL_CONDITION,Душа усвоила: %s,The soul has learned: %s
+HUD_MSG_ESSENCE_FOUND,Эссенция: +%d,Essence: +%d
+ESSENCE_FIND_PROMPT,Забрать эссенцию,Take the essence
 ITEM_LEVEL_ACCESS_KEY,ключ доступа к уровню,a level access key
 HUD_CTRL_MOVE,Ход,Move
 HUD_CTRL_FLIGHT,Полёт,Flight
 HUD_CTRL_JUMP,Прыжок,Jump
 HUD_CTRL_SPRINT,Бег,Sprint
+HUD_CTRL_ATTACK,Удар,Strike
 KEY_MOUSE_LEFT,ЛКМ,LMB
 KEY_MOUSE_RIGHT,ПКМ,RMB
 KEY_MOUSE_MIDDLE,СКМ,MMB
@@ -97,6 +145,7 @@ MENU_LOAD_EMPTY,нет сохранений,no saved run
 MENU_SETTINGS,Настройки,Settings
 MENU_QUIT,Выйти,Quit
 MENU_BUILD,сборка %s,build %s
+MENU_COMPLETED,Комплекс покинут,The complex is left behind
 CALIBRATION_TITLE,Калибровка яркости,Brightness calibration
 CALIBRATION_INSTRUCTION,"Подберите яркость: левый знак виден, средний едва различим, правый не виден.","Set the brightness so the left sign is visible, the middle one is barely visible and the right one is not."
 CALIBRATION_NOTE,"Средний знак освещён, как стена в тёмном закоулке глубокого слоя вне света лампы. Подбирайте при том свете в комнате, при котором играете.","The middle sign is lit like a wall in a dark corner of a deep layer, outside a lamp's light. Calibrate in the room lighting you play in."
@@ -170,6 +219,7 @@ ACTION_JUMP,Прыжок,Jump
 ACTION_SPRINT,Бег,Sprint
 ACTION_INTERACT,Взаимодействие,Interact
 ACTION_SNATCH_BODY,Захват тела,Possess a body
+ACTION_ATTACK,Удар,Strike
 ACTION_LEAVE_BODY,Покинуть тело,Leave the body
 ACTION_MAP,Карта,Map
 HINT_BACK,Назад,Back
@@ -207,18 +257,32 @@ SKILL_OVERFLOW_CONTROL_NAME,Контроль избытка,Overflow control
 SKILL_OVERFLOW_CONTROL_DESC,Снижает потери излишка запаса души сверх собственного максимума.,Reduces the loss of soul reserve held above its own maximum.
 SKILL_LAST_BREATH_NAME,Последний вдох,Last breath
 SKILL_LAST_BREATH_DESC,Больше запаса души сохраняется при гибели захваченного тела.,More of the soul’s reserve survives when the captured body dies.
-SKILL_STEADY_LEGS_NAME,Твёрдая поступь,Steady stride
-SKILL_STEADY_LEGS_DESC,Увеличивает скорость ходьбы в захваченном теле.,Raises walking speed in a captured body.
+SKILL_STEADY_LEGS_NAME,Скорость,Speed
+SKILL_STEADY_LEGS_DESC,Увеличивает скорость ходьбы в теле с ногами.,Raises walking speed in a body that has legs.
 SKILL_SPRING_STEP_NAME,Пружинный шаг,Spring step
 SKILL_SPRING_STEP_DESC,Увеличивает силу прыжка в захваченном теле.,Raises jump strength in a captured body.
 SKILL_RESILIENT_FLESH_NAME,Живучесть,Resilience
 SKILL_RESILIENT_FLESH_DESC,Увеличивает запас прочности захваченного тела.,Raises the durability of a captured body.
 SKILL_SECOND_WIND_NAME,Второе дыхание,Second wind
 SKILL_SECOND_WIND_DESC,Увеличивает скорость бега в захваченном теле.,Raises sprint speed in a captured body.
+SKILL_ESSENCE_GATHERING_NAME,Сбор эссенции,Essence gathering
+SKILL_ESSENCE_GATHERING_DESC,Больше эссенции из находок и тайников: без навыка душа берёт лишь малую долю.,More essence from finds and caches: without the skill the soul takes only a small share.
 SKILL_REQ_BRANCH,"Рангов в ветке «%s»: %d","Ranks in “%s”: %d"
+SKILL_VALUES,Значение по рангам,Value by rank
+SKILL_BONUS_PENDING,"Условие ранга даёт +%s к значению ранга","Meeting the rank condition adds +%s to the rank value"
+SKILL_BONUS_ACTIVE,"Условие выполнено: значение ранга усилено на %s","Condition met: the rank value is boosted by %s"
+SKILL_CONDITIONS,Условие,Condition
+SKILL_COND_ROW,Ранг %d: %s (%s),Rank %d: %s (%s)
+SKILL_COND_DISTANCE,Пройти %s по новым клеткам,Walk %s through cells new this run
+SKILL_COND_CAPTURE_KINDS,"Захватить разные виды тел: %d, класс не ниже L%d","Capture different kinds of body: %d, class L%d or higher"
+SKILL_COND_KM,%s км,%s km
+SKILL_COND_PROGRESS,%s из %s,%s of %s
+SKILL_ABILITY_NOTE,Навык способности: действует только в теле с этой способностью,Ability skill: works only in a body with that ability
+SKILL_ABILITY_OFF,Не действует в этом теле,Inactive in this body
 SKILL_HINT_PAN,"Тащите за пустое место, колесо — масштаб","Drag empty space to pan, wheel to zoom"
 MAP_SLICE,Срез,Cross-section
 MAP_LAYER_SURFACE,поверхность,surface
+MAP_LAYER_EXIT,выход,exit
 MAP_LAYER_DEPTH,глубина,the depths
 SETTINGS_WINDOW_MODE,Режим окна,Window mode
 SETTINGS_WINDOW_FULLSCREEN,Полноэкранный,Fullscreen

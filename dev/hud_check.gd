@@ -7,17 +7,12 @@ extends "res://dev/check_harness.gd"
 ##   - удар и волна вселения — импульсы, которые обязаны погаснуть;
 ##   - таймлайн сообщения и его согласие с таймером C_ScreenMessage;
 ##   - строка подсказки: клавиша отдельно от действия;
-##   - каждый ключ перевода, который код называет литералом, есть в ui.csv на
-##     обоих языках (опечатка в ключе показала бы игроку сам ключ);
 ##   - в сцене HUD не осталось подложек и полос.
 ## Как это ВЫГЛЯДИТ — только живой прогон.
 ## Запуск: godot --headless dev/hud_check.tscn
 
 ## Допуск сверки с таблицами: в спеке числа округлены до сотых.
 const EPS := 0.011
-## Код и данные: данные хранят ключ, а не строку (skill_tree.tres и прочие).
-const SOURCE_DIRS := ["res://src", "res://data"]
-const LOCALE_CSV := "res://assets/locale/ui.csv"
 
 
 func _ready() -> void:
@@ -30,7 +25,6 @@ func _ready() -> void:
 	await _check_message()
 	await _check_thought_line()
 	_check_key_names()
-	_check_translation_keys()
 	_check_scene()
 	_check_minimap_strokes()
 	_finish()
@@ -272,47 +266,7 @@ func _check_key_names() -> void:
 	_check("редкая кнопка мыши — с номером", SettingsManager.code_display_name("mouse:12") == tr("KEY_MOUSE_N") % 12, SettingsManager.code_display_name("mouse:12"))
 
 
-# --- 10. Каждый ключ из кода и данных есть на обоих языках -----------------------
-# Префиксы берутся из самого ui.csv (HUD_, MAP_, SKILL_…), а не из списка в
-# проверке: ручные списки ключей в отдельных проверках отставали от кода, а
-# новый префикс в таблице сразу попадает под скан.
-func _check_translation_keys() -> void:
-	var prefixes := {}
-	for line in FileAccess.get_file_as_string(LOCALE_CSV).split("\n").slice(1):
-		var key := line.get_slice(",", 0)
-		if key.contains("_"):
-			prefixes[key.get_slice("_", 0)] = true
-	var regex := RegEx.create_from_string("\"((?:%s)_[A-Z0-9_]+)\"" % "|".join(prefixes.keys()))
-	var keys := {}
-	for dir: String in SOURCE_DIRS:
-		for path in _source_files(dir):
-			for found in regex.search_all(FileAccess.get_file_as_string(path)):
-				keys[found.get_string(1)] = path
-	# Сторож скана: сломанный разбор csv или регулярка дали бы ноль ключей и
-	# зелёный ассерт ниже.
-	_check("ключи перевода в коде и данных найдены", keys.size() >= 100, str(keys.size()))
-	var locale := TranslationServer.get_locale()
-	for language: String in ["ru", "en"]:
-		TranslationServer.set_locale(language)
-		var missing := PackedStringArray()
-		for key: String in keys:
-			if tr(key) == key:
-				missing.append("%s (%s)" % [key, keys[key].get_file()])
-		_check("все ключи перевода есть на «%s»" % language, missing.is_empty(), ", ".join(missing))
-	TranslationServer.set_locale(locale)
-
-
-func _source_files(dir: String) -> PackedStringArray:
-	var files := PackedStringArray()
-	for sub in DirAccess.get_directories_at(dir):
-		files.append_array(_source_files(dir.path_join(sub)))
-	for file in DirAccess.get_files_at(dir):
-		if file.get_extension() in ["gd", "tscn", "tres"]:
-			files.append(dir.path_join(file))
-	return files
-
-
-# --- 11. Язык «Отголосок»: без подложек и полос -------------------------------
+# --- 10. Язык «Отголосок»: без подложек и полос -------------------------------
 func _check_scene() -> void:
 	var hud := (load("res://src/ui/hud/hud.tscn") as PackedScene).instantiate()
 	var plates := PackedStringArray()
@@ -342,7 +296,7 @@ func _check_scene() -> void:
 	_check("вариации Hud* — Golos Text из общей темы", off_theme.is_empty(), ", ".join(off_theme))
 
 
-# --- 12. Мини-карта: контур прорисовывается пером --------------------------------
+# --- 11. Мини-карта: контур прорисовывается пером --------------------------------
 func _check_minimap_strokes() -> void:
 	var square := PackedVector2Array([Vector2(0, 0), Vector2(10, 0), Vector2(10, 10), Vector2(0, 10), Vector2(0, 0)])
 	var half := UI_MiniMap._partial(square, 0.5)

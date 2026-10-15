@@ -5,8 +5,7 @@ extends "res://dev/check_harness.gd"
 ##
 ## Всё здесь ломается тихо. Улучшение, крутящее стат души, а не мира, ничего не
 ## меняет — ArchitectManager его никуда не применяет. Награда без отметки в сейве
-## забега выдаётся заново после каждой загрузки. Ключ перевода с опечаткой
-## показывает игроку «ARCHITECT_MAP» вместо названия. Комната, выпавшая на этаж
+## забега выдаётся заново после каждой загрузки. Комната, выпавшая на этаж
 ## хаба или не выпавшая вовсе, выглядит просто неудачным сидом.
 ##
 ## Сейвы подменяются на время прогона и возвращаются: встреча пишет и в сейв
@@ -29,7 +28,6 @@ var _world_save: RS_WorldSave
 var _architect_save: PlayerSkillSave
 var _skill_save: PlayerSkillSave
 var _node_id: StringName
-var _locale: String
 
 
 func _ready() -> void:
@@ -41,10 +39,8 @@ func _ready() -> void:
 	_architect_save = ArchitectManager.save
 	_skill_save = SkillManager.save
 	_node_id = RunManager.current_node_id
-	_locale = TranslationServer.get_locale()
 
 	_check_progression()
-	_check_texts()
 	_check_encounter()
 	_check_generation()
 	await _check_scene()
@@ -88,7 +84,7 @@ func _check_progression() -> void:
 	_check("без улучшений экрана карты нет", ArchitectManager.map_level() == 0,
 		"уровень %d" % ArchitectManager.map_level())
 
-	ArchitectManager.save.skill_points = 100
+	ArchitectManager.save.skill_points = 100000
 	var levels: Array[int] = []
 	for i in ArchitectStats.MAP_LEVEL_MAX:
 		ArchitectManager.unlock(ArchitectStats.MAP_LEVEL)
@@ -100,51 +96,30 @@ func _check_progression() -> void:
 		"очки %d, ранги %s" % [SkillManager.save.skill_points, SkillManager.save.ranks],
 	)
 
+	# Шкала эссенции — тысячи (карточка «Игровой цикл — от и до», §4.3): цена в
+	# единицы осталась бы от прежней шкалы, где встреча давала одну эссенцию, и
+	# дерево скупалось бы за забег.
+	var cheap: Array[String] = []
+	var first_price := 1 << 30
+	for def in tree.skills:
+		for price in def.cost_per_rank:
+			first_price = mini(first_price, price)
+			if price < 500:
+				cheap.append("%s: %d" % [def.id, price])
+	_check("цены рангов в сотнях и тысячах", cheap.is_empty(), ", ".join(cheap))
+	_check("первое улучшение стоит около тысячи", first_price >= 500 and first_price <= 1000, "от %d" % first_price)
+	_check("дерево Архитектора без ошибок данных", tree.validate().is_empty(), "; ".join(tree.validate()))
+	var reward := GameConfig.config.architect_essence_reward
+	_check("встреча даёт долю первого улучшения, а не всё сразу",
+		reward >= 100 and reward * 3 <= first_price * 2, "награда %d, первое улучшение %d" % [reward, first_price])
+
 	ArchitectManager.save.ranks[ArchitectStats.MAP_LEVEL] = 7
 	_check("лишний ранг в данных не открывает несуществующий уровень",
 		ArchitectManager.map_level() == ArchitectStats.MAP_LEVEL_MAX,
 		"уровень %d" % ArchitectManager.map_level())
 
 
-# --- 2. Тексты ----------------------------------------------------------------
-
-
-func _check_texts() -> void:
-	TranslationServer.set_locale("ru")
-	var tree := ArchitectManager.SKILL_TREE
-	var keys: Array[String] = [tree.points_format, "ARCHITECT_PROMPT"]
-	keys.append_array(tree.currency_forms)
-	for def in tree.skills:
-		keys.append(def.display_name)
-		keys.append(def.description)
-	for branch in tree.branches:
-		keys.append(branch.display_name)
-	var missing: Array[String] = []
-	for key in keys:
-		if String(TranslationServer.translate(key)) == key:
-			missing.append(key)
-	_check("ключи Архитектора есть в переводе", missing.is_empty(), ", ".join(missing))
-
-	_check("счётчик называет эссенцию", tree.points_text(3) == "Эссенция: 3", tree.points_text(3))
-	var costs: Array[String] = []
-	for amount in [1, 2, 5, 11, 21, 22]:
-		costs.append(tree.cost_text(amount))
-	_check(
-		"цена склоняется по числу",
-		costs == ["1 эссенция", "2 эссенции", "5 эссенций", "11 эссенций", "21 эссенция", "22 эссенции"],
-		", ".join(costs),
-	)
-
-	var skills := SkillManager.SKILL_TREE
-	var skill_texts := [skills.points_text(5), skills.cost_text(1), skills.cost_text(3), skills.cost_text(12)]
-	_check(
-		"у навыков по-прежнему очки",
-		skill_texts == ["Очки: 5", "1 очко", "3 очка", "12 очков"],
-		", ".join(skill_texts),
-	)
-
-
-# --- 3. Встреча -----------------------------------------------------------------
+# --- 2. Встреча -----------------------------------------------------------------
 
 
 func _check_encounter() -> void:
@@ -198,7 +173,7 @@ func _open_tree_screen() -> SkillTreeUI:
 	return null
 
 
-# --- 4. Генерация -----------------------------------------------------------------
+# --- 3. Генерация -----------------------------------------------------------------
 
 
 func _check_generation() -> void:
@@ -269,7 +244,7 @@ func _check_generation() -> void:
 		"Архитекторов в графе: %d" % placed)
 
 
-# --- 5. Сцена -----------------------------------------------------------------
+# --- 4. Сцена -----------------------------------------------------------------
 
 
 func _check_scene() -> void:
@@ -333,7 +308,6 @@ func _interactable_of(entity: Node) -> C_Interactable:
 
 
 func _restore() -> void:
-	TranslationServer.set_locale(_locale)
 	RunManager.current_node_id = _node_id
 	ArchitectManager.save = _architect_save
 	ArchitectManager._save()

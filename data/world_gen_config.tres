@@ -33,5 +33,6 @@ map_name = "MAP_UNIQUE_ARCHITECT"
 [resource]
 script = ExtResource("1_config")
 rooms_per_floor = 8
+dead_ends = 3
 floor_stairs = ExtResource("6_stairs")
 unique_rooms = Array[ExtResource("2_unique")]([SubResource("Resource_hub"), SubResource("Resource_exit"), SubResource("Resource_architect")])

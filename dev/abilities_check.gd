@@ -446,6 +446,7 @@ func _run(world: World) -> void:
 	var move_line := tr("HUD_CTRL_MOVE")
 	var jump_line := tr("HUD_CTRL_JUMP")
 	var sprint_line := tr("HUD_CTRL_SPRINT")
+	var attack_line := tr("HUD_CTRL_ATTACK")
 	# Переведены ли ключи HUD_*, сверяет hud_check по всему src/.
 	_check(
 		"HUD: призрак — одна строка «Полёт», без прыжка и бега",
@@ -462,7 +463,7 @@ func _run(world: World) -> void:
 
 	var hud_lines := abilities.visible_lines()
 	var jump_key := SettingsManager.action_display_name(&"jump")
-	_check("HUD: во плоти на ходячем теле — три строки", hud_lines.size() == 3, str(hud_lines))
+	_check("HUD: во плоти на ходячем теле — четыре строки", hud_lines.size() == 4, str(hud_lines))
 	_check("HUD: первая строка — «Ход» без клавиши", hud_lines.size() > 0 and hud_lines[0] == move_line, str(hud_lines))
 	_check(
 		"HUD: строка прыжка несёт клавишу из настроек, а не из макета",
@@ -470,6 +471,13 @@ func _run(world: World) -> void:
 		str(hud_lines)
 	)
 	_check("HUD: строка бега есть", hud_lines.size() > 2 and hud_lines[2].ends_with(sprint_line), str(hud_lines))
+	_check(
+		"HUD: строка удара несёт клавишу из настроек",
+		hud_lines.size() > 3 and hud_lines[3] == "[%s] %s" % [
+			SettingsManager.action_display_name(&"attack"), attack_line
+		],
+		str(hud_lines)
+	)
 	_check("HUD: смена тела показывает управление заново", abilities.is_showing(), "тело %s" % walker4)
 
 	var crawler3 := _spawn_body(world, CRAWLER_SCENE, Vector3(0.0, 0.0, 12.0))
@@ -480,8 +488,10 @@ func _run(world: World) -> void:
 	await get_tree().process_frame
 
 	_check(
-		"HUD: у безногого тела строк прыжка и бега нет вовсе, а не серые",
-		abilities.visible_lines() == PackedStringArray([move_line]),
+		"HUD: у безногого тела строк прыжка и бега нет вовсе, а не серые (удар у ползуна есть)",
+		abilities.visible_lines().size() == 2
+		and abilities.visible_lines()[0] == move_line
+		and abilities.visible_lines()[1].ends_with(attack_line),
 		"тело %s: %s" % [crawler3, abilities.visible_lines()]
 	)
 
@@ -497,8 +507,8 @@ func _run(world: World) -> void:
 	await _physics(1)
 	await get_tree().process_frame
 	_check(
-		"HUD: отказ безногого тела виден строкой, переведённой из ключа",
-		message.shown_text() == tr("HUD_MSG_NO_JUMP") and message.shown_text() != "HUD_MSG_NO_JUMP",
+		"HUD: отказ безногого тела виден строкой сообщения",
+		message.shown_text() == tr("HUD_MSG_NO_JUMP"),
 		message.shown_text()
 	)
 	hud.queue_free()

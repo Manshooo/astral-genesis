@@ -18,7 +18,6 @@ extends Observer
 ## фармить одно и то же тело повторным входом-выходом архитектурно нельзя —
 ## порог нужен только затем, чтобы награда отражала риск, а не сам факт выхода.
 const _GRACEFUL_EXIT_DECAY_THRESHOLD := 0.5
-const _GRACEFUL_EXIT_REWARD := 1
 
 
 func query() -> QueryBuilder:
@@ -98,7 +97,11 @@ static func _settle_lifespan(soul: Entity, voluntary: bool) -> void:
 
 			var used_fraction := 1.0 - decay.remaining / decay.effective_maximum(soul)
 			if used_fraction >= _GRACEFUL_EXIT_DECAY_THRESHOLD:
-				SkillManager.add_skill_points(_GRACEFUL_EXIT_REWARD)
+				# Бонус за сознание, усвоенное целиком, — на одной шкале с очками за
+				# захват (RS_SoulPointsTable), и с записью источника в сводку забега.
+				RunStats.award_soul_points(
+					RS_RunStats.POINTS_CLEAN_EXIT, RS_SoulPointsTable.current().clean_exit_points
+				)
 	else:
 		var keep := C_StatModifiers.of(
 			soul, C_StatModifiers.DEATH_KEEP, GameConfig.config.lifespan_death_fraction

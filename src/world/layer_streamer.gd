@@ -17,7 +17,7 @@
 class_name LayerStreamer
 extends RefCounted
 
-## «Слой не загружен». Глубины графа — 0..4 (RS_LevelGraph.DEPTHS), так что -1
+## «Слой не загружен». Глубины графа — 0..5 (RS_LevelGraph.DEPTHS), так что -1
 ## никогда не совпадёт с реальной.
 const NO_DEPTH := -1
 
@@ -83,6 +83,12 @@ var rooms: Dictionary[StringName, SpawnedRoom] = {}
 ## регистрировать незачем. Держим ради сноса слоя и ради «заспавнен ли узел» —
 ## присутствие игрока в коридоре меняет текущий узел так же, как в комнате.
 var corridor_tiles: Dictionary[StringName, Array] = {}
+## Тайники эссенции в тупиках загруженного слоя (LayerFinds). Отдельно от тайлов:
+## у тайла нет сущности, а находка — сущность, и снимать её надо из мира явно.
+## Находки в комнатах здесь не числятся — они дети комнаты и уходят с ней.
+var cache_finds: Array[Entity] = []
+## Навмеш загруженного слоя: запекается по готовности слоя, снимается вместе с ним.
+var navigation := LayerNavigation.new()
 
 ## Общий родитель тайлов под ECS.world — см. _corridor_parent.
 var _corridor_root: Node3D
@@ -99,6 +105,10 @@ var _shown: Dictionary[StringName, bool] = {}
 ## поперечный коридор и двери его комнат; прямая же линия взгляда остаётся в
 ## одном коридоре, раскладка отдаёт развилку прямому (RS_CorridorPlanner).
 const VISIBLE_HOPS := 2
+
+## Метаданные врага ростера: id маркера, с которого он встал (см.
+## _spawn_roster_enemies). Сущность с этим id получает C_BodyOrigin.
+const ROSTER_ID_META := &"roster_marker_id"
 
 ## Сколько spawn_async тратит на спавн за кадр, микросекунды. Меньше кадра в
 ## 60 FPS с запасом: под шторкой загрузки кадр должен успеть ещё и нарисоваться.
@@ -145,6 +155,7 @@ func spawn(layer_depth: int) -> bool:
 	for node_data in layer_nodes:
 		_spawn_node(node_data, plan)
 	depth = layer_depth
+	navigation.bake(ECS.world)
 	return true
 
 
@@ -177,6 +188,7 @@ func spawn_async(layer_depth: int, tree: SceneTree, keep_going: Callable) -> boo
 			started = Time.get_ticks_usec()
 		_spawn_node(node_data, plan)
 	depth = layer_depth
+	navigation.bake(ECS.world)
 	return true
 
 
@@ -202,6 +214,7 @@ func _spawn_node(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 ## типизирован — freed-объект роняет проверку типа ещё ДО тела функции, поэтому
 ## отсеиваем невалидные заранее.
 func despawn() -> bool:
+	navigation.clear()
 	for spawned: SpawnedRoom in rooms.values():
 		_remove_valid_entities(spawned.children)
 		if is_instance_valid(spawned.entity):
@@ -215,6 +228,7 @@ func despawn() -> bool:
 			if is_instance_valid(tile):
 				(tile as Node).free()
 	corridor_tiles.clear()
+	LayerFinds.remove_all(cache_finds)
 	_shown.clear()
 	var was_loaded := depth != NO_DEPTH
 	depth = NO_DEPTH
@@ -307,6 +321,7 @@ func _spawn_corridor(node_data: RS_LevelNode, plan: RS_LayerPlan) -> void:
 		parent.add_child(tile)
 		tiles.append(tile)
 	corridor_tiles[node_data.id] = tiles
+	cache_finds.append_array(LayerFinds.place_caches(node_data, plan, graph.run_seed))
 
 
 ## Погасла ли лампа тайла — от сида мира, слоя и клетки, своим ГСЧ, а не общим:
@@ -375,6 +390,10 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	if spatial:
 		spatial.transform = plan.room_transform(node_data.id)
 
+	# Номер слоя на табличках комнаты — по узлу, а не по current_depth: слой
+	# спавнится целиком, пока глубина самого стримера ещё старая (см. ExitSign).
+	ExitSign.stamp_depth(entity, node_data.depth)
+
 	# Стены и двери сборной комнаты — тоже до add_entity: двери должны попасть в
 	# обход вложенных сущностей (_register_room_children) вместе с остальными.
 	var shell := RS_RoomLayout.shell_of(entity)
@@ -384,6 +403,14 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 			assembled = shell.walls.assemble(spatial, node_data.id, plan)
 		else:
 			push_error("LayerStreamer: у коробки '%s' нет кита стен" % node_data.room_scene_path)
+
+	# Враги ростера — детьми комнаты до add_entity: тогда обход вложенных сущностей
+	# (_register_room_children) подхватит их вместе с остальными, и снесёт их тот же
+	# despawn, без отдельного учёта.
+	_spawn_roster_enemies(entity, node_data)
+	# Находки эссенции на маркерах комнаты — до add_entity, дочерними сущностями
+	# (см. LayerFinds.place_in_room).
+	LayerFinds.place_in_room(entity, node_data, graph.run_seed)
 
 	ECS.world.add_entity(entity)
 
@@ -438,7 +465,39 @@ func _register_room_children(room_entity: Entity, node_id: StringName) -> Array[
 			var origin := C_BodyOrigin.new()
 			origin.body_id = _body_id(node_id, room_entity, body)
 			body.add_component(origin)
+		elif e.has_meta(ROSTER_ID_META):
+			# Враг ростера несёт id своего маркера, и O_EnemyDeath передаст его
+			# трупу: съеденный труп помечает id в сейве, и маркер больше не
+			# разыгрывается (_spawn_roster_enemies).
+			var origin := C_BodyOrigin.new()
+			origin.body_id = e.get_meta(ROSTER_ID_META)
+			e.add_component(origin)
 	return children
+
+
+## Ставит врагов ростера на маркеры [code]EnemySpawn*[/code] сцены комнаты. Кто
+## встанет, решает RS_EnemyRoster.roll — функция сида, слоя, узла и маркера, —
+## поэтому слой, собранный заново, возвращает тех же врагов на те же места.
+## Маркер, чей враг уже съеден (труп поглощён, см. O_EnemyDeath), не разыгрывается.
+func _spawn_roster_enemies(room_entity: Entity, node_data: RS_LevelNode) -> void:
+	var room_node := room_entity as Node as Node3D
+	if room_node == null:
+		return
+	var roster := RS_EnemyRoster.current()
+	for node in room_entity.find_children("EnemySpawn*", "Marker3D", true, false):
+		var marker_id := StringName("%s/%s" % [node_data.id, room_entity.get_path_to(node)])
+		if WorldSave.save.consumed_body_ids.has(marker_id):
+			continue
+		var scene := roster.roll(graph.run_seed, node_data.depth, node_data.id, node.name)
+		if scene == null:
+			continue
+		var enemy := scene.instantiate() as Entity
+		if enemy == null:
+			continue
+		enemy.set_meta(ROSTER_ID_META, marker_id)
+		room_entity.add_child(enemy)
+		# Позиция — от комнаты, а не глобальная: комната ещё не в дереве.
+		(enemy as Node as Node3D).transform = RS_EntityVisuals.transform_relative_to(node, room_entity)
 
 
 ## Стабильный id авторского тела: узел графа плюс путь узла внутри комнаты.
@@ -516,6 +575,7 @@ func _bind_portals(spawned: SpawnedRoom, node_data: RS_LevelNode) -> void:
 			continue
 		var portal: Entity = free_portals.pop_front()
 		_stamp_portal(portal, conn)
+		ExitSign.stamp_destination(portal, target.depth)
 		_set_door_prompt(portal, _portal_prompt(node_data, target, conn))
 
 	for portal in free_portals:

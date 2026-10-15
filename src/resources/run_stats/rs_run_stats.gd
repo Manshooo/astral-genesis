@@ -23,11 +23,31 @@ const ROOMS := &"rooms"  ## сколько РАЗНЫХ комнат посещ�
 const BODIES := &"bodies"  ## сколько тел занято
 const DAMAGE_TAKEN := &"damage_taken"
 const DAMAGE_DEALT := &"damage_dealt"
-const SKILL_POINTS := &"skill_points"  ## награда за этот забег
+const SKILL_POINTS := &"skill_points"  ## очки души за этот забег — сумма по источникам ниже
+const ESSENCE := &"essence"  ## эссенция за этот забег — сумма по источникам ниже
 
-## Чем кончился забег. Пока экран итогов один — на смерть; побег (`finish_run`)
-## забег тоже завершает, и когда у победы появится свой экран, ей понадобится
-## ровно этот же снимок, только с другим заголовком.
+## Источники очков души и эссенции (разбивка, §7 карточки «Игровой цикл»). Без
+## разбивки график прогрессии не сверить: итог «получено 140» не говорит, откуда
+## оно, а баланс как раз и решает, сколько брать откуда. Пишутся через [method
+## credit], который сам растит и итог своей валюты.
+const POINTS_ABSORB := &"points_absorb"  ## захват тела (поглощение сознания)
+const POINTS_CLEAN_EXIT := &"points_clean_exit"  ## «чистый выход» из выжатого тела
+const ESSENCE_ARCHITECT := &"essence_architect"  ## касание Архитектора
+const ESSENCE_PICKUP := &"essence_pickup"  ## находка в комнате (LayerFinds)
+const ESSENCE_CACHE := &"essence_cache"  ## тайник в тупике коридора (LayerFinds)
+
+## Источник -> итог его валюты. Одно место, где сказано, какая валюта у источника:
+## новый источник без записи здесь не попадёт ни в один итог, и тихо.
+const SOURCE_TOTALS := {
+	POINTS_ABSORB: SKILL_POINTS,
+	POINTS_CLEAN_EXIT: SKILL_POINTS,
+	ESSENCE_ARCHITECT: ESSENCE,
+	ESSENCE_PICKUP: ESSENCE,
+	ESSENCE_CACHE: ESSENCE,
+}
+
+## Чем кончился забег. Смерть показывает экран итогов, побег (`finish_run`) —
+## экран концовки (src/ui/ending/), который читает тот же снимок, коротко.
 const OUTCOME_DEATH := &"death"
 const OUTCOME_ESCAPE := &"escape"
 
@@ -41,6 +61,13 @@ const OUTCOME_ESCAPE := &"escape"
 @export var bodies: Array[RS_RunBody] = []
 
 @export var outcome: StringName = &""
+
+## Сколько метров уже зачтено дистанционным условиям навыков по каждой клетке
+## этого забега: "<глубина>:<x>:<y>:<z>" -> метры. Лежит с забегом, а не в
+## навыках: клетка «новая» только в пределах забега, и загрузка не должна
+## отдавать посещённые клетки заново. Ключ строкой — Dictionary с Vector-ключами
+## в .tres хрупок, а строка переживает любой формат сейва.
+@export var cell_credit: Dictionary = {}
 
 
 func add(key: StringName, amount: float) -> void:
@@ -76,3 +103,42 @@ func note_body(scene_path: String, name_key: StringName) -> RS_RunBody:
 ## null — забег идёт призраком, писать некуда.
 func current_body() -> RS_RunBody:
 	return bodies.back() if not bodies.is_empty() else null
+
+
+## Записать в разбивку [param amount] от источника [param source] и в итог его
+## валюты. Только запись: сами очки и эссенцию выдают менеджеры навыков
+## (RunStats.award_soul_points / award_essence), чтобы запись и выдача не жили
+## двумя независимыми вызовами у каждого источника.
+func credit(source: StringName, amount: float) -> void:
+	if amount <= 0.0 or not SOURCE_TOTALS.has(source):
+		return
+	add(source, amount)
+	add(SOURCE_TOTALS[source], amount)
+
+
+## Сколько раз вид (сцена тела) уже захвачен в этом забеге — для множителей
+## повторов. Считается по записям тел: они лежат в сейве забега, поэтому
+## загрузка продолжает счёт, а не начинает его заново.
+func captures_of_kind(scene_path: String) -> int:
+	var count := 0
+	for body in bodies:
+		if body != null and body.scene_path == scene_path:
+			count += 1
+	return count
+
+
+## Зачесть шаг длиной [param step] метров, сделанный по клетке [param cell_key].
+## Возвращает, сколько метров реально засчитано. Клетка даёт не больше своей
+## стороны [param cell_budget]: ходить кругами по одной клетке (в колбе, у двери)
+## «километры» не наберёт, а пройденная целиком клетка в этом забеге больше не
+## даёт ничего. Это и есть «только по новым клеткам».
+func credit_cell_distance(cell_key: String, step: float, cell_budget: float) -> float:
+	var used := float(cell_credit.get(cell_key, 0.0))
+	var granted := clampf(minf(step, cell_budget - used), 0.0, step)
+	if granted > 0.0:
+		cell_credit[cell_key] = used + granted
+	return granted
+
+
+static func cell_key(depth: int, cell: Vector3i) -> String:
+	return "%d:%d:%d:%d" % [depth, cell.x, cell.y, cell.z]

@@ -32,12 +32,12 @@ func _run(world: World) -> void:
 	# --- 1. Чтение характеристик из сцены -----------------------------------
 	# Ожидание намеренно ЯВНОЕ, а не пересчитанное из той же сцены: считать её
 	# тем же способом, что и E_Body._wearable(), значило бы сверять функцию с
-	# собой. Шесть надеваемых в e_body.tscn — C_Health, C_BodyDecay, C_Walk,
-	# C_Jump, C_Sprint, C_Footsteps (C_BodySnatchable надеваемой не считается).
+	# собой. Семь надеваемых в e_body.tscn — C_Health, C_BodyDecay, C_Walk,
+	# C_Jump, C_Sprint, C_Footsteps, C_Attack (C_BodySnatchable надеваемой не считается).
 	# Число двигать вместе со сценой: тело обзавелось характеристикой — правь
 	# здесь, и это осознанный шаг, а не помеха.
 	var from_scene := E_Body.traits_of_scene(BODY_SCENE.resource_path)
-	_check("из сцены прочитано 6 характеристик", from_scene.size() == 6, str(from_scene.size()))
+	_check("из сцены прочитано 7 характеристик", from_scene.size() == 7, str(from_scene.size()))
 
 	# --- 2. Захват ----------------------------------------------------------
 	var soul := _make_soul()
@@ -71,6 +71,14 @@ func _run(world: World) -> void:
 	]
 	_check("ходьба, прыжок, здоровье и карман перенесены с числами тела", on_soul == authored,
 		"на душе %s, у тела %s" % [on_soul, authored])
+	var soul_attack := soul.get_component(C_Attack) as C_Attack
+	var body_attack := from_scene.filter(func(c: Component) -> bool: return c is C_Attack)
+	_check(
+		"удар перенесён с числами тела",
+		soul_attack != null and body_attack.size() == 1
+		and is_equal_approx(soul_attack.damage, (body_attack[0] as C_Attack).damage),
+		""
+	)
 	_check(
 		"карман открыт полным",
 		decay != null and is_equal_approx(decay.remaining, decay.maximum),
@@ -96,7 +104,7 @@ func _run(world: World) -> void:
 	await get_tree().process_frame  # expel идёт через call_deferred
 
 	var still_worn: Array[String] = []
-	for trait_type in [C_Walk, C_Jump, C_Health, C_BodyDecay, C_Embodied]:
+	for trait_type in [C_Walk, C_Jump, C_Health, C_BodyDecay, C_Attack, C_Embodied]:
 		if soul.get_component(trait_type) != null:
 			still_worn.append(trait_type.get_global_name())
 	_check("выход снял всё, что тело надело", still_worn.is_empty(), ", ".join(still_worn))
