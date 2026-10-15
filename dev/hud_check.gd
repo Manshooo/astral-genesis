@@ -251,7 +251,7 @@ func _check_message() -> void:
 
 # --- 8. Строка подсказки: клавиша отдельно от действия -------------------------
 func _check_thought_line() -> void:
-	var line := UI_ThoughtLine.new()
+	var line := (load("res://src/ui/hud/thought_line.tscn") as PackedScene).instantiate() as UI_ThoughtLine
 	add_child(line)
 	line.set_line("F", tr("HUD_PROMPT_PASS"))
 	_check("подсказка — «[клавиша] действие»", line.plain_text() == "[F] %s" % tr("HUD_PROMPT_PASS"), line.plain_text())

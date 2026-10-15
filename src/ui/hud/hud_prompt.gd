@@ -36,8 +36,6 @@ var _alpha := 0.0
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_blur.material = UI_HudMood.blur_material()
 	modulate.a = 0.0
 	visible = false
 	if ECS.world:

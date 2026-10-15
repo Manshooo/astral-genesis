@@ -11,8 +11,12 @@
 ## строки. Его размер — от строки, поэтому английский на треть длиннее ничего не
 ## ломает: ширины нигде не фиксированы.
 ##
-## Дети строятся кодом: это механизм раскладки, а не авторский контент — вид
-## задают вариации темы, и настраивать в сцене здесь нечего.
+## Устройство строки — в thought_line.tscn, а не в _ready(): набор детей
+## постоянный (пятно тени, скобка, клавиша, скобка, действие), значит, это сцена
+## («Конвенции проекта» §7). Сцена показывает стиль мысли; другой стиль скрипт
+## выставляет подписям по [member style] — подбор вариации темы по экспорту
+## экземпляра, не сборка. Создавать строку — instantiate() из сцены: .new()
+## дал бы узел без детей.
 class_name UI_ThoughtLine
 extends Control
 
@@ -31,47 +35,28 @@ const _VARIATIONS := {
 ## Строка центрируется по своей точке (подсказка под прицелом) или стоит от неё
 ## левым краем (управление в углу).
 @export var centered := true
+## Фаза эха — разводит соседние строки управления, чтобы не дрожали хором.
+@export var echo_phase := 0.0
 
-var _shadow: TextureRect
-var _row: HBoxContainer
-var _open: UI_ThoughtLabel
-var _key: UI_ThoughtLabel
-var _close: UI_ThoughtLabel
-var _text: UI_ThoughtLabel
+@onready var _shadow: TextureRect = %ThoughtShadow
+@onready var _row: HBoxContainer = %Row
+@onready var _open: UI_ThoughtLabel = %Open
+@onready var _key: UI_ThoughtLabel = %Key
+@onready var _close: UI_ThoughtLabel = %Close
+@onready var _text: UI_ThoughtLabel = %Text
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_shadow = TextureRect.new()
-	_shadow.name = "ThoughtShadow"
-	_shadow.texture = UI_HudMood.thought_shadow_texture()
-	_shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_shadow.stretch_mode = TextureRect.STRETCH_SCALE
-	_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_shadow)
 	# Подпись мини-карты лежит на её общем пятне — своё рисовало бы пятно в пятне.
 	_shadow.visible = style != Style.MAP
-
-	_row = HBoxContainer.new()
-	_row.name = "Row"
-	_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_row.add_theme_constant_override("separation", 1)
-	add_child(_row)
-
 	var variations: Array = _VARIATIONS[style]
-	_open = _add_label(variations[0], "[")
-	_key = _add_label(variations[1], "")
-	_close = _add_label(variations[0], "]")
-	_text = _add_label(variations[2], "")
+	for label: UI_ThoughtLabel in [_open, _close]:
+		label.theme_type_variation = variations[0]
+	_key.theme_type_variation = variations[1]
+	_text.theme_type_variation = variations[2]
+	for label: UI_ThoughtLabel in [_open, _key, _close, _text]:
+		label.echo_phase = echo_phase
 	set_line("", "")
-
-
-func _add_label(variation: StringName, text: String) -> UI_ThoughtLabel:
-	var label := UI_ThoughtLabel.new()
-	label.theme_type_variation = variation
-	label.text = text
-	_row.add_child(label)
-	return label
 
 
 ## [param key] — отображаемое имя клавиши; пусто — строка без клавиши («Ход»,
@@ -99,12 +84,6 @@ func plain_text() -> String:
 func width() -> float:
 	_layout()
 	return _row.size.x
-
-
-## Фаза эха — разводит соседние строки управления.
-func set_echo_phase(phase: float) -> void:
-	for label: UI_ThoughtLabel in [_open, _key, _close, _text]:
-		label.echo_phase = phase
 
 
 func _process(_delta: float) -> void:

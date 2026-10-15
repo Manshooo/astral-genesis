@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bjis2egfyyrpm" path="res://src/ui/hud/thought_line.gd" id="1_line"]
+[ext_resource type="Texture2D" path="res://src/ui/hud/thought_shadow.tres" id="2_shadow"]
+[ext_resource type="Script" uid="uid://vugbh7o11l2b" path="res://src/ui/hud/thought_label.gd" id="3_label"]
+
+[node name="ThoughtLine" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_line")
+
+[node name="ThoughtShadow" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+texture = ExtResource("2_shadow")
+expand_mode = 1
+
+[node name="Row" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 1
+
+[node name="Open" type="Label" parent="Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudKeyBracket"
+text = "["
+script = ExtResource("3_label")
+
+[node name="Key" type="Label" parent="Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudKey"
+script = ExtResource("3_label")
+
+[node name="Close" type="Label" parent="Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudKeyBracket"
+text = "]"
+script = ExtResource("3_label")
+
+[node name="Text" type="Label" parent="Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudThought"
+script = ExtResource("3_label")

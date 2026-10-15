@@ -31,6 +31,7 @@ const DECAY_TINT := Color(0.07, 0.04, 0.12)
 const BODY_TINT := Color(0.11, 0.07, 0.02)
 const BODY_SEPIA := Color(1.0, 0.85, 0.62)
 const BLOOD := Color(0.43, 0.05, 0.05)
+## Градиент «тени мысли» HUD (thought_shadow.tres) повторяет это число.
 const SHADOW_BLOB := Color(0.02, 0.02, 0.04, 0.55)
 
 # --- Пороги дуги (§7) --------------------------------------------------------
@@ -158,30 +159,3 @@ static func echo_offset(turmoil_now: float, phase: float = 0.0) -> Vector2:
 		1.0 + 2.0 * turmoil_now + 1.2 * turmoil_now * noise(t * 9.0 + phase, 0.3),
 		0.6 * turmoil_now * noise(t * 7.0 + phase, 1.9),
 	)
-
-
-## Материал размытия строки-мысли для её CanvasGroup. Свой на каждую группу:
-## размытие у подсказки и у сообщения идёт по разным часам.
-static func blur_material() -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = preload("res://src/ui/hud/thought_blur.gdshader")
-	return material
-
-
-## Пятно «тени мысли» позади строки (§2): радиальный градиент без формы вместо
-## подложки. Строится кодом, потому что нужен один и тот же везде, где HUD
-## говорит текстом.
-static func thought_shadow_texture() -> GradientTexture2D:
-	var gradient := Gradient.new()
-	var clear := SHADOW_BLOB
-	clear.a = 0.0
-	gradient.set_color(0, SHADOW_BLOB)
-	gradient.set_color(1, clear)
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	texture.width = 128
-	texture.height = 64
-	return texture

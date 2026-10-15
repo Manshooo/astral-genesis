@@ -18,6 +18,11 @@
 ## UI_MapFloor, а рисует по-своему: язык «Отголосок» — тонкие контуры, коридоры
 ## бусами на нитке, рваная рамка вокруг, прорисовка от текущей комнаты наружу, а
 ## не заливка клеток, как на экране карты.
+##
+## Подписи вокруг плана — заголовок и две подсказки — узлы mini_map.tscn: их
+## число постоянное. План, рамка и тень — рисунок в _draw(), узлами они не
+## становятся («Конвенции проекта» §7). Создавать карту — instantiate() из
+## сцены: у .new() нет подписей.
 class_name UI_MiniMap
 extends UI_MapFloor
 
@@ -64,7 +69,9 @@ const ARROW_ALPHA := 0.8
 const DOT_RADIUS := 3.2
 const RING_RADIUS := 9.0
 const RING_PERIOD := 1.6
-## Тень-пятно позади карты (§4).
+## Тень-пятно позади карты (§4) — та же «тень мысли», что за строками HUD, но
+## рисуется в _draw(): она стоит под рамкой и планом в одном проходе рисования.
+const SHADOW_TEXTURE := preload("res://src/ui/hud/thought_shadow.tres")
 const SHADOW_SIZE := Vector2(680.0, 520.0)
 ## Нить коридора — тоньше контура комнаты, чтобы бусы на ней читались главными.
 const THREAD_WIDTH := 1.0
@@ -119,13 +126,12 @@ var _snap := true
 ## Слой и этаж, по которым вписано: на другом этаже раскладка совсем другая, и
 ## перетекать в неё из прежней значило бы показывать полёт сквозь чужой план.
 var _fitted_floor := Vector2i(-1, -1)
-var _shadow_texture: Texture2D
-var _title: Label
+@onready var _title: Label = %Title
 ## Ранг «Карты комплекса» — снимается при открытии и пересборке: купить его можно
 ## только на экране Архитектора, а поверх экрана мини-карта не открыта.
 var _level := MapKnowledge.LEVEL_NONE
-var _hint_hide: UI_ThoughtLine
-var _hint_full: UI_ThoughtLine
+@onready var _hint_hide: UI_ThoughtLine = %HintHide
+@onready var _hint_full: UI_ThoughtLine = %HintFull
 
 
 func _init() -> void:
@@ -136,36 +142,12 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_to_group(GROUP)
-	visible = false
-	_shadow_texture = UI_HudMood.thought_shadow_texture()
-
-	_title = _add_label("HudMapLabel")
-	_hint_hide = _add_hint()
-	_hint_full = _add_hint()
-
 	RunManager.room_changed.connect(_on_run_changed)
 	RunManager.layer_changed.connect(_on_run_changed)
 	RunManager.complex_entered.connect(_on_run_changed)
 	SettingsManager.settings_changed.connect(_update_hint)
 	ECS.world_changed.connect(_on_world_changed)
-
-
-func _add_label(variation: StringName) -> Label:
-	var label := Label.new()
-	label.theme_type_variation = variation
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(label)
-	return label
-
-
-func _add_hint() -> UI_ThoughtLine:
-	var line := UI_ThoughtLine.new()
-	line.style = UI_ThoughtLine.Style.MAP
-	line.centered = false
-	add_child(line)
-	return line
 
 
 func open() -> void:
@@ -483,7 +465,7 @@ func _draw() -> void:
 		return
 	var t := UI_HudMood.now()
 	var center := size * 0.5
-	draw_texture_rect(_shadow_texture, Rect2(center - SHADOW_SIZE * 0.5, SHADOW_SIZE), false)
+	draw_texture_rect(SHADOW_TEXTURE, Rect2(center - SHADOW_SIZE * 0.5, SHADOW_SIZE), false)
 	_draw_frame(t)
 	_draw_corridor_beads(t)
 	_draw_room_contours(t)

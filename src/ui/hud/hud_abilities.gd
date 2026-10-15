@@ -17,8 +17,9 @@
 ## Реагируем на component_added/component_removed, а не поллим каждый кадр:
 ## набор возможностей — дискретное состояние, а не непрерывное число.
 ##
-## Строки строятся кодом (UI_ThoughtLine), раскладка — тоже: строки въезжают
-## по одной со сдвигом, а контейнер переставлял бы их обратно.
+## Три строки (UI_ThoughtLine) лежат в hud.tscn — их число постоянное, и стиль
+## управления, отступ тени и фаза эха заданы там же. Раскладка — кодом: строки
+## въезжают по одной со сдвигом, а контейнер переставлял бы их обратно.
 class_name UI_HudAbilities
 extends Control
 
@@ -32,9 +33,9 @@ const SLIDE := -6.0
 const LINE_STEP := 28.0
 const LINE_HEIGHT := 22.0
 
-var _move: UI_ThoughtLine
-var _jump: UI_ThoughtLine
-var _sprint: UI_ThoughtLine
+@onready var _move: UI_ThoughtLine = %Move
+@onready var _jump: UI_ThoughtLine = %Jump
+@onready var _sprint: UI_ThoughtLine = %Sprint
 ## Время, когда набор сменился в последний раз; -INF — показывать нечего.
 var _started := -INF
 ## Набор, который сейчас показан: «полёт/ход, прыжок?, бег?». Сравниваем его, а
@@ -43,25 +44,11 @@ var _signature := ""
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_move = _add_line()
-	_jump = _add_line()
-	_sprint = _add_line()
 	if ECS.world:
 		_connect_world_signals(ECS.world)
 	ECS.world_changed.connect(_on_world_changed)
 	SettingsManager.settings_changed.connect(_on_settings_changed)
 	_render()
-
-
-func _add_line() -> UI_ThoughtLine:
-	var line := UI_ThoughtLine.new()
-	line.style = UI_ThoughtLine.Style.CONTROLS
-	line.centered = false
-	line.shadow_margin = Vector2(30.0, 8.0)
-	add_child(line)
-	line.set_echo_phase(get_child_count())
-	return line
 
 
 func _on_world_changed(world: World) -> void:

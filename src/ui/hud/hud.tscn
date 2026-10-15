@@ -2,43 +2,71 @@
 
 [ext_resource type="Script" uid="uid://b8i20616pbfq3" path="res://src/ui/hud/hud.gd" id="1"]
 [ext_resource type="Script" uid="uid://djqvcaym05lgv" path="res://src/ui/hud/crosshair.gd" id="2_cvkdw"]
-[ext_resource type="Script" path="res://src/ui/hud/decay_arc.gd" id="3_arc"]
+[ext_resource type="Script" uid="uid://dej6yers873st" path="res://src/ui/hud/decay_arc.gd" id="3_arc"]
 [ext_resource type="Script" uid="uid://dtwx60xc7p7vt" path="res://src/ui/hud/hud_prompt.gd" id="4_prompt"]
 [ext_resource type="Script" uid="uid://bllnfs0mr5vyc" path="res://src/ui/hud/hud_message.gd" id="5_message"]
-[ext_resource type="Script" path="res://src/ui/hud/hud_screen_fx.gd" id="6_fx"]
-[ext_resource type="Shader" path="res://src/ui/hud/hud_screen_fx.gdshader" id="7_fx_shader"]
+[ext_resource type="Script" uid="uid://umpfb0vart7j" path="res://src/ui/hud/hud_screen_fx.gd" id="6_fx"]
+[ext_resource type="Shader" uid="uid://ciywvn5r1fqu8" path="res://src/ui/hud/hud_screen_fx.gdshader" id="7_fx_shader"]
 [ext_resource type="Script" uid="uid://dh6qrlpmpgil0" path="res://src/ui/hud/hud_abilities.gd" id="8_abilities"]
-[ext_resource type="Script" path="res://src/ui/hud/hud_save_indicator.gd" id="9_save"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
-[ext_resource type="Script" path="res://src/ui/hud/thought_line.gd" id="11_line"]
-[ext_resource type="Script" path="res://src/ui/hud/thought_label.gd" id="12_label"]
-[ext_resource type="Script" uid="uid://01ionly7qqo5" path="res://src/ui/hud/mini_map.gd" id="13_minimap"]
+[ext_resource type="Script" uid="uid://b5i70w0s71k4j" path="res://src/ui/hud/hud_save_indicator.gd" id="9_save"]
+[ext_resource type="Texture2D" uid="uid://bfb8uqtkwjrfq" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
+[ext_resource type="PackedScene" path="res://src/ui/hud/thought_line.tscn" id="11_line"]
+[ext_resource type="Script" uid="uid://vugbh7o11l2b" path="res://src/ui/hud/thought_label.gd" id="12_label"]
+[ext_resource type="PackedScene" path="res://src/ui/hud/mini_map.tscn" id="13_minimap"]
+[ext_resource type="Shader" uid="uid://448euylitwb5" path="res://src/ui/hud/thought_blur.gdshader" id="14_blur"]
+[ext_resource type="Texture2D" path="res://src/ui/hud/thought_shadow.tres" id="15_shadow"]
+[ext_resource type="FontVariation" path="res://assets/fonts/golos_regular.tres" id="16_font"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_blot"]
+noise_type = 2
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_blot"]
+height = 256
+noise = SubResource("FastNoiseLite_blot")
+seamless = true
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_warp"]
 noise_type = 0
 frequency = 0.004
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_warp"]
-width = 512
-height = 512
+noise = SubResource("FastNoiseLite_warp")
 seamless = true
 as_normal_map = true
-noise = SubResource("FastNoiseLite_warp")
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_blot"]
-noise_type = 2
-frequency = 0.01
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_blot"]
-width = 512
-height = 256
-seamless = true
-noise = SubResource("FastNoiseLite_blot")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_fx"]
 shader = ExtResource("7_fx_shader")
 shader_parameter/noise_tex = SubResource("NoiseTexture2D_warp")
 shader_parameter/blot_tex = SubResource("NoiseTexture2D_blot")
+shader_parameter/vignette = 0.12
+shader_parameter/vignette_color = Color(0.07, 0.04, 0.12, 1)
+shader_parameter/desaturation = 0.15
+shader_parameter/desat_tint = Color(1, 1, 1, 1)
+shader_parameter/distortion_px = 0.0
+shader_parameter/chroma_px = 0.0
+shader_parameter/blood = 0.0
+shader_parameter/blood_color = Color(0.43, 0.05, 0.05, 1)
+shader_parameter/edge_dark = 0.0
+shader_parameter/shake_px = Vector2(0, 0)
+shader_parameter/shine = 0.0
+shader_parameter/shine_color = Color(0.79, 0.66, 0.95, 1)
+shader_parameter/blot_from = Vector3(0, 0, 0)
+shader_parameter/blot_to = Vector3(0, 0, 0)
+shader_parameter/blot_mix = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_prompt_blur"]
+resource_local_to_scene = true
+shader = ExtResource("14_blur")
+shader_parameter/blur_px = 0.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_message_blur"]
+resource_local_to_scene = true
+shader = ExtResource("14_blur")
+shader_parameter/blur_px = 0.0
+
+[sub_resource type="FontVariation" id="FontVariation_message"]
+resource_local_to_scene = true
+base_font = ExtResource("16_font")
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -112,12 +140,10 @@ mouse_filter = 2
 script = ExtResource("4_prompt")
 
 [node name="Blur" type="CanvasGroup" parent="Hud/Prompt" unique_id=1700000007]
+material = SubResource("ShaderMaterial_prompt_blur")
 use_mipmaps = true
 
-[node name="Line" type="Control" parent="Hud/Prompt/Blur" unique_id=1700000004]
-anchors_preset = 0
-mouse_filter = 2
-script = ExtResource("11_line")
+[node name="Line" parent="Hud/Prompt/Blur" unique_id=1700000004 instance=ExtResource("11_line")]
 
 [node name="Message" type="Control" parent="Hud" unique_id=263604356]
 layout_mode = 1
@@ -134,15 +160,17 @@ mouse_filter = 2
 script = ExtResource("5_message")
 
 [node name="Blur" type="CanvasGroup" parent="Hud/Message" unique_id=1700000008]
+material = SubResource("ShaderMaterial_message_blur")
 use_mipmaps = true
 
 [node name="ThoughtShadow" type="TextureRect" parent="Hud/Message/Blur" unique_id=1700000005]
 mouse_filter = 2
+texture = ExtResource("15_shadow")
 expand_mode = 1
 
 [node name="Text" type="Label" parent="Hud/Message/Blur" unique_id=1544852345]
-layout_mode = 0
 theme_type_variation = &"HudMessage"
+theme_override_fonts/font = SubResource("FontVariation_message")
 horizontal_alignment = 1
 autowrap_mode = 3
 script = ExtResource("12_label")
@@ -160,6 +188,30 @@ grow_vertical = 0
 mouse_filter = 2
 script = ExtResource("8_abilities")
 
+[node name="Move" parent="Hud/Abilities" unique_id=24596859 instance=ExtResource("11_line")]
+unique_name_in_owner = true
+layout_mode = 0
+style = 1
+shadow_margin = Vector2(30, 8)
+centered = false
+echo_phase = 1.0
+
+[node name="Jump" parent="Hud/Abilities" unique_id=711281898 instance=ExtResource("11_line")]
+unique_name_in_owner = true
+layout_mode = 0
+style = 1
+shadow_margin = Vector2(30, 8)
+centered = false
+echo_phase = 2.0
+
+[node name="Sprint" parent="Hud/Abilities" unique_id=1051855782 instance=ExtResource("11_line")]
+unique_name_in_owner = true
+layout_mode = 0
+style = 1
+shadow_margin = Vector2(30, 8)
+centered = false
+echo_phase = 3.0
+
 [node name="SaveIndicator" type="TextureRect" parent="Hud" unique_id=1700000006]
 layout_mode = 1
 anchors_preset = 1
@@ -176,8 +228,7 @@ expand_mode = 1
 stretch_mode = 5
 script = ExtResource("9_save")
 
-[node name="MiniMap" type="Control" parent="Hud" unique_id=1700000009]
-visible = false
+[node name="MiniMap" parent="Hud" unique_id=1700000009 instance=ExtResource("13_minimap")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -187,5 +238,3 @@ offset_top = 162.0
 offset_right = -117.0
 offset_bottom = 462.0
 grow_horizontal = 0
-mouse_filter = 2
-script = ExtResource("13_minimap")
