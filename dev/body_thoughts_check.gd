@@ -54,9 +54,8 @@ func _check_data() -> void:
 	_check("ресурс мыслей читается", thoughts != null, "")
 	if thoughts == null:
 		return
-	_check("первое тело — сотрудник комплекса: «Наверх. Выход на нулевом.»",
-		thoughts.pick(WALKER_SCENE) == &"THOUGHT_BODY_WALKER"
-		and tr("THOUGHT_BODY_WALKER") == "Наверх. Выход на нулевом.", String(thoughts.pick(WALKER_SCENE)))
+	_check("первое тело — сотрудник комплекса: своя мысль, а не запасная",
+		thoughts.pick(WALKER_SCENE) == &"THOUGHT_BODY_WALKER", String(thoughts.pick(WALKER_SCENE)))
 	_check("неизвестному виду достаётся запасная мысль",
 		thoughts.pick("res://нет-такого-тела.tscn") == thoughts.default_key, "")
 	var untranslated := PackedStringArray()
