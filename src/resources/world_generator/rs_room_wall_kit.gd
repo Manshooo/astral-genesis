@@ -31,6 +31,11 @@ extends Resource
 ## На дверь нарочно не похожа: заваренных дверей в игре нет. Пусто — у стиля нет
 ## таких коробок.
 @export var plug: PackedScene
+## Дверь наружу — на грань выхода из комплекса (C_RoomShell.exit_sockets). Своя
+## сцена, а не door с подменой действия: у неё нет C_DoorSlot (ребра графа за ней
+## нет, и привязка дверей заварила бы её как лишнюю), а взаимодействие кончает
+## забег (A_FinishRun). Пусто — у стиля нет комнат с выходом.
+@export var exit_door: PackedScene
 
 
 ## Собирает комнату [param node_id] плана: на каждую грань по периметру — стена с
@@ -53,10 +58,15 @@ extends Resource
 ## У коробки со стенами в меше (C_RoomShell.walls_in_shell) стены уже стоят, и
 ## сборка обходит только её объявленные сокеты: на дверь — одно полотно, без
 ## стены с проёмом (проём в меше), на остальные — заглушка.
+##
+## Грань выхода (C_RoomShell.exit_sockets) получает стену с проёмом и дверь
+## наружу, но в возвращаемые двери не попадает: это не дверь в ветку, и
+## привязке к рёбрам (LayerStreamer._bind_doors) её отдавать нельзя.
 func assemble(room: Node3D, node_id: StringName, plan: RS_LayerPlan) -> Dictionary[Node3D, Vector4i]:
 	var shell := RS_RoomLayout.shell_of(room)
+	var exits := _exit_faces(shell, node_id, plan)
 	if shell and shell.walls_in_shell:
-		return _assemble_walled(room, node_id, plan, shell)
+		return _assemble_walled(room, node_id, plan, shell, exits)
 	var doors: Dictionary[Node3D, Vector4i] = {}
 	var door_faces: Dictionary = plan.door_faces.get(node_id, {})
 	var cells := plan.room_cells(node_id)
@@ -67,8 +77,9 @@ func assemble(room: Node3D, node_id: StringName, plan: RS_LayerPlan) -> Dictiona
 				continue
 			var face := GridTopology.face(cell, side)
 			var is_door := door_faces.has(face)
+			var is_exit := exits.has(face)
 			var piece := upper_wall
-			if is_door:
+			if is_door or is_exit:
 				piece = door_wall
 			elif cell.y == bottom:
 				piece = blank_wall
@@ -76,14 +87,28 @@ func assemble(room: Node3D, node_id: StringName, plan: RS_LayerPlan) -> Dictiona
 				_place(room, piece, face, plan, false)
 			if is_door and door:
 				doors[_place(room, door, face, plan, true)] = face
+			elif is_exit and exit_door:
+				_place(room, exit_door, face, plan, true)
 	return doors
+
+
+## Грани выхода комнаты в плане — тем же face_in_plan, что и сокеты дверей: выход
+## поворачивается вместе с комнатой.
+func _exit_faces(shell: C_RoomShell, node_id: StringName, plan: RS_LayerPlan) -> Array[Vector4i]:
+	var faces: Array[Vector4i] = []
+	if shell == null:
+		return faces
+	var turns: int = plan.turns.get(node_id, 0)
+	for socket in shell.exit_sockets:
+		faces.append(RS_RoomLayout.face_in_plan(socket, shell.size, turns, plan.cells[node_id]))
+	return faces
 
 
 ## Сокеты переводятся в грани плана тем же face_in_plan, по которому раскладка
 ## тянет к ним коридор (RS_RoomLayout.sockets_in_plan), — разойдись они, и
 ## полотно встало бы в глухую стену меша, а заглушка — в проём, куда пришёл
 ## коридор.
-func _assemble_walled(room: Node3D, node_id: StringName, plan: RS_LayerPlan, shell: C_RoomShell) -> Dictionary[Node3D, Vector4i]:
+func _assemble_walled(room: Node3D, node_id: StringName, plan: RS_LayerPlan, shell: C_RoomShell, exits: Array[Vector4i]) -> Dictionary[Node3D, Vector4i]:
 	var doors: Dictionary[Node3D, Vector4i] = {}
 	var door_faces: Dictionary = plan.door_faces.get(node_id, {})
 	var turns: int = plan.turns.get(node_id, 0)
@@ -94,6 +119,10 @@ func _assemble_walled(room: Node3D, node_id: StringName, plan: RS_LayerPlan, she
 				_place(room, plug, face, plan, false)
 		elif door:
 			doors[_place(room, door, face, plan, true)] = face
+	# Проём выхода коробка рисует сама, как и проёмы сокетов.
+	if exit_door:
+		for face in exits:
+			_place(room, exit_door, face, plan, true)
 	return doors
 
 

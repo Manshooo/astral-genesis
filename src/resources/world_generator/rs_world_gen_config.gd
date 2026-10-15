@@ -89,6 +89,11 @@ func validate() -> Array[String]:
 			problems.append("уникальная комната «%s»: глубины перепутаны" % unique.preset.display_name)
 		elif unique.allowed_depths().is_empty():
 			problems.append("уникальная комната «%s»: все глубины вычеркнуты" % unique.preset.display_name)
+		# Роль выхода даёт запись конфига, а дверь наружу — коробка сцены; разойдясь,
+		# они оставили комнату выхода без выхода, и забег стало нечем закончить.
+		var exit_shell := RS_RoomLayout.shell_of_scene(unique.preset.scene.resource_path)
+		if unique.exit and exit_shell and exit_shell.exit_sockets.is_empty():
+			problems.append("комната выхода «%s» без двери наружу (C_RoomShell.exit_sockets)" % unique.preset.display_name)
 		if unique.entry:
 			entries += 1
 			if unique.count != 1 or unique.chance < 1.0:

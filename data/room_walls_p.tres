@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://dl5i3eiav5g7v" path="res://assets/levels/SM_room_P_wall_blank/SM_room_P_wall_blank.glb" id="3_blank_wall"]
 [ext_resource type="PackedScene" path="res://src/entities/door/double_door.tscn" id="4_door"]
 [ext_resource type="PackedScene" uid="uid://diqka6t34rbtk" path="res://assets/levels/SM_room_P_wall_plug/SM_room_P_wall_plug.glb" id="5_plug"]
+[ext_resource type="PackedScene" path="res://src/entities/door/exit_door.tscn" id="6_exit_door"]
 
 [resource]
 script = ExtResource("1_kit")
@@ -13,3 +14,4 @@ blank_wall = ExtResource("3_blank_wall")
 upper_wall = ExtResource("3_blank_wall")
 door = ExtResource("4_door")
 plug = ExtResource("5_plug")
+exit_door = ExtResource("6_exit_door")

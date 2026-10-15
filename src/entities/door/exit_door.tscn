@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://src/entities/door/double_door.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_component"]
+[ext_resource type="Script" uid="uid://bbm1wuaam7ku2" path="res://src/resources/interaction/rs_interaction_action.gd" id="3_action"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="4_interactable"]
+[ext_resource type="Script" uid="uid://b862rhl0ju5v0" path="res://src/resources/interaction/a_finish_run.gd" id="5_finish"]
+
+[sub_resource type="Resource" id="Finish"]
+script = ExtResource("5_finish")
+
+[sub_resource type="Resource" id="Interactable"]
+script = ExtResource("4_interactable")
+prompt_text = "HUD_PROMPT_OUTSIDE"
+metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
+
+[node name="ExitDoor" instance=ExtResource("1_base")]
+actions = Array[ExtResource("3_action")]([SubResource("Finish")])
+component_resources = Array[ExtResource("2_component")]([SubResource("Interactable")])

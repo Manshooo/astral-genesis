@@ -60,6 +60,7 @@ HUD_PROMPT_PASS,Пройти,Go through
 HUD_PROMPT_UNSEAL,Открыть,Open
 HUD_PROMPT_LOCKED,Заперто,Locked
 HUD_PROMPT_SEALED,Прохода нет,No way through
+HUD_PROMPT_OUTSIDE,Наружу,Outside
 HUD_PROMPT_UP,Подняться,Go up
 HUD_PROMPT_DOWN,Спуститься,Go down
 HUD_PROMPT_PORTAL_LOCKED,Портал заблокирован,The portal is blocked
