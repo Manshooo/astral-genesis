@@ -51,6 +51,7 @@ Engine specifics (`project.godot`): **Godot 4.7.2**, Forward+, **Jolt Physics** 
 
 - **GDScript and Python are edited with Edit/Write, never through bash heredocs** — a heredoc silently collapses backslash line continuations.
 - **Headless checks lie in two ways**: a runner that exits zero on failure, and a check that leaves the player's real save changed. Both are covered in the `gameplay-testing` skill, «Как писать проверку» (sound in headless is already host-mixed by `AudioManager`).
+- **Windows host: run Python as `python` or `py`, never `python3`** — `python3` resolves to the Microsoft Store stub in `WindowsApps` and fails with «Python was not found». Anything from PATH or a `.ps1` goes through the PowerShell tool; Bash is for POSIX scripts only. A CLI that is missing from PATH (e.g. `pdftoppm` from poppler) is an install job for the user (`winget install poppler`) — say so instead of retrying.
 - **Blender is not on PATH**; its path, MCP-vs-`--background`, and «grep the addon's source before claiming Ucupaint can't do something»: [tools/blender/README.md → Blender из агента](tools/blender/README.md).
 - **Kit dimensions are taken from the doc, never from memory**, and the kit build scripts / `level_kit.blend` placeholders are not restructured unasked: [Метрики и кит §3](docs/astral-genesis/Справка/Метрики%20и%20кит.md).
 
