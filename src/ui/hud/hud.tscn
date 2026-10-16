@@ -15,7 +15,6 @@
 [ext_resource type="PackedScene" path="res://src/ui/hud/mini_map.tscn" id="13_minimap"]
 [ext_resource type="Shader" uid="uid://448euylitwb5" path="res://src/ui/hud/thought_blur.gdshader" id="14_blur"]
 [ext_resource type="Texture2D" path="res://src/ui/hud/thought_shadow.tres" id="15_shadow"]
-[ext_resource type="FontVariation" path="res://assets/fonts/golos_regular.tres" id="16_font"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_blot"]
 noise_type = 2
@@ -63,10 +62,6 @@ shader_parameter/blur_px = 0.0
 resource_local_to_scene = true
 shader = ExtResource("14_blur")
 shader_parameter/blur_px = 0.0
-
-[sub_resource type="FontVariation" id="FontVariation_message"]
-resource_local_to_scene = true
-base_font = ExtResource("16_font")
 
 [node name="HudLayer" type="CanvasLayer" unique_id=642473939]
 layer = -1
@@ -170,7 +165,6 @@ expand_mode = 1
 
 [node name="Text" type="Label" parent="Hud/Message/Blur" unique_id=1544852345]
 theme_type_variation = &"HudMessage"
-theme_override_fonts/font = SubResource("FontVariation_message")
 horizontal_alignment = 1
 autowrap_mode = 3
 script = ExtResource("12_label")

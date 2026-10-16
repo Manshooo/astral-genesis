@@ -50,7 +50,9 @@ func _process(delta: float) -> void:
 	if target == 0.0 and _alpha < 0.01:
 		_alpha = 0.0
 	modulate.a = _alpha
-	_line.position.y = (1.0 - _alpha) * RISE
+	# Подъём — позицией группы (Node2D), а не Control-строки: позицию Control Godot
+	# прижимает к целым пикселям, и 4 px подъёма на угасании шли бы ступеньками.
+	_blur.position.y = (1.0 - _alpha) * RISE
 	(_blur.material as ShaderMaterial).set_shader_parameter(&"blur_px", blur_px())
 	visible = _alpha > 0.0
 

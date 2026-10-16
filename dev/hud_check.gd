@@ -237,6 +237,18 @@ func _check_message() -> void:
 	message.call("_apply", UI_HudMessage.APPEAR + UI_HudMessage.HOLD + UI_HudMessage.FADE * 0.5)
 	_check("в растворении строка полупрозрачна", message.modulate.a > 0.3 and message.modulate.a < 0.7, str(message.modulate.a))
 	_check("растворяясь, строка расплывается", message.blur_px() > 2.0, str(message.blur_px()))
+	# Дёргание на растворении: строка не должна менять свою раскладку (ширину,
+	# позицию) ступеньками — растяжение и сдвиг идут трансформом группы.
+	var blur := message.get_node("Blur") as CanvasGroup
+	var fade_start := UI_HudMessage.APPEAR + UI_HudMessage.HOLD
+	message.call("_apply", fade_start + UI_HudMessage.FADE * 0.2)
+	var size_early := label.size
+	var position_early := label.position
+	var scale_early := blur.scale.x
+	message.call("_apply", fade_start + UI_HudMessage.FADE * 0.8)
+	_check("растворяясь, строка не перестраивается ступеньками",
+		label.size == size_early and label.position == position_early, "%s / %s" % [label.size, size_early])
+	_check("растягивается плавно и вширь", blur.scale.x > scale_early and scale_early > 1.0 and blur.scale.y == 1.0, "%f → %f" % [scale_early, blur.scale.x])
 	message.call("_apply", UI_HudMessage.TOTAL + 0.01)
 	_check("после растворения строки нет", not message.visible, "")
 	hud.queue_free()
@@ -247,10 +259,10 @@ func _check_message() -> void:
 func _check_thought_line() -> void:
 	var line := (load("res://src/ui/hud/thought_line.tscn") as PackedScene).instantiate() as UI_ThoughtLine
 	add_child(line)
-	line.set_line("F", tr("HUD_PROMPT_PASS"))
-	_check("подсказка — «[клавиша] действие»", line.plain_text() == "[F] %s" % tr("HUD_PROMPT_PASS"), line.plain_text())
-	line.set_line("", tr("HUD_PROMPT_SEALED"))
-	_check("без клавиши скобок нет", line.plain_text() == tr("HUD_PROMPT_SEALED"), line.plain_text())
+	line.set_line("F", tr("HUD_PROMPT_SKILL_TREE"))
+	_check("подсказка — «[клавиша] действие»", line.plain_text() == "[F] %s" % tr("HUD_PROMPT_SKILL_TREE"), line.plain_text())
+	line.set_line("", tr("HUD_MSG_SEALED"))
+	_check("без клавиши скобок нет", line.plain_text() == tr("HUD_MSG_SEALED"), line.plain_text())
 	await get_tree().process_frame
 	var shadow := line.get_node("ThoughtShadow") as Control
 	var row := line.get_node("Row") as Control

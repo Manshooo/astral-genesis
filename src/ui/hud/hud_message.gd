@@ -3,8 +3,8 @@
 ## «Прохода нет»). Появляется на добавление C_ScreenMessage на игрока.
 ##
 ## Подаётся мыслью, которая проявляется и растворяется (§6 «HUD — спека»):
-## 0.3 с проявления, 1.7 с на месте, 0.9 с растворения — буквы расходятся, строка
-## уходит вверх. Своя строка ниже подсказки, даже когда подсказки нет: иначе
+## 0.3 с проявления, 1.7 с на месте, 0.9 с растворения — строка растягивается
+## вширь и уходит вверх. Своя строка ниже подсказки, даже когда подсказки нет: иначе
 ## сообщение прыгало бы, смотря на что игрок глядит.
 ##
 ## Таймлайн свой, а не «пока висит компонент»: на снятие компонента строка
@@ -22,8 +22,11 @@ const FADE := 0.9
 const TOTAL := APPEAR + HOLD + FADE
 ## Сообщение длиннее переносится на вторую строку.
 const MAX_WIDTH := 720.0
-## Растворение: насколько расходятся буквы (доля кегля) и куда уходит строка.
-const SPREAD_EM := 0.14
+## Растворение: насколько строка растягивается вширь (доля её ширины) и куда
+## уходит. И растяжение, и сдвиг — трансформ группы Blur, а не поля Label: оба
+## должны идти плавно, а то, что держит Label (межбуквенный интервал, позиция
+## Control), округляется до целых пикселей и даёт ступеньки.
+const SPREAD := 0.22
 const DRIFT := -6.0
 const RISE := 3.0
 ## Размытие, px: строка фокусируется на проявлении и расплывается, растворяясь.
@@ -33,11 +36,6 @@ const BLUR_OUT := 5.0
 @onready var _shadow: TextureRect = $Blur/ThoughtShadow
 @onready var _label: UI_ThoughtLabel = $Blur/Text
 @onready var _blur: CanvasGroup = $Blur
-## Межбуквенный интервал анимируется только у этой строки, поэтому шрифт у неё
-## свой — FontVariation поверх шрифта вариации HudMessage, переопределённый в
-## hud.tscn с resource_local_to_scene: у каждого экземпляра HUD своя копия.
-## Основа в сцене повторяет шрифт вариации в теме — меняется вместе с ним.
-@onready var _font := _label.get_theme_font(&"font") as FontVariation
 
 ## Время показа по часам HUD; -INF — сообщения нет.
 var _started := -INF
@@ -97,10 +95,13 @@ func _apply(elapsed: float) -> void:
 	var alpha := clampf(elapsed / APPEAR, 0.0, 1.0) * (1.0 - fade)
 	var appear := clampf(elapsed / APPEAR, 0.0, 1.0)
 	modulate.a = alpha
-	_font.spacing_glyph = roundi(SPREAD_EM * fade * _label.get_theme_font_size(&"font_size"))
+	# Группа стоит в центре сообщения (строка центрируется вокруг x = 0), поэтому
+	# растяжение по X идёт от середины строки к краям.
+	_blur.scale = Vector2(1.0 + SPREAD * fade, 1.0)
+	_blur.position.y = RISE * (1.0 - appear) + DRIFT * fade
 	_blur_now = BLUR_IN * (1.0 - appear) + BLUR_OUT * fade
 	(_blur.material as ShaderMaterial).set_shader_parameter(&"blur_px", _blur_now)
-	_layout(RISE * (1.0 - appear) + DRIFT * fade)
+	_layout()
 
 
 ## Текущее размытие, px — для проверок.
@@ -110,13 +111,13 @@ func blur_px() -> float:
 
 ## Ширина — по тексту, но не шире MAX_WIDTH: короткая реакция не должна тащить
 ## за собой пятно тени на пол-экрана, а длинная — уходить за край.
-func _layout(offset_y: float) -> void:
+func _layout() -> void:
 	var font_size := _label.get_theme_font_size(&"font_size")
-	var natural := _font.get_string_size(_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var natural := _label.get_theme_font(&"font").get_string_size(_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	var width := minf(ceilf(natural) + 4.0, MAX_WIDTH)
 	_label.size = Vector2(width, 0.0)
 	_label.size.y = _label.get_minimum_size().y
-	_label.position = Vector2(-width / 2.0, offset_y)
+	_label.position = Vector2(-width / 2.0, 0.0)
 	var margin := Vector2(46.0, 16.0)
 	_shadow.position = _label.position - margin
 	_shadow.size = _label.size + margin * 2.0
