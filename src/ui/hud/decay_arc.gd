@@ -123,7 +123,7 @@ func _draw() -> void:
 	var active := _vitals.active()
 	var radius := RADIUS + 0.6 * sin(t * 2.1)
 	var amp := 0.4 + 1.8 * turmoil
-	var seed := t * 0.6
+	var drift := t * 0.6
 	var color := UI_HudMood.SOUL.lerp(UI_HudMood.BODY, _body_mix)
 
 	# У порога дуга бьётся в такт сердцу. У тела такт свой и ровный: распад тела
@@ -137,8 +137,8 @@ func _draw() -> void:
 
 	_draw_track(center, radius, alpha)
 	var helix := HELIX_PX + HELIX_TURMOIL_PX * turmoil
-	var main := _strand(center, radius + 0.65, active, amp, seed, t, helix, 0.0)
-	var echo := _strand(center, radius + 0.65, active, amp, seed, t, helix, PI)
+	var main := _strand(center, radius + 0.65, active, amp, drift, t, helix, 0.0)
+	var echo := _strand(center, radius + 0.65, active, amp, drift, t, helix, PI)
 	_draw_braid(
 		main, _with_alpha(color, alpha), 2.0 + 0.8 * beat if danger else 2.0,
 		echo, _with_alpha(color, ECHO_ALPHA * alpha), 1.0
@@ -149,22 +149,22 @@ func _draw() -> void:
 	if not main_points.is_empty():
 		draw_circle(main_points[-1], 1.8, _with_alpha(UI_HudMood.OVER if over else color, alpha))
 	if over:
-		_draw_overflow(center, radius, amp, seed, t, alpha, helix)
+		_draw_overflow(center, radius, amp, drift, t, alpha, helix)
 
 
 ## Излишек — внешней дугой, а не растяжкой шкалы: «полный» остаётся там же, где
 ## был, а сверху видно, сколько принесено из тела. Искры уходят наружу —
 ## излишек утекает быстрее (lifespan_overflow_leak), и это должно читаться.
 func _draw_overflow(
-	center: Vector2, radius: float, amp: float, seed: float, t: float, alpha: float, helix: float
+	center: Vector2, radius: float, amp: float, drift: float, t: float, alpha: float, helix: float
 ) -> void:
 	var extra := _vitals.overflow
 	# Свой жгут, свита в другую сторону: два жгута, бегущие одинаково, сливались
 	# бы в одну широкую ленту.
 	_draw_braid(
-		_strand(center, radius + 7.75, extra, amp * 0.8, seed + 5.1, -t, helix, 0.0),
+		_strand(center, radius + 7.75, extra, amp * 0.8, drift + 5.1, -t, helix, 0.0),
 		_with_alpha(UI_HudMood.OVER, alpha), 1.3,
-		_strand(center, radius + 7.75, extra, amp * 0.8, seed + 5.1, -t, helix, PI),
+		_strand(center, radius + 7.75, extra, amp * 0.8, drift + 5.1, -t, helix, PI),
 		_with_alpha(UI_HudMood.OVER, ECHO_ALPHA * alpha), 1.0
 	)
 	for i in 5:
@@ -199,7 +199,7 @@ func _draw_track(center: Vector2, radius: float, alpha: float) -> void:
 ## Доля ≤ 0.002 — пусто: точка-огрызок на нуле читалась бы как «ещё немного
 ## есть».
 func _strand(
-	center: Vector2, radius: float, fraction: float, amp: float, seed: float,
+	center: Vector2, radius: float, fraction: float, amp: float, drift: float,
 	t: float, helix: float, phase: float
 ) -> Dictionary:
 	var points := PackedVector2Array()
@@ -210,7 +210,7 @@ func _strand(
 		for i in count + 1:
 			var angle := start + deg_to_rad(SWEEP_DEG * fraction) * i / count
 			var turn := TAU * ((angle - start) * radius / WAVE_PX - t * WAVE_RATE) + phase
-			var r := radius + amp * UI_HudMood.noise(angle, seed) + helix * sin(turn)
+			var r := radius + amp * UI_HudMood.noise(angle, drift) + helix * sin(turn)
 			points.append(center + Vector2.from_angle(angle) * r)
 			depth.append(cos(turn))
 	return {points = points, depth = depth}

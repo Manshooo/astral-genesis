@@ -54,6 +54,8 @@ func value_text(row: RS_RunStatRow, stats: RS_RunStats) -> String:
 ## не заводит ещё одну строку перевода на каждый показатель времени.
 static func format_time(seconds: float) -> String:
 	var total := int(maxf(seconds, 0.0))
+	# Минуты — именно целая часть, секунды берутся отдельно через остаток.
+	@warning_ignore("integer_division")
 	return "%d:%02d" % [total / 60, total % 60]
 
 

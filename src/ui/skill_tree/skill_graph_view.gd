@@ -131,11 +131,11 @@ func refresh() -> void:
 		var previewed: bool = not _manager.is_revealed(def.id)
 		if previewed and not _manager.is_previewed(def.id):
 			continue
-		var neuron: UI_SkillNeuron = _nodes.get(def.id)
-		if neuron == null:
-			neuron = _create_neuron(def)
+		var skill_node: UI_SkillNeuron = _nodes.get(def.id)
+		if skill_node == null:
+			skill_node = _create_neuron(def)
 			appeared = true
-		neuron.refresh(_manager.get_rank(def.id), _manager.can_unlock(def.id), previewed)
+		skill_node.refresh(_manager.get_rank(def.id), _manager.can_unlock(def.id), previewed)
 	_update_links()
 	_update_branch_labels()
 	if appeared:
@@ -143,16 +143,16 @@ func refresh() -> void:
 
 
 func _create_neuron(def: RS_SkillDefinition) -> UI_SkillNeuron:
-	var neuron: UI_SkillNeuron = NEURON_SCENE.instantiate()
-	_nodes_host.add_child(neuron)
+	var skill_node: UI_SkillNeuron = NEURON_SCENE.instantiate()
+	_nodes_host.add_child(skill_node)
 	var center: Vector2 = _layout.positions.get(def.id, Vector2.ZERO)
-	neuron.setup(def, _label_side(def))
-	neuron.position = center - neuron.size / 2.0
-	neuron.pressed.connect(select.bind(def.id))
-	neuron.focus_entered.connect(select.bind(def.id))
-	neuron.selected = def.id == _selected
-	_nodes[def.id] = neuron
-	return neuron
+	skill_node.setup(def, _label_side(def))
+	skill_node.position = center - skill_node.size / 2.0
+	skill_node.pressed.connect(select.bind(def.id))
+	skill_node.focus_entered.connect(select.bind(def.id))
+	skill_node.selected = def.id == _selected
+	_nodes[def.id] = skill_node
+	return skill_node
 
 
 ## Подпись — наружу сети: в ветви, растущей вверх или вниз, — сбоку от нейрона

@@ -78,11 +78,11 @@ static func read_vitals(player: Entity) -> Vitals:
 		v.soul = minf(life.current / soul_max, 1.0)
 		v.overflow = minf(life.overflow(player) / soul_max, 1.0)
 		v.maximum = soul_max
-	var decay := player.get_component(C_BodyDecay) as C_BodyDecay
-	if decay:
-		var body_max := maxf(decay.effective_maximum(player), 0.001)
+	var body_decay := player.get_component(C_BodyDecay) as C_BodyDecay
+	if body_decay:
+		var body_max := maxf(body_decay.effective_maximum(player), 0.001)
 		v.body_pocket = true
-		v.body = clampf(decay.remaining / body_max, 0.0, 1.0)
+		v.body = clampf(body_decay.remaining / body_max, 0.0, 1.0)
 		v.maximum = body_max
 	var hp := player.get_component(C_Health) as C_Health
 	if hp:

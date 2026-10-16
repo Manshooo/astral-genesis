@@ -163,7 +163,7 @@ func _current_style() -> StyleBox:
 
 
 ## Константа вариации или запасное значение, если тема её не объявила.
-func _const(name: StringName, fallback: int) -> int:
-	if has_theme_constant(name):
-		return get_theme_constant(name)
+func _const(theme_name: StringName, fallback: int) -> int:
+	if has_theme_constant(theme_name):
+		return get_theme_constant(theme_name)
 	return fallback

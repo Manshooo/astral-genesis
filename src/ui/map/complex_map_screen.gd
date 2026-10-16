@@ -397,6 +397,8 @@ func _build_floors() -> void:
 
 		var columns: int = grid["columns"]
 		var cell: Vector2 = grid["cell"]
+		# Номер строки сетки — именно целое от деления, остаток тут не нужен.
+		@warning_ignore("integer_division")
 		var origin := Vector2((i % columns) * (cell.x + PLAN_GAP), (i / columns) * (cell.y + PLAN_GAP))
 		var title: Label = FLOOR_TITLE_SCENE.instantiate()
 		title.text = tr("MAP_FLOOR") % (floor_index + 1)

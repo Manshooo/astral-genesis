@@ -268,6 +268,9 @@ static func face_in_plan(face: Vector4i, size: Vector3i, turns: int, anchor: Vec
 		z = -x
 		x = turned
 	var world := Vector3i(size.z, size.y, size.x) if t % 2 else size
+	# Полуклетки x и z здесь неотрицательны (повёрнутый footprint уже учтён в
+	# world), так что отбрасывание дробной части равно делению вниз — как и нужно.
+	@warning_ignore("integer_division")
 	var cell := anchor + Vector3i((x + world.x - 1) / 2, face.y, (z + world.z - 1) / 2)
 	return GridTopology.face(cell, posmod(face.w - t, SquareGridTopology.SIDE_COUNT))
 

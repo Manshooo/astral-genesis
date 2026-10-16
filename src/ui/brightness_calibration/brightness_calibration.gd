@@ -122,10 +122,10 @@ static func _scaled(albedo: Color, share: float) -> Color:
 
 
 ## Материал копируется: он общий у сцены, а у знаков альбедо разное.
-func _paint_sign(sign: MeshInstance3D, albedo: Color) -> void:
-	var material := (sign.get_active_material(0) as StandardMaterial3D).duplicate() as StandardMaterial3D
-	material.albedo_color = albedo
-	sign.material_override = material
+func _paint_sign(sign_mesh: MeshInstance3D, albedo: Color) -> void:
+	var sign_material := (sign_mesh.get_active_material(0) as StandardMaterial3D).duplicate() as StandardMaterial3D
+	sign_material.albedo_color = albedo
+	sign_mesh.material_override = sign_material
 
 
 func _on_slider_changed(_control: SliderSetting) -> void:

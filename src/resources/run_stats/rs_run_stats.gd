@@ -127,16 +127,16 @@ func captures_of_kind(scene_path: String) -> int:
 	return count
 
 
-## Зачесть шаг длиной [param step] метров, сделанный по клетке [param cell_key].
+## Зачесть шаг длиной [param step] метров, сделанный по клетке [param cell_id].
 ## Возвращает, сколько метров реально засчитано. Клетка даёт не больше своей
 ## стороны [param cell_budget]: ходить кругами по одной клетке (в колбе, у двери)
 ## «километры» не наберёт, а пройденная целиком клетка в этом забеге больше не
 ## даёт ничего. Это и есть «только по новым клеткам».
-func credit_cell_distance(cell_key: String, step: float, cell_budget: float) -> float:
-	var used := float(cell_credit.get(cell_key, 0.0))
+func credit_cell_distance(cell_id: String, step: float, cell_budget: float) -> float:
+	var used := float(cell_credit.get(cell_id, 0.0))
 	var granted := clampf(minf(step, cell_budget - used), 0.0, step)
 	if granted > 0.0:
-		cell_credit[cell_key] = used + granted
+		cell_credit[cell_id] = used + granted
 	return granted
 
 

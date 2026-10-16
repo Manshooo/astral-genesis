@@ -776,22 +776,22 @@ func _add_dead_ends(count: int, rng: RandomNumberGenerator) -> void:
 			if (_links[a] as Array).size() >= 3 or _dead_ends.has(a):
 				continue
 			for side in _topology.side_count(a):
-				var stub: Array[Vector3i] = [a]
+				var spur: Array[Vector3i] = [a]
 				var cell := _topology.neighbour(a, side)
-				while stub.size() <= DEAD_END_LENGTH and _free(cell, _area) and not _touches_tiles(cell, stub[-1]):
-					stub.append(cell)
+				while spur.size() <= DEAD_END_LENGTH and _free(cell, _area) and not _touches_tiles(cell, spur[-1]):
+					spur.append(cell)
 					cell = _topology.neighbour(cell, side)
-				if stub.size() < 2 or _envelops(stub):
+				if spur.size() < 2 or _envelops(spur):
 					continue
 				var score := 0
-				for i in range(1, stub.size()):
-					if _touches_room(stub[i]):
+				for i in range(1, spur.size()):
+					if _touches_room(spur[i]):
 						score += 1
 				if score < best_score:
 					best_score = score
 					candidates.clear()
 				if score == best_score:
-					candidates.append(stub)
+					candidates.append(spur)
 		if candidates.is_empty():
 			return
 		var stub: Array[Vector3i] = []

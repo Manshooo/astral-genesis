@@ -145,7 +145,7 @@ func _status_text() -> String:
 		depth = str(RunManager.current_depth)
 	return "слой %s · узел %s\nочки %d · эссенция %d · бессмертие %s\nсид забега %d\nсид мира %d · смертей %d\nсборка v%s" % [
 		depth,
-		RunManager.current_node_id if RunManager.current_node_id != &"" else "—",
+		str(RunManager.current_node_id) if RunManager.current_node_id != &"" else "—",
 		SkillManager.save.skill_points,
 		ArchitectManager.save.skill_points,
 		"вкл" if _immortal else "выкл",

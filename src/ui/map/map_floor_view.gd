@@ -204,8 +204,8 @@ static func _planar(cell: Vector3i) -> Vector2i:
 ## Дальний от угловой клетки угол footprint комнаты на плане. У комнаты в одну
 ## клетку — та же клетка.
 func _far_corner(node_id: StringName) -> Vector2i:
-	var size: Vector3i = plan.footprints.get(node_id, Vector3i.ONE)
-	return _planar(plan.cells[node_id]) + Vector2i(size.x - 1, size.z - 1)
+	var footprint: Vector3i = plan.footprints.get(node_id, Vector3i.ONE)
+	return _planar(plan.cells[node_id]) + Vector2i(footprint.x - 1, footprint.z - 1)
 
 
 func _gui_input(event: InputEvent) -> void:
