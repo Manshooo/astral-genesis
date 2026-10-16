@@ -13,6 +13,16 @@ script = ExtResource("3_474ug")
 size = Vector3i(2, 1, 2)
 walls = ExtResource("4_jnd2a")
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_block"]
+size = Vector3(2, 2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_block"]
+size = Vector3(2, 2, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_step"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_step"]
+
 [node name="VerticalHub2" type="Node3D" unique_id=1402548300]
 script = ExtResource("1_dhosw")
 component_resources = Array[ExtResource("2_sf4mg")]([SubResource("Resource_sf4mg")])
@@ -25,14 +35,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4132774, 0)
 [node name="SpawnPoint" type="Node3D" parent="." unique_id=1666931604]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.099999905, 1.8, -5.4)
 
-[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=2138258083]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1, -3.5)
-use_collision = true
-size = Vector3(2, 2, 1)
+[node name="Ledge" type="StaticBody3D" parent="."]
 
-[node name="CSGBox3D2" type="CSGBox3D" parent="CSGBox3D" unique_id=528511629]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.5, 1)
-use_collision = true
+[node name="BlockCollision" type="CollisionShape3D" parent="Ledge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1, -3.5)
+shape = SubResource("BoxShape3D_block")
+
+[node name="BlockMesh" type="MeshInstance3D" parent="Ledge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1, -3.5)
+mesh = SubResource("BoxMesh_block")
+
+[node name="StepCollision" type="CollisionShape3D" parent="Ledge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.5, -2.5)
+shape = SubResource("BoxShape3D_step")
+
+[node name="StepMesh" type="MeshInstance3D" parent="Ledge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.5, -2.5)
+mesh = SubResource("BoxMesh_step")
 
 [node name="Light" parent="." unique_id=645230177 instance=ExtResource("lamp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
