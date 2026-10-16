@@ -11,7 +11,6 @@ script = ExtResource("5_finish")
 
 [sub_resource type="Resource" id="Interactable"]
 script = ExtResource("4_interactable")
-prompt_text = "HUD_PROMPT_OUTSIDE"
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [node name="ExitDoor" instance=ExtResource("1_base")]

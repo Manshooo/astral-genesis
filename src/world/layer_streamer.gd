@@ -21,24 +21,6 @@ extends RefCounted
 ## никогда не совпадёт с реальной.
 const NO_DEPTH := -1
 
-## Подсказки на дверях. Состояние двери известно только при раздаче рёбер,
-## поэтому prompt_text проставляем здесь, а не в пресете комнаты (в сценах он у
-## дверей пустой). Игрок должен отличать рабочую дверь от запертой и от
-## запечатанного проёма ДО нажатия — иначе непонятно, декор это или баг.
-const DOOR_PROMPT_OPEN := "HUD_PROMPT_PASS"
-const DOOR_PROMPT_LOCKED := "HUD_PROMPT_LOCKED"
-const DOOR_PROMPT_SEALED := "HUD_PROMPT_SEALED"
-## Дверь в коридор: она не переносит, а открывается (коридорная раскладка).
-const DOOR_PROMPT_UNSEAL := "HUD_PROMPT_UNSEAL"
-
-## Подсказки на вертикальных порталах. Вверх/вниз считаем по глубине цели, а не
-## по знаку depth_delta: у слоёв номер РАСТЁТ вглубь, и знак читается наоборот.
-const PORTAL_PROMPT_UP := "HUD_PROMPT_UP"
-const PORTAL_PROMPT_DOWN := "HUD_PROMPT_DOWN"
-const PORTAL_PROMPT_LOCKED := "HUD_PROMPT_PORTAL_LOCKED"
-const PORTAL_PROMPT_DEAD := "HUD_PROMPT_PORTAL_DEAD"
-
-
 ## Одна заспавненная комната слоя. Вложенные сущности держим отдельно от самой
 ## комнаты, т.к. add_entity(room) регистрирует ТОЛЬКО саму комнату (обхода дерева
 ## в поисках вложенных Entity в GECS нет), а remove_entity(room) их не снимает.
@@ -390,10 +372,6 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	if spatial:
 		spatial.transform = plan.room_transform(node_data.id)
 
-	# Номер слоя на табличках комнаты — по узлу, а не по current_depth: слой
-	# спавнится целиком, пока глубина самого стримера ещё старая (см. ExitSign).
-	ExitSign.stamp_depth(entity, node_data.depth)
-
 	# Стены и двери сборной комнаты — тоже до add_entity: двери должны попасть в
 	# обход вложенных сущностей (_register_room_children) вместе с остальными.
 	var shell := RS_RoomLayout.shell_of(entity)
@@ -541,7 +519,6 @@ func _bind_doors(spawned: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPl
 		var portal := C_DoorPortal.new()
 		portal.target_node_id = target
 		door.add_component(portal)
-		_set_door_prompt(door, DOOR_PROMPT_OPEN if node_data.door_teleports else DOOR_PROMPT_UNSEAL)
 	return doors
 
 
@@ -549,8 +526,8 @@ func _bind_doors(spawned: SpawnedRoom, node_data: RS_LevelNode, plan: RS_LayerPl
 ## ручках нет, между этажами слоя. Портальное ребро узнаётся по типу
 ## (RS_LevelConnection.is_portal): верхняя дверь лестницы тоже ведёт на другой
 ## этаж, но это дверь, и её ребро раздаёт _bind_doors. Портал без ребра
-## «глушится» так же, как лишняя дверь: остаётся интерактивным, но объясняет, что
-## никуда не ведёт.
+## «глушится» так же, как лишняя дверь: остаётся интерактивным, а на нажатие
+## отвечает сообщением, что прохода нет.
 ##
 ## Портал в комнате ровно один, и генератор гарантирует не больше одного
 ## вертикального ребра на узел (RS_LevelGraph._free_for_portal): лишнему ребру
@@ -575,24 +552,9 @@ func _bind_portals(spawned: SpawnedRoom, node_data: RS_LevelNode) -> void:
 			continue
 		var portal: Entity = free_portals.pop_front()
 		_stamp_portal(portal, conn)
-		ExitSign.stamp_destination(portal, target.depth)
-		_set_door_prompt(portal, _portal_prompt(node_data, target, conn))
 
 	for portal in free_portals:
 		_seal_door(portal)
-		_set_door_prompt(portal, PORTAL_PROMPT_DEAD, false)
-
-
-## Куда ведёт портал — вверх (к поверхности, depth меньше; выше по этажу) или вниз.
-func _portal_prompt(
-	node_data: RS_LevelNode, target: RS_LevelNode, conn: RS_LevelConnection
-) -> String:
-	if conn.locked_by != &"":
-		return PORTAL_PROMPT_LOCKED
-	if target.depth == node_data.depth:
-		# Между этажами слоя: этажи разнесены вверх по номеру (RS_LayerPlan).
-		return PORTAL_PROMPT_UP if target.floor_index > node_data.floor_index else PORTAL_PROMPT_DOWN
-	return PORTAL_PROMPT_UP if target.depth < node_data.depth else PORTAL_PROMPT_DOWN
 
 
 func _stamp_portal(door: Entity, conn: RS_LevelConnection) -> void:
@@ -600,24 +562,13 @@ func _stamp_portal(door: Entity, conn: RS_LevelConnection) -> void:
 	portal.target_node_id = conn.target_node_id
 	portal.locked_by = conn.locked_by
 	door.add_component(portal)
-	_set_door_prompt(door, DOOR_PROMPT_LOCKED if portal.is_locked() else DOOR_PROMPT_OPEN)
 
 
 ## Запечатанная дверь: ребра под этот слот нет, идти некуда. Интеракцию НЕ
 ## выключаем: выключенную дверь S_InteractionDetector игнорирует — она не
 ## подсвечивается и молчит, и игрок не отличает «прохода нет» от бага. Вместо
 ## этого штампуем ПУСТОЙ C_DoorPortal (пустой target_node_id = «запечатан», см.
-## C_DoorPortal) и объясняем подсказкой; A_TravelThroughDoor по тому же признаку
-## никуда не ведёт.
+## C_DoorPortal): A_TravelThroughDoor по тому же признаку никуда не ведёт и
+## отвечает на нажатие экранным сообщением.
 func _seal_door(door: Entity) -> void:
 	door.add_component(C_DoorPortal.new())  # target_node_id == &"" — прохода нет
-	# Нажимать бессмысленно, поэтому и клавишу в подсказке не предлагаем.
-	_set_door_prompt(door, DOOR_PROMPT_SEALED, false)
-
-
-func _set_door_prompt(door: Entity, prompt: String, show_key_hint: bool = true) -> void:
-	var inter := door.get_component(C_Interactable) as C_Interactable
-	if inter == null:
-		return
-	inter.prompt_text = prompt
-	inter.show_key_hint = show_key_hint

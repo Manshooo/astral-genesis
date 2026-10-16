@@ -75,11 +75,6 @@ MAP_CORRIDOR,Коридор,Corridor
 MAP_VISITED,посещено,visited
 MAP_UNEXPLORED,не исследовано,unexplored
 MAP_PORTAL_UP,портал вверх,portal up
-EXIT_SIGN_DOOR,ВЫХОД,EXIT
-EXIT_SIGN_ROUTE,ВЫХОД ↑ L%d,EXIT ↑ L%d
-EXIT_SIGN_LAYER,УРОВЕНЬ L%d,LEVEL L%d
-EXIT_SIGN_PORTAL_UP,ВВЕРХ ↑ L%d,UP ↑ L%d
-EXIT_SIGN_PORTAL_DOWN,ВНИЗ ↓ L%d,DOWN ↓ L%d
 MAP_PORTAL_DOWN,портал вниз,portal down
 MAP_PORTAL_TARGET,"→ L%d, этаж %d","→ L%d, floor %d"
 MAP_LOCKED,заперт: нужен %s,locked: needs %s
@@ -98,15 +93,6 @@ MAP_TYPE_BARRACKS,Казармы,Barracks
 MAP_TYPE_CREATURE_CONTAINMENT,Содержание существ,Creature containment
 MAP_TYPE_ARTIFACT_CONTAINMENT,Содержание артефактов,Artifact containment
 MAP_TYPE_RECREATION,Отдых и досуг,Recreation
-HUD_PROMPT_PASS,Пройти,Go through
-HUD_PROMPT_UNSEAL,Открыть,Open
-HUD_PROMPT_LOCKED,Заперто,Locked
-HUD_PROMPT_SEALED,Прохода нет,No way through
-HUD_PROMPT_OUTSIDE,Наружу,Outside
-HUD_PROMPT_UP,Подняться,Go up
-HUD_PROMPT_DOWN,Спуститься,Go down
-HUD_PROMPT_PORTAL_LOCKED,Портал заблокирован,The portal is blocked
-HUD_PROMPT_PORTAL_DEAD,Портал мёртв,The portal is dead
 HUD_PROMPT_SKILL_TREE,Древо навыков,Skill tree
 HUD_PROMPT_NEEDS_BODY,Нужно тело: %s,Needs a body: %s
 HUD_MSG_LOCKED_NEEDS,Заперто. Нужен %s,Locked. Requires %s
