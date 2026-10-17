@@ -54,11 +54,17 @@ static func replace_with_corpse(enemy: Entity) -> void:
 		return
 
 	var corpse := scene.instantiate() as Entity
+	# Место — ДО add_child, и локальным трансформом: глобальный у узла вне дерева
+	# не задать. Рэгдолл трупа стартует в его _ready, то есть внутри add_child, и
+	# кости симуляции — тела в мировом пространстве: сдвинь корень после, и
+	# коллайдер захвата уедет на место смерти, а сам труп останется лежать там,
+	# где корень был в момент старта, — в начале координат комнаты.
+	(corpse as Node as Node3D).transform = (parent as Node3D).global_transform.affine_inverse() * placement \
+			if parent is Node3D else placement
 	# Под ту же комнату, что и враг: сносится она вместе с комнатой, и
 	# reveal_around прячет труп вместе с остальным содержимым комнаты (прячутся
 	# все Node3D, кроме CharacterBody3D, а труп — StaticBody3D).
 	parent.add_child(corpse)
-	(corpse as Node as Node3D).global_transform = placement
 	ECS.world.add_entity(corpse)
 	if origin_id != &"":
 		# Тот же id, что у маркера, — см. шапку. Читаем его ДО снятия врага с мира.

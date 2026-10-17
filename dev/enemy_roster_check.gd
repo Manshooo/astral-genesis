@@ -229,6 +229,11 @@ func _reload_layer(depth: int) -> void:
 	await get_tree().physics_frame
 
 
+## Расстояние по полу: рэгдолл за кадр оседает, и высота не про место.
+func _flat(v: Vector3) -> float:
+	return Vector2(v.x, v.z).length()
+
+
 func _check_layers() -> void:
 	var total := 0
 	var wrong_depth: Array[String] = []
@@ -285,6 +290,17 @@ func _check_death_and_memory() -> void:
 	var marker_id: StringName = victim.get_meta(LayerStreamer.ROSTER_ID_META)
 	var parent := (victim as Node).get_parent()
 
+	# Враг умирает не на маркере: он успел пройти. Место смерти выбрано вдали и от
+	# маркера, и от начала координат комнаты — туда уезжал рэгдолл, запущенный до
+	# того, как трупу выставили место (см. O_EnemyDeath.replace_with_corpse).
+	var victim_node := victim as Node as Node3D
+	var room_origin := (parent as Node3D).global_position
+	var offset := Vector3(2.0, 0.0, 0.0)
+	if _flat(victim_node.global_position + offset - room_origin) < 2.5:
+		offset = -offset
+	var death_spot := victim_node.global_position + offset
+	victim_node.global_position = death_spot
+
 	O_EnemyDeath.replace_with_corpse(victim)
 	await get_tree().process_frame
 	var corpse: E_Body = null
@@ -293,6 +309,17 @@ func _check_death_and_memory() -> void:
 				and (child.get_component(C_BodyOrigin) as C_BodyOrigin).body_id == marker_id:
 			corpse = child
 	_check("труп врага ростера наследует id маркера", corpse != null, marker_id)
+	if corpse != null:
+		# Кости, а не корень: корень встаёт куда велено в любом случае, а лежит
+		# труп там, где его кости симуляции.
+		var bones := corpse.find_children("*", "PhysicalBone3D", true, false)
+		var far: Array[String] = []
+		for bone: Node3D in bones:
+			if _flat(bone.global_position - death_spot) > 1.5:
+				far.append("%s в %.1f м" % [bone.name, _flat(bone.global_position - death_spot)])
+		_check("рэгдолл трупа лежит на месте смерти врага, а не на маркере или в начале комнаты",
+			not bones.is_empty() and far.is_empty(),
+			"костей %d, далеко: %s" % [bones.size(), ", ".join(far.slice(0, 3))])
 
 	# Не съеден — враг вернётся (задокументированный пробел), съеден — нет.
 	await _reload_layer(depth)
