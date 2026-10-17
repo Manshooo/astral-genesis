@@ -157,6 +157,47 @@ func door_mask(tile: Vector3i) -> int:
 	return doors
 
 
+## Можно ли пройти — и посмотреть — из клетки [param cell] через её сторону
+## [param side]: проём тайла, дверь комнаты в тайл или соседняя клетка той же
+## комнаты (коробка внутри открыта). Между двумя комнатами проходов нет: их
+## соединяют только коридоры.
+func opens(cell: Vector3i, side: int) -> bool:
+	var next := topology.neighbour(cell, side)
+	if not node_by_cell.has(next):
+		return false
+	if corridor_tiles.has(cell):
+		return corridor_tiles[cell] & (1 << side) != 0
+	if corridor_tiles.has(next):
+		return corridor_tiles[next] & (1 << topology.back_side(cell, side)) != 0
+	return node_by_cell[cell] == node_by_cell[next]
+
+
+## Узлы, которые видно из узла [param node_id] по прямой: из КАЖДОЙ его клетки по
+## каждой открытой стороне — до первой стены, сквозь чужие коридоры, развилки и
+## комнаты, — плюс клетка вбок от каждой клетки этой прямой, куда заглядывает косой
+## взгляд через боковой проём (коридор 6 м в клетке 8 м — проём широкий).
+##
+## Видимость считается консервативно — из любой клетки узла, а не из той, где
+## стоит игрок: при смене текущего узла на границе клеток всё, что было видно
+## из прошлого узла с этой границы, видно и из нового, и ничего не моргает.
+## Граф этого не заменяет: прямая через крест меняет коридор на каждой развилке,
+## и третий по счёту узел на ней — уже за двумя рёбрами (LayerStreamer.reveal_around).
+func in_sight_of(node_id: StringName) -> Dictionary[StringName, bool]:
+	var seen: Dictionary[StringName, bool] = {}
+	for cell: Vector3i in node_by_cell:
+		if node_by_cell[cell] != node_id:
+			continue
+		for side in topology.side_count(cell):
+			var at := cell
+			while opens(at, side):
+				at = topology.neighbour(at, side)
+				seen[node_by_cell[at]] = true
+				for aside in topology.side_count(at):
+					if aside != side and aside != topology.opposite(at, side) and opens(at, aside):
+						seen[node_by_cell[topology.neighbour(at, aside)]] = true
+	return seen
+
+
 ## Узел, в чьей клетке лежит мировая точка, или "" — точка вне раскладки
 ## (межэтажная пустота, провал под мир, пустая клетка между коридорами).
 ##
