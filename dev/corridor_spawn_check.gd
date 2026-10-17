@@ -306,9 +306,9 @@ func _check_hub_door() -> void:
 		RunManager.current_node_id == portal.target_node_id, RunManager.current_node_id)
 
 
-## Слой виден на LayerStreamer.VISIBLE_HOPS рёбер от текущего узла, дальше спрятан
-## — лампа далёкой комнаты не светит сквозь стены и не тратит кадр. Видимость
-## сверяется по самим узлам (лампа комнаты, тайлы коридора), а не по флагу
+## Слой виден на LayerStreamer.VISIBLE_HOPS рёбер от текущего узла и по прямым
+## линиям взгляда из него, остальное спрятано — лампа далёкой комнаты не светит
+## сквозь стены и не тратит кадр. Видимость сверяется по самим узлам (лампа комнаты, тайлы коридора), а не по флагу
 ## стримера, и ожидание считается обходом графа здесь же — от определения, а не
 ## вызовом кода стримера. Ломается тихо в обе стороны: забытый пересчёт оставляет
 ## слой целиком видимым (кадры и засветы), лишний — прячет комнату под ногами.
@@ -325,6 +325,10 @@ func _check_visibility(where: String) -> void:
 			if not conn.is_portal() and not near.has(conn.target_node_id):
 				near[conn.target_node_id] = near[id] + 1
 				queue.append(conn.target_node_id)
+	# Прямые линии взгляда сверяет по всем сидам corridor_layout_check; здесь —
+	# что стример их действительно показывает.
+	for id: StringName in RunManager.plan_for_depth(RunManager.current_depth).in_sight_of(here):
+		near[id] = near.get(id, 0)
 
 	var wrong: Array[String] = []
 	var hidden := 0
@@ -350,7 +354,7 @@ func _check_visibility(where: String) -> void:
 		if shown != near.has(id):
 			wrong.append("%s: виден %s" % [id, shown])
 		hidden += 0 if shown else 1
-	_check("%s: видно ровно то, что в %d рёбрах графа, остального нет (спрятано %d)"
+	_check("%s: видно ровно то, что в %d рёбрах графа и на прямой, остального нет (спрятано %d)"
 			% [where, LayerStreamer.VISIBLE_HOPS, hidden],
 		wrong.is_empty() and hidden > 0, ", ".join(wrong.slice(0, 4)))
 	_check("%s: враги спрятанных комнат видны — погоня не делает их невидимками" % where,
