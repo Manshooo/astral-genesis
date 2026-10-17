@@ -10,7 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://cjo8ft0onhb6u" path="res://assets/props/SM_incubator/SM_incubator.glb" id="8_decor"]
 [ext_resource type="PackedScene" uid="uid://dhvlp5x2nbm4n" path="res://assets/props/SM_incubator_pipe/SM_incubator_pipe.glb" id="9_pipe"]
 [ext_resource type="PackedScene" path="res://src/entities/incubator/incubator_specimen_stub.tscn" id="10_specimen"]
-[ext_resource type="Script" path="res://src/entities/incubator/incubator_flask.gd" id="11_flask"]
+[ext_resource type="Script" uid="uid://biuoev386wgcb" path="res://src/entities/incubator/incubator_flask.gd" id="11_flask"]
 
 [sub_resource type="Resource" id="SkillTreeAction"]
 script = ExtResource("3_0scx7")
