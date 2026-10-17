@@ -1,0 +1,16 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/shared/shaders/wall_layers.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_wall_base_albedo.png" id="2_albedo"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_wall_base_r.png" id="3_rough"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_wall_panel_ao.png" id="4_panel_ao"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_wall_panel_n.png" id="5_panel_n"]
+
+[resource]
+resource_name = "MAT_concrete_wall"
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/base_albedo = ExtResource("2_albedo")
+shader_parameter/base_roughness = ExtResource("3_rough")
+shader_parameter/panel_ao = ExtResource("4_panel_ao")
+shader_parameter/panel_normal = ExtResource("5_panel_n")
