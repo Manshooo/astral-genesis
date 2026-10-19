@@ -1,6 +1,6 @@
-[gd_resource type="ShaderMaterial" format=3]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://ceccnvvkvofla"]
 
-[ext_resource type="Shader" path="res://assets/shared/shaders/glass_refraction.gdshader" id="1_glass"]
+[ext_resource type="Shader" uid="uid://c3mmrevmkanwd" path="res://assets/shared/shaders/glass_refraction.gdshader" id="1_glass"]
 
 [sub_resource type="FastNoiseLite" id="Noise_sway"]
 noise_type = 3
@@ -9,8 +9,8 @@ frequency = 0.02
 [sub_resource type="NoiseTexture2D" id="Tex_sway"]
 width = 128
 height = 128
-seamless = true
 noise = SubResource("Noise_sway")
+seamless = true
 
 [resource]
 resource_name = "MAT_incubator_glass"
