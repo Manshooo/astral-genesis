@@ -136,7 +136,6 @@ map_mini={
 [internationalization]
 
 locale/translations=PackedStringArray("res://assets/locale/ui.en.translation", "res://assets/locale/ui.ru.translation")
-locale/test="en"
 locale/fallback="ru"
 
 [layer_names]
