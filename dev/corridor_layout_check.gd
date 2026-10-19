@@ -65,6 +65,7 @@ func _sweep(library: RS_RoomPresetLibrary, config: RS_WorldGenConfig, seeds: int
 		"тайл с одним проёмом — ровно отмеченный тупик": [],
 		"тупиков на этаже не больше ручки": [],
 		"node_at узнаёт комнаты и коридоры": [],
+		"что на прямой линии взгляда из узла — показано вместе с ним": [],
 	}
 	var layout := RS_LayoutMetrics.new()
 	var multi_branch := 0
@@ -203,6 +204,44 @@ func _collect(
 	for key in adjacent_branches:
 		if not expected_joints.has(key):
 			problems["стык веток есть ровно там, где в графе ребро между ними"].append("%s лишний %s" % [tag, key])
+
+	for node in layer:
+		var shown := LayerStreamer.visible_from(graph, node.id)
+		for seen: StringName in _straight_sight(plan, node.id):
+			if not shown.has(seen):
+				problems["что на прямой линии взгляда из узла — показано вместе с ним"].append(
+					"%s %s → %s" % [tag, node.id, seen]
+				)
+
+
+## Узлы на прямой линии взгляда из клеток узла: шаг за шагом по каждой стороне,
+## пока проём (тайла, двери, внутренность комнаты) пускает дальше. Считается здесь,
+## а не через RS_LayerPlan.in_sight_of: по графу этого не видно, и правило прятанья
+## («два ребра») держалось ровно до тех пор, пока его не сверили с прямой, — у 15 %
+## узлов в конце коридора за крестами зияла пустота вместо спрятанного тайла.
+func _straight_sight(plan: RS_LayerPlan, node_id: StringName) -> Dictionary:
+	var seen := {}
+	for cell: Vector3i in plan.node_by_cell:
+		if plan.node_by_cell[cell] != node_id:
+			continue
+		for side in plan.topology.side_count(cell):
+			var at := cell
+			while true:
+				var next := plan.topology.neighbour(at, side)
+				if not plan.node_by_cell.has(next):
+					break
+				var open := false
+				if plan.corridor_tiles.has(at):
+					open = plan.corridor_tiles[at] & (1 << side) != 0
+				elif plan.corridor_tiles.has(next):
+					open = plan.corridor_tiles[next] & (1 << plan.topology.back_side(at, side)) != 0
+				else:
+					open = plan.node_by_cell[at] == plan.node_by_cell[next]
+				if not open:
+					break
+				seen[plan.node_by_cell[next]] = true
+				at = next
+	return seen
 
 
 func _check_room_doors(

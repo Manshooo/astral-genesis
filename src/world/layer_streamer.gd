@@ -84,8 +84,11 @@ var _shown: Dictionary[StringName, bool] = {}
 ## комнаты за стеной светила бы сквозь неё и тратила кадр. Граф — честный
 ## посредник «что видно»: глазу открыто только то, что соединено проёмами.
 ## Два шага, а не один: из комнаты через дверь виден коридор, а с его развилки —
-## поперечный коридор и двери его комнат; прямая же линия взгляда остаётся в
-## одном коридоре, раскладка отдаёт развилку прямому (RS_CorridorPlanner).
+## поперечный коридор и двери его комнат. Прямую линию взгляда рёбра не
+## покрывают: раскладка отдаёт крест одному из двух коридоров, и по другой оси
+## прямая меняет узел на каждом кресте — третий узел на ней уже за двумя рёбрами,
+## и вместо его тайла в конце коридора зияла пустота (у 15 % узлов, в 3–8
+## клетках). Прямые поэтому добавляются по плану — см. visible_from.
 const VISIBLE_HOPS := 2
 
 ## Метаданные врага ростера: id маркера, с которого он встал (см.
@@ -217,26 +220,9 @@ func despawn() -> bool:
 	return was_loaded
 
 
-## Показывает узлы слоя не дальше VISIBLE_HOPS рёбер от [param node_id] и
-## прячет остальные. Портальные рёбра не в счёт: за ними другой слой, его в
-## дереве нет, а соседний этаж за порталом виден только после перехода.
+## Показывает узлы, видимые из [param node_id] (visible_from), и прячет остальные.
 func reveal_around(node_id: StringName) -> void:
-	var near := {node_id: 0}
-	var queue: Array[StringName] = [node_id]
-	while not queue.is_empty():
-		var current: StringName = queue.pop_front()
-		var hops: int = near[current]
-		if hops >= VISIBLE_HOPS:
-			continue
-		var node_data := graph.get_node_data(current)
-		if node_data == null:
-			continue
-		for conn: RS_LevelConnection in node_data.connections:
-			if conn.is_portal() or near.has(conn.target_node_id):
-				continue
-			near[conn.target_node_id] = hops + 1
-			queue.append(conn.target_node_id)
-
+	var near := visible_from(graph, node_id)
 	for id: StringName in rooms:
 		var on := near.has(id)
 		if _shown.get(id, true) != on and is_instance_valid(rooms[id].entity):
@@ -249,6 +235,35 @@ func reveal_around(node_id: StringName) -> void:
 				if is_instance_valid(tile):
 					(tile as Node3D).visible = on
 		_shown[id] = on
+
+
+## Что видно из узла [param node_id]: узлы не дальше VISIBLE_HOPS рёбер графа и
+## всё, что лежит на прямой линии взгляда из него по плану слоя
+## (RS_LayerPlan.in_sight_of). Портальные рёбра не в счёт: за ними другой слой, его
+## в дереве нет, а соседний этаж за порталом виден только после перехода.
+## Статическая — проверки раскладки зовут её по графу без спавна.
+static func visible_from(level_graph: RS_LevelGraph, node_id: StringName) -> Dictionary[StringName, bool]:
+	var near: Dictionary[StringName, bool] = {node_id: true}
+	var hops: Dictionary[StringName, int] = {node_id: 0}
+	var queue: Array[StringName] = [node_id]
+	while not queue.is_empty():
+		var current: StringName = queue.pop_front()
+		if hops[current] >= VISIBLE_HOPS:
+			continue
+		var node_data := level_graph.get_node_data(current)
+		if node_data == null:
+			continue
+		for conn: RS_LevelConnection in node_data.connections:
+			if conn.is_portal() or hops.has(conn.target_node_id):
+				continue
+			hops[conn.target_node_id] = hops[current] + 1
+			near[conn.target_node_id] = true
+			queue.append(conn.target_node_id)
+	var here := level_graph.get_node_data(node_id)
+	var plan := level_graph.layer_plan(here.depth) if here else null
+	if plan:
+		near.merge(plan.in_sight_of(node_id))
+	return near
 
 
 ## Показан ли узел (для проверок и ShadowBudget-подобных потребителей).
