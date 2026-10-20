@@ -31,6 +31,8 @@ const DECAY_TINT := Color(0.07, 0.04, 0.12)
 const BODY_TINT := Color(0.11, 0.07, 0.02)
 const BODY_SEPIA := Color(1.0, 0.85, 0.62)
 const BLOOD := Color(0.43, 0.05, 0.05)
+## Заливка шкалы здоровья: кровь светлее — тёмно-бордовая тонула в полумраке.
+const HEALTH := Color(0.78, 0.18, 0.16)
 ## Градиент «тени мысли» HUD (thought_shadow.tres) повторяет это число.
 const SHADOW_BLOB := Color(0.02, 0.02, 0.04, 0.55)
 

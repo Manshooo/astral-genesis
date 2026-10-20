@@ -109,20 +109,31 @@ theme_type_variation = &"MenuStratum"
 
 [node name="Plans" type="Control" parent="Content"]
 unique_name_in_owner = true
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 560.0
 offset_top = 110.0
-offset_right = 1400.0
-offset_bottom = 600.0
+offset_right = -60.0
+offset_bottom = -120.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
 [node name="Info" type="Label" parent="Content"]
 unique_name_in_owner = true
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 560.0
-offset_top = 620.0
-offset_right = 1400.0
-offset_bottom = 664.0
+offset_top = -100.0
+offset_right = -60.0
+offset_bottom = -56.0
+grow_horizontal = 2
+grow_vertical = 0
 auto_translate_mode = 2
 theme_type_variation = &"MenuBody"
 autowrap_mode = 3

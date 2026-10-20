@@ -35,7 +35,7 @@ ECS="*uid://dfqwl5njvdnmq"
 
 [display]
 
-window/size/viewport_width=1497
+window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
@@ -162,4 +162,5 @@ limits/unix/connect_timeout_seconds=10
 
 [rendering]
 
+limits/time/time_rollover_secs=128.0
 anti_aliasing/quality/msaa_3d=1

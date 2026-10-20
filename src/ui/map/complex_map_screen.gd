@@ -63,6 +63,8 @@ func _ready() -> void:
 	super._ready()
 	_slice_links.draw.connect(_draw_slice_links)
 	_slice.sort_children.connect(_slice_links.queue_redraw)
+	# Сетка планов считается от размера области, а он идёт за окном.
+	_plans.resized.connect(_build_floors)
 
 
 ## [param plan_of] — план слоя по глубине (в игре RunManager.plan_for_depth: тот

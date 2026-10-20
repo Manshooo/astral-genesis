@@ -25,6 +25,7 @@ func _ready() -> void:
 	await _check_message()
 	await _check_thought_line()
 	await _check_door_prompt()
+	_check_health_bar()
 	_check_key_names()
 	_check_scene()
 	_check_minimap_strokes()
@@ -305,6 +306,26 @@ func _check_door_prompt() -> void:
 	_check("интерактив без подписи и без требования тела молчит", not prompt.is_shown(), "")
 	hud.queue_free()
 	await get_tree().process_frame
+
+
+# --- 8в. Шкала здоровья: видна во плоти, след удара догоняет --------------------
+func _check_health_bar() -> void:
+	var bar := UI_HealthBar.new()
+	bar.update_state(_vitals(1.0), 0.016)
+	_check("у души шкалы здоровья нет", bar.target_alpha == 0.0, str(bar.target_alpha))
+	bar.update_state(_vitals(1.0, true, 1.0, 1.0), 0.016)
+	_check("целое тело — шкала тусклая, но видна",
+		bar.target_alpha > 0.0 and bar.target_alpha < UI_HealthBar.HURT_ALPHA, str(bar.target_alpha))
+	bar.update_state(_vitals(1.0, true, 1.0, 0.4), 0.016)
+	_check("раненое — в полную силу", bar.target_alpha == UI_HealthBar.HURT_ALPHA, str(bar.target_alpha))
+	_check("сразу после удара след стоит на прежнем HP", bar.trail() > 0.9, "%.2f" % bar.trail())
+	for i in 120:
+		bar.update_state(_vitals(1.0, true, 1.0, 0.4), 0.05)
+	_check("через секунды след догнал текущее HP", absf(bar.trail() - 0.4) < 0.01, "%.3f" % bar.trail())
+	bar.update_state(_vitals(1.0), 0.016)
+	bar.update_state(_vitals(1.0, true, 1.0, 0.9), 0.016)
+	_check("новое тело не тянет след от прошлого", is_equal_approx(bar.trail(), 0.9), "%.2f" % bar.trail())
+	bar.free()
 
 
 # --- 9. Имена клавиш переводятся --------------------------------------------

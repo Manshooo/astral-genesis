@@ -104,110 +104,118 @@ text = "SETTINGS_TAB_CONTROLS"
 alignment = 0
 script = ExtResource("9_echo")
 
-[node name="Pages" type="TabContainer" parent="Content" unique_id=11120010]
-unique_name_in_owner = true
+[node name="Body" type="HBoxContainer" parent="Content" unique_id=11120300]
 layout_mode = 1
-anchors_preset = 9
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 92.0
 offset_top = 150.0
-offset_right = 992.0
+offset_right = -60.0
 offset_bottom = -100.0
+grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 68
+
+[node name="Pages" type="TabContainer" parent="Content/Body" unique_id=11120010]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.6
 current_tab = 0
 theme_type_variation = &"MenuPages"
 tabs_visible = false
 
-[node name="SETTINGS_TAB_GRAPHICS" type="ScrollContainer" parent="Content/Pages" unique_id=11120011]
+[node name="SETTINGS_TAB_GRAPHICS" type="ScrollContainer" parent="Content/Body/Pages" unique_id=11120011]
 layout_mode = 2
 horizontal_scroll_mode = 0
 metadata/_tab_index = 0
 
-[node name="Margin" type="MarginContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS" unique_id=11120012]
+[node name="Margin" type="MarginContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS" unique_id=11120012]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_left = 20
 
-[node name="VBox" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin" unique_id=11120013]
+[node name="VBox" type="VBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin" unique_id=11120013]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
-[node name="WindowMode" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120100]
+[node name="WindowMode" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120100]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_WINDOW_MODE"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/WindowMode" unique_id=11120101]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/WindowMode" unique_id=11120101]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_WINDOW_MODE"
 
-[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/WindowMode" unique_id=11120102]
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/WindowMode" unique_id=11120102]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("14_window")
 setting_key = "window_mode"
 
-[node name="Resolution" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120103]
+[node name="Resolution" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120103]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_RESOLUTION"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Resolution" unique_id=11120104]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Resolution" unique_id=11120104]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_RESOLUTION"
 
-[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Resolution" unique_id=11120105]
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Resolution" unique_id=11120105]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("15_resolution")
 setting_key = "resolution"
 
-[node name="UiScale" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120106]
+[node name="UiScale" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120106]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_UI_SCALE"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/UiScale" unique_id=11120107]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/UiScale" unique_id=11120107]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_UI_SCALE"
 
-[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/UiScale" unique_id=11120108]
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/UiScale" unique_id=11120108]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("16_uiscale")
 setting_key = "ui_scale"
 
-[node name="Preset" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120014]
+[node name="Preset" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120014]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_PRESET"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Preset" unique_id=11120015]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Preset" unique_id=11120015]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_PRESET"
 
-[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Preset" unique_id=11120016]
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Preset" unique_id=11120016]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("6_presetui")
 setting_key = "graphics_preset_id"
 
-[node name="RenderScale" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120017]
+[node name="RenderScale" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120017]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_RES_SCALE"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120018]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120018]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_RES_SCALE"
 
-[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120019]
+[node name="HSlider" type="HSlider" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120019]
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
@@ -221,102 +229,102 @@ display_multiplier = 100.0
 display_format = "%d %%"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120020]
+[node name="Value" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/RenderScale" unique_id=11120020]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
 
-[node name="Shadows" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120021]
+[node name="Shadows" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120021]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_SHADOWS"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120022]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120022]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_SHADOWS"
 
-[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120023]
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Shadows" unique_id=11120023]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("13_shadowui")
 setting_key = "shadow_quality"
 
-[node name="Effects" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120070]
+[node name="Effects" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120070]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_EFFECTS"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Effects" unique_id=11120071]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Effects" unique_id=11120071]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_EFFECTS"
 
-[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Effects" unique_id=11120072]
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Effects" unique_id=11120072]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("14_effectsui")
 setting_key = "screen_effects"
 
-[node name="Glow" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120077]
+[node name="Glow" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120077]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_GLOW"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Glow" unique_id=11120078]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Glow" unique_id=11120078]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_GLOW"
 
-[node name="CheckBox" type="CheckBox" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Glow" unique_id=11120079]
+[node name="CheckBox" type="CheckBox" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Glow" unique_id=11120079]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("5_chkbx")
 setting_key = "glow_enabled"
 
-[node name="AA" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120028]
+[node name="AA" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120028]
 layout_mode = 2
 script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/AA" unique_id=11120029]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/AA" unique_id=11120029]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_AA"
 
-[node name="OptionButton" type="OptionButton" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/AA" unique_id=11120030]
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/AA" unique_id=11120030]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("7_aaui")
 setting_key = "aa_mode"
 
-[node name="Vsync" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120031]
+[node name="Vsync" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120031]
 layout_mode = 2
 script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Vsync" unique_id=11120032]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Vsync" unique_id=11120032]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_VSYNC"
 
-[node name="CheckBox" type="CheckBox" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Vsync" unique_id=11120033]
+[node name="CheckBox" type="CheckBox" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Vsync" unique_id=11120033]
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("5_chkbx")
 setting_key = "vsync_enabled"
 
-[node name="Brightness" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120073]
+[node name="Brightness" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120073]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_BRIGHTNESS"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120074]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120074]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_BRIGHTNESS"
 
-[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120075]
+[node name="HSlider" type="HSlider" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120075]
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
@@ -329,23 +337,23 @@ setting_key = "brightness"
 display_format = "%.2f"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120076]
+[node name="Value" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Brightness" unique_id=11120076]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
 
-[node name="Calibration" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120200]
+[node name="Calibration" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120200]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_CALIBRATION"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration" unique_id=11120201]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration" unique_id=11120201]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_CALIBRATION"
 
-[node name="Open" type="Button" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration" unique_id=11120202]
+[node name="Open" type="Button" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration" unique_id=11120202]
 layout_mode = 2
 size_flags_vertical = 4
 theme_type_variation = &"EchoButtonSmall"
@@ -353,16 +361,16 @@ text = "SETTINGS_CALIBRATION_OPEN"
 alignment = 0
 script = ExtResource("9_echo")
 
-[node name="FOV" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120034]
+[node name="FOV" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120034]
 layout_mode = 2
 script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120035]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120035]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_FOV"
 
-[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120036]
+[node name="HSlider" type="HSlider" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120036]
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
@@ -375,23 +383,23 @@ setting_key = "fov"
 display_format = "%d°"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120037]
+[node name="Value" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/FOV" unique_id=11120037]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
 
-[node name="MaxFPS" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120038]
+[node name="MaxFPS" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120038]
 layout_mode = 2
 script = ExtResource("10_row")
 hint_key = "SETTINGS_HINT_FPS"
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120039]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120039]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_FPS_LIMIT"
 
-[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120040]
+[node name="HSlider" type="HSlider" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120040]
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
@@ -406,38 +414,38 @@ display_format = "%d"
 value_label_path = NodePath("../Value")
 zero_text_key = "SETTINGS_FPS_UNLIMITED"
 
-[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120041]
+[node name="Value" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/MaxFPS" unique_id=11120041]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
 
-[node name="SETTINGS_TAB_AUDIO" type="ScrollContainer" parent="Content/Pages" unique_id=11120042]
+[node name="SETTINGS_TAB_AUDIO" type="ScrollContainer" parent="Content/Body/Pages" unique_id=11120042]
 layout_mode = 2
 horizontal_scroll_mode = 0
 metadata/_tab_index = 1
 visible = false
 
-[node name="Margin" type="MarginContainer" parent="Content/Pages/SETTINGS_TAB_AUDIO" unique_id=11120043]
+[node name="Margin" type="MarginContainer" parent="Content/Body/Pages/SETTINGS_TAB_AUDIO" unique_id=11120043]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_left = 20
 
-[node name="VBox" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin" unique_id=11120044]
+[node name="VBox" type="VBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_AUDIO/Margin" unique_id=11120044]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
-[node name="Volume" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox" unique_id=11120045]
+[node name="Volume" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_AUDIO/Margin/VBox" unique_id=11120045]
 layout_mode = 2
 script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120046]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120046]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_VOLUME_MASTER"
 
-[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120047]
+[node name="HSlider" type="HSlider" parent="Content/Body/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120047]
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
@@ -452,38 +460,38 @@ display_multiplier = 100.0
 display_format = "%d %%"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120048]
+[node name="Value" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_AUDIO/Margin/VBox/Volume" unique_id=11120048]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
 
-[node name="SETTINGS_TAB_CONTROLS" type="ScrollContainer" parent="Content/Pages" unique_id=11120049]
+[node name="SETTINGS_TAB_CONTROLS" type="ScrollContainer" parent="Content/Body/Pages" unique_id=11120049]
 layout_mode = 2
 horizontal_scroll_mode = 0
 metadata/_tab_index = 2
 visible = false
 
-[node name="Margin" type="MarginContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS" unique_id=11120050]
+[node name="Margin" type="MarginContainer" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS" unique_id=11120050]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_left = 20
 
-[node name="VBox" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin" unique_id=11120051]
+[node name="VBox" type="VBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin" unique_id=11120051]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
-[node name="Sensitivity" type="HBoxContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120052]
+[node name="Sensitivity" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120052]
 layout_mode = 2
 script = ExtResource("10_row")
 
-[node name="Label" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120053]
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120053]
 layout_mode = 2
 theme_type_variation = &"MenuRowLabel"
 text = "SETTINGS_MOUSE_SENS"
 
-[node name="HSlider" type="HSlider" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120054]
+[node name="HSlider" type="HSlider" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120054]
 custom_minimum_size = Vector2(320, 24)
 layout_mode = 2
 size_flags_vertical = 4
@@ -497,59 +505,57 @@ display_multiplier = 1000.0
 display_format = "%.1f"
 value_label_path = NodePath("../Value")
 
-[node name="Value" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120055]
+[node name="Value" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Sensitivity" unique_id=11120055]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
 
-[node name="KeysGap" type="Control" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120056]
+[node name="KeysGap" type="Control" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120056]
 custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="KeysTitle" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120057]
+[node name="KeysTitle" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120057]
 layout_mode = 2
 theme_type_variation = &"MenuWhisper"
 text = "SETTINGS_KEYS"
 uppercase = true
 
-[node name="Keybinds" type="VBoxContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120058]
+[node name="Keybinds" type="VBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox" unique_id=11120058]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 script = ExtResource("4_keybd")
 
-[node name="Grid" type="GridContainer" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Keybinds"]
+[node name="Grid" type="GridContainer" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Keybinds"]
 layout_mode = 2
 theme_override_constants/h_separation = 56
 theme_override_constants/v_separation = 0
 columns = 2
 
-[node name="Status" type="Label" parent="Content/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Keybinds"]
+[node name="Status" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_CONTROLS/Margin/VBox/Keybinds"]
 custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuCaption"
 vertical_alignment = 2
 
-[node name="Hint" type="VBoxContainer" parent="Content" unique_id=11120059]
-layout_mode = 0
-offset_left = 1060.0
-offset_top = 162.0
-offset_right = 1390.0
-offset_bottom = 162.0
+[node name="Hint" type="VBoxContainer" parent="Content/Body" unique_id=11120059]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="HintTitle" type="Label" parent="Content/Hint" unique_id=11120060]
+[node name="HintTitle" type="Label" parent="Content/Body/Hint" unique_id=11120060]
 unique_name_in_owner = true
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuHintTitle"
 autowrap_mode = 3
 
-[node name="HintText" type="Label" parent="Content/Hint" unique_id=11120061]
+[node name="HintText" type="Label" parent="Content/Body/Hint" unique_id=11120061]
 unique_name_in_owner = true
 layout_mode = 2
 auto_translate_mode = 2
@@ -610,4 +616,4 @@ script = ExtResource("9_echo")
 
 [connection signal="pressed" from="Content/Footer/Apply" to="." method="_on_apply_pressed"]
 
-[connection signal="pressed" from="Content/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration/Open" to="." method="_on_calibration_pressed"]
+[connection signal="pressed" from="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/Calibration/Open" to="." method="_on_calibration_pressed"]

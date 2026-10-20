@@ -576,6 +576,7 @@ bones/39/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
 bones/39/scale = Vector3(1, 1, 1)
 
 [node name="headog" type="MeshInstance3D" parent="Skeleton3D" unique_id=747578215]
+extra_cull_margin = 3.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.018697113, 0)
 mesh = ExtResource("5_mesh")
 skin = SubResource("Skin_b8p2m")
