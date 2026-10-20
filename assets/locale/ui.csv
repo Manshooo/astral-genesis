@@ -23,6 +23,7 @@ RUN_STAT_TIME,Время забега,Run time
 RUN_STAT_ROOMS,Комнат пройдено,Rooms visited
 RUN_STAT_BODIES,Тел занято,Bodies taken
 RUN_STAT_BODY_LIST,Какие тела,Which bodies
+RUN_STAT_BODY_COUNT,%s ×%d,%s ×%d
 RUN_STAT_DAMAGE_TAKEN,Урона получено,Damage taken
 RUN_STAT_DAMAGE_DEALT,Урона нанесено,Damage dealt
 RUN_STAT_SKILL_POINTS,Очков души получено,Soul points earned

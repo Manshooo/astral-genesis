@@ -141,6 +141,13 @@ func _check_catalog() -> void:
 		body_row != null and catalog.value_text(body_row, fresh) == tr(&"BODY_WALKER"),
 		catalog.value_text(body_row, fresh) if body_row else "строки нет"
 	)
+	for i in 30:
+		fresh.note_body(WALKER_SCENE, &"BODY_WALKER")
+	_check(
+		"длинный забег не растит список тел: одно имя с числом",
+		body_row != null and catalog.value_text(body_row, fresh) == tr("RUN_STAT_BODY_COUNT") % [tr(&"BODY_WALKER"), 31],
+		catalog.value_text(body_row, fresh) if body_row else "строки нет"
+	)
 
 
 # ---------------------------------------------------------------------------
