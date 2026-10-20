@@ -1,24 +1,14 @@
 ## res://addons/game_design_tool/world/overlays/graph_overlay.gd
-## Оверлей «Граф» — тот же RS_LevelGraph и RS_LayerPlan, что и у оверлея
-## «Геометрия», поэтому узлы стоят ровно там же, где комнаты: переключение
-## оверлеев не двигает камеру и не требует своей раскладки (см. §2
-## [[world-generator-tool-spec]]).
-##
-## Узлы — SphereMesh, приподнятый над полом (иначе тонет в геометрии комнаты и
-## его не видно поверх стен). Рёбра — один ImmediateMesh на весь слой: дешевле,
-## чем нода на каждое ребро, и не плодит мусор при перестройке.
-##
-## Межслойные рёбра (vertical_hub на ДРУГУЮ глубину) не рисуются — у их цели
-## нет позиции в текущем плане, рисовать в никуда нечем. Видно только то, что
-## физически укладывается в этот слой.
+## Оверлей «Граф»: узлы-сферы и рёбра RS_LevelGraph на тех же позициях, что у
+## «Геометрии». Межслойные рёбра не рисуются — у цели нет позиции в этом плане.
+## [[Редакторские инструменты]] §«Коридоры и сетка во вьюпорте».
 @tool
 extends Node3D
 
 const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
 
 const NODE_RADIUS := 1.4
-## Насколько приподнят маркер узла над полом — примерно середина высоты
-## комнаты, чтобы не тонуть в полу и не протыкать потолок.
+## Подъём маркера над полом — примерно середина высоты комнаты.
 const NODE_HEIGHT := 3.0
 
 const COLOR_DEFAULT := Color(0.55, 0.75, 0.95)
@@ -29,12 +19,11 @@ const COLOR_SELECTED := Color(1.0, 1.0, 1.0)
 const EDGE_COLOR_DOOR := Color(0.7, 0.7, 0.75, 0.9)
 const EDGE_COLOR_CORRIDOR := Color(0.55, 0.65, 0.85, 0.9)
 const EDGE_COLOR_VERTICAL := Color(0.8, 0.6, 0.95, 0.9)
-## Замок перекрывает цвет по типу связи — это самый важный сигнал на ребре.
+## Замок перекрывает цвет по типу связи.
 const EDGE_COLOR_LOCKED := Color(0.9, 0.45, 0.3, 0.95)
 
 var _spheres: Dictionary[StringName, MeshInstance3D] = {}
-## Цвет узла ДО выделения — чтобы set_selected мог вернуть прежний цвет, не
-## пересчитывая роль узла (вход/выход/обычный) заново.
+## Цвет узла до выделения.
 var _base_color: Dictionary[StringName, Color] = {}
 var _edges: MeshInstance3D
 var _selected_id: StringName = &""
@@ -90,8 +79,7 @@ func set_selected(node_id: StringName) -> void:
 		_spheres[node_id].material_override = _unshaded_material(COLOR_SELECTED)
 
 
-## free(), не queue_free() — та же причина, что у RoomsOverlay.clear(): смена
-## слоя синхронная, отложенное удаление наложило бы старые сферы на новые.
+## free(), не queue_free(): см. RoomsOverlay.clear().
 func _clear_spheres() -> void:
 	for sphere: MeshInstance3D in _spheres.values():
 		sphere.free()
@@ -108,10 +96,10 @@ func _rebuild_edges(view: LayerView, on_layer: Dictionary) -> void:
 		var from: Vector3 = view.plan.position_of(node_data.id) + Vector3(0, NODE_HEIGHT, 0)
 		for conn: RS_LevelConnection in node_data.connections:
 			if not on_layer.get(conn.target_node_id, false):
-				continue  # ведёт на другую глубину — здесь рисовать нечем
+				continue  # другая глубина
 			var pair_key := _pair_key(node_data.id, conn.target_node_id)
 			if drawn.has(pair_key):
-				continue  # ребро хранится на обоих концах — не дублируем линию
+				continue  # ребро хранится на обоих концах
 			drawn[pair_key] = true
 			var to: Vector3 = view.plan.position_of(conn.target_node_id) + Vector3(0, NODE_HEIGHT, 0)
 			var color := _edge_color(conn)

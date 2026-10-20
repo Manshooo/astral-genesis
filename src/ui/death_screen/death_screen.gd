@@ -1,30 +1,12 @@
 # res://src/ui/death_screen/death_screen.gd
-## Экран ИТОГОВ ЗАБЕГА. Показывается RunManager.die() после того, как смерть
-## зафиксирована в сейве (death_count уже увеличен) и мир снесён.
-##
-## Раньше это было надгробие: чёрный фон и две кнопки. Распад БФЖ — не «конец», а
-## часть цикла, и экран теперь рассказывает то же самое: что игрок успел за забег
-## и одна кнопка вперёд. Выход в меню отсюда убран намеренно — это обычная пауза
-## по Esc уже после возрождения, а вторая кнопка на итогах спорила бы с
-## единственным осмысленным действием.
-##
-## Ни один показатель здесь не назван по имени: строки берутся из
-## data/run_stat_catalog.tres, так что «добавить в сводку артефакты» — это правка
-## каталога и того, кто их считает, а не этого файла.
-##
-## Файл всё ещё называется death_screen: путь известен RunManager.DEATH_SCENE, и
-## переименование ради вывески стоило бы дороже, чем даёт.
-##
-## Вид — язык «Отголосок» (§8–§9 «Меню — спека»): без панели, на глухом фоне
-## сознание рассеивается точками вверх, заголовок исхода — с двумя эхами, у
-## каждой строки сводки — пунктирная выноска к значению.
+## Экран ИТОГОВ ЗАБЕГА: RunManager.die() показывает его после фиксации смерти в сейве и сноса мира. Заголовок исхода, сводка из data/run_stat_catalog.tres (ни один показатель
+## не назван здесь) и одна кнопка вперёд; выхода в меню нарочно нет. Файл зовётся death_screen: путь известен RunManager.DEATH_SCENE. Язык «Отголосок» (§8–§9 «Меню — спека»). Вики: [[Цикл забега]].
 extends UI_MenuScreen
 
 const WORLD_SCENE := "res://src/world/world.tscn"
 const CATALOG_PATH := "res://data/run_stat_catalog.tres"
 
-## Проявление из-под шторки, которую опустил RunManager.die(). Короче
-## затемнения: гаснущий мир — это событие, а появление итогов — просто переход.
+## Проявление из-под шторки RunManager.die(); короче затемнения.
 const FADE_IN := 0.35
 
 const STAT_ROW_SCENE := preload("res://src/ui/death_screen/stat_row.tscn")
@@ -35,10 +17,7 @@ const STAT_ROW_SCENE := preload("res://src/ui/death_screen/stat_row.tscn")
 
 func _ready() -> void:
 	super._ready()
-	# Мы вне игровой сцены: погасить игровой UI-стек (дерево навыков могло остаться
-	# открытым, если распад случился у инкубатора) и вернуть курсор.
-	# ПОРЯДОК ВАЖЕН: enabled=false ДО close_all(), иначе close_all() при enabled=true
-	# заново ЗАХВАТИТ курсор (см. UIManager.close_all). Видимый курсор — последним.
+	# Мы вне игровой сцены: гасим игровой UI-стек и возвращаем курсор. enabled=false ДО close_all(), иначе тот заново захватит курсор (UIManager.close_all).
 	UIManager.enabled = false
 	UIManager.close_all()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -47,21 +26,15 @@ func _ready() -> void:
 	UIManager.fade_from_black(FADE_IN)
 
 
-## Сводка последнего забега. Пустой сводки быть не должно, но если её нет
-## (например, сцену открыли напрямую из редактора), экран остаётся заголовком и
-## кнопкой — падать из-за отсутствия статистики ему незачем.
+## Сводка последнего забега; без неё (сцена открыта из редактора) остаётся заголовок и кнопка.
 func _fill_summary() -> void:
 	var stats := RunStats.last
-	# load(), а не preload(): preload резолвится на компиляции и падает на
-	# кастомном ресурсе в debug/export-сборке — та же грабля, что у
-	# SkillManager.SKILL_TREE_PATH.
+	# load(), а не preload(): падает на кастомном ресурсе в debug/export (см. SkillManager.SKILL_TREE_PATH).
 	var catalog := load(CATALOG_PATH) as RS_RunStatCatalog
 	if stats == null or catalog == null:
 		return
 
-	# Строки — экземплярами stat_row.tscn, а не в сцене экрана: их состав
-	# зависит от забега (пустые показатели не показываются) и будет пополняться
-	# каталогом.
+	# Строки — экземплярами stat_row.tscn: состав зависит от забега.
 	for row: RS_RunStatRow in catalog.visible_rows(stats):
 		var stat_row: UI_StatRow = STAT_ROW_SCENE.instantiate()
 		_rows.add_child(stat_row)
@@ -69,13 +42,7 @@ func _fill_summary() -> void:
 
 
 func _on_revive_pressed() -> void:
-	# Новый забег: world_seed/death_count НЕ трогаем — смерть уже записана, и
-	# генерация возьмёт свежий run_seed() из (world_seed, death_count).
-	#
-	# Комплекс строится уже в мире, под его загрузочным экраном (UI_LoadingScreen,
-	# RunManager.enter_complex_async), а world.tscn до него грузится в фоне
-	# (SceneLoader) — кадры идут всё время. Кнопка гаснет, чтобы второе нажатие не
-	# начало вход дважды, а подпись и бегущий штрих говорят, что игра работает.
+	# Новый забег: world_seed/death_count не трогаем — смерть уже записана. Комплекс строится под загрузочным экраном (UI_LoadingScreen, enter_complex_async); кнопка гаснет от второго нажатия.
 	_revive.disabled = true
 	_revive.busy = true
 	_revive.text = "RUN_SUMMARY_REVIVING"

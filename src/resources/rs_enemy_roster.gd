@@ -1,33 +1,21 @@
-## Ростер врагов по слоям — data/enemy_roster.tres: кто встаёт на маркеры
-## `EnemySpawn*` в сценах комнат и как часто маркер остаётся пустым
-## (карточка «Игровой цикл — от и до», §2 и §10). Состав и вероятности — данные:
-## game-balance пересчитывает их, не трогая код спавна.
-##
-## БРОСОК — функция сида забега, слоя, узла и маркера (roll), а не общий ГСЧ.
-## Два следствия, ради которых так: слой, снятый и собранный заново (переход
-## порталом туда и обратно), даёт ровно тех же врагов на тех же местах; и бросок
-## не сдвигает ничего другого — граф уже построен, а раскладка ламп и прочее
-## живёт на своих хэшах (LayerStreamer._is_lamp_dead). Тем же приёмом ростер не
-## требует поднять RS_LevelGraph.GENERATOR_VERSION: граф и план не зависят от
-## врагов, у того же сида меняется только то, что стоит В комнатах.
+## Ростер врагов по слоям (data/enemy_roster.tres): кто встаёт на маркеры EnemySpawn* и как часто маркер пуст. Бросок — функция
+## (сид, слой, узел, маркер), не общий ГСЧ: слой, собранный заново, даёт тех же врагов и ничего не сдвигает, поэтому
+## GENERATOR_VERSION не поднимается. Вики: [[Цикл забега]].
 class_name RS_EnemyRoster
 extends Resource
 
 const PATH := "res://data/enemy_roster.tres"
 
-## Строки ростера. Какие из них действуют на слое, решают их диапазоны глубин.
+## Строки ростера; какие действуют на слое — по диапазонам глубин.
 @export var entries: Array[RS_EnemyRosterEntry] = []
 
-## Шанс, что маркер остаётся пустым; индекс — глубина. Глубже последнего элемента
-## действует последний. Шанс по слою, а не один на всех: на поверхности врагов
-## должно быть меньше, чем у дна, и это одна строка данных.
+## Шанс пустого маркера по глубине; глубже последнего — последний.
 @export var empty_chance: PackedFloat32Array = PackedFloat32Array([0.5])
 
 static var _cached: RS_EnemyRoster
 
 
-## Ростер игры. Грузится load() при первом обращении, а не preload — по той же
-## причине, что RS_SoulPointsTable.current (godotengine/godot#100100).
+## Ростер игры: load() при первом обращении (godotengine/godot#100100).
 static func current() -> RS_EnemyRoster:
 	if _cached == null:
 		_cached = load(PATH) as RS_EnemyRoster
@@ -37,7 +25,7 @@ static func current() -> RS_EnemyRoster:
 	return _cached
 
 
-## Строки, действующие на слое [param depth].
+## Строки, действующие на слое depth.
 func entries_at(depth: int) -> Array[RS_EnemyRosterEntry]:
 	var found: Array[RS_EnemyRosterEntry] = []
 	for entry in entries:
@@ -52,17 +40,13 @@ func empty_chance_at(depth: int) -> float:
 	return empty_chance[clampi(depth, 0, empty_chance.size() - 1)]
 
 
-## Враг для маркера [param marker] узла [param node_id] слоя [param depth] забега
-## [param run_seed]; null — маркер остаётся пустым. Один и тот же вход всегда даёт
-## один и тот же ответ.
+## Враг для маркера узла слоя забега; null — пусто. Детерминированно по входу.
 ##
-## Строки — String, не StringName: хэш Variant от StringName не обещан совпадать
-## между сборками, а от String — обещан (сид забега переживает версию игры).
+## Строки — String, не StringName: хэш Variant от StringName между сборками не обещан.
 func roll(run_seed: int, depth: int, node_id: StringName, marker: StringName) -> PackedScene:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([run_seed, depth, String(node_id), String(marker)])
-	# Бросок «пусто или нет» делается ВСЕГДА первым и одним числом: порядок
-	# розыгрыша не зависит от того, сколько строк подходит слою.
+	# Бросок «пусто или нет» всегда первым и одним числом: порядок не зависит от числа подходящих строк.
 	var empty_roll := rng.randf()
 	var pick_roll := rng.randf()
 
@@ -81,8 +65,7 @@ func roll(run_seed: int, depth: int, node_id: StringName, marker: StringName) ->
 	return candidates[candidates.size() - 1].enemy_scene
 
 
-## Что не так с данными (пусто — всё в порядке). Ловит тихие поломки: слой без
-## единой строки просто остался бы без врагов, и никто бы не понял почему.
+## Что не так с данными (пусто — порядок): слой без строк остался бы без врагов молча.
 func validate(depths: Array) -> PackedStringArray:
 	var problems := PackedStringArray()
 	for depth: int in depths:

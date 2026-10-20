@@ -1,18 +1,7 @@
 ## res://src/resources/world_generator/rs_room_layout.gd
-## Геометрические соглашения комнат: к какой стене прижата дверь.
-##
-## Общее место для рантайма (RunManager расставляет комнаты слоя и раздаёт рёбра
-## по дверям) и редакторского инструмента (проверка сцен комнат): правило «где
-## север» должно быть ОДНО, иначе инструмент будет проверять не то, что делает
-## игра.
-##
-## Стена двери — сторона клетки квадратной сетки (SquareGridTopology.Side):
-## комната стоит в клетке плана, и дверь смотрит в соседа за этой стороной.
-## Имена стен остаются только для людей — slot_id дверей в сценах и сообщения
-## проверок.
-##
-## Только статика — инстанцировать нечего. Кэши «сцена → …» генерация читает и
-## из фонового потока, поэтому сцены в них кладутся заранее (warm_scene_cache).
+## Геометрические соглашения комнат: к какой стене прижата дверь; общее место для рантайма и редакторской проверки (правило «где север» одно).
+## Стена двери — сторона клетки (SquareGridTopology.Side); имена стен только для людей (slot_id, сообщения). Только статика;
+## кэши «сцена → …» читает и фоновая генерация, поэтому сцены кладутся заранее (warm_scene_cache). Вики: [[Цикл забега]].
 @tool
 class_name RS_RoomLayout
 extends RefCounted
@@ -21,15 +10,12 @@ extends RefCounted
 const SIDE_NAMES: Array[StringName] = [&"north", &"east", &"south", &"west"]
 
 
-## Имя стены стороны [param side]; "" — стороны нет.
+## Имя стены стороны side; "" — стороны нет.
 static func side_name(side: int) -> StringName:
 	return SIDE_NAMES[side] if side >= 0 and side < SIDE_NAMES.size() else &""
 
 
-## Сторона комнаты, к которой прижата дверь. Определяем по ГЕОМЕТРИИ, а не по
-## C_DoorSlot.slot_id: slot_id — лишь стабильный идентификатор слота, и в
-## пресетах (vertical_hub_*) он сплошь и рядом не совпадает с реальной стеной.
-## GridTopology.NO_SIDE — двери или комнаты нет.
+## Сторона, к которой прижата дверь — по ГЕОМЕТРИИ, не по slot_id (в пресетах vertical_hub_* он не совпадает со стеной). NO_SIDE — двери или комнаты нет.
 static func door_side(door: Node3D, room: Node) -> int:
 	if door == null or room == null:
 		return GridTopology.NO_SIDE
@@ -39,9 +25,7 @@ static func door_side(door: Node3D, room: Node) -> int:
 	return SquareGridTopology.Side.SOUTH if offset.z > 0.0 else SquareGridTopology.Side.NORTH
 
 
-## Положение узла относительно корня комнаты. global_transform не годится:
-## Node3D узнаёт своего родителя только при входе в SceneTree, а комнату мы
-## разглядываем ещё detached — поэтому складываем локальные трансформы вручную.
+## Положение узла относительно корня комнаты: global_transform не годится — комнату разглядываем detached.
 static func origin_relative_to(node: Node3D, room: Node) -> Vector3:
 	var result := node.transform
 	var parent := node.get_parent()
@@ -53,12 +37,12 @@ static func origin_relative_to(node: Node3D, room: Node) -> Vector3:
 	return result.origin
 
 
-## Все двери комнаты (сущности с C_DoorSlot), в порядке обхода дерева.
+## Все двери комнаты (сущности с C_DoorSlot), в порядке обхода.
 static func door_entities(room: Node) -> Array[Entity]:
 	var doors: Array[Entity] = []
 	if room == null:
 		return doors
-	# owned=false — иначе двери, вставленные как инстансы под-сцены, не находятся.
+	# owned=false — иначе двери из инстансов под-сцен не находятся.
 	for node in room.find_children("*", "Entity", true, false):
 		var entity := node as Entity
 		if entity and has_door_slot(entity):
@@ -66,9 +50,7 @@ static func door_entities(room: Node) -> Array[Entity]:
 	return doors
 
 
-## Есть ли на сущности слот двери. Смотрим И has_component (сущность уже в мире,
-## _initialize отработал), И component_resources (detached-инстанс — компоненты
-## ещё «не разложены», но @export-массив доступен сразу после instantiate).
+## Есть ли на сущности слот двери: смотрим и has_component (в мире), и component_resources (detached — компоненты ещё не разложены).
 static func has_door_slot(entity: Entity) -> bool:
 	if entity.has_component(C_DoorSlot):
 		return true
@@ -78,7 +60,7 @@ static func has_door_slot(entity: Entity) -> bool:
 	return false
 
 
-## slot_id двери — из компонента, если он уже разложен, иначе из component_resources.
+## slot_id двери — из компонента, иначе из component_resources.
 static func slot_id_of(entity: Entity) -> StringName:
 	var slot := entity.get_component(C_DoorSlot) as C_DoorSlot
 	if slot:
@@ -99,19 +81,11 @@ static func door_sides(room: Node) -> Array[int]:
 	return sides
 
 
-## Кэш «путь сцены → стороны дверей». Стороны зависят ТОЛЬКО от сцены, не от
-## узла графа, поэтому считаются один раз за запуск.
+## Кэш «путь сцены → стороны дверей» (зависят только от сцены).
 static var _sides_by_scene: Dictionary[String, Array] = {}
 
 
-## Стороны дверей комнаты по пути её сцены — без инстанцирования на каждый вызов.
-## Массив из кэша общий: зовущий, которому нужно его менять, делает копию.
-##
-## Ради этого кэша всё и затевалось: раскладка слоя (RS_LayerPlan)
-## переставала требовать заспавненные комнаты и стала считаться для ЛЮБОГО слоя —
-## это нужно карте комплекса, которая рисует и незагруженные слои. Побочно
-## ускорился и сам спавн: раньше каждый узел инстанцировал свою комнату только
-## чтобы посчитать двери, хотя один пресет повторяется по слою многократно.
+## Стороны дверей по пути сцены без инстанцирования; массив из кэша общий — менять после копии. Ради кэша раскладка слоя считается для ЛЮБОГО слоя (карта комплекса, незагруженные слои).
 static func door_sides_of_scene(scene_path: String) -> Array[int]:
 	if _sides_by_scene.has(scene_path):
 		return _sides_by_scene[scene_path]
@@ -125,17 +99,11 @@ static func door_sides_of_scene(scene_path: String) -> Array[int]:
 	return sides
 
 
-## Кэш «путь сцены → половина габарита». Как и стороны дверей, зависит только от
-## сцены, поэтому считается один раз за запуск.
+## Кэш «путь сцены → половина габарита».
 static var _half_extent_by_scene: Dictionary[String, float] = {}
 
 
-## Половина габарита комнаты в метрах — по тому, как далеко от центра стоят её
-## двери. Двери прижаты к стенам, так что это и есть расстояние до стены. Нужна
-## коробке пикинга комнаты в «Генераторе мира»: клетка раскладки у комнат с
-## разной геометрией заполнена по-разному, а клик должен ловить саму комнату.
-##
-## 0.0 — дверей нет, мерить нечем; зовущий решает, что с этим делать.
+## Половина габарита комнаты в метрах — по удалению дверей от центра (они у стен); для коробки пикинга в «Генераторе мира». 0.0 — дверей нет, мерить нечем.
 static func half_extent_of_scene(scene_path: String) -> float:
 	if _half_extent_by_scene.has(scene_path):
 		return _half_extent_by_scene[scene_path]
@@ -151,15 +119,11 @@ static func half_extent_of_scene(scene_path: String) -> float:
 	return extent
 
 
-## Кэш «путь сцены → число дверей». Как и стороны, зависит только от сцены.
+## Кэш «путь сцены → число дверей».
 static var _door_count_by_scene: Dictionary[String, int] = {}
 
 
-## Сколько дверей (сущностей с C_DoorSlot) в сцене комнаты. В коридорной
-## генерации это и есть степень комнаты: каждая дверь получает ребро в ветку
-## коридора, поэтому считать надо фактические двери сцены, а не заявленный
-## RS_RoomPreset.slot_count — рассинхрон дал бы ребро без двери или дверь без
-## ребра. Не стороны: две двери на одной стене — всё равно две двери.
+## Сколько дверей (C_DoorSlot) в сцене — степень комнаты в коридорной генерации; фактические, не RS_RoomPreset.slot_count (рассинхрон дал бы ребро без двери). Не стороны.
 static func door_count_of_scene(scene_path: String) -> int:
 	if _door_count_by_scene.has(scene_path):
 		return _door_count_by_scene[scene_path]
@@ -173,14 +137,11 @@ static func door_count_of_scene(scene_path: String) -> int:
 	return count
 
 
-## Кэш «путь сцены → C_RoomShell или null». Как и двери, зависит только от сцены.
+## Кэш «путь сцены → C_RoomShell или null».
 static var _shell_by_scene: Dictionary[String, C_RoomShell] = {}
 
 
-## Коробка комнаты, собранной по маске сокетов, — C_RoomShell на корне сцены; null —
-## двери запечены в сцену. Корень смотрим и через has_component, и через
-## component_resources — по той же причине, что и has_door_slot: комнату здесь
-## разглядывают detached, компоненты ещё не разложены.
+## Коробка сборной комнаты — C_RoomShell на корне сцены; null — двери запечены. Смотрим и has_component, и component_resources (detached).
 static func shell_of_scene(scene_path: String) -> C_RoomShell:
 	if _shell_by_scene.has(scene_path):
 		return _shell_by_scene[scene_path]
@@ -194,7 +155,7 @@ static func shell_of_scene(scene_path: String) -> C_RoomShell:
 	return shell
 
 
-## C_RoomShell на корне уже инстанцированной комнаты или null.
+## C_RoomShell на корне инстанцированной комнаты или null.
 static func shell_of(room: Node) -> C_RoomShell:
 	var entity := room as Entity
 	if entity == null:
@@ -208,23 +169,18 @@ static func shell_of(room: Node) -> C_RoomShell:
 	return null
 
 
-## Footprint комнаты в клетках (ширина по X, уровней по Y, длина по Z). У комнаты
-## с дверями в сцене — одна клетка: её арт и есть клетка.
+## Footprint в клетках (X, уровни Y, Z); у комнаты с дверями в сцене — одна клетка.
 static func footprint_of_scene(scene_path: String) -> Vector3i:
 	var shell := shell_of_scene(scene_path)
 	return shell.size if shell else Vector3i.ONE
 
 
-## Сколько сокетов у комнаты, собранной по маске (sockets_of_scene). 0 — у
-## комнаты двери в сцене, и сокетов у неё нет.
+## Сколько сокетов у сборной комнаты; 0 — двери в сцене.
 static func socket_count_of_scene(scene_path: String) -> int:
 	return sockets_of_scene(scene_path).size()
 
 
-## Сокеты комнаты, собранной по маске, — в осях сцены, от нижней северо-западной
-## клетки footprint (как C_RoomShell.door_sockets): объявленные коробкой, а если
-## она их не объявила — все грани нижнего уровня по периметру. Пусто — у комнаты
-## двери в сцене.
+## Сокеты сборной комнаты в осях сцены от нижней северо-западной клетки: объявленные коробкой, иначе все грани нижнего уровня по периметру. Пусто — двери в сцене.
 static func sockets_of_scene(scene_path: String) -> Array[Vector4i]:
 	var shell := shell_of_scene(scene_path)
 	if shell == null:
@@ -232,17 +188,14 @@ static func sockets_of_scene(scene_path: String) -> Array[Vector4i]:
 	return sockets_of_shell(shell)
 
 
-## Сокеты коробки [param shell] в осях сцены — как sockets_of_scene, но по уже
-## разобранному компоненту: сборке стен (RS_RoomWallKit.assemble) пути сцены не
-## передают, а корень комнаты у неё в руках.
+## Сокеты коробки shell — по разобранному компоненту (сборка стен получает корень, не путь).
 static func sockets_of_shell(shell: C_RoomShell) -> Array[Vector4i]:
 	if not shell.door_sockets.is_empty():
 		return shell.door_sockets
 	return SquareGridTopology.new().perimeter(SquareGridTopology.box(Vector3i.ZERO, shell.size))
 
 
-## Сокеты комнаты в плане: грани мира, если комната стоит угловой клеткой в
-## [param anchor] и повёрнута на [param turns] (RS_LevelNode.turns).
+## Сокеты комнаты в плане: грани мира при угловой клетке anchor и повороте turns.
 static func sockets_in_plan(scene_path: String, turns: int, anchor: Vector3i) -> Array[Vector4i]:
 	var faces: Array[Vector4i] = []
 	var size := footprint_of_scene(scene_path)
@@ -251,13 +204,8 @@ static func sockets_in_plan(scene_path: String, turns: int, anchor: Vector3i) ->
 	return faces
 
 
-## Грань [param face] в осях сцены (клетка от нижней северо-западной и сторона) —
-## в грань плана. Сцена поворачивается вокруг центра footprint на [param turns]
-## четвертей (RS_LayerPlan.room_transform: сторона сцены s смотрит в мир стороной
-## s − turns), поэтому и клетка крутится вокруг центра: считается в полуклетках от
-## него, чтобы остаться в целых. [param size] — footprint в осях сцены; в мире у
-## нечётного поворота ширина и длина меняются местами, и угловой клеткой
-## становится другая.
+## Грань в осях сцены -> грань плана: сцена поворачивается вокруг центра footprint на turns четвертей, поэтому клетка крутится в полуклетках (остаться в целых);
+## size — footprint в осях сцены, при нечётном повороте ширина и длина меняются местами.
 static func face_in_plan(face: Vector4i, size: Vector3i, turns: int, anchor: Vector3i) -> Vector4i:
 	var t := posmod(turns, SquareGridTopology.SIDE_COUNT)
 	var x := face.x * 2 + 1 - size.x
@@ -268,29 +216,22 @@ static func face_in_plan(face: Vector4i, size: Vector3i, turns: int, anchor: Vec
 		z = -x
 		x = turned
 	var world := Vector3i(size.z, size.y, size.x) if t % 2 else size
-	# Полуклетки x и z здесь неотрицательны (повёрнутый footprint уже учтён в
-	# world), так что отбрасывание дробной части равно делению вниз — как и нужно.
+	# Полуклетки здесь неотрицательны, отбрасывание дробной части = деление вниз.
 	@warning_ignore("integer_division")
 	var cell := anchor + Vector3i((x + world.x - 1) / 2, face.y, (z + world.z - 1) / 2)
 	return GridTopology.face(cell, posmod(face.w - t, SquareGridTopology.SIDE_COUNT))
 
 
-## Четверти оборота вокруг Y (как rotation.y у кусков RS_CorridorKit), которые
-## разворачивают деталь, нарисованную на северной грани клетки, к стороне
-## [param side]: север остаётся на месте, запад — четверть против часовой, восток —
-## три.
+## Четверти оборота (как rotation.y у RS_CorridorKit), разворачивающие деталь с северной грани к стороне side: север — 0, запад — 1, восток — 3.
 static func north_piece_turns(side: int) -> int:
 	return posmod(-side, SquareGridTopology.SIDE_COUNT)
 
 
-## Сколько раз сцена инстанцировалась не на главном потоке — см.
-## _instantiate_detached. Читает проверка фоновой генерации.
+## Сколько раз сцена инстанцировалась не на главном потоке (_instantiate_detached) — читает проверка фоновой генерации.
 static var off_main_thread_instances := 0
 
 
-## Заполняет кэши «сцена → …», которые читает генерация графа, для всех
-## [param scene_paths] — на главном потоке, до того как генерация уйдёт в фон
-## (RunManager.enter_complex_async). Список даёт RS_LevelGraph.scene_paths.
+## Заполняет кэши для scene_paths на главном потоке, до ухода генерации в фон (RS_LevelGraph.scene_paths).
 static func warm_scene_cache(scene_paths: Array[String]) -> void:
 	for path in scene_paths:
 		shell_of_scene(path)
@@ -298,14 +239,8 @@ static func warm_scene_cache(scene_paths: Array[String]) -> void:
 		door_sides_of_scene(path)
 
 
-## Сцена комнаты вне дерева — только чтобы прочитать из неё двери или коробку.
-##
-## Только с главного потока: в комнатах меши и свет, а создавать узлы, которые
-## рисуют, из другого потока небезопасно при модели потоков рендера по умолчанию
-## («Safe», project.godot её не меняет). Поэтому фоновая генерация идёт по
-## прогретым кэшам (warm_scene_cache), а промах кэша в фоне — ошибка прогрева:
-## громко, со счётчиком для проверки, и всё же со сценой — без неё генерация
-## молча построила бы другой мир.
+## Сцена комнаты вне дерева — прочитать двери или коробку. Только с главного потока: узлы, которые рисуют, из другого создавать небезопасно (рендер «Safe»).
+## Промах кэша в фоне — ошибка прогрева: громко, со счётчиком, но со сценой — иначе генерация молча построила бы другой мир.
 static func _instantiate_detached(scene_path: String) -> Node:
 	if OS.get_thread_caller_id() != OS.get_main_thread_id():
 		off_main_thread_instances += 1
@@ -313,11 +248,7 @@ static func _instantiate_detached(scene_path: String) -> Node:
 	return (load(scene_path) as PackedScene).instantiate()
 
 
-## Сбрасывает все кэши «сцена → …». Живут всю сессию редактора, поэтому без
-## явного сброса дизайнер поправит дверь в сцене комнаты, нажмёт «Пересобрать»
-## во вкладке «Генератор мира» — и увидит СТАРУЮ раскладку до перезапуска
-## редактора. Зовётся из вкладки на пересборку, рантайму не нужен вовсе:
-## RunManager инстанцирует граф ровно один раз за забег.
+## Сбрасывает кэши: живут всю сессию редактора, без сброса «Пересобрать» покажет СТАРУЮ раскладку. Рантайму не нужен.
 static func clear_scene_cache() -> void:
 	_sides_by_scene.clear()
 	_half_extent_by_scene.clear()

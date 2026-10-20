@@ -1,8 +1,5 @@
 # res://src/ui/settings/ui_scale_setting.gd
-## Список масштабов интерфейса: «Авто» (0 — растягивается по окну) и
-## фиксированные множители, при которых базовое окно ещё влезает в экран
-## (SettingsManager.ui_scale_options). Строится кодом по той же причине, что и
-## ResolutionSetting: набор зависит от монитора.
+## Список масштабов интерфейса: «Авто» (0) и фиксированные, при которых базовое окно влезает в экран (SettingsManager.ui_scale_options); кодом, как ResolutionSetting.
 class_name UiScaleSetting
 extends OptionSetting
 

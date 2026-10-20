@@ -1,16 +1,6 @@
 # res://src/ui/settings/keybinds_setting.gd
-## Блок переназначения клавиш в меню настроек. Строки (действие + «[ клавиша ]»)
-## строятся в рантайме по SettingsManager.REBINDABLE_ACTIONS — список действий
-## живёт там, а не в сцене. Раскладка — две колонки UI_KeyRow (§9 «Меню —
-## спека»), под ними строка-сообщение: как отменить ожидание и кто с кем
-## поменялся клавишами.
-##
-## Сетка колонок (зазор 56, §4) и строка-сообщение — дети узла в
-## settings_menu.tscn; кодом создаются только строки, экземплярами key_row.tscn.
-##
-## Для settings_menu это ОДИН контрол: раз он реализует get/set_setting_value и
-## сигнал setting_changed, _collect_controls внутрь не спускается, и весь словарь
-## keybinds ходит в черновик/из черновика целиком (как одно значение настройки).
+## Блок переназначения клавиш: две колонки UI_KeyRow (§9 «Меню — спека») по SettingsManager.REBINDABLE_ACTIONS и строка-сообщение (как отменить ожидание, кто с кем поменялся). Сетка (зазор 56, §4) и сообщение — дети в
+## settings_menu.tscn, кодом создаются только строки из key_row.tscn. Для settings_menu это ОДИН контрол (get/set_setting_value и setting_changed): словарь keybinds ходит в черновик целиком.
 class_name KeybindsSetting
 extends VBoxContainer
 
@@ -24,11 +14,10 @@ const SWAP_MESSAGE_SECONDS := 3.0
 
 const KEY_ROW_SCENE := preload("res://src/ui/menu/key_row.tscn")
 
-## Черновик переопределений: action → код события. Только ОТЛИЧИЯ от
-## project.godot (см. RS_Settings.keybinds), поэтому пустой словарь = дефолт.
+## Черновик переопределений: action → код; только ОТЛИЧИЯ от project.godot, пустой = дефолт.
 var _codes: Dictionary[StringName, String] = {}
 var _rows: Dictionary[StringName, UI_KeyRow] = {}
-## Действие, для которого сейчас ловим нажатие (&"" — не ловим).
+## Действие, для которого ловим нажатие (&"" — не ловим).
 var _capturing: StringName = &""
 var _status_serial := 0
 
@@ -46,7 +35,7 @@ func _ready() -> void:
 	_refresh_rows()
 
 
-# --- Контракт настройки (см. settings_menu._collect_controls) ---------------
+# --- Контракт настройки (см. settings_menu._collect_controls) ---
 
 
 func get_setting_value() -> Dictionary:
@@ -54,8 +43,7 @@ func get_setting_value() -> Dictionary:
 
 
 func set_setting_value(v: Variant) -> void:
-	# Переливаем поэлементно, а не присваиваем: сюда прилетает и типизированный
-	# Dictionary из RS_Settings, и пустой нетипизированный литерал.
+	# Переливаем поэлементно: прилетает и типизированный Dictionary из RS_Settings, и пустой литерал.
 	_codes.clear()
 	if v is Dictionary:
 		for action in (v as Dictionary):
@@ -63,7 +51,7 @@ func set_setting_value(v: Variant) -> void:
 	_cancel_capture()
 
 
-# --- Захват нажатия --------------------------------------------------------
+# --- Захват нажатия ---
 
 
 func _begin_capture(action: StringName) -> void:
@@ -74,9 +62,7 @@ func _begin_capture(action: StringName) -> void:
 	_show_status(tr("SETTINGS_REBIND_CANCEL") % "Esc", 0.0)
 
 
-## Ловим в _input, а не в _unhandled_input: иначе Esc успеет дойти до
-## UIManager и закрыть экран настроек вместо отмены захвата, а нажатие на
-## клавише-действии — до игровых систем.
+## Ловим в _input, не в _unhandled_input: иначе Esc дошёл бы до UIManager и закрыл экран настроек вместо отмены захвата.
 func _input(event: InputEvent) -> void:
 	if _capturing == &"":
 		return
@@ -100,9 +86,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-## Ставит [param code] действию. Конфликт разрешаем СВОПОМ: если код уже занят
-## другим действием, оно получает старую привязку переназначаемого. Так ни одно
-## действие не остаётся без клавиши и не появляется дубликатов.
+## Ставит code действию. Конфликт — СВОПОМ: занятый другим код получает старую привязку; ни одно действие не остаётся без клавиши.
 func _assign(action: StringName, code: String) -> void:
 	if code == "":
 		_cancel_capture()
@@ -127,8 +111,7 @@ func _assign(action: StringName, code: String) -> void:
 	setting_changed.emit(self)
 
 
-## Пишем в черновик только ОТЛИЧИЯ от project.godot: совпало с дефолтом — убираем
-## запись, иначе сейв обрастает переопределениями, которые ничего не меняют.
+## В черновик — только ОТЛИЧИЯ от project.godot: совпало с дефолтом — запись убирается.
 func _set_code(action: StringName, code: String) -> void:
 	if code == SettingsManager.default_code_for(action):
 		_codes.erase(action)
@@ -136,7 +119,7 @@ func _set_code(action: StringName, code: String) -> void:
 		_codes[action] = code
 
 
-## Действующая привязка с учётом черновика: своё переопределение или дефолт.
+## Действующая привязка с учётом черновика: переопределение или дефолт.
 func _code_of(action: StringName) -> String:
 	var code: String = _codes.get(action, "")
 	return code if code != "" else SettingsManager.default_code_for(action)
@@ -155,9 +138,7 @@ func _refresh_rows() -> void:
 		_rows[action].set_key(SettingsManager.code_display_name(_code_of(action)))
 
 
-## Строка под колонками. [param seconds] > 0 — сама гаснет. Таймер с
-## process_always: в забеге настройки открыты поверх паузы. Номер вызова — чтобы
-## таймер старого сообщения не стёр новое.
+## Строка под колонками; [param seconds] > 0 — сама гаснет. Таймер с process_always (настройки поверх паузы); номер вызова не даёт старому таймеру стереть новое.
 func _show_status(line: String, seconds: float) -> void:
 	_status_serial += 1
 	_status.text = line

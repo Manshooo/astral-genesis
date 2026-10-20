@@ -1,12 +1,11 @@
 # res://src/ui/pause_menu/pause_menu.gd
-## Пауза языка «Отголосок» (§9 «Меню — спека»): мир не закрывается окном, а
-## заволакивается (UI_MenuBackdrop), пункты-мысли стоят колонкой по центру.
+## Пауза «Отголосок» (§9 «Меню — спека»): мир заволакивается (UI_MenuBackdrop), пункты-мысли колонкой по центру.
 extends UI_MenuScreen
 
 const MENU_SCENE := "res://src/levels/menu_map/L_menu_map.tscn"
-## Сколько держать отметку «Сохранено» на кнопке, прежде чем вернуть исходный текст.
+## Сколько держать отметку «Сохранено» на кнопке.
 const SAVED_HINT_SECONDS := 1.5
-## Пункты входят лесенкой, каждый на 30 мс позже предыдущего (§7).
+## Пункты входят лесенкой, каждый на 30 мс позже (§7).
 const ITEM_STAGGER := 0.03
 
 const SAVE_ICON := preload("res://assets/ui/icons/save.svg")
@@ -20,8 +19,7 @@ func _ready() -> void:
 	_stagger_items()
 
 
-## Лесенка входа пунктов поверх общего входа экрана: колонка проступает сверху
-## вниз, как мысль, а не появляется блоком.
+## Лесенка входа пунктов: колонка проступает сверху вниз, как мысль.
 func _stagger_items() -> void:
 	var i := 0
 	for item in _items.get_children():
@@ -40,10 +38,7 @@ func _on_continue_pressed() -> void:
 	UIManager.close_top()
 
 
-## Ручное сохранение. Прогресс и так пишется на каждой смене комнаты, но распад
-## тикает непрерывно — эта кнопка фиксирует запас на текущий момент.
-## Отклик обязателен: без него кнопка выглядит сломанной (сохранение молча
-## успевает пройти между кадрами).
+## Ручное сохранение: распад тикает непрерывно — кнопка фиксирует запас на сейчас. Отклик обязателен, иначе выглядит сломанной.
 func _on_save_pressed() -> void:
 	if not RunManager.save_progress():
 		_flash_save_button("PAUSE_SAVE_NOTHING", false)
@@ -57,28 +52,21 @@ func _on_settings_pressed() -> void:
 
 
 func _on_exit_to_menu_pressed() -> void:
-	# Меню грузится в фоне (SceneLoader), пока пункты гаснут, а нажатый бежит
-	# штрихом «занято»; мир под паузой стоит, пока сцена не готова — снесённый
-	# раньше, он показал бы под размытием пустоту.
+	# Меню грузится в фоне, пока пункты гаснут; мир стоит, пока сцена не готова — иначе под размытием пустота.
 	for node in _items.find_children("*", "Button", true, false):
 		(node as Button).disabled = true
 	var pressed := get_node_or_null(^"Content/Column/ToMenu") as UI_EchoButton
 	if pressed:
 		pressed.busy = true
 	var menu := await SceneLoader.load_scene(get_tree(), MENU_SCENE)
-	# Забег не заканчиваем — только фиксируем точку и отпускаем мир: сцена сейчас
-	# уйдёт, а RunManager (autoload) её переживёт и не должен остаться со ссылками
-	# на убитые комнаты.
+	# Забег не заканчиваем, только фиксируем точку и отпускаем мир: RunManager переживёт сцену и не должен держать убитые комнаты.
 	RunManager.leave_to_menu()
 	UIManager.close_all()
 	UIManager.enabled = false
 	get_tree().change_scene_to_packed(menu)
 
 
-## Подменяет подпись кнопки на время, затем возвращает исходную. Удачное
-## сохранение — сиреневым и со значком дискеты (как отметка сохранения в HUD),
-## отказ — только словами: «нечего» не событие, отмечать его значком незачем.
-## Таймер с process_always: игра на паузе, обычный бы не тикал.
+## Подменяет подпись кнопки на время: удачное сохранение — сиреневым со значком дискеты, отказ — только словами. Таймер с process_always (на паузе обычный не тикал бы).
 func _flash_save_button(key: String, saved: bool) -> void:
 	var original := save_button.text
 	if save_button.disabled:

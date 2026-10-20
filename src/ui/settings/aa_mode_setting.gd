@@ -1,8 +1,5 @@
 # res://src/ui/settings/aa_mode_setting.gd
-## Список режимов сглаживания. Пункты — фиксированный, короткий список значений
-## RS_GraphicsPreset.AAMode, поэтому заводится в коде, а не через Items
-## редактора: собрать popup/item_N/* вручную в .tscn ненадёжно, а вариантов и
-## так конечное число.
+## Список режимов сглаживания (RS_GraphicsPreset.AAMode): пункты заводятся в коде, не через Items — popup/item_N/* в .tscn вручную собирать ненадёжно.
 class_name AAModeSetting
 extends OptionSetting
 
@@ -14,7 +11,7 @@ func _ready() -> void:
 		RS_GraphicsPreset.AAMode.MSAA_2X,
 		RS_GraphicsPreset.AAMode.MSAA_4X,
 	]
-	# Ключом переводится только «Выкл»: FXAA и MSAA — имена, их не переводят.
+	# Ключом переводится только «Выкл»: FXAA и MSAA — имена.
 	add_item("SETTINGS_AA_OFF")
 	add_item("FXAA")
 	add_item("MSAA 2x")

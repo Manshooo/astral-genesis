@@ -1,7 +1,4 @@
-## Список «Эффекты освещения»: ступени из каталога
-## (RS_GraphicsPresetLibrary.effects_levels), «Выкл» среди них первой. Пункты
-## строятся из данных, как у ShadowQualitySetting: новая ступень — строка в
-## data/graphics_presets.tres, а не правка сцены меню.
+## Список «Эффекты освещения»: ступени из RS_GraphicsPresetLibrary.effects_levels, «Выкл» первой; новая ступень — строка в data/graphics_presets.tres.
 class_name ScreenEffectsSetting
 extends OptionSetting
 

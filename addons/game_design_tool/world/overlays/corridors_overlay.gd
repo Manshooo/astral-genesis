@@ -1,28 +1,19 @@
 ## res://addons/game_design_tool/world/overlays/corridors_overlay.gd
-## Оверлей «Коридоры»: трассы веток по клеткам кита, как их разложил
-## RS_CorridorPlanner, — плита в центре тайла и «рукав» к каждому открытому
-## проёму, цвет на ветку. Так трасса видна раньше, чем появится сборка тайлов
-## в игре (этап 4 карточки коридоров), и видна ровно та, что построит игра: план
-## тот же, что у RunManager.
-##
-## Схема рядом с настоящими кусками кита (их ставит «Геометрия»): кусок
-## выбирается по маске проёмов, а маску здесь и показываем — ошибка раскладки
-## (проём в стену, лишний стык) видна по рукавам, тогда как настоящий меш её
-## только замаскировал бы.
+## Оверлей «Коридоры»: трассы веток по клеткам плана RS_CorridorPlanner — плита в
+## центре тайла и «рукав» к каждому открытому проёму, цвет на ветку.
+## [[Редакторские инструменты]] §«Коридоры и сетка во вьюпорте».
 @tool
 extends Node3D
 
 const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
-## Цвет выделенной ветки — тот же, что у обводки выделенной комнаты
-## (selection_outline.tres): одна разметка инструмента на все оверлеи.
+## Как у обводки в selection_outline.tres.
 const SELECTED_COLOR := Color("#cfc61b")
-## Ширина плиты — сечение коридора в ките (6 м внутри), толщина — чтобы не
-## тонуть в полу комнат и не мерцать с ним.
+## Ширина — сечение коридора в ките; высота и подъём — чтобы плита не мерцала с полом.
 const SLAB_WIDTH := 6.0
 const SLAB_HEIGHT := 0.25
 const SLAB_LIFT := 0.3
 
-## ветка -> её меши; нужно, чтобы перекрасить выделенную целиком.
+## ветка -> её меши.
 var _meshes_by_branch: Dictionary[StringName, Array] = {}
 var _materials: Dictionary[StringName, StandardMaterial3D] = {}
 var _selected_material := _flat_material(SELECTED_COLOR)
@@ -44,8 +35,7 @@ func rebuild(view: LayerView) -> void:
 		for side in plan.topology.side_count(cell):
 			if mask & (1 << side) == 0:
 				continue
-			# Грань клетки — на полпути к центру соседа: так рукав знает длину из
-			# вложения, а не из зашитого здесь размера клетки.
+			# Длина рукава из вложения, а не из размера клетки в коде.
 			var to_face := (plan.embedding.cell_origin(plan.topology.neighbour(cell, side)) - origin) * 0.5
 			var dir := to_face.normalized()
 			var length := to_face.length() - SLAB_WIDTH * 0.5
@@ -67,7 +57,7 @@ func set_selected(node_id: StringName) -> void:
 			mesh.material_override = _selected_material
 
 
-## Сколько веток нарисовано — для проверки инструмента.
+## Для проверки инструмента.
 func branch_count() -> int:
 	return _meshes_by_branch.size()
 
@@ -93,15 +83,8 @@ func _add_slab(branch: StringName, center: Vector3, size: Vector3, material: Mat
 	_meshes_by_branch[branch].append(mesh)
 
 
-## Цвет ветки — от её id, а не от порядка: одна и та же ветка на пересборке
-## того же сида остаётся того же цвета, и глаз её не теряет. Общий с оверлеем
-## «Сетка»: дверь там красится цветом ветки, в которую ведёт, и разные цвета
-## одной ветки в двух оверлеях врали бы.
-##
-## Хэш — через золотое сечение, а не остатком от деления: у соседних имён
-## (…corridor_0, …corridor_1) хэш строки отличается на единицы, и остаток давал
-## им почти один оттенок. Пока веток было 1–3 на этаж, это терялось; с коридором
-## на каждый отрезок между развилками соседние коридоры сливались в одно пятно.
+## Цвет ветки от id; золотое сечение, а не остаток — иначе соседние имена
+## дают один оттенок. Общий с «Сеткой».
 static func branch_color(branch: StringName) -> Color:
 	return Color.from_hsv(fposmod(hash(String(branch)) * 0.6180339887, 1.0), 0.55, 0.85)
 

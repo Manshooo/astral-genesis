@@ -1,29 +1,7 @@
 ## res://addons/game_design_tool/world/overlays/rooms_overlay.gd
-## Оверлей «Геометрия»: реальные сцены комнат и куски кита коридоров на своих
-## местах по RS_LayerPlan — тот же генератор, та же раскладка и тот же кит, что
-## и у игры, только превью-сцена вместо игровой. Никакой отдельной «схемы
-## отрисовки» здесь нет и не нужно: схему плана рисует оверлей «Коридоры».
-##
-## Тайлы ставит тот же RS_CorridorKit.instantiate, что и RunManager: поставь их
-## превью по-своему — и показывало бы не тот коридор, что построит игра. Кита
-## нет (LayerView.kit == null) — ставятся одни комнаты.
-##
-## Комнаты НЕ регистрируются в ECS (World.add_entity не зовётся): у Entity
-## _initialize вызывается только явно из World.add_entity, поэтому просто
-## инстанцировать сцену и положить её в дерево безопасно — компоненты
-## остаются detached (RS_RoomLayout уже умеет читать двери и с detached-
-## инстансов), а тела в комнатах сами отсекают физическую симуляцию по
-## Engine.is_editor_hint() (см. e_body_*.gd) — редактор и так их не запустит.
-##
-## Обводка выделенной комнаты — НЕ свой шейдер, а material_overlay на каждом
-## GeometryInstance3D, тем же приёмом и через тот же RS_EntityVisuals.geometries,
-## каким O_OutlineVisual красит интерактивы в игре (см. [[Взаимодействие]]):
-## каждая сцена комнаты — Entity (room_template.gd/hub.gd/test_room.gd), так
-## что переиспользование готовое, не подгонка чужого кода под другую задачу.
-## Тайл коридора не Entity, у него обводятся все меши поддерева; выделенная
-## ветка обводится целиком, всеми своими тайлами. Цвет свой — жёлто-оливковый
-## (#cfc61b), не игровой синий: это разметка инструмента, а не подсветка
-## интерактива в мире.
+## Оверлей «Геометрия»: реальные сцены комнат и куски кита коридоров на местах по
+## RS_LayerPlan; кит ставит тот же RS_CorridorKit.instantiate, что и игра.
+## [[Редакторские инструменты]] §«Коридоры и сетка во вьюпорте».
 @tool
 extends Node3D
 
@@ -45,7 +23,7 @@ func rebuild(view: LayerView) -> void:
 		var spatial := room as Node3D
 		if spatial:
 			spatial.transform = view.plan.room_transform(node_data.id)
-			# Сборная комната — теми же стенами, что поставит игра (LayerStreamer).
+			# Те же стены, что поставит игра (LayerStreamer).
 			var shell := RS_RoomLayout.shell_of(room)
 			if shell and shell.walls:
 				shell.walls.assemble(spatial, node_data.id, view.plan)
@@ -55,7 +33,7 @@ func rebuild(view: LayerView) -> void:
 		_build_tiles(view)
 
 
-## Сколько тайлов коридора стоит — для проверки инструмента.
+## Для проверки инструмента.
 func tile_count() -> int:
 	var count := 0
 	for tiles: Array in _tiles.values():
@@ -96,10 +74,7 @@ func _outline(node_id: StringName, material: Material) -> void:
 			geometry.material_overlay = material
 
 
-## free(), не queue_free(): пересборка синхронная (сид меняется, глубина
-## меняется — всё в один тик), и отложенное удаление оставило бы старые
-## комнаты видимыми до конца кадра, наложенными на новые. Тот же приём, каким
-## RS_RoomLayout/RS_RoomPresetLibrary уже освобождают инстансы после осмотра.
+## free(), не queue_free(): пересборка синхронна, старые комнаты не должны дожить до новых.
 func clear() -> void:
 	for room: Node in _rooms.values():
 		room.free()

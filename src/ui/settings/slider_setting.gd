@@ -1,10 +1,10 @@
 # res://src/ui/settings/slider_setting.gd
-## Настройка-слайдер. Повесить на HSlider, выставить setting_key в инспекторе.
+## Настройка-слайдер: на HSlider, setting_key в инспекторе.
 class_name SliderSetting
 extends HSlider
 
 @export var setting_key: String = ""
-## Множитель для отображения (например mouse_sensitivity хранится как 0.002, а на слайдере — 2.0)
+## Множитель для отображения (mouse_sensitivity 0.002 хранится, 2.0 на слайдере).
 @export var display_multiplier: float = 1.0
 ## Формат отображения значения в текстовой метке.[br]
 ## Примеры использования:[br]
@@ -15,8 +15,7 @@ extends HSlider
 ## [code]"%d%%"[/code]  -> Целое число со знаком процента (пример: 42%)[br]
 @export var display_format: String = "%.1f"
 @export var value_label_path: NodePath
-## Ключ перевода подписи на нуле — когда ноль значит не число, а режим
-## («Ограничение FPS: 0» — это «без ограничения»). Пусто — ноль как число.
+## Ключ перевода подписи на нуле — когда ноль значит режим («Ограничение FPS: 0» = без ограничения); пусто — ноль как число.
 @export var zero_text_key: String = ""
 
 signal setting_changed(control: SliderSetting)

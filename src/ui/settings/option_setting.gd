@@ -1,8 +1,5 @@
 # res://src/ui/settings/option_setting.gd
-## Настройка-список. Повесить на OptionButton, задать пункты в инспекторе
-## (Items) и параллельным массивом option_values — какое значение настройки
-## соответствует пункту с тем же индексом (в .tscn у enum-настроек это числа
-## самого enum). Индексы должны совпадать: пункт N ↔ option_values[N].
+## Настройка-список для OptionButton: пункты в инспекторе (Items) и параллельный option_values (пункт N ↔ option_values[N]; у enum — числа enum).
 class_name OptionSetting
 extends OptionButton
 

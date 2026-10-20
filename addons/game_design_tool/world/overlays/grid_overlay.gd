@@ -1,43 +1,32 @@
 ## res://addons/game_design_tool/world/overlays/grid_overlay.gd
-## Оверлей «Сетка»: клетки плана так, как их видит раскладка, — решётка слоя,
-## footprint каждой комнаты и куда она повёрнута, её сокеты (дверь или глухой),
-## тупики и стыки веток. Рисует узел сетки GridView (src/grid/); оверлей только
-## переводит план в клетки и цвета — сам узел про комнаты не знает.
-##
-## Зачем рядом с «Геометрией» и «Коридорами»: меши показывают, что построено, но
-## не почему. Какой сокет раскладка сделала дверью, как повёрнута коробка, где одна
-## ветка переходит в другую — в мешах этого не видно вовсе, а в плане это главное.
-##
-## Линии лежат у пола уровня и прячутся под потолками комнат, как и плиты
-## «Коридоров»: этажи слоя стоят друг над другом на тех же клетках, и схема,
-## нарисованная поверх всего, сложила бы три этажа в одну кашу. Смотреть её —
-## с выключенной «Геометрией».
+## Оверлей «Сетка»: клетки плана — решётка слоя, footprint и поворот комнат,
+## сокеты, тупики и стыки веток. Рисует GridView (src/grid/), оверлей только
+## переводит план в клетки и цвета; смотреть с выключенной «Геометрией».
+## [[Редакторские инструменты]] §«Коридоры и сетка во вьюпорте».
 @tool
 extends Node3D
 
 const LayerView := preload("res://addons/game_design_tool/world/layer_view.gd")
 const CorridorsOverlay := preload("res://addons/game_design_tool/world/overlays/corridors_overlay.gd")
-## Цвет выделения — тот же, что у обводки комнаты и ветки в других оверлеях.
+## Как у обводки в selection_outline.tres.
 const SELECTED_COLOR := Color("#cfc61b")
 const LATTICE_COLOR := Color(0.3, 0.33, 0.4)
 const ROOM_COLOR := Color(0.92, 0.92, 0.95)
 const BLANK_SOCKET_COLOR := Color(0.55, 0.55, 0.6)
 const DEAD_END_COLOR := Color(0.95, 0.25, 0.2)
 const JOINT_COLOR := Color(1.0, 0.35, 0.9)
-## Решётка — на клетку шире всего, что стоит на уровне: видно, где кончается
-## раскладка и куда сети было где пройти.
+## Решётка шире занятых клеток на столько клеток.
 const LATTICE_MARGIN := 1
-## Над плитами «Коридоров» (их верх — 0.43 м): иначе плита накрывала бы линии.
+## Выше плит «Коридоров» (верх 0.43 м), иначе они накроют линии.
 const LIFT := 0.5
 
-## Сколько чего нарисовано на последней отрисовке — для проверки инструмента.
+## Счётчики последней отрисовки — для проверки инструмента.
 var rooms_outlined := 0
 var door_marks := 0
 var blank_socket_marks := 0
 var dead_end_marks := 0
 var joint_marks := 0
-## Комната -> куда показала её стрелка поворота. Проверка сверяет его с поворотом
-## корня комнаты — формулой, которой оверлей не пользуется.
+## Комната -> куда показала стрелка поворота; проверка сверяет её с поворотом корня.
 var arrows: Dictionary[StringName, Vector3] = {}
 
 var _grid := GridView.new()
@@ -65,8 +54,7 @@ func grid() -> GridView:
 	return _grid
 
 
-## Перерисовывает всё: выделение меняет цвет контура, а меш у узла один. Слой —
-## сотни отрезков, пересборка по клику ничего не стоит.
+## Перерисовывает всё: меш у узла один, слой — сотни отрезков.
 func _draw() -> void:
 	_grid.clear()
 	rooms_outlined = 0
@@ -96,9 +84,7 @@ func _draw() -> void:
 	_grid.commit()
 
 
-## Решётка — прямоугольник клеток каждого уровня вокруг всего, что на нём стоит.
-## Прямоугольник — свойство нынешней раскладки (область этажа по X и Z, в которую
-## она разбрасывает комнаты), а не сетки, поэтому он здесь, а не в узле.
+## Прямоугольник — свойство нынешней раскладки, а не сетки, поэтому он здесь, а не в узле.
 func _draw_lattice(plan: RS_LayerPlan) -> void:
 	var bounds: Dictionary[int, Rect2i] = {}
 	for cell: Vector3i in plan.node_by_cell:
@@ -113,12 +99,8 @@ func _draw_lattice(plan: RS_LayerPlan) -> void:
 		_grid.add_cells(cells, LATTICE_COLOR)
 
 
-## Контур footprint, стрелка поворота и сокеты комнаты. Стрелка показывает, куда
-## смотрит север сцены (её −Z): сторона сцены s смотрит в мир стороной s − turns
-## (RS_LevelNode.turns). Сокеты — где у сборной комнаты может быть дверь
-## (RS_RoomLayout.sockets_in_plan, у лестницы и на верхнем уровне): дверь цветом
-## своей ветки, глухой — тускло. У комнаты с дверями в сцене сокетов нет, только
-## её двери.
+## Стрелка — куда смотрит север сцены: сторона s смотрит в мир стороной s − turns.
+## У комнаты с дверями в сцене сокетов нет, только её двери.
 func _draw_room(plan: RS_LayerPlan, node_data: RS_LevelNode) -> void:
 	var id := node_data.id
 	var color := SELECTED_COLOR if id == _selected_id else ROOM_COLOR
@@ -128,8 +110,7 @@ func _draw_room(plan: RS_LayerPlan, node_data: RS_LevelNode) -> void:
 
 	var anchor: Vector3i = plan.cells[id]
 	var north := plan.topology.rotate_side(anchor, SquareGridTopology.Side.NORTH, -plan.turns.get(id, 0))
-	# Чуть выше решётки: центр чётной коробки — перекрестье решётки, и древко,
-	# лёжа на её линии, мерцало бы пунктиром.
+	# Выше решётки: на её линии древко мерцало бы пунктиром.
 	var from := plan.position_of(id) + Vector3(0.0, 0.05, 0.0)
 	arrows[id] = _grid.add_arrow(from, anchor, north, plan.embedding.cell_size * 0.6, color)
 
@@ -140,8 +121,7 @@ func _draw_room(plan: RS_LayerPlan, node_data: RS_LevelNode) -> void:
 	for face: Vector4i in faces:
 		var cell := GridTopology.face_cell(face)
 		if doors.has(face):
-			# Дверь — стрелкой внутрь, «вход сюда», цветом своей ветки: её плита в
-			# «Коридорах» того же цвета, и черта вдоль грани рядом с ней терялась.
+			# Стрелка, не черта: черта вдоль грани терялась рядом с плитой того же цвета.
 			_grid.add_face_arrow(cell, face.w, plan.embedding.cell_size * 0.25, CorridorsOverlay.branch_color(doors[face]))
 			door_marks += 1
 		else:
@@ -149,8 +129,7 @@ func _draw_room(plan: RS_LayerPlan, node_data: RS_LevelNode) -> void:
 			blank_socket_marks += 1
 
 
-## Стык веток — грань между тайлами разных веток с открытым проёмом: здесь одна
-## ветка переходит в другую, место под будущий шлюз. Каждая грань один раз.
+## Стык веток — открытая грань между тайлами разных веток; каждая — один раз.
 func _draw_joints(plan: RS_LayerPlan) -> void:
 	for tile: Vector3i in plan.corridor_tiles:
 		var mask: int = plan.corridor_tiles[tile]

@@ -1,26 +1,11 @@
 # res://src/systems/gameplay/s_skill_conditions.gd
-# Группа: "gameplay". Считает действия игрока, из которых растут условия рангов
-# навыков (RS_SkillCondition): пока это пройденная дистанция. Захваты тел
-# приходят событием через RunStats.record_body — им система не нужна.
-#
-# Что здесь зачитывается, а что нет, и есть «условия в контексте» (карточка
-# «Игровой цикл — от и до» §4.1):
-#   - только пешком: душа воплощена в теле с C_Walk. Полёт призрака и тело без
-#     ног условия ходьбы не двигают, как «Скорость» не действует без ног;
-#   - только по НОВЫМ клеткам забега: каждая клетка даёт не больше своей стороны
-#     (RS_RunStats.credit_cell_distance), так что круги в колбе километров не
-#     набирают. Клетку и её размер спрашиваем у плана слоя — размер клетки живёт
-#     только во вложении плана, константы метров здесь нет;
-#   - скачок позиции (переход слоя, посадка в тело) шагом не считается.
-#
-# Группа gameplay, а не physics: рейкастов нет, читается одна координата.
-# Порядок: после S_RoomPresence — тот переводит забег в нужный узел, и глубина
-# слоя, по которой берём план, к этому моменту уже актуальна.
+# Группа "gameplay". Считает действия игрока для условий рангов (RS_SkillCondition): дистанция; захваты приходят через RunStats.record_body. Зачитывается только пешком (душа
+# в теле с C_Walk), только по НОВЫМ клеткам забега (RS_RunStats.credit_cell_distance; размер клетки — у плана слоя), скачок позиции шагом не считается.
+# После S_RoomPresence — глубина слоя для плана к этому моменту актуальна. Вики: [[Захват тела]] (навыки).
 class_name S_SkillConditions
 extends System
 
-## Шаг дальше этого за один кадр — не ходьба, а перенос (портал, посадка в тело,
-## телепорт отладочного оверлея). Бегущее тело проходит за кадр сантиметры.
+## Шаг дальше этого за кадр — перенос (портал, посадка, телепорт оверлея), не ходьба.
 const MAX_STEP := 2.5
 
 var _last_position := Vector3.ZERO
@@ -36,14 +21,12 @@ func query() -> QueryBuilder:
 	return q.with_all([C_PlayerInput, C_Embodied, C_Walk])
 
 
-## process_empty: когда игрок перестал быть «пешим» (призрак, безногое тело),
-## запомненная позиция устаревает, и без сброса первый шаг после возвращения
-## считался бы от старого места.
+## process_empty: когда игрок перестал быть «пешим», запомненная позиция устаревает — сброс нужен.
 func setup() -> void:
 	process_empty = true
 	if not SkillManager.condition_completed.is_connected(_on_condition_completed):
 		SkillManager.condition_completed.connect(_on_condition_completed)
-	# Прогресс идёт кадрами, а на диск попадает вместе с контрольной точкой забега.
+	# Прогресс идёт кадрами, на диск — вместе с контрольной точкой забега.
 	if not WorldSave.progress_saved.is_connected(SkillManager.flush):
 		WorldSave.progress_saved.connect(SkillManager.flush)
 
@@ -72,8 +55,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		SkillManager.add_distance(meters)
 
 
-## Сколько из шага засчитывается: ноль вне забега, вне плана слоя и на клетке,
-## которую в этом забеге уже обошли.
+## Сколько из шага засчитывается: ноль вне забега, вне плана и на уже обойденной клетке.
 func _new_cell_meters(position: Vector3, depth: int, step: float) -> float:
 	var stats := RunStats.current
 	if stats == null or RunManager.current_graph == null or depth < 0:
@@ -86,9 +68,7 @@ func _new_cell_meters(position: Vector3, depth: int, step: float) -> float:
 	return stats.credit_cell_distance(RS_RunStats.cell_key(depth, cell), step, embedding.cell_size)
 
 
-## «Душа усвоила» — мысль в HUD. Условие может выполниться и внутри прохода
-## системы, и внутри обработчика события, поэтому показ отложен: компонент
-## сообщения — структурное изменение (Правило v9).
+## «Душа усвоила» — мысль в HUD; показ отложен: компонент сообщения — структурное изменение (правило v9).
 func _on_condition_completed(id: StringName, _rank: int) -> void:
 	var definition := SkillManager.SKILL_TREE.get_definition(id)
 	if definition == null:

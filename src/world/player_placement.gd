@@ -1,31 +1,16 @@
 # res://src/world/player_placement.gd
-# Куда поставить игрока после перехода: к двери, ведущей обратно, на тайл
-# коридора, в SpawnPoint комнаты.
-#
-# Это чистая геометрия над уже заспавненным слоем — ни графа, ни сейва, ни
-# состояния забега ей не нужно, поэтому она не живёт ни в RunManager (автомат
-# забега), ни в LayerStreamer (что лежит в дереве). Раньше полторы сотни строк
-# векторной математики лежали посреди автомата и делали его тысячестрочным.
-#
-# Общее правило всех функций: поворот игрока НЕ трогаем, кроме входа в забег
-# через SpawnPoint. Игрок мог взаимодействовать с дверью под углом, и доворачивать
-# его за него — дезориентирует; тангаж живёт на камере (S_FPSLook) и сюда вообще
-# не попадает.
+# Куда поставить игрока после перехода: к двери, ведущей обратно, на тайл коридора, в SpawnPoint. Чистая геометрия над заспавненным слоем — не в RunManager и не в LayerStreamer. Поворот игрока НЕ трогаем (кроме входа
+# через SpawnPoint): доворот при взаимодействии под углом дезориентирует; тангаж на камере (S_FPSLook).
 class_name PlayerPlacement
 extends RefCounted
 
-## Высота над полом тайла, на которую ставится игрок: капсула не должна родиться
-## в полу, а с полуметра она просто сядет.
+## Высота над полом тайла для игрока: в полу капсула не должна родиться.
 const TILE_ARRIVAL_HEIGHT := 0.5
-## На сколько метров вглубь комнаты отступать от двери, чтобы коллайдер игрока не
-## оказался в стене/проёме (радиус ~0.55, проём ~2.8 в ширину).
+## Отступ вглубь комнаты от двери, м: коллайдер игрока (радиус ~0.55, проём ~2.8) не должен оказаться в стене.
 const ARRIVAL_OFFSET := 1.5
 
 
-## Ставит игрока в комнату. Пришли через выход — появляемся ПЕРЕД тем выходом
-## этой комнаты, что ведёт обратно (вошёл в северную дверь A → вышел из южной
-## двери B). SpawnPoint — только для входа не через дверь (старт забега, загрузка
-## сейва): там авторский поворот как раз уместен.
+## Ставит игрока в комнату: пришли через выход — ПЕРЕД тем выходом, что ведёт обратно (вошёл в северную дверь A → вышел из южной B). SpawnPoint — только для входа не через дверь, там авторский поворот уместен.
 static func in_room(player: Node3D, room: LayerStreamer.SpawnedRoom, came_from: StringName) -> void:
 	var room_node := room.entity as Node as Node3D
 	var spawn_point := room.entity.get_node_or_null(^"SpawnPoint") as Node3D
@@ -42,8 +27,7 @@ static func in_room(player: Node3D, room: LayerStreamer.SpawnedRoom, came_from: 
 		player.global_transform = room_node.global_transform
 
 
-## Загрузка сейва, сделанного в коридоре: у ветки нет ни SpawnPoint, ни двери
-## «обратно», и игрок встаёт на её первый тайл.
+## Загрузка сейва в коридоре: у ветки нет SpawnPoint и двери «обратно» — игрок на её первый тайл.
 static func in_corridor(player: Node3D, tiles: Array) -> void:
 	if tiles.is_empty():
 		return
@@ -51,8 +35,7 @@ static func in_corridor(player: Node3D, tiles: Array) -> void:
 	player.global_position = tile.global_position + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
 
 
-## На тайл коридора за дверью [param door] — для комнат, у которых проёма за
-## дверью нет (RS_LevelNode.door_teleports).
+## На тайл коридора за дверью door — для комнат без проёма за дверью (RS_LevelNode.door_teleports).
 static func in_front_of(
 	player: Node3D, door: Entity, room: LayerStreamer.SpawnedRoom, plan: RS_LayerPlan
 ) -> void:
@@ -65,29 +48,21 @@ static func in_front_of(
 	)
 
 
-## Безопасная точка прибытия перед дверью [param door]: отступаем от полотна
-## перпендикулярно ЕГО СТЕНЕ вглубь комнаты, высоту берём от SpawnPoint (пол).
-##
-## Не трансформ самой двери: её origin лежит в плоскости стены и на высоте центра
-## полотна (~2.3 м) — игрока там зажало бы в геометрии. Направление берём из
-## стороны грани двери ([param side], LayerStreamer.SpawnedRoom.face_of), а не из
-## вектора «на центр комнаты»: так игрок встаёт ровно напротив проёма, а не
-## наискосок от него. И не из положения двери относительно центра: у вытянутой
-## комнаты дверь в торце длинной стены ближе к боковой оси, и сторона вышла бы не та.
+## Безопасная точка перед дверью: отступаем перпендикулярно ЕЁ СТЕНЕ вглубь комнаты (origin двери — в плоскости стены на высоте полотна), высота от SpawnPoint. Направление — по стороне грани [param side]
+## (LayerStreamer.SpawnedRoom.face_of), не по вектору на центр комнаты (у вытянутой комнаты сторона вышла бы не та).
 static func arrival_point(door: Entity, side: int, room_node: Node3D, spawn_point: Node3D) -> Vector3:
 	var door_node := door as Node as Node3D
 	var door_origin := door_node.global_transform.origin
 	var room_origin := room_node.global_transform.origin
 
 	var into_room := Vector3.ZERO
-	# У портала стены нет — он стоит посреди комнаты, и «перпендикулярно стене»
-	# для него бессмысленно. Отходим от него к центру комнаты.
+	# У портала стены нет: отходим от него к центру комнаты.
 	if door is E_VerticalPortal:
 		side = GridTopology.NO_SIDE
 	if side != GridTopology.NO_SIDE:
 		into_room = -Vector3(SquareGridTopology.OFFSETS[side])  # внутрь = против стороны двери
 	else:
-		# Сторону определить не вышло — отступаем к центру комнаты.
+		# Сторону определить не вышло — к центру комнаты.
 		into_room = room_origin - door_origin
 		into_room.y = 0.0
 	if into_room.length() < 0.001:
@@ -99,12 +74,7 @@ static func arrival_point(door: Entity, side: int, room_node: Node3D, spawn_poin
 	return point
 
 
-## Выход комнаты [param room] (дверь ИЛИ портал), ведущий обратно в came_from —
-## чтобы игрок появился у него, а не в общем SpawnPoint. null, если пришли не
-## через выход (вход в забег, загрузка сейва).
-##
-## Две двери комнаты законно ведут в одну ветку коридора; тогда берётся первая по
-## обходу сцены — обе на этой ветке, и перенос к любой из них честен.
+## Выход комнаты (дверь ИЛИ портал), ведущий обратно в came_from; null, если пришли не через выход. Две двери в одну ветку — берётся первая по обходу сцены.
 static func return_exit(room: LayerStreamer.SpawnedRoom, came_from: StringName) -> Entity:
 	if came_from == &"":
 		return null

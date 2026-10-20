@@ -1,26 +1,7 @@
 # res://src/ui/skill_tree/skill_graph_view.gd
-## Граф дерева навыков — нейросеть вокруг ядра души (§9 «Меню — спека»):
-## нейроны-навыки, синапсы-требования, подписи веток; панорама и зум.
-##
-## Показывает НЕ всё дерево, а изученное, следующее доступное
-## (SkillProgression.is_revealed) и ровно один шаг за ними — пунктирным
-## предпросмотром (is_previewed): игрок читает, куда ветка ведёт дальше, но
-## купить это ещё не может. Дальше предпросмотра дерево для игрока не
-## существует. Прототип показывал сеть целиком; правило «на шаг вперёд»
-## оставлено сознательно (решение 02.10).
-##
-## Скрытый нейрон не рисуется, но МЕСТО за ним закреплено: раскладка считается
-## по всему дереву разом (SkillGraphLayout), поэтому открытие соседа не двигает
-## уже знакомые игроку узлы. Двигается только камера — и только тогда, когда
-## новое иначе не поместилось бы в кадр.
-##
-## Связи берутся из требований: синапс существует ровно там, где менеджер
-## проверяет требование SKILL_RANK. Требование «сумма рангов в ветке» синапсов
-## не даёт — оно про ветку целиком, и веер линий сообщал бы шум, а не структуру.
-## Корни веток растут из ядра: тонкий синапс от души к каждому корню.
-##
-## Нажатие по нейрону навык не покупает, а выбирает: покупка — кнопкой в
-## карточке, где видно цену и требования (§9). Граф лишь сообщает выбор.
+## Граф дерева навыков — нейросеть вокруг ядра души (§9 «Меню — спека»): нейроны, синапсы-требования, подписи веток, панорама и зум. Показывает изученное, доступное (is_revealed) и ровно один шаг за ним — пунктирным
+## предпросмотром (is_previewed); дальше для игрока дерева нет (решение 02.10). Место скрытого нейрона закреплено (раскладка SkillGraphLayout по всему дереву) — двигается только камера. Синапс — там, где менеджер
+## проверяет SKILL_RANK (сумма рангов ветки синапсов не даёт — веер был бы шумом); от ядра — к корням. Нажатие нейрона выбирает навык, покупка — кнопкой карточки.
 class_name UI_SkillGraph
 extends Control
 
@@ -32,12 +13,12 @@ signal skill_selected(id: StringName)
 @export var zoom_max := 1.6
 @export var zoom_step := 1.12
 @export var fit_padding := 48.0
-## Наведение камеры на новое.
+## Длительность наведения камеры на новое.
 @export var fit_duration := 0.35
 
 ## Знак комплекса под деревом Архитектора: улучшения мира растут на нём (§9).
 const SIGN_TEXTURE := preload("res://assets/ui/menu/x16_sign.svg")
-## Знак ×2.2 от поля 250 — и полупрозрачный, чтобы читался фоном, не узором.
+## Знак ×2.2 от поля 250, полупрозрачный — фон, не узор.
 const SIGN_SIZE := 550.0
 const SIGN_ALPHA := 0.07
 ## Ядро души в центре сети: точка как у прицела HUD и дышащий ореол.
@@ -46,8 +27,7 @@ const BREATH_PERIOD := 3.2
 ## Нейроны не дальше этого от края кадра при вписывании — под подписи.
 const LABEL_MARGIN := Vector2(150.0, 40.0)
 
-## Нейроны и подписи веток — по числу навыков и веток в данных, поэтому
-## экземплярами своих сцен («Конвенции проекта» §7).
+## Нейроны и подписи веток — экземплярами своих сцен («Конвенции проекта» §7).
 const NEURON_SCENE := preload("res://src/ui/skill_tree/skill_neuron.tscn")
 const BRANCH_LABEL_SCENE := preload("res://src/ui/skill_tree/branch_label.tscn")
 
@@ -70,8 +50,7 @@ var _panning := false
 var _fitted := false
 var _fit_tween: Tween
 
-## Отдельным свойством, а не через _canvas.scale, чтобы масштаб можно было
-## твинить как одно число вместе с позицией.
+## Отдельным свойством, не _canvas.scale: масштаб твиним как число вместе с позицией.
 var zoom: float = 1.0:
 	set = _set_zoom
 
@@ -86,9 +65,7 @@ func _process(_delta: float) -> void:
 		_core.queue_redraw()
 
 
-## Сеть дерева [param tree_data] с прокачкой [param manager]. Зовётся и при
-## смене вкладки: старая сеть сносится целиком — у деревьев нет общих узлов.
-## [param show_sign] — подложить знак комплекса (дерево Архитектора).
+## Сеть дерева с прокачкой manager; зовётся и при смене вкладки — старая сносится целиком. [param show_sign] — знак комплекса (Архитектор).
 func setup(manager, tree_data: RS_SkillTree, show_sign: bool = false) -> void:
 	_manager = manager
 	_tree_data = tree_data
@@ -119,8 +96,7 @@ func _build_branch_labels() -> void:
 		label.position = (branch["label"] as Vector2) - label.size / 2.0
 
 
-## Пересобрать сеть под текущее состояние навыков. Нейроны не удаляются никогда:
-## показанный узел остаётся показанным (см. SkillProgression.is_revealed).
+## Пересобрать сеть под текущее состояние; нейроны не удаляются — показанный остаётся показанным.
 func refresh() -> void:
 	if _tree_data == null:
 		return
@@ -155,9 +131,7 @@ func _create_neuron(def: RS_SkillDefinition) -> UI_SkillNeuron:
 	return skill_node
 
 
-## Подпись — наружу сети: в ветви, растущей вверх или вниз, — сбоку от нейрона
-## (слева, если он левее ядра); в ветви, растущей вбок, — под нейроном, иначе
-## подпись корня легла бы на его же потомков, растущих в ту же сторону.
+## Подпись — наружу сети: у ветви вверх/вниз сбоку (влево, если нейрон левее ядра); у растущей вбок — под нейроном (иначе легла бы на потомков).
 func _label_side(def: RS_SkillDefinition) -> UI_SkillNeuron.LabelSide:
 	var direction := Vector2.UP
 	for branch in _layout.branches:
@@ -169,7 +143,7 @@ func _label_side(def: RS_SkillDefinition) -> UI_SkillNeuron.LabelSide:
 	return UI_SkillNeuron.LabelSide.LEFT if center.x < -0.5 else UI_SkillNeuron.LabelSide.RIGHT
 
 
-## Выбрать навык: подсветить нейрон и сообщить экрану, чтобы показал карточку.
+## Выбрать навык: подсветить нейрон и сообщить экрану.
 func select(id: StringName) -> void:
 	if not _nodes.has(id):
 		return
@@ -187,8 +161,7 @@ func neuron(id: StringName) -> UI_SkillNeuron:
 	return _nodes.get(id)
 
 
-## Первый навык, который стоит показать при открытии: что можно купить прямо
-## сейчас, иначе — первый показанный.
+## Первый навык при открытии: что можно купить сейчас, иначе первый показанный.
 func default_selection() -> StringName:
 	var first: StringName = &""
 	for def in _tree_data.skills:
@@ -223,8 +196,7 @@ func _update_branch_labels() -> void:
 		label.visible = any
 
 
-## Синапс есть ровно там, где менеджер проверяет требование SKILL_RANK и оба
-## нейрона показаны; от ядра — к корням веток (навыкам без требований-навыков).
+## Синапс — где менеджер проверяет SKILL_RANK и оба нейрона показаны; от ядра — к корням веток.
 func _update_links() -> void:
 	for def in _tree_data.skills:
 		if def == null or not _nodes.has(def.id):
@@ -261,19 +233,17 @@ func _link_state(def: RS_SkillDefinition) -> UI_SkillSynapse.State:
 	return UI_SkillSynapse.State.LOCKED
 
 
-## Ядро — душа в центре сети: точка прицела HUD и дышащий ореол (§7, как
-## отметка игрока на карте).
+## Ядро — душа: точка прицела HUD и дышащий ореол (§7).
 func _draw_core() -> void:
 	var k := 0.5 + 0.5 * sin(TAU * UI_HudMood.now() / BREATH_PERIOD)
 	_core.draw_circle(Vector2.ZERO, 11.0 * lerpf(0.92, 1.08, k), Color(UI_HudMood.SOUL, 0.10 + 0.08 * k))
 	_core.draw_circle(Vector2.ZERO, CORE_RADIUS, UI_HudMood.DOT)
 
 
-# --- Панорама и зум ----------------------------------------------------------
+# --- Панорама и зум ---
 
 
-## Границы показанного плюс поля под подписи: камера наводится на видимое, а не
-## на пустое место, забронированное под будущее.
+## Границы показанного плюс поля под подписи: камера наводится на видимое.
 func _revealed_bounds() -> Rect2:
 	var bounds := Rect2(Vector2.ZERO, Vector2.ZERO)
 	for id in _nodes:
@@ -300,14 +270,11 @@ func _gui_input(event: InputEvent) -> void:
 					_zoom_at(event.position, 1.0 / zoom_step)
 					accept_event()
 			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE:
-				# Тащить можно только за пустое место: до _gui_input графа
-				# событие доходит лишь тогда, когда его не забрал нейрон.
+				# Тащить можно за пустое место: до _gui_input графа событие доходит, если его не забрал нейрон.
 				_panning = event.pressed
 				accept_event()
 	elif event is InputEventMouseMotion and _panning:
-		# Отпускание кнопки могло уйти нейрону (потащили с пустого места и
-		# отпустили над узлом) — тогда «конец панорамы» до графа не доедет.
-		# Сверяемся с маской.
+		# Отпускание могло уйти нейрону — сверяемся с маской кнопок.
 		if (event.button_mask & (MOUSE_BUTTON_MASK_LEFT | MOUSE_BUTTON_MASK_MIDDLE)) == 0:
 			_panning = false
 			return
@@ -331,7 +298,7 @@ func _on_resized() -> void:
 		_request_fit(false)
 
 
-## Кадр ожидания намеренный: сразу после setup() размер контрола ещё нулевой.
+## Кадр ожидания намеренный: сразу после setup() размер контрола нулевой.
 func _request_fit(animated: bool) -> void:
 	await get_tree().process_frame
 	if not is_inside_tree():
@@ -346,7 +313,7 @@ func _fit(animated: bool) -> void:
 	var available := size - Vector2(fit_padding, fit_padding) * 2.0
 	if available.x <= 0.0 or available.y <= 0.0:
 		return
-	# Потолок 1.0: единственный открытый нейрон не раздувается во весь экран.
+	# Потолок 1.0: единственный нейрон не раздувается на весь экран.
 	var target_zoom := clampf(
 		minf(available.x / content.size.x, available.y / content.size.y), zoom_min, 1.0
 	)

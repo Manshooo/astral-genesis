@@ -1,12 +1,6 @@
 # res://src/systems/physics/s_interaction_detector.gd
-# Группа: "physics" — луч интеракции (RayCast3D игрока) обновляется вручную
-# force_raycast_update(), а это запрос к space-state: Jolt крутится на отдельном
-# потоке, и безопасен такой запрос только из _physics_process.
-#
-# Держит на интерактиве под взглядом C_Highlighted. Сам ничего не нажимает:
-# нажатие читает S_InteractInput, а подсветку и подсказку рисуют
-# O_OutlineVisual и HUD по той же метке — один источник правды о том, «на что
-# смотрит игрок».
+# Группа "physics": луч интеракции обновляется force_raycast_update() — запрос к space-state. Держит C_Highlighted на интерактиве под взглядом; нажатие читает S_InteractInput,
+# подсветку и подсказку рисуют O_OutlineVisual и HUD по той же метке. Вики: [[Взаимодействие]].
 class_name S_InteractionDetector
 extends System
 
@@ -17,8 +11,7 @@ func query() -> QueryBuilder:
 	return q.with_all([C_PlayerInput]).with_none([C_UIBlocked])
 
 
-## После S_Movement: луч идёт от камеры, и кастовать его надо из той точки, где
-## тело стоит ПОСЛЕ перемещения этого тика, а не до.
+## После S_Movement: луч идёт от камеры, из точки тела после перемещения.
 func deps() -> Dictionary[int, Array]:
 	return {Runs.After: [S_Movement]}
 
@@ -50,9 +43,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		_current_target = target
 
 
-## Поднимается от коллайдера вверх по дереву в поисках Entity с C_Interactable.
-## Нужно, т.к. коллайдер, в который попал луч — это обычно CollisionShape3D/дочерний
-## узел, а не сама Entity.
+## Вверх от коллайдера до Entity с C_Interactable (луч попадает в дочерний CollisionShape3D).
 func _resolve_interactable(collider: Object) -> Entity:
 	var node := collider as Node
 	while node:

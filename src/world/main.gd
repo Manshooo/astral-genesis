@@ -1,15 +1,11 @@
-# res://src/world/main.gd
+# Корень игровой сцены: кадровый цикл ECS, вход в забег под загрузочным экраном. Вики: [[GECS и правила движка]], [[Цикл забега]].
 extends Node
 
 @onready var world: World = $World
 
 const HUD_SCENE := preload("res://src/ui/hud/hud.tscn")
 
-## Отладочный оверлей — читы и телепорты для проверки механик (dev/debug_overlay.gd).
-## Путём, а не preload: `dev/*` исключён из экспорта, и в собранной игре этого
-## файла нет вовсе. preload резолвится на компиляции и уронил бы релиз, поэтому
-## тут load() по существующему пути — отсутствие оверлея обязано означать «нет
-## читов», а не «мир не грузится».
+## Отладочный оверлей (dev/debug_overlay.gd). load() по пути, не preload: dev/* исключён из экспорта — отсутствие файла значит «нет читов», а не «мир не грузится».
 const DEBUG_OVERLAY_PATH := "res://dev/debug_overlay.tscn"
 
 func _ready() -> void:
@@ -23,8 +19,7 @@ func _ready() -> void:
 	add_child(loading)
 	if not await RunManager.enter_complex_async():
 		return  # вход отменён — сцену уже сменили
-	# Пауза и карты — только когда мир есть: до этого Esc открыл бы меню паузы
-	# поверх шторки, а «Выход в меню» — забег, которого ещё нет.
+	# Пауза и карты — когда мир есть: иначе Esc открыл бы паузу поверх шторки.
 	UIManager.enabled = true
 	await loading.dismiss()
 
