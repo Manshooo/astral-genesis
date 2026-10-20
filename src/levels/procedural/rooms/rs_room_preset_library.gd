@@ -1,63 +1,24 @@
 ## res://src/levels/procedural/rooms/rs_room_preset_library.gd
-## Библиотека пресетов комнат + селектор. Генератор зовёт select_preset() для
-## каждой обычной комнаты ДО того, как у неё появятся рёбра: рёбер будет ровно
-## столько, сколько дверей в выбранной сцене («сначала комната, потом рёбра», см.
-## RS_LevelGraph). Уникальные комнаты (хаб, выход) сюда не ходят — их ставит
-## конфиг генерации.
-##
-## Критерии подбора:
-##   1. Портал (жёстко): у комнаты портал ровно тогда, когда узлу нужен
-##      вертикальный переход (тег vertical_hub). Лишний — мёртвый портал посреди
-##      пола, недостающий — оборванный переход.
-##   2. Прочие теги узла ⊆ теги пресета (жёстко).
-##   3. Тип помещения (мягко): среди прошедших — те, чей room_type совпал с
-##      загаданным узлу. Совпавших нет — группа идёт дальше как есть. Именно
-##      ПРЕДПОЧТЕНИЕ, а не фильтр: тип не несёт структурных обязательств, и
-##      забег не должен становиться несобираемым из-за того, что арсенала ещё не
-##      нарисовали.
-##   4. Авторские веса.
-##
-## Вместимости и смещения «впритык по дверям» нет: степень выводится из сцены, а
-## не сцена подбирается под степень. Специфичности нет тоже — она существовала
-## только потому, что в tags сидела структура, из-за чего комнаты с «лишними»
-## тегами проигрывали безликим.
-##
-## Шаги 2 и 3 — РАЗНЫЕ оси, и держать их врозь обязательно: теги отвечают «что
-## комната умеет структурно», тип — «что это за помещение». Общий массив сделал
-## бы тип жёстким требованием (см. RS_RoomPreset.room_type).
-## @tool — иначе в редакторе ресурс грузится ПЛЕЙСХОЛДЕРОМ и его методы позвать
-## нельзя («Attempt to call a method on a placeholder instance»). «Редактор
-## пресетов» зовёт validate, «Генератор мира» — explain_selection, всё прямо из
-## редактора.
+## Библиотека пресетов комнат + селектор: select_preset() для каждой обычной комнаты ДО рёбер (рёбер ровно столько, сколько
+## дверей в сцене). Подбор: портал (жёстко, тег vertical_hub) → теги узла ⊆ теги пресета (жёстко) → room_type (мягко,
+## предпочтение) → веса. Теги и тип — РАЗНЫЕ оси. @tool: иначе в редакторе ресурс грузится плейсхолдером без методов.
+## Вики: [[Цикл забега]] (Две оси подбора комнаты).
 @tool
 class_name RS_RoomPresetLibrary
 extends Resource
 
 @export var presets: Array[RS_RoomPreset] = []
 
-## Каталог типов помещений — вторая ось подбора. null = типов нет вовсе, подбор
-## работает ровно как до их появления. Лежит здесь, а не отдельным аргументом
-## generate_run: см. шапку RS_RoomTypeCatalog.
+## Каталог типов помещений — вторая ось подбора; null = типов нет.
 @export var type_catalog: RS_RoomTypeCatalog
 
-## Словарь структурных тегов — ОПИСАНИЯ, а не список разрешённых. На подбор не
-## влияет вовсе (_tags_cover сравнивает сырые StringName), нужен только
-## инструментам: показать дизайнеру, что значит `vertical_hub`, и отличить
-## настоящий тег от опечатки. null = описаний нет, облака тегов работают как
-## раньше. См. RS_RoomTagCatalog.
+## Словарь структурных тегов — ОПИСАНИЯ для инструментов, подбор их не читает (RS_RoomTagCatalog).
 @export var tag_catalog: RS_RoomTagCatalog
 
-## Запасной пресет, когда ни один не подошёл (напр. портальной комнаты с нужными
-## тегами нет вовсе). Может быть null — тогда select_preset вернёт null и
-## генератор оставит узлу заранее проставленный placeholder.
+## Запасной пресет, когда ни один не подошёл; null — узел остаётся с placeholder.
 @export var fallback: RS_RoomPreset
 
-## Пресет домашнего узла (hub.tscn) — данные для инструментов (Room Wizard,
-## инлайн-редактор «Генератора мира»), НЕ участник автоподбора. Намеренно вне
-## presets: хаб ставит уникальная комната конфига генерации
-## (data/world_gen_config.tres), а попади он сюда, обычные узлы получали бы
-## вторые хабы — у него пустые tags и нет портала, то есть он проходит все
-## жёсткие фильтры.
+## Пресет домашнего узла — для инструментов, НЕ участник автоподбора: у него пустые tags и нет портала, в presets он дал бы обычным узлам вторые хабы.
 @export var hub: RS_RoomPreset
 
 
@@ -74,28 +35,19 @@ const REASON_FALLBACK := "fallback"
 const REASON_PORTAL := "портал"
 ## Пресет занят уникальной комнатой.
 const REASON_UNIQUE := "уникальная"
-## Тег, которым пресет объявляет портал, а узел — нужду в нём. Единственный
-## структурный тег, который подбор сверяет: level_exit на пресетах остался от
-## прежней генерации (выход теперь уникальная комната), и сверять его значило
-## бы вернуть специфичность, от которой подбор ушёл.
+## Тег портала на пресете и нужды в нём на узле — единственный структурный тег, который сверяет подбор (level_exit остался от прежней генерации).
 const PORTAL_TAG := &"vertical_hub"
 const IGNORED_STRUCTURAL: Array[StringName] = [&"level_exit"]
 
 
-## Комната для узла или fallback/null. rng должен быть тем же, что и во всей
-## генерации, — иначе подстановка перестанет быть детерминированной по сиду.
-## [param excluded] — пресеты уникальных комнат: выход, стоящий в пуле, иначе
-## выпадал бы обычным узлам вторым и третьим финишем.
+## Комната для узла или fallback/null; rng тот же, что во всей генерации (детерминизм по сиду). [param excluded] — пресеты уникальных комнат.
 func select_preset(
 	node: RS_LevelNode, rng: RandomNumberGenerator, excluded: Array[RS_RoomPreset] = []
 ) -> RS_RoomPreset:
 	return _select(node, rng, excluded, null)
 
 
-## Тот же отбор, но с протоколом: на каком шаге отсеялся каждый пресет. Для
-## редакторского инструмента — правки весов часто ни на что не влияют, потому что
-## конкуренты отсеялись раньше, по порталу или тегам.
-## Возвращает { "preset": RS_RoomPreset|null, "reasons": { display_name: причина } }.
+## Тот же отбор с протоколом: на каком шаге отсеялся каждый пресет. Возвращает { "preset": ..., "reasons": { display_name: причина } }.
 func explain_selection(
 	node: RS_LevelNode, rng: RandomNumberGenerator, excluded: Array[RS_RoomPreset] = []
 ) -> Dictionary:
@@ -104,10 +56,7 @@ func explain_selection(
 	return {"preset": preset, "reasons": reasons}
 
 
-## Общий код отбора для select_preset и explain_selection: разъезд между «как
-## выбирается на самом деле» и «как объясняет инструмент» был бы хуже дублирования.
-## [param reasons] Dictionary для протокола или null. Протокол заодно глушит
-## push_warning: инструмент гоняет сотни узлов, редактор утонул бы в предупреждениях.
+## Общий код отбора для select_preset и explain_selection. [param reasons] — Dictionary протокола или null; протокол глушит push_warning.
 func _select(
 	node: RS_LevelNode, rng: RandomNumberGenerator, excluded: Array[RS_RoomPreset], reasons: Variant
 ) -> RS_RoomPreset:
@@ -129,12 +78,7 @@ func _select(
 			_note(reasons, p, REASON_CANDIDATE)
 
 	if candidates.is_empty():
-		# Fallback фильтров не проходит — это запасной выход, а не кандидат. С
-		# тегами он может разойтись без последствий, с порталом — нет: портальный
-		# узел без портала в сцене оставляет переход оборванным (сосед по ребру
-		# получит портал сюда, а обратного не будет), лишний портал — мёртвый
-		# посреди пола. Такое уже не деградация, а сломанный забег, поэтому ошибка,
-		# а не предупреждение; validate() ловит это заранее.
+		# Fallback фильтров не проходит. С тегами может разойтись, с порталом — нет: оборванный переход или мёртвый портал — сломанный забег, поэтому ошибка; validate() ловит заранее.
 		var fallback_portal := fallback != null and fallback.tags.has(PORTAL_TAG)
 		if reasons == null:
 			if fallback_portal != needs_portal:
@@ -155,8 +99,7 @@ func _select(
 	return chosen
 
 
-## Теги узла, которые подбор требует от пресета: всё, кроме структурных, которые
-## он сверяет сам (портал) или не сверяет вовсе.
+## Теги узла, которые подбор требует от пресета (без структурных).
 func _required_tags(node: RS_LevelNode) -> Array[StringName]:
 	var required: Array[StringName] = []
 	for tag in node.tags:
@@ -165,14 +108,7 @@ func _required_tags(node: RS_LevelNode) -> Array[StringName]:
 	return required
 
 
-## Сужает группу до пресетов загаданного узлу типа — но ТОЛЬКО если такие в ней
-## есть; иначе возвращает группу нетронутой. Отсюда и «предпочтение, а не
-## фильтр»: пока арсеналов нужного размера не нарисовали, узел-арсенал спокойно
-## получает обычную комнату, а не остаётся на placeholder.
-##
-## Пустой загаданный тип — полноценный случай, а не «всё равно»: безликий узел
-## предпочитает безликие пресеты. Иначе тематическая комната лезла бы в каждый
-## непомеченный узел и перестала бы читаться как особенная.
+## Сужает группу до пресетов загаданного типа, но только если такие есть (предпочтение, не фильтр). Пустой тип — полноценный случай: безликий узел предпочитает безликие пресеты.
 func _prefer_room_type(
 	pool: Array[RS_RoomPreset], wanted: StringName, reasons: Variant
 ) -> Array[RS_RoomPreset]:
@@ -205,7 +141,7 @@ func _preset_label(preset: RS_RoomPreset) -> String:
 	return preset.resource_path.get_file().get_basename()
 
 
-## Каждый тег узла должен присутствовать в тегах пресета (node ⊆ preset).
+## Каждый тег узла присутствует в тегах пресета.
 func _tags_cover(preset_tags: Array, node_tags: Array) -> bool:
 	for t in node_tags:
 		if not preset_tags.has(t):
@@ -213,8 +149,7 @@ func _tags_cover(preset_tags: Array, node_tags: Array) -> bool:
 	return true
 
 
-## Взвешенный бросок по авторским весам. Все веса нулевые — равновероятно:
-## пресет с весом 0 всё ещё кандидат, если больше некому.
+## Взвешенный бросок; все веса нулевые — равновероятно.
 func _weighted_pick(pool: Array, rng: RandomNumberGenerator) -> RS_RoomPreset:
 	var weights: Array[float] = []
 	for p: RS_RoomPreset in pool:
@@ -224,11 +159,7 @@ func _weighted_pick(pool: Array, rng: RandomNumberGenerator) -> RS_RoomPreset:
 	return pool[WeightedPick.index(weights, rng.randf())]
 
 
-## Отладочная проверка сцен пресетов: сверяет заявленный slot_count с фактическим
-## числом дверей, ловит двери на одной стене (вторая никогда не получит ребро при
-## раскладке слоя) и дубли slot_id (тот всё ещё служит детерминированным ключом
-## сортировки). Возвращает список расхождений — пусто, если всё сходится.
-## Зовите из теста/инструмента, не в горячем пути генерации.
+## Отладочная проверка сцен: slot_count против числа дверей, двери на одной стене, дубли slot_id. Пусто — всё сходится.
 func validate() -> Array[String]:
 	var problems: Array[String] = []
 	if type_catalog:
@@ -245,25 +176,20 @@ func validate() -> Array[String]:
 		else:
 			has_plain = true
 
-	# Портальные и обычные узлы есть в каждом забеге, и оба вида обязан кто-то
-	# закрыть: иначе всё уходит в fallback, который фильтры не проходит (см.
-	# _select) и у которого портал есть только одним способом из двух.
+	# Портальные и обычные узлы есть в каждом забеге, и оба вида кто-то обязан закрыть (fallback фильтры не проходит, см. _select).
 	if not has_portal:
 		problems.append("нет ни одного пресета с тегом «%s» — переходы между этажами и слоями оборвутся" % PORTAL_TAG)
 	if not has_plain:
 		problems.append("нет ни одного пресета без портала — обычные узлы получат мёртвые порталы")
 
-	# fallback и hub в автоподбор не ходят, поэтому их сцены не проверил бы никто:
-	# fallback встаёт на узел, когда подбор пуст, hub берут инструменты. Разошедшийся
-	# с дверями сцены slot_count у них тот же тихий обрыв, что у обычного пресета.
+	# fallback и hub в автоподбор не ходят — их сцены не проверил бы никто.
 	for extra: RS_RoomPreset in [fallback, hub]:
 		if extra:
 			problems.append_array(validate_preset(extra))
 	return problems
 
 
-## Проверка одного пресета — вынесена, чтобы редакторский инструмент мог
-## показывать проблемы построчно, рядом с самим пресетом.
+## Проверка одного пресета — построчно, для редакторского инструмента.
 func validate_preset(preset: RS_RoomPreset) -> Array[String]:
 	var problems: Array[String] = []
 	var label := _preset_label(preset)
@@ -271,8 +197,7 @@ func validate_preset(preset: RS_RoomPreset) -> Array[String]:
 		problems.append("'%s': не назначена scene" % label)
 		return problems
 
-	# Тип из-за пределов каталога ломается тихо: пресет остаётся валидным,
-	# просто его никогда никому не предпочтут — узлам такой тип не загадывается.
+	# Тип вне каталога ломается тихо: пресет валиден, но никому не предпочитается.
 	if preset.room_type != &"" and type_catalog and type_catalog.by_id(preset.room_type) == null:
 		problems.append(
 			"'%s': тип «%s» отсутствует в каталоге — пресет не будет предпочтён никогда"
@@ -319,10 +244,7 @@ func validate_preset(preset: RS_RoomPreset) -> Array[String]:
 	return problems
 
 
-## Проверка комнаты, собранной по маске сокетов (C_RoomShell): двери ей ставит
-## спавн, поэтому slot_count и стены дверей тут ни при чём, а ломается другое —
-## пустой кит стен даёт комнату без стен, диапазон дверей шире сокетов тихо
-## обрезается, а C_DoorSlot в самой коробке станет дверью, которой нет в плане.
+## Проверка комнаты по маске сокетов: ломается пустой кит стен, диапазон дверей шире сокетов, C_DoorSlot в коробке.
 func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, scene_doors: int) -> Array[String]:
 	var problems: Array[String] = []
 	if shell.size.x < 1 or shell.size.y < 1 or shell.size.z < 1:
@@ -332,8 +254,7 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 		problems.append(
 			"'%s': в коробке %d дверей с C_DoorSlot — двери сборной комнаты ставит спавн" % [label, scene_doors]
 		)
-	# Коробке со стенами в меше без объявленных сокетов достались бы все грани
-	# периметра — и раскладка повела бы коридор в глухую стену меша.
+	# Коробке со стенами в меше без сокетов достались бы все грани — коридор повёл бы в глухую стену.
 	if shell.walls_in_shell and shell.door_sockets.is_empty():
 		problems.append(
 			"'%s': стены в коробке, но сокеты не объявлены (C_RoomShell.door_sockets) — проёмы в меше и есть сокеты"
@@ -342,8 +263,7 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 	if shell.walls == null:
 		problems.append("'%s': у коробки не назначен кит стен (C_RoomShell.walls)" % label)
 	else:
-		# Стены коробки в меше берут из кита только полотно и заглушку: стена с
-		# проёмом и глухая у них уже нарисованы.
+		# Стены в меше берут из кита только полотно и заглушку.
 		var needed: Array[String] = ["door", "plug"]
 		if not shell.walls_in_shell:
 			needed = ["door_wall", "blank_wall", "door"]
@@ -355,9 +275,7 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 				missing.append(field)
 		if not missing.is_empty():
 			problems.append("'%s': в ките стен нет %s" % [label, ", ".join(missing)])
-	# Объявленный сокет не на наружной грани — дверь, которой раскладка найдёт
-	# место в плане, а спавн не найдёт стены: сборка ставит двери только на грани
-	# периметра (RS_RoomWallKit.assemble).
+	# Сокет не на наружной грани: раскладка найдёт место, спавн стены — нет (RS_RoomWallKit.assemble).
 	var box := SquareGridTopology.box(Vector3i.ZERO, shell.size)
 	var topology := SquareGridTopology.new()
 	for face in shell.door_sockets:
@@ -372,10 +290,7 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 			"'%s': дверей %d..%d, а сокетов у footprint %s — %d; нужно 1 ≤ min ≤ max ≤ сокетов"
 			% [label, preset.doors_min, preset.doors_max, shell.size, sockets]
 		)
-	# Раскладка ставит не больше одной двери на сторону (RS_CorridorPlanner.
-	# _pick_sockets): вторая дверь на той же стороне — это коридор вдоль стены от
-	# двери к двери, то самое обволакивание. Дверей больше, чем сторон с сокетами,
-	# пресету не дать.
+	# Не больше одной двери на сторону (RS_CorridorPlanner._pick_sockets): вторая — коридор вдоль стены, обволакивание.
 	var sides := _socket_sides(RS_RoomLayout.sockets_of_shell(shell))
 	if preset.doors_max > sides:
 		problems.append(
@@ -385,10 +300,7 @@ func _validate_shell(label: String, preset: RS_RoomPreset, shell: C_RoomShell, s
 	return problems
 
 
-## Грань выхода наружу (C_RoomShell.exit_sockets) ломается так же тихо, как
-## сокет: не на периметре — двери наружу негде встать; совпала с сокетом — к ней
-## придёт коридор; без объявленных сокетов её отдали бы раскладке все грани
-## периметра; без exit_door в ките сборка оставит голый проём.
+## Грань выхода ломается тихо: не на периметре, совпала с сокетом, без door_sockets, без exit_door в ките.
 func _validate_exits(label: String, shell: C_RoomShell, box: Array[Vector3i], topology: SquareGridTopology) -> Array[String]:
 	var problems: Array[String] = []
 	if shell.exit_sockets.is_empty():
@@ -407,8 +319,7 @@ func _validate_exits(label: String, shell: C_RoomShell, box: Array[Vector3i], to
 	return problems
 
 
-## Сколько сторон с сокетами — каждая сторона на каждом уровне отдельно: у
-## лестницы два входа с одной стороны, но на разных этажах.
+## Сколько сторон с сокетами — каждая сторона на каждом уровне отдельно.
 static func _socket_sides(sockets: Array[Vector4i]) -> int:
 	var sides := {}
 	for face in sockets:
@@ -416,9 +327,7 @@ static func _socket_sides(sockets: Array[Vector4i]) -> int:
 	return sides.size()
 
 
-## Может ли комната пресета получить хотя бы одну дверь: иначе она недостижима, и
-## подбор её не предлагает. У сборной комнаты двери обещает диапазон пресета, у
-## остальных — C_DoorSlot в сцене.
+## Может ли комната получить хотя бы одну дверь: у сборной обещает диапазон пресета, у остальных C_DoorSlot в сцене.
 static func _has_doors(preset: RS_RoomPreset) -> bool:
 	var path := preset.scene.resource_path
 	if RS_RoomLayout.shell_of_scene(path):

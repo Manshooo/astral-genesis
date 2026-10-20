@@ -1,25 +1,12 @@
 ## res://src/grid/grid_view.gd
-## Узел сетки: рисует клетки топологии там, где их ставит вложение, — решётку,
-## контуры групп клеток, отметки на гранях и клетках, стрелки к сторонам.
-## Представление поверх данных, а не их владелец (карточка «Сетка уровня»): что
-## где стоит, решает раскладка, а узел не знает ни комнат, ни коридоров — только
-## клетки, стороны и цвета. Поэтому он живёт в src/grid/ и уйдёт в аддон вместе с
-## ней, а что нарисовать, ему говорит тот, кто знает план (оверлей «Сетка»
-## «Генератора мира»).
-##
-## Где кончается грань клетки, узел не считает сам — концы даёт вложение
-## (GridEmbedding.face_edge): посчитай он их по центрам соседей, он молча
-## предполагал бы квадрат.
-##
-## Всё рисуется линиями одного меша: добавленное после clear() собирается в
-## commit(). Один меш, а не по узлу на отрезок: решётка слоя — сотни отрезков,
-## и пересобирается она на каждый клик выделения.
+## Узел сетки: рисует клетки топологии там, где их ставит вложение — решётку, контуры, отметки, стрелки. Представление
+## поверх данных: комнат и коридоров не знает, что рисовать — говорит оверлей «Сетка». Концы граней даёт вложение
+## (face_edge). Линии одним мешем (clear → add_* → commit): решётка слоя — сотни отрезков и пересобирается на каждый клик.
 @tool
 class_name GridView
 extends Node3D
 
-## Насколько линии приподняты над полом уровня: вровень с полом они мерцали бы с
-## ним.
+## Подъём линий над полом уровня, м: вровень мерцали бы.
 @export var lift := 0.05
 
 var topology: GridTopology
@@ -34,8 +21,7 @@ func _init() -> void:
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.vertex_color_use_as_albedo = true
-	# Цвета задают в sRGB, как везде в инспекторе; без флага они читались бы как
-	# линейные и выходили заметно светлее — тёмная решётка становилась белёсой.
+	# Цвета заданы в sRGB: без флага читались бы линейными и выходили белёсыми.
 	material.vertex_color_is_srgb = true
 	_mesh_instance.material_override = material
 	add_child(_mesh_instance)
@@ -46,13 +32,13 @@ func setup(p_topology: GridTopology, p_embedding: GridEmbedding) -> void:
 	embedding = p_embedding
 
 
-## Забывает всё добавленное; меш остаётся прежним до commit().
+## Забывает добавленное; меш прежний до commit().
 func clear() -> void:
 	_points.clear()
 	_colors.clear()
 
 
-## Собирает добавленное в меш. Пусто — меша нет вовсе.
+## Собирает добавленное в меш; пусто — меша нет.
 func commit() -> void:
 	if _points.is_empty():
 		_mesh_instance.mesh = null
@@ -66,8 +52,7 @@ func commit() -> void:
 	_mesh_instance.mesh = mesh
 
 
-## Все грани клеток [param cells] — решётка. Общая грань двух клеток — один
-## отрезок, а не два друг на друге.
+## Все грани клеток — решётка; общая грань двух клеток — один отрезок.
 func add_cells(cells: Array[Vector3i], color: Color) -> void:
 	var inside: Dictionary[Vector3i, bool] = {}
 	for cell in cells:
@@ -80,16 +65,13 @@ func add_cells(cells: Array[Vector3i], color: Color) -> void:
 			_add_edge(cell, side, color)
 
 
-## Контур группы клеток — грани, за которыми клетка не из группы, на нижнем
-## уровне группы (GridTopology.perimeter).
+## Контур группы клеток (GridTopology.perimeter).
 func add_outline(cells: Array[Vector3i], color: Color) -> void:
 	for face in topology.perimeter(cells):
 		_add_edge(GridTopology.face_cell(face), face.w, color)
 
 
-## Отметка на грани: отрезок вдоль неё длиной [param share] грани, сдвинутый
-## внутрь клетки на [param inset] метров. Сдвиг нужен, чтобы отметка не легла на
-## контур той же грани и была видна рядом с ним.
+## Отметка вдоль грани длиной share, сдвинутая внутрь на inset м, чтобы не лечь на контур.
 func add_face_mark(cell: Vector3i, side: int, color: Color, share := 0.5, inset := 0.3) -> void:
 	var edge := embedding.face_edge(cell, side)
 	var mid := (edge[0] + edge[1]) * 0.5
@@ -100,8 +82,7 @@ func add_face_mark(cell: Vector3i, side: int, color: Color, share := 0.5, inset 
 	_add_segment(mid - half + inward, mid + half + inward, color)
 
 
-## Отметка самой клетки — лучи от центра к серединам граней на [param share]
-## пути. Через грани, а не через углы: углы у топологии не спрашиваются.
+## Отметка клетки — лучи от центра к серединам граней (углы у топологии не спрашиваются).
 func add_cell_mark(cell: Vector3i, color: Color, share := 0.6) -> void:
 	var center := embedding.cell_origin(cell)
 	for side in topology.side_count(cell):
@@ -110,9 +91,7 @@ func add_cell_mark(cell: Vector3i, color: Color, share := 0.6) -> void:
 		_add_segment(center, center.lerp(mid, share), color)
 
 
-## Стрелка длиной [param length] метров из точки [param from] в ту сторону, куда
-## у клетки [param cell] смотрит сторона [param side]. Возвращает направление —
-## по нему проверка сверяет стрелку с тем, что она показывает.
+## Стрелка длиной length м из точки from в сторону side клетки; возвращает направление — для проверок.
 func add_arrow(from: Vector3, cell: Vector3i, side: int, length: float, color: Color) -> Vector3:
 	var direction := embedding.cell_origin(topology.neighbour(cell, side)) - embedding.cell_origin(cell)
 	direction.y = 0.0
@@ -121,9 +100,7 @@ func add_arrow(from: Vector3, cell: Vector3i, side: int, length: float, color: C
 	return direction
 
 
-## Стрелка с середины грани внутрь клетки длиной [param length] метров — «вход
-## сюда». Отличается от отметки грани формой, а не только цветом: цвет может
-## совпасть с тем, что лежит рядом.
+## Стрелка с середины грани внутрь клетки — «вход сюда»; отличается формой, не только цветом.
 func add_face_arrow(cell: Vector3i, side: int, length: float, color: Color) -> void:
 	var edge := embedding.face_edge(cell, side)
 	var mid := (edge[0] + edge[1]) * 0.5
@@ -137,8 +114,7 @@ func segment_count() -> int:
 	return _points.size() / 2
 
 
-## Сколько добавленных отрезков такого цвета — по ним проверка видит, что
-## выделение перекрасило ровно своё.
+## Сколько отрезков такого цвета — для проверок выделения.
 func segments_of_color(color: Color) -> int:
 	var count := 0
 	for i in range(0, _colors.size(), 2):

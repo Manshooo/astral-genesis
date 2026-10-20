@@ -1,10 +1,5 @@
 # res://src/ui/settings/graphics_preset_setting.gd
-## Список пресетов графики — единственный контрол настроек, чьи пункты не
-## авторятся в сцене руками: строится из SettingsManager.GRAPHICS_PRESETS, плюс
-## всегда последним пунктом "Собственный" (не хранится в каталоге — это не
-## пресет, а отметка «игрок отступил от любого из них», см. settings_menu.gd).
-## Так добавление пресета в data/graphics_presets.tres попадает в выпадающий
-## список само, без правки этой сцены.
+## Список пресетов графики — единственный контрол с пунктами не из сцены: строится из SettingsManager.GRAPHICS_PRESETS, последним «Собственный» (не в каталоге — отметка отступления, см. settings_menu.gd).
 class_name GraphicsPresetSetting
 extends OptionSetting
 

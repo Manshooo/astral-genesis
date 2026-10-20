@@ -1,36 +1,20 @@
 # res://src/ui/hud/hud_prompt.gd
-## Подсказка взаимодействия: пока крестик наведён на интерактивный объект,
-## S_InteractionDetector держит на нём C_Highlighted — показываем его prompt_text
-## с клавишей (напр. «[F] Древо навыков»).
-##
-## Клавиша НЕ пишется в подсказку руками: она резолвится из InputMap по
-## C_Interactable.action_name, поэтому верна для любого действия (у тела для
-## захвата это будет «ЛКМ», а не «F») и сама обновляется после переназначения —
-## подписаны на SettingsManager.settings_changed.
-##
-## Реагируем на добавление/снятие C_Highlighted через сигналы мира — тем же
-## паттерном, что и crosshair.gd. C_Highlighted навешивается ТОЛЬКО на интерактивы
-## (тела для захвата — на слое enemies, без C_Interactable, сюда не попадают).
-##
-## Подаётся мыслью, без плашки (UI_ThoughtLine): проявляется и гаснет, а не
-## переключается. Текст держится до конца угасания — иначе, отведя взгляд,
-## игрок видел бы, как гаснет пустое место.
+## Подсказка взаимодействия: пока крестик на интерактиве (C_Highlighted от S_InteractionDetector) — prompt_text с клавишей. Клавиша резолвится из InputMap по C_Interactable.action_name
+## и обновляется после переназначения. Реагируем на сигналы мира, как crosshair.gd; подаётся мыслью без плашки (UI_ThoughtLine), текст держится до конца угасания. Вики: [[Взаимодействие]].
 class_name UI_HudPrompt
 extends Control
 
 const APPEAR_TAU := 0.1
 const FADE_TAU := 0.15
-## Подъём при появлении, px: строка «всплывает» к своему месту.
+## Подъём при появлении, px.
 const RISE := 4.0
-## Размытие при появлении, px: строка «фокусируется», как мысль, а не
-## включается табличкой.
+## Размытие при появлении, px: «фокусируется», а не включается табличкой.
 const BLUR := 3.0
 
 @onready var _line: UI_ThoughtLine = $Blur/Line
 @onready var _blur: CanvasGroup = $Blur
 
-## Интерактив, на который сейчас смотрим (null — подсказка гаснет). Держим ссылку,
-## чтобы пересобрать текст при смене раскладки, не дожидаясь нового наведения.
+## Интерактив под взглядом (null — гаснет); ссылка нужна, чтобы пересобрать текст при смене раскладки.
 var _shown: C_Interactable = null
 var _alpha := 0.0
 
@@ -50,8 +34,7 @@ func _process(delta: float) -> void:
 	if target == 0.0 and _alpha < 0.01:
 		_alpha = 0.0
 	modulate.a = _alpha
-	# Подъём — позицией группы (Node2D), а не Control-строки: позицию Control Godot
-	# прижимает к целым пикселям, и 4 px подъёма на угасании шли бы ступеньками.
+	# Подъём — позицией группы (Node2D): Control округляется до пикселей, подъём шёл бы ступеньками.
 	_blur.position.y = (1.0 - _alpha) * RISE
 	(_blur.material as ShaderMaterial).set_shader_parameter(&"blur_px", blur_px())
 	visible = _alpha > 0.0
@@ -62,13 +45,12 @@ func blur_px() -> float:
 	return (1.0 - _alpha) * BLUR
 
 
-## Видна ли подсказка по смыслу (а не по прозрачности посреди угасания).
+## Видна ли подсказка по смыслу, а не по прозрачности.
 func is_shown() -> bool:
 	return _shown != null and (_shown.prompt_text != "" or _needs_body(_shown))
 
 
-## Механизм, до которого бестелесному не дотянуться. У дверей подписи нет, но
-## причину отказа призрак обязан прочитать до нажатия.
+## Механизм недоступен бестелесному: у двери подписи нет, но причину отказа призрак обязан прочитать.
 func _needs_body(inter: C_Interactable) -> bool:
 	return inter.requires_body and not E_Player.is_embodied()
 
@@ -93,8 +75,7 @@ func _connect_world_signals(world: World) -> void:
 
 
 func _on_component_added(entity: Entity, component: Variant) -> void:
-	# Вселение/развоплощение меняет доступность механизмов — если подсказка на
-	# экране, она обязана переписаться, а не ждать нового наведения.
+	# Вселение/развоплощение меняет доступность механизмов — подсказка переписывается.
 	if component is C_Embodied:
 		if _shown != null:
 			_render()
@@ -117,20 +98,16 @@ func _on_component_removed(_entity: Entity, component: Variant) -> void:
 		_shown = null
 
 
-## Раскладку переназначили — если подсказка на экране, она обязана показать новую
-## клавишу немедленно, а не после того как игрок отведёт и наведёт крестик снова.
+## Раскладку переназначили — новая клавиша немедленно.
 func _on_settings_changed(_settings: RS_Settings) -> void:
 	if _shown != null:
 		_render()
 
 
 func _render() -> void:
-	# tr() вручную: подсказка вклеивается в строку с клавишей, и перевод подписи
-	# склеенное уже не узнает. Старые подсказки — готовые строки, не ключи, и
-	# проходят через tr() как есть.
+	# tr() вручную: подсказка вклеивается в строку с клавишей; старые подсказки — готовые строки, проходят как есть.
 	var prompt := tr(_shown.prompt_text) if _shown.prompt_text != "" else ""
-	# Объясняем ПРИЧИНУ и не предлагаем клавишу — нажатие всё равно не пройдёт
-	# (см. S_InteractInput).
+	# Объясняем ПРИЧИНУ, клавишу не предлагаем (S_InteractInput).
 	if _needs_body(_shown):
 		var reason := tr("HUD_PROMPT_NEEDS_BODY") % prompt if prompt != "" else tr("HUD_PROMPT_NEEDS_BODY_BARE")
 		_line.set_line("", reason)

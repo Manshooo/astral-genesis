@@ -1,22 +1,12 @@
 # res://src/ui/skill_tree/skill_card.gd
-## Карточка выбранного навыка справа от сети (§9 «Меню — спека»): ветвь, имя с
-## эхом, ранги точками, описание, цена, требования и кнопка. Подробности ушли из
-## узлов сюда, когда дерево стало нейросетью: нейрон — точка с именем, и
-## описанию в нём негде жить.
-##
-## Кнопка либо открывает ранг, либо словами говорит, почему нельзя (§1
-## «недоступное объясняет себя»): нет очков, требования, всё освоено. Покупку
-## карточка не делает сама — отдаёт сигнал экрану, у которого менеджер.
-##
-## Карточка ничего не знает о SkillManager и ArchitectManager по имени: всё
-## состояние ей приносит экран в show_skill(), включая то, как называется валюта
-## этого дерева.
+## Карточка выбранного навыка справа от сети (§9 «Меню — спека»): ветвь, имя с эхом, ранги точками, описание, цена, требования и кнопка. Кнопка открывает ранг или словами говорит, почему нельзя (§1); покупку не делает —
+## отдаёт сигнал экрану. О менеджерах не знает: состояние и название валюты приносит экран в show_skill().
 class_name UI_SkillCard
 extends VBoxContainer
 
 signal unlock_requested(id: StringName)
 
-## Как называть валюту дерева в карточке — экран заполняет под вкладку.
+## Как называть валюту дерева — экран заполняет под вкладку.
 class Currency:
 	var cost_text: Callable  ## int -> String
 	var no_money_key := "SKILL_NO_POINTS"
@@ -50,8 +40,7 @@ func _ready() -> void:
 	_button.pressed.connect(func() -> void: unlock_requested.emit(_id))
 
 
-## [param manager] — SkillProgression дерева; [param previewed] — навык показан
-## на шаг вперёд и требования ещё не выполнены.
+## [param manager] — SkillProgression дерева; [param previewed] — навык показан на шаг вперёд.
 func show_skill(def: RS_SkillDefinition, tree: RS_SkillTree, manager, currency: Currency) -> void:
 	_id = def.id
 	_rank_value = manager.get_rank(def.id)
@@ -89,9 +78,7 @@ func _set_button(label: String, enabled: bool) -> void:
 	_button.disabled = not enabled
 
 
-## Требования строками с отметкой: выполненное — сиреневый кружок, нет —
-## пунктирный. Слова — из перевода; имена навыков и веток вклеиваются в строку,
-## поэтому переводятся здесь (tr), автоперевод подписи до них не достал бы.
+## Требования строками с отметкой; имена навыков вклеены в строку, поэтому переводятся здесь (tr).
 func _fill_requirements(def: RS_SkillDefinition, tree: RS_SkillTree, manager) -> void:
 	for child in _reqs.get_children():
 		child.queue_free()
@@ -123,9 +110,7 @@ func _add_requirement(text: String, met: bool, parent: Control = null) -> void:
 	row.setup(text, met)
 
 
-## Значения навыка по рангам: ранг, который у игрока сейчас, выделен, остальные
-## приглушены. Показывается первый модификатор навыка — у навыков дерева он один,
-## а числа двух разных статов в одной строке читались бы как один ряд.
+## Значения навыка по рангам: текущий выделен. Показывается первый модификатор (числа двух статов в строке читались бы рядом).
 func _fill_values(def: RS_SkillDefinition, manager) -> void:
 	_clear(_values_row)
 	var modifier := _primary_modifier(def)
@@ -141,7 +126,7 @@ func _fill_values(def: RS_SkillDefinition, manager) -> void:
 		else:
 			cell.modulate.a = 0.5
 
-	# Бонус условия — строкой под значениями: что он даёт и сработал ли.
+	# Бонус условия — строкой под значениями.
 	_bonus.visible = def.condition_bonus > 0.0
 	if not _bonus.visible:
 		return
@@ -151,13 +136,11 @@ func _fill_values(def: RS_SkillDefinition, manager) -> void:
 		_bonus.text = tr("SKILL_BONUS_ACTIVE") % modifier.format_value(boosted)
 	else:
 		_bonus.text = tr("SKILL_BONUS_PENDING") % ("%d%%" % roundi(def.condition_bonus * 100.0))
-	# Подпись не должна обещать бонус рангу, у которого условия нет.
+	# Подпись не обещает бонус рангу без условия.
 	_bonus.visible = def.condition_for_rank(current_rank) != null
 
 
-## Условия текущего и следующего рангов с прогрессом — тем же рядом строк, что и
-## требования. Условие ранга, которого у игрока ещё нет, показано заранее: игроку
-## надо знать, что делать, чтобы бонус заработал, ещё до покупки ранга.
+## Условия текущего и следующего рангов с прогрессом (условие следующего показано заранее — что делать, чтобы бонус заработал).
 func _fill_conditions(def: RS_SkillDefinition, manager) -> void:
 	_clear(_conds)
 	var shown := 0
@@ -174,9 +157,7 @@ func _fill_conditions(def: RS_SkillDefinition, manager) -> void:
 	_cond_block.visible = shown > 0
 
 
-## Навык способности честно говорит, что без способности он молчит. Тело спрашиваем
-## у живого игрока; вне мира (экран из меню) игрока нет, и «не действует» сказать
-## не о чем — остаётся только общее пояснение.
+## Навык способности честно говорит, что без способности он молчит; вне мира игрока нет — остаётся общее пояснение.
 func _fill_ability(def: RS_SkillDefinition) -> void:
 	var component := def.ability_component()
 	_ability_note.visible = component != null
@@ -202,7 +183,7 @@ func _clear(box: Control) -> void:
 		child.queue_free()
 
 
-## Ранги точками Ø7: открытые — сиреневые, остальные — пунктирные кружки.
+## Ранги точками Ø7: открытые — сиреневые, остальные — пунктирные.
 func _draw_pips() -> void:
 	for k in _max_rank:
 		var c := Vector2(3.5 + k * 13.0, 5.0)

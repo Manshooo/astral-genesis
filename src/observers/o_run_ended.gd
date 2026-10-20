@@ -1,10 +1,6 @@
 # res://src/observers/o_run_ended.gd
-# Наблюдатель конца забега по СМЕРТИ. S_Lifespan шлёт "run_ended" (+ вешает C_Dead),
-# когда стабильность души иссякла вне тела. Здесь передаём управление
-# RunManager.die(): фиксация смерти в сейве, снос забега, экран смерти.
-#
-# Отложенно (call_deferred): die() сносит комнату и меняет сцену — делать это в
-# середине прохода ECS по сущностям нельзя (ср. O_ExpelFromBody).
+# Наблюдатель конца забега по СМЕРТИ: S_Lifespan шлёт "run_ended" (+ C_Dead), когда стабильность души иссякла вне тела;
+# передаём RunManager.die() отложенно (call_deferred): снос комнаты и смена сцены не в проходе ECS (ср. O_ExpelFromBody).
 class_name O_RunEnded
 extends Observer
 

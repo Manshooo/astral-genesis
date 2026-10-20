@@ -1,26 +1,11 @@
 ## res://src/resources/rs_entity_visuals.gd
-## Как найти визуальную геометрию сущности. Общее место для всех, кто её красит:
-## обводка (O_OutlineVisual) и облик захваченного тела (O_BodyVisual). Держать
-## правило в одном месте важнее, чем сэкономить файл: два одинаковых
-## `_find_geometry` в двух наблюдателях разъехались бы при первой же правке — так
-## уже было с геометрией дверей, пока её не свели в RS_RoomLayout.
-##
-## Только статика — инстанцировать нечего.
+## Как найти визуальную геометрию сущности — общее правило для обводки (O_OutlineVisual) и облика тела (O_BodyVisual). Только статика.
 @tool
 class_name RS_EntityVisuals
 extends RefCounted
 
 
-## Все меши сущности: сам узел, если он геометрия, плюс всё поддерево.
-##
-## Раньше правило было «сам узел ИЛИ ребёнок строго с именем MeshInstance3D».
-## Оно работало ровно потому, что все существующие интерактивы случайно
-## оказались мешами в корне; на первом же импортированном .glb, где сущность —
-## Node3D, а меши внутри, обводка пропадала бы МОЛЧА. Теперь имя узла не значит
-## ничего, а составной объект (рама + полотно + ручка) красится целиком.
-##
-## Если на сущности есть C_VisualRoot с непустым путём — ищем не от неё, а от
-## указанного узла (см. C_VisualRoot про то, когда это нужно).
+## Все меши сущности: сам узел, если геометрия, плюс поддерево (имя узла ничего не значит). С C_VisualRoot — от указанного узла.
 static func geometries(entity: Entity) -> Array[GeometryInstance3D]:
 	var found: Array[GeometryInstance3D] = []
 	var root := _search_root(entity)
@@ -30,28 +15,20 @@ static func geometries(entity: Entity) -> Array[GeometryInstance3D]:
 	var self_geo := root as GeometryInstance3D
 	if self_geo:
 		found.append(self_geo)
-	# owned=false — иначе меши, пришедшие из инстанцированной под-сцены (а это
-	# ровно случай импортированных .glb), не находятся.
+	# owned=false: иначе меши из инстанцированной под-сцены (.glb) не находятся.
 	for node in root.find_children("*", "GeometryInstance3D", true, false):
 		found.append(node as GeometryInstance3D)
 	return found
 
 
-## Основной меш сущности — тот, который представляет её саму. Нужен там, где
-## красить «всё» бессмысленно: облик тела подменяет ОДИН меш рига.
+## Основной меш — там, где красить «всё» бессмысленно (облик тела подменяет ОДИН меш рига).
 static func primary(entity: Entity) -> GeometryInstance3D:
 	var all := geometries(entity)
 	return all[0] if not all.is_empty() else null
 
 
-## Трансформ узла ОТНОСИТЕЛЬНО корня сущности: произведение локальных transform
-## по цепочке родителей. global_transform тут не годится — облик тела читают в том
-## числе с detached-инстанса сцены (E_Body.visual_of_scene), а Node3D узнаёт свою
-## глобальную позицию только внутри SceneTree. Тот же приём и по той же причине,
-## что RS_RoomLayout.origin_relative_to, только нужен весь трансформ, а не origin.
-##
-## Узел == корень → IDENTITY: сущность, которая сама GeometryInstance3D, стоит
-## относительно себя в нуле, и подниматься по дереву выше неё нельзя.
+## Трансформ узла относительно корня: произведение локальных по цепочке. global_transform не годится — detached-инстанс
+## (E_Body.visual_of_scene). Узел == корень → IDENTITY.
 static func transform_relative_to(node: Node, root: Node) -> Transform3D:
 	var result := Transform3D.IDENTITY
 	var current := node
@@ -63,7 +40,7 @@ static func transform_relative_to(node: Node, root: Node) -> Transform3D:
 	return result
 
 
-## Откуда начинать поиск: переопределение из C_VisualRoot либо сама сущность.
+## Откуда начинать поиск: C_VisualRoot либо сама сущность.
 static func _search_root(entity: Entity) -> Node:
 	if entity == null:
 		return null

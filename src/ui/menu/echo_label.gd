@@ -1,8 +1,5 @@
 # res://src/ui/menu/echo_label.gd
-## Подпись меню, которая звучит мыслью: её тень — сиреневое эхо, дрожащее на
-## смятение T. То же, что UI_ThoughtLabel у HUD, но T берётся меню
-## (UI_MenuStyle.turmoil): вне забега эхо спокойное, а не по формуле забега,
-## которого нет. Цвет эха и шрифт — вариация темы (MenuTitle, MenuDeathTitle).
+## Подпись меню, звучащая мыслью: сиреневое эхо, дрожащее на смятение T, как UI_ThoughtLabel у HUD, но T — меню (UI_MenuStyle.turmoil: вне забега спокойное). Цвет эха и шрифт — вариация темы.
 class_name UI_EchoLabel
 extends Label
 

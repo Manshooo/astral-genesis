@@ -1,7 +1,5 @@
 # res://src/ui/settings/window_mode_setting.gd
-## Список режимов окна. Пункты — фиксированный список значений
-## SettingsManager.WINDOW_*, поэтому заводится в коде, как у AAModeSetting.
-## Порядок — от «самого игрового» к «самому настольному».
+## Список режимов окна: фиксированные значения SettingsManager.WINDOW_*, как у AAModeSetting; порядок — от «самого игрового» к «самому настольному».
 class_name WindowModeSetting
 extends OptionSetting
 

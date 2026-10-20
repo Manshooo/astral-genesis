@@ -1,7 +1,5 @@
 # res://src/ui/main_menu/main_menu.gd
-## Главное меню языка «Отголосок» (§9 «Меню — спека»): название с эхом и пункты-
-## мысли слева, без панели; читаемость держит тень мысли за колонкой, а справа
-## остаётся живая 3D-сцена L_menu_map, в которую меню вложено.
+## Главное меню языка «Отголосок» (§9 «Меню — спека»): название с эхом и пункты-мысли слева, справа живая сцена L_menu_map, в которую меню вложено.
 extends UI_MenuScreen
 
 const WORLD_SCENE := "res://src/world/world.tscn"
@@ -17,27 +15,19 @@ func _ready() -> void:
 	super._ready()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	UIManager.enabled = false
-	# Продолжать нечего, пока на диске нет сейва: WorldSave в этом случае держит
-	# свежесгенерированную заготовку, а не сохранённое прохождение. Недоступный
-	# пункт объясняет себя словами рядом (§1), а не только тусклым цветом.
+	# Продолжать нечего, пока нет сейва (WorldSave держит заготовку); недоступный пункт объясняется словами рядом (§1).
 	load_button.disabled = not WorldSave.has_save_file
 	load_aside.visible = load_button.disabled
-	# Тихая отметка вместо плашки «Пройдено»: игра после финала продолжается как
-	# обычно («Новая игра» — чистый лист), но концовку меню помнит.
+	# Тихая отметка вместо плашки «Пройдено»: игра после финала продолжается, концовку меню помнит.
 	completed_note.visible = WorldSave.save.game_completed
-	# Номер — чтобы по скриншоту бага было видно, из какого коммита сборка:
-	# не-релизной CI вписывает сюда 0.7.0-dev.33+fc91d3c
-	# (.github/scripts/build_version.sh), релизу — просто 0.7.0.
+	# Номер сборки — чтобы по скриншоту бага видеть коммит (не-релиз: 0.7.0-dev.33+fc91d3c, .github/scripts/build_version.sh).
 	version_label.text = tr("MENU_BUILD") % ProjectSettings.get_setting("application/config/version")
-	# Отложенно: меню входит в дерево вместе со сценой, и корень в этот момент
-	# занят — добавить экран в него сейчас нельзя.
+	# Отложенно: меню входит в дерево вместе со сценой, корень занят.
 	if not SettingsManager.settings.brightness_calibrated:
 		_offer_calibration.call_deferred()
 
 
-## Первый запуск: калибровка яркости поверх меню, до первого входа в мир, — иначе
-## игрок подбирал бы её вслепую, по тьме забега. Подобранное применяется сразу:
-## черновика, как в настройках, тут нет.
+## Первый запуск: калибровка яркости поверх меню до входа в мир (иначе вслепую, по тьме забега); подобранное применяется сразу.
 func _offer_calibration() -> void:
 	var screen := CALIBRATION_SCENE.instantiate() as UI_BrightnessCalibration
 	screen.brightness = SettingsManager.settings.brightness
@@ -45,8 +35,7 @@ func _offer_calibration() -> void:
 	UIManager.push_screen(screen, false, self, _on_calibration_closed)
 
 
-## Показан — значит предложен: и «Назад» ставит отметку, иначе отказавшийся
-## игрок видел бы экран каждый запуск. После «Готово» отметка уже стоит.
+## Показан — значит предложен: и «Назад» ставит отметку, иначе экран был бы каждый запуск.
 func _on_calibration_closed() -> void:
 	if not SettingsManager.settings.brightness_calibrated:
 		_commit_brightness(SettingsManager.settings.brightness)
@@ -62,27 +51,18 @@ func _commit_brightness(brightness: float) -> void:
 
 func _on_new_game_pressed() -> void:
 	WorldSave.new_game()  # катим новый world_seed до загрузки мира
-	# Дерево навыков персистит своим файлом и переживает смерть — это метапрогресс.
-	# Но «новая игра» — не смерть, а чистый лист, и оставленные с прошлого
-	# прохождения ранги делают первый же забег не тем, каким он задуман.
-	# Зовём рядом с WorldSave.new_game(), а не изнутри него: каждый автолоад
-	# держит свой файл сам, и сейву мира незачем знать про навыки. Улучшения
-	# Архитектора — тот же метапрогресс, и чистый лист снимает их тоже.
+	# Дерево навыков — метапрогресс; «новая игра» — чистый лист, оставленные ранги исказили бы первый забег. Зовём рядом с WorldSave.new_game(), не изнутри: автолоады держат файлы сами; Архитектор — то же.
 	SkillManager.reset()
 	ArchitectManager.reset()
 	_enter_world($Content/Items/NewGame as UI_EchoButton)
 
 
-## Продолжить сохранённое прохождение. Ничего не катим и не грузим руками:
-## WorldSave уже поднял сейв в _ready, а RunManager возьмёт из него и сид
-## (world_seed + death_count), и узел, на котором игрок остановился.
+## Продолжить сохранённое: WorldSave уже поднял сейв, RunManager возьмёт сид и узел.
 func _on_load_pressed() -> void:
 	_enter_world(load_button as UI_EchoButton)
 
 
-## Уходит в мир: world.tscn грузится в фоне (SceneLoader), нажатый пункт
-## показывает бегущим штрихом, что игра работает, а остальные гаснут — второе
-## нажатие за время загрузки начало бы вход дважды.
+## Уходит в мир: world.tscn грузится в фоне; нажатый пункт — бегущий штрих, остальные гаснут (второе нажатие начало бы вход дважды).
 func _enter_world(pressed: UI_EchoButton) -> void:
 	for node in find_children("*", "Button", true, false):
 		(node as Button).disabled = true

@@ -1,24 +1,13 @@
 # res://src/systems/physics/s_snatch_target_detector.gd
-# Группа: "physics" — кастует луч, а Jolt крутится на отдельном потоке, поэтому
-# space-state запросы безопасны только из _physics_process (как и
-# S_InteractionDetector, S_BodySnatch).
-#
-# Непрерывная детекция цели захвата: каждый физкадр смотрит, есть ли под
-# крестиком тело с C_BodySnatchable в пределах capture_range, и держит на нём
-# C_SnatchTargeted. Прицел по этой метке превращается в крестик, а S_BodySnatch
-# берёт из неё готовую цель вместо собственного луча — один каст на кадр и один
-# источник правды о том, «во что мы целим».
+# Группа "physics": луч (space-state только из _physics_process). Каждый физкадр держит C_SnatchTargeted на теле с C_BodySnatchable под крестиком в пределах capture_range;
+# прицел и S_BodySnatch читают метку — один каст и один источник правды о цели.
 class_name S_SnatchTargetDetector
 extends System
 
-## Тела-кандидаты живут на слое enemies (layer_3, бит 2) — тот же слой, по
-## которому раньше стрелял сам S_BodySnatch.
+## Тела-кандидаты на слое enemies (layer_3, бит 2).
 const ENEMIES_MASK := 1 << 2
 
-## Сколько не-целей на слое enemies луч готов пройти насквозь, прежде чем
-## сдаться. Живых врагов в прицеле больше двух-трёх подряд не бывает; предел —
-## чтобы ошибка в данных (скажем, тысяча коллайдеров без C_BodySnatchable) не
-## превратила один каст за кадр в тысячу.
+## Сколько не-целей на enemies луч проходит насквозь — предел против ошибки в данных.
 const MAX_PIERCED := 8
 
 var _current_target: Entity = null
@@ -28,11 +17,7 @@ func query() -> QueryBuilder:
 	return q.with_all([C_PlayerInput, C_BodySnatch]).with_none([C_UIBlocked])
 
 
-## Строго ДО S_BodySnatch: тот читает нашу метку, а не кастует луч сам.
-## Буфер команд применяется сразу после process() каждой системы
-## (FlushMode.PER_SYSTEM), так что к моменту захвата метка уже проставлена.
-## И ПОСЛЕ S_Movement — по той же причине, что у S_InteractionDetector: луч
-## идёт от камеры, и целиться надо из точки, где тело стоит после этого тика.
+## Строго ДО S_BodySnatch (буфер применяется после process() каждой системы, метка уже стоит) и ПОСЛЕ S_Movement — луч из точки тела после тика.
 func deps() -> Dictionary[int, Array]:
 	return {Runs.Before: [S_BodySnatch], Runs.After: [S_Movement]}
 
@@ -48,8 +33,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		return
 
 	var snatch := player.get_component(C_BodySnatch) as C_BodySnatch
-	# Дальность — стат, а не поле: перк «дотянуться дальше» прибавляет к базе, а
-	# не переписывает её (C_StatModifiers).
+	# Дальность — стат: перк прибавляет к базе (C_StatModifiers).
 	var reach := C_StatModifiers.of(player, C_StatModifiers.CAPTURE_RANGE, snatch.capture_range)
 	var target := _raycast_body(player.camera, reach)
 
@@ -62,14 +46,8 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 	_current_target = target
 
 
-## Луч из камеры вперёд (−Z) по маске enemies. Возвращает захватываемую Entity
-## или null.
-##
-## На слое enemies стоят не только тела, но и живые враги (E_Enemy), а захватить
-## врага нельзя — у него нет C_BodySnatchable. Такой хит луч проходит насквозь
-## и ищет дальше: иначе враг заслонял бы собой настоящие цели у себя за спиной.
-## Раньше ради этого враг жил на moving_colliders — слое подвижной ГЕОМЕТРИИ, где
-## его видела бы как стену всякая маска, которой нужны двери и платформы.
+## Луч из камеры вперёд (−Z) по маске enemies: захватываемая Entity или null. На enemies стоят и живые враги (без C_BodySnatchable) — такой хит луч проходит насквозь,
+## иначе враг заслонял бы цели за собой (на moving_colliders его видела бы стеной всякая маска).
 func _raycast_body(cam: Camera3D, capture_range: float) -> Entity:
 	var from := cam.global_position
 	var to := from - cam.global_transform.basis.z * capture_range
@@ -88,8 +66,7 @@ func _raycast_body(cam: Camera3D, capture_range: float) -> Entity:
 	return null
 
 
-## Поднимается от коллайдера вверх по дереву до Entity с C_BodySnatchable
-## (коллайдер обычно — дочерний CollisionShape3D, а не сама сущность-тело).
+## Вверх от коллайдера до Entity с C_BodySnatchable.
 func _resolve_snatchable(collider: Object) -> Entity:
 	var node := collider as Node
 	while node:

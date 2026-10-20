@@ -1,26 +1,19 @@
-## res://addons/game_design_tool/tabs/templates.gd
-## Вкладка «Шаблоны» единого редактора геймдизайна — управление шаблонами
-## сущностей (RS_EntityTemplate):
-##   - список шаблонов из res://data/entity_templates;
-##   - Новый / Дублировать / Удалить / Переименовать;
-##   - Редактировать — открывает шаблон в родном инспекторе Godot
-##     (там же добавляются/настраиваются компоненты);
-##   - Создать сущность — генерирует .tscn с корневым Entity из шаблона.
+## Вкладка «Шаблоны» единого редактора геймдизайна: управление шаблонами
+## сущностей (RS_EntityTemplate) и генерация .tscn из них.
+## См. [[Редакторские инструменты]] («Правило шаблонов»).
 @tool
 extends VBoxContainer
 
 const Ui := preload("res://addons/game_design_tool/shared/ui.gd")
 const Fs := preload("res://addons/game_design_tool/shared/fs.gd")
 
-## Заголовок вкладки в TabContainer — тот берёт его из имени узла (см. _init).
 const TAB_TITLE := "Шаблоны"
 
 const TEMPLATE_DIR := "res://data/entity_templates"
 const ENTITY_DIR := "res://src/entities"
 
-## Зачем диалогу имени режим: окно ввода одно на три операции, а «ОК» в них
-## значит разное. Enum, а не строка: режим «create_entity» с опечаткой
-## проваливался бы во все ветки мимо и молча не делал ничего.
+## Диалог имени один на три операции. Enum, а не строка: опечатка в режиме
+## проваливалась бы мимо всех веток match молча.
 enum NameMode { NEW, RENAME, CREATE_ENTITY }
 
 var _list: ItemList
@@ -42,9 +35,8 @@ func _init() -> void:
 	_build_ui()
 
 
-## Список наполняем при первом показе вкладки, а не в _ready: все вкладки
-## строятся разом на старте редактора, и лезть в файловую систему ради вкладки,
-## которую могут ни разу не открыть, незачем.
+## Список наполняем при первом показе, а не здесь: все вкладки строятся разом
+## на старте редактора.
 func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 	_on_visibility_changed()
@@ -91,8 +83,6 @@ func _build_ui() -> void:
 	_status = Ui.status_label()
 	add_child(_status)
 
-	# Диалог ввода имени — один на «Новый», «Переименовать» и «Создать сущность»
-	# (различаются режимом, см. NameMode).
 	_name_dialog = Ui.text_dialog("Имя шаблона", _on_name_confirmed)
 	_name_edit = Ui.dialog_edit(_name_dialog)
 	add_child(_name_dialog)
@@ -119,8 +109,6 @@ func _warn(text: String) -> void:
 	_set_status("⚠ " + text)
 
 
-## Открывает диалог имени в заданном режиме — три операции звали его тремя
-## одинаковыми пятистрочиями, различавшимися заголовком и подставленным текстом.
 func _ask_name(mode: NameMode, title: String, preset_text: String) -> void:
 	_name_mode = mode
 	Ui.popup_text_dialog(_name_dialog, title, preset_text)
@@ -142,9 +130,7 @@ func _refresh(select_path := "") -> void:
 			if tmpl == null:
 				continue  # чужой .tres — молча пропускаем
 			var label: String = tmpl.display_name if tmpl.display_name != "" else file.get_basename()
-			# Считаем компоненты вместе с теми, что уже лежат в базовой сцене:
-			# у шаблона с укомплектованной сценой (напр. «Тело») собственный
-			# список пуст, и «(0 комп.)» читалось бы как «шаблон пустой».
+			# component_count учитывает и компоненты базовой сцены (см. вики).
 			var idx := _list.add_item("%s  (%d комп.)" % [label, tmpl.component_count()])
 			_list.set_item_tooltip(idx, path)
 			_paths.append(path)
@@ -170,8 +156,7 @@ func _selected_template() -> RS_EntityTemplate:
 	return ResourceLoader.load(path) as RS_EntityTemplate
 
 
-## Возвращает выделенный шаблон, а если его нет — жалуется и отдаёт null.
-## Четыре кнопки начинались одной и той же трёхстрочной проверкой.
+## Выделенный шаблон; если его нет — жалуется в статус и отдаёт null.
 func _require_selection() -> RS_EntityTemplate:
 	var tmpl := _selected_template()
 	if tmpl == null:
@@ -229,7 +214,6 @@ func _on_name_confirmed() -> void:
 			if _save_template(tmpl, path):
 				_refresh(path)
 		NameMode.CREATE_ENTITY:
-			# Имя → корень сцены; файл — то же имя в snake_case (папку выбираем в диалоге).
 			_pending_entity_name = entered
 			_save_dialog.current_dir = ENTITY_DIR
 			_save_dialog.current_file = Fs.slug(entered) + ".tscn"

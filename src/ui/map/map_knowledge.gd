@@ -1,19 +1,10 @@
 # res://src/ui/map/map_knowledge.gd
-## Что игрок вправе видеть на карте комплекса — одно правило на обе карты.
-##
-## Мини-карта в HUD и экран карты показывают разное, но из одного источника:
-## мини-карта — «посещённое плюс соседи» на своём этаже, всегда; экран — то же
-## или больше, смотря сколько куплено у Архитектора. Правило держится в одном
-## месте, потому что разъедься копии — экран на первом уровне показывал бы
-## меньше мини-карты, и покупка улучшения выглядела бы потерей.
-##
-## Только статика и только данные графа: ни сцены, ни плана, поэтому правило
-## проверяется без UI и без загруженного слоя.
+## Что игрок вправе видеть на карте комплекса — одно правило на обе карты: мини-карта — «посещённое плюс соседи» своего этажа, экран — то же или больше по купленному у Архитектора.
+## Статика и данные графа без сцены и плана — проверяется без UI.
 class_name MapKnowledge
 extends RefCounted
 
-## Уровни экрана карты — значения ArchitectManager.map_level(). Таблица и
-## обоснование — в карточке «Экран карты комплекса».
+## Уровни экрана карты — значения ArchitectManager.map_level(); таблица — в карточке «Экран карты комплекса».
 const LEVEL_NONE := 0  # экрана нет вовсе
 const LEVEL_VISITED := 1  # посещённое и соседи — на всех этажах своего слоя
 const LEVEL_LAYER := 2  # свой слой целиком
@@ -21,8 +12,7 @@ const LEVEL_COMPLEX := 3  # все слои и порталы между ним�
 const LEVEL_CONTENTS := 4  # типы комнат, уникальные комнаты, замки
 
 
-## Узлы, о которых игрок знает: посещённые плюс соседи посещённых — про соседа
-## он знает, потому что видел ведущую туда дверь или портал.
+## Узлы, о которых игрок знает: посещённые и их соседи (видел дверь или портал).
 static func known_nodes(nodes: Array[RS_LevelNode], visited: Array[StringName]) -> Array[RS_LevelNode]:
 	var known: Array[RS_LevelNode] = []
 	for node_data in nodes:
@@ -36,8 +26,7 @@ static func known_nodes(nodes: Array[RS_LevelNode], visited: Array[StringName]) 
 	return known
 
 
-## Слой-поверхность — самый верхний из слоёв графа (L0): число слоёв растёт, а
-## поверхность остаётся первой. Через него карта подписывает «выход».
+## Слой-поверхность — самый верхний (L0); через него карта подписывает «выход».
 static func surface_depth() -> int:
 	return RS_LevelGraph.DEPTHS.min()
 
@@ -46,17 +35,14 @@ static func is_surface(depth: int) -> bool:
 	return depth == surface_depth()
 
 
-## Открыт ли слой [param depth] на этом уровне. Чужие слои — только с третьего:
-## до него карта знает лишь то, где игрок стоит.
+## Открыт ли слой depth на этом уровне; чужие — только с третьего.
 static func is_layer_open(level: int, depth: int, current_depth: int) -> bool:
 	if level >= LEVEL_COMPLEX:
 		return true
 	return level >= LEVEL_VISITED and depth == current_depth
 
 
-## Узлы слоя [param depth], которые экран карты вправе показать на уровне
-## [param level]. Первый уровень — ровно правило мини-карты, только по всем
-## этажам слоя, а не по своему.
+## Узлы слоя depth, которые экран вправе показать на уровне level (первый — правило мини-карты по всем этажам слоя).
 static func visible_nodes(
 	graph: RS_LevelGraph, depth: int, level: int, current_depth: int, visited: Array[StringName]
 ) -> Array[RS_LevelNode]:
@@ -68,14 +54,7 @@ static func visible_nodes(
 	return layer
 
 
-## Портал комнаты — ребро переноса на другой этаж или слой; null — портала нет.
-## Первого найденного достаточно: портал в комнате ровно один
-## (LayerStreamer._bind_portals).
-##
-## Узнаётся по типу ребра (RS_LevelConnection.is_portal), а не по depth_delta — у
-## перехода между этажами одного слоя он нулевой, как и у двери в коридор, — и
-## не по тому, куда ребро ведёт: верхняя дверь лестницы ведёт на этаж выше, но
-## порталом не является.
+## Портал комнаты — ребро переноса на другой этаж или слой; null — нет (в комнате ровно один, LayerStreamer._bind_portals). По типу ребра (is_portal), не по depth_delta и не по направлению: верхняя дверь лестницы не портал.
 static func portal_of(graph: RS_LevelGraph, node_data: RS_LevelNode) -> RS_LevelConnection:
 	for conn: RS_LevelConnection in node_data.connections:
 		if conn.is_portal() and graph.get_node_data(conn.target_node_id):

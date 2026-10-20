@@ -1,31 +1,19 @@
 # res://src/ui/hud/decay_arc.gd
-## Дуга у прицела — единственный показатель запаса (§7 «HUD — спека»). Одна на
-## всё: показывает тот карман, что сейчас убывает. Вне тела — запас души, во
-## плоти — карман тела; кто из них, говорит цвет, а не подпись.
-##
-## Видна не всегда: загорается на заметное изменение и у порога, гаснет, когда
-## всё спокойно. Ровное убывание заметным не считается — иначе в ранней игре,
-## где минута запаса тает на глазах, дуга не гасла бы никогда.
-##
-## Значения меняются непрерывно, поэтому опрашиваем игрока каждый кадр — как
-## прежние полосы: событийная модель тут проигрывает простому поллингу.
+## Дуга у прицела — единственный показатель запаса (§7 «HUD — спека»): показывает убывающий карман (душа или тело — цветом). Видна не всегда: загорается на заметное изменение и у порога,
+## гаснет в покое (ровное убывание заметным не считается). Опрос каждый кадр — поллинг проще событий.
 class_name UI_DecayArc
 extends Control
 
 const RADIUS := 22.0
-## Раствор и начало дуги: зазор 80° внизу оставлен под подсказку, чтобы
-## строка под прицелом не упиралась в шкалу.
+## Раствор и начало дуги: зазор 80° внизу под подсказку.
 const SWEEP_DEG := 280.0
 const START_DEG := 130.0
-## Шаг ломаной, градусы: на виток жгута приходится ~20 точек — мельче не видно
-## разницы, крупнее спираль ломается в зигзаг.
+## Шаг ломаной, градусы: ~20 точек на виток жгута.
 const STEP_DEG := 2.0
-## Жгут: основная линия и её эхо вьются двойной спиралью вдоль дуги.
-## Длина витка вдоль дуги, px, и сколько витков в секунду пробегает к концу.
+## Жгут: основная линия и эхо вьются двойной спиралью. Длина витка вдоль дуги, px, и витков в секунду.
 const WAVE_PX := 16.0
 const WAVE_RATE := 0.8
-## Радиус витка, px: база плюс прибавка от смятения — первое тело вьётся
-## размашисто, к шестому спокойнее.
+## Радиус витка, px: база плюс прибавка от смятения.
 const HELIX_PX := 0.9
 const HELIX_TURMOIL_PX := 0.8
 ## Нить эха и задние куски обеих нитей — тусклее.
@@ -41,8 +29,7 @@ const FADE_TAU := 0.5
 ## Кроссфейд сиреневого и янтаря на вселении и выходе.
 const TINT_SECONDS := 0.25
 
-## Прозрачность, к которой дуга идёт сейчас. Открыта для проверок: правило
-## «когда видна» — главное, что здесь можно сломать молча.
+## Прозрачность, к которой дуга идёт; открыта для проверок («когда видна» — главное, что можно сломать молча).
 var target_alpha := 0.0
 
 var _alpha := 0.0
@@ -66,8 +53,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-## Шаг логики отдельно от _process: проверка подаёт запасы и время сама, не
-## дожидаясь кадров движка и не собирая игрока.
+## Шаг логики отдельно от _process: проверка подаёт запасы и время сама.
 func update_state(vitals: UI_HudMood.Vitals, t: float, delta: float) -> void:
 	_vitals = vitals
 	if _vitals == null:
@@ -83,8 +69,7 @@ func update_state(vitals: UI_HudMood.Vitals, t: float, delta: float) -> void:
 	elif active < UI_HudMood.LOW:
 		target_alpha = 0.75
 	elif t - _last_notable < HOLD_SECONDS or _vitals.overflow > 0.0:
-		# Излишек виден всё время, пока он есть: он утекает быстрее обычного
-		# запаса, и игрок должен видеть, что тратит именно его.
+		# Излишек виден, пока есть: утекает быстрее обычного запаса.
 		target_alpha = 0.9
 	else:
 		target_alpha = 0.0
@@ -95,9 +80,7 @@ func update_state(vitals: UI_HudMood.Vitals, t: float, delta: float) -> void:
 	_body_mix = move_toward(_body_mix, mix_target, delta / TINT_SECONDS)
 
 
-## Заметно: смена кармана (вселение, выход, пересадка), скачок максимума (перк)
-## или сдвиг доли на NOTABLE_DELTA за окно. Окно, а не сравнение с прошлым
-## кадром: за кадр любое изменение крошечное.
+## Заметно: смена кармана, скачок максимума или сдвиг доли на NOTABLE_DELTA за окно (за кадр любое изменение крошечное).
 func _track_notable(active: float, t: float) -> void:
 	var pocket_changed := _vitals.body_pocket != _last_pocket
 	var max_changed := absf(_vitals.maximum - _last_maximum) > 0.01 * maxf(_last_maximum, 1.0)
@@ -126,8 +109,7 @@ func _draw() -> void:
 	var drift := t * 0.6
 	var color := UI_HudMood.SOUL.lerp(UI_HudMood.BODY, _body_mix)
 
-	# У порога дуга бьётся в такт сердцу. У тела такт свой и ровный: распад тела
-	# не убивает, а выбрасывает, и частить ему незачем.
+	# У порога дуга бьётся в такт сердцу; у тела такт ровный (распад тела выбрасывает, не убивает).
 	var danger := active < UI_HudMood.DANGER
 	var beat := (
 		pow(maxf(0.0, sin(TAU * t / 0.8)), 4.0) if _vitals.body_pocket
@@ -152,15 +134,12 @@ func _draw() -> void:
 		_draw_overflow(center, radius, amp, drift, t, alpha, helix)
 
 
-## Излишек — внешней дугой, а не растяжкой шкалы: «полный» остаётся там же, где
-## был, а сверху видно, сколько принесено из тела. Искры уходят наружу —
-## излишек утекает быстрее (lifespan_overflow_leak), и это должно читаться.
+## Излишек — внешней дугой, не растяжкой шкалы; искры уходят наружу (утекает быстрее, lifespan_overflow_leak).
 func _draw_overflow(
 	center: Vector2, radius: float, amp: float, drift: float, t: float, alpha: float, helix: float
 ) -> void:
 	var extra := _vitals.overflow
-	# Свой жгут, свита в другую сторону: два жгута, бегущие одинаково, сливались
-	# бы в одну широкую ленту.
+	# Свой жгут, свита в другую сторону: одинаковые слились бы в ленту.
 	_draw_braid(
 		_strand(center, radius + 7.75, extra, amp * 0.8, drift + 5.1, -t, helix, 0.0),
 		_with_alpha(UI_HudMood.OVER, alpha), 1.3,
@@ -175,8 +154,7 @@ func _draw_overflow(
 		draw_circle(spark, 1.1, _with_alpha(UI_HudMood.OVER, (1.0 - phase) * 0.8 * alpha))
 
 
-## Пустая часть — пунктиром 1:3 по всей длине, чтобы было видно, сколько
-## дуге ещё есть куда убывать.
+## Пустая часть — пунктиром 1:3: видно, куда дуге убывать.
 func _draw_track(center: Vector2, radius: float, alpha: float) -> void:
 	var color := _with_alpha(UI_HudMood.TRACK, UI_HudMood.TRACK.a * alpha)
 	var dash := 1.0 / radius
@@ -193,11 +171,7 @@ func _draw_track(center: Vector2, radius: float, alpha: float) -> void:
 		draw_multiline(segments, color, 1.0)
 
 
-## Одна нить жгута: рваная средняя линия дуги плюс виток вокруг неё. Две нити
-## с фазами 0 и π — двойная спираль. Виток бежит вдоль дуги от начала к концу,
-## поэтому дуга не стоит, а течёт. depth — косинус витка: > 0 — нить спереди.
-## Доля ≤ 0.002 — пусто: точка-огрызок на нуле читалась бы как «ещё немного
-## есть».
+## Одна нить жгута: рваная средняя линия плюс виток вокруг; две нити с фазами 0 и π — двойная спираль. depth — косинус витка (> 0 — спереди). Доля ≤ 0.002 — пусто.
 func _strand(
 	center: Vector2, radius: float, fraction: float, amp: float, drift: float,
 	t: float, helix: float, phase: float
@@ -216,18 +190,14 @@ func _strand(
 	return {points = points, depth = depth}
 
 
-## Две нити жгута, переплетённые: сначала задние куски обеих, тусклее, потом
-## передние поверх. Порядок и тусклость и дают объём — одной толщиной спираль
-## читалась бы плоской волной.
+## Две нити: сначала задние куски, тусклее, потом передние — так возникает объём.
 func _draw_braid(a: Dictionary, a_color: Color, a_width: float, b: Dictionary, b_color: Color, b_width: float) -> void:
 	for front: bool in [false, true]:
 		for strand: Array in [[a, a_color, a_width], [b, b_color, b_width]]:
 			var color: Color = strand[1]
 			if not front:
 				color.a *= BACK_ALPHA
-			# Скруглённые концы — рубленый торец на 2 px выглядит прибором, — но
-			# только настоящие концы нити: кружок на каждом стыке переднего и
-			# заднего куска ложился бы поверх нити светлой бусиной.
+			# Скруглённые концы только у настоящих концов нити (иначе бусина на каждом стыке).
 			var ends: PackedVector2Array = strand[0].points
 			for run in _runs(strand[0], front):
 				draw_polyline(run, color, strand[2], true)
@@ -236,8 +206,7 @@ func _draw_braid(a: Dictionary, a_color: Color, a_width: float, b: Dictionary, b
 						draw_circle(cap, strand[2] / 2.0, color)
 
 
-## Куски нити, лежащие целиком спереди (или сзади). Граница — где виток уходит
-## за соседку; точку на границе получают оба куска, чтобы нить не рвалась.
+## Куски нити целиком спереди (или сзади); точку на границе получают оба — нить не рвётся.
 static func _runs(strand: Dictionary, front: bool) -> Array[PackedVector2Array]:
 	var points: PackedVector2Array = strand.points
 	var depth: PackedFloat32Array = strand.depth

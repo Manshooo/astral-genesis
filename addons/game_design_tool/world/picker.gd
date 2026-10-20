@@ -1,32 +1,18 @@
-## res://addons/game_design_tool/world/picker.gd
-## Аналитический пикинг по AABB комнаты — без единого физического коллайдера.
-## Позиция берётся из RS_LayerPlan (та же раскладка, что и у игры), габарит —
-## из RS_RoomLayout.half_extent_of_scene.
-##
-## Физический рейкаст сюда сознательно не пошёл: в редакторском SubViewport
-## живое физическое пространство не гарантировано (Jolt на отдельном потоке, а
-## тул — не игра), а AABB работает одинаково для обоих оверлеев и даже для
-## незагруженного слоя — см. [[world-generator-tool-spec]] §3.2.
-##
-## Только статика — инстанцировать нечего, как и RS_RoomLayout, на котором это
-## построено.
+## Аналитический пикинг комнат по AABB, без физических коллайдеров.
+## Зачем AABB, а не рейкаст: [[Редакторские инструменты]] (пикинг по AABB).
 @tool
 extends RefCounted
 
-## Насколько AABB шире фактического расстояния до двери: двери стоят у самой
-## стены, а видимый габарит комнаты чуть больше (потолок, выступы декора).
+## Запас AABB сверх расстояния до двери, м (стены, декор).
 const HALF_EXTENT_PADDING := 2.0
-## Габарит-заглушка для комнат без дверей вовсе (half_extent_of_scene вернёт
-## 0.0) — иначе такая комната не пикалась бы никогда.
+## Габарит комнаты без дверей, м (half_extent_of_scene вернёт 0.0).
 const HALF_EXTENT_FALLBACK := 6.0
-## Высота коробки пикинга. Комната ~6 м, берём с запасом сверху и снизу — это
-## эвристика для клика, не игровой инвариант о габаритах комнат.
+## Границы коробки пикинга по высоте от пола, м — запас для клика.
 const AABB_BELOW := 0.5
 const AABB_ABOVE := 6.5
 
 
-## AABB комнаты узла [param node_id] по плану [param plan]. Пустой AABB, если
-## узла нет среди [param layer_nodes] — так теряется молча, а не падает.
+## AABB узла [param node_id]; пустой, если узла нет среди [param layer_nodes].
 static func room_aabb(
 	node_id: StringName, layer_nodes: Array[RS_LevelNode], plan: RS_LayerPlan
 ) -> AABB:
@@ -40,8 +26,7 @@ static func room_aabb(
 	return AABB()
 
 
-## Ближайший к [param ray_origin] узел, чей AABB пересекает луч. Пустая
-## StringName, если луч ничего не задел.
+## Ближайший к [param ray_origin] узел под лучом; пустое имя, если ничего.
 static func pick(
 	ray_origin: Vector3, ray_dir: Vector3, layer_nodes: Array[RS_LevelNode], plan: RS_LayerPlan
 ) -> StringName:
@@ -59,9 +44,7 @@ static func pick(
 	return best_id
 
 
-## Коробки узла: у комнаты — одна, у ветки коридора — по коробке на тайл. Одна
-## общая коробка ветки накрыла бы комнаты, которые трасса огибает, и клик по
-## комнате доставался бы коридору.
+## У ветки коридора коробка на каждый тайл: общая накрыла бы огибаемые комнаты.
 static func _aabbs_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[AABB]:
 	if node_data.role != RS_LevelNode.Role.CORRIDOR:
 		return [_aabb_of(node_data, plan)]
@@ -80,8 +63,7 @@ static func _aabbs_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> Array[AABB
 
 static func _aabb_of(node_data: RS_LevelNode, plan: RS_LayerPlan) -> AABB:
 	var pos := plan.position_of(node_data.id)
-	# Сборная комната меряется footprint'ом: дверей, по которым считается габарит
-	# остальных, в её сцене нет, их ставит спавн.
+	# У сборной комнаты в сцене нет дверей для габарита — меряем footprint'ом.
 	if RS_RoomLayout.shell_of_scene(node_data.room_scene_path):
 		var size: Vector3i = plan.footprints.get(node_data.id, Vector3i.ONE)
 		var half := Vector2(size.x, size.z) * plan.embedding.cell_size * 0.5

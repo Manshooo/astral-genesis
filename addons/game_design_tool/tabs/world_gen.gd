@@ -1,25 +1,7 @@
-## res://addons/game_design_tool/tabs/world_gen.gd
-## Вкладка «Генератор мира» единого редактора геймдизайна: 3D-превью текущего
-## слоя комплекса. Прогоняет ТОТ ЖЕ генератор (RS_LevelGraph.generate_run) и ТУ
-## ЖЕ раскладку (RS_LevelGraph.layer_plan), что и игра — см.
-## [[world-generator-tool-spec]] и [[Цикл забега]]. Отрисовкой и пикингом
-## занимается GDT_ViewportHost (viewport_host.gd); эта вкладка — панель
-## управления и боковая панель узла вокруг него.
-##
-## Глубина слоя и набор оверлеев — РАЗНЫЕ ручки: глубина фильтрует область (что
-## показываем), оверлеи — способ отрисовки (как показываем). Слово «слой» здесь
-## не используется вовсе — оно занято глубиной комплекса (depth, L0..L5) в
-## остальном проекте.
-##
-## Пересборка — только по явной кнопке. Генерация инстанцирует реальные сцены
-## комнат (см. GDT_RoomsOverlay), автоперегенерация на каждое изменение сида
-## пересобирала бы слой на каждый тик спинбокса.
-##
-## Здесь же живёт «Прогон сидов» — статистика подбора по N сидам, приехавшая из
-## вкладки пресетов. Оба инструмента отвечают на один вопрос «что генератор
-## выдаёт», только с разного расстояния: превью — про ОДИН слой одного сида,
-## прогон — про выборку из многих; разводить их по вкладкам значило заставлять
-## переключаться между вопросом и его же ответом в цифрах.
+## Вкладка «Генератор мира» единого редактора геймдизайна: 3D-превью слоя тем же
+## генератором и раскладкой, что в игре, плюс «Прогон сидов» — статистика подбора.
+## Отрисовка и пикинг — GDT_ViewportHost. См. [[Редакторские инструменты]]
+## («Коридоры и сетка во вьюпорте») и [[Цикл забега]].
 @tool
 extends VBoxContainer
 
@@ -34,39 +16,27 @@ const EditorState := preload("res://addons/game_design_tool/shared/editor_state.
 
 const TAB_TITLE := "Генератор мира"
 
-## Раздел проектных метаданных вкладки (см. GDT_EditorState) — тот самый пробел
-## из [[Единый редактор геймдизайна]] («Решено, но не реализовано» в MVP):
-## сид/глубина/оверлеи/камера/сплиттеры переживают перезапуск редактора.
-## Метаданные ПРОЕКТА, не установки Godot — у другого проекта своя генерация,
-## чужой сид тут бессмысленен.
+## Раздел проектных метаданных вкладки (GDT_EditorState).
 const SETTINGS_SECTION := "world_gen_tool"
 
-## Куда идти писать описание тега — текст для тултипов облака.
+## Куда идти писать описание тега (тултипы облака).
 const TAG_HINT_WHERE := "вкладке «Редактор пресетов» → облако тегов"
 
 ## Наибольший сид забега: randi() и hash() отдают 32 бита без знака.
 const SEED_MAX := 0xFFFFFFFF
 
-## Сейв игры. Путь берётся у владельца, а не пишется второй раз: автолоад в
-## редакторе не работает, но его константа доступна через скрипт.
+# Автолоад в редакторе не работает, но его константа доступна через скрипт.
 const SAVE_PATH := preload("res://src/autoloads/world_save.gd").SAVE_PATH
 
 var _seed_spin: SpinBox
 var _random_btn: Button
-## Режим «Забег из сейва»: граф строится не из поля «Сид» и data/, а из сейва
-## игры. Не запоминается между открытиями редактора намеренно: сейв меняется
-## с каждой контрольной точкой, и вкладка, молча открытая на чужом с прошлого
-## раза забеге, выглядела бы как обычный сид.
+## Режим «Забег из сейва» намеренно не запоминается между запусками редактора.
 var _save_run_toggle: Button
 var _depth_option: OptionButton
 var _visibility_menu: MenuButton
 var _status: Label
 
-## Прогон сидов: панель внизу, по умолчанию свёрнута. Живёт здесь, а не во
-## вкладке пресетов, где была раньше: «что реально выпадает в забеге» — вопрос
-## про мир, а не про отдельный пресет, и смотреть ответ правильно там, где этот
-## мир видно. Свёрнута по умолчанию, потому что 3D-превью — главное содержимое
-## вкладки, а отчёт нужен раз в несколько правок.
+## Прогон сидов: панель внизу, по умолчанию свёрнута.
 var _seeds_panel: VBoxContainer
 var _seeds_toggle: Button
 var _seeds_spin: SpinBox
@@ -76,39 +46,25 @@ var _info_label: RichTextLabel
 var _open_preset_btn: Button
 var _open_scene_btn: Button
 
-## Инлайн-редактор пресета выделенного узла (v3-стретч) — прямо здесь, без
-## похода на вкладку «Редактор пресетов» или в инспектор. Виден, только когда
-## у узла есть сцена, для которой в библиотеке нашёлся пресет.
+## Инлайн-редактор пресета выделенного узла; виден, только если пресет найден.
 var _preset_section: VBoxContainer
 var _preset_label: Label
 var _slot_spin: SpinBox
 var _weight_spin: SpinBox
-## Облако тегов — общий GDT_TagCloud, тот же, что в доке Room Wizard: описание
-## живёт тултипом, потому что секция узла — приложение к 3D-превью, и отдавать
-## её половину под текст описаний неправильно. Читать их глазами — во вкладке
-## «Редактор пресетов».
 var _tag_cloud: TagCloud
 var _new_tag_edit: LineEdit
-## Пресет, который сейчас редактируется секцией выше — держим отдельно от
-## _selected_node_data().preset, чтобы обработчики полей не искали его заново
-## на каждое изменение спинбокса.
 var _editing_preset: RS_RoomPreset
-## Поля пресета на момент последней записи — «было» для истории редактора.
-## Облако тегов меняет массив тегов НА МЕСТЕ, и к моменту сигнала в пресете уже
-## лежит «стало»; снимок до правки есть только здесь.
+## Поля пресета на момент последней записи — «было» для истории: облако тегов
+## меняет массив на месте, и к сигналу в пресете уже «стало».
 var _preset_snapshot := {}
 
 var _graph: RS_LevelGraph
 var _library: RS_RoomPresetLibrary
 var _loaded := false
 
-## Ручки генерации — те же, что у игры (data/world_gen_config.tres). Читаются на
-## каждую пересборку: правку ручек в инспекторе хочется видеть по кнопке
-## «Пересобрать», без перезапуска редактора.
 const WORLD_GEN_CONFIG_PATH := "res://data/world_gen_config.tres"
 var _config: RS_WorldGenConfig
-## Кит коридоров для предпросмотра — тот же ресурс, что GameConfig.corridor_kit у
-## игры (автолоад GameConfig в редакторе не работает, поэтому путём).
+# GameConfig в редакторе не работает, поэтому кит берётся по пути.
 const CORRIDOR_KIT_PATH := "res://data/corridor_kit.tres"
 
 
@@ -117,9 +73,7 @@ func _init() -> void:
 	_build_ui()
 
 
-## Первую генерацию откладываем до первого показа вкладки — как и «Редактор
-## пресетов»: строить слой (реальные сцены комнат) ради вкладки, которую могут
-## не открыть за сессию, незачем.
+## Первая генерация — при первом показе: она инстанцирует реальные сцены комнат.
 func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 	_on_visibility_changed()
@@ -139,9 +93,7 @@ func _build_ui() -> void:
 
 	add_child(_build_toolbar())
 
-	# Вертикальный сплит: превью сверху, отчёт прогона снизу. Панель отчёта
-	# скрыта — SplitContainer со скрытым вторым ребёнком отдаёт всю высоту
-	# первому, поэтому свёрнутый прогон не отъедает у вьюпорта ничего.
+	# SplitContainer со скрытым вторым ребёнком отдаёт всю высоту первому.
 	var rows := VSplitContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -151,7 +103,6 @@ func _build_ui() -> void:
 	var split := HSplitContainer.new()
 	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	# боковая панель у правого края, вьюпорту — остальное
 	EditorState.bind_split(split, SETTINGS_SECTION, "viewport_side_split", -320)
 	rows.add_child(split)
 	rows.add_child(_build_seeds_panel())
@@ -170,19 +121,12 @@ func _build_toolbar() -> Control:
 
 	row.add_child(Ui.label("Сид:"))
 	_seed_spin = SpinBox.new()
-	# Весь диапазон сида забега: и world_seed (randi()), и run_seed() (hash())
-	# 32-битные без знака. Поле в шесть знаков не принимало сид из игры, и
-	# комплекс, где что-то случилось, в редакторе было не воспроизвести. 2³²
-	# double в SpinBox хранит точно, а EditorState пишет сид целым (int64).
 	_seed_spin.min_value = 0
 	_seed_spin.max_value = SEED_MAX
 	_seed_spin.step = 1
 	_seed_spin.value = 0
 	_seed_spin.select_all_on_focus = true
-	# Десять знаков в поле по умолчанию не влезают — видна была бы лишь их часть.
-	_seed_spin.custom_minimum_size = Vector2(130, 0)
-	# Сида мало, чтобы получить тот же мир, — и расхождение по ручкам примут за
-	# этот же баг, если о нём не сказать там, куда сид вводят.
+	_seed_spin.custom_minimum_size = Vector2(130, 0)  # десять знаков сида
 	_seed_spin.tooltip_text = (
 		"Сид забега — тот, что в отладочном оверлее игры («сид забега», копируется из меню отладки).\n"
 		+ "Забег строится из сида, СЛЕПКА ручек генерации и версии генератора, сохранённых\n"
@@ -222,11 +166,6 @@ func _build_toolbar() -> Control:
 	row.add_child(_build_visibility_menu())
 	row.add_child(VSeparator.new())
 
-	# Отдельная кнопка, а не побочный эффект СКМ: раньше камера «доезжала» до
-	# осмысленного вида неявно при первой же орбите без выделения — из-за
-	# устаревшей дистанции автокадрирования получался разброс, который
-	# выглядел как «сброс в начало координат» (см. GDT_ViewportHost.
-	# _orbit_pivot_hint). Явная кнопка предсказуема и не привязана к жесту.
 	row.add_child(Ui.button("Сбросить вид", _on_reset_view_pressed))
 
 	row.add_child(VSeparator.new())
@@ -242,10 +181,7 @@ func _build_toolbar() -> Control:
 	return row
 
 
-## Панель прогона. Отдельный сид у неё не спрашивается намеренно: прогон гоняет
-## сиды 0..N-1 и отвечает на статистический вопрос «что вообще выпадает», а сид
-## в тулбаре — про КОНКРЕТНЫЙ слой во вьюпорте. Связать их одним полем значило
-## бы смешать разбор одного забега с выборкой по многим.
+## Панель прогона; сид тулбара ей не нужен — прогон гоняет сиды 0..N-1 (см. вики).
 func _build_seeds_panel() -> Control:
 	_seeds_panel = VBoxContainer.new()
 	_seeds_panel.visible = false
@@ -298,12 +234,8 @@ func _build_side_panel() -> Control:
 	return panel
 
 
-## Слоты/вес/теги ПРЕСЕТА выделенного узла — редактируются прямо здесь, тем же
-## приёмом, что и вкладка «Редактор пресетов» (presets.gd) и Room Wizard
-## (room_wizard.gd). Не то же самое, что «Теги узла» в _info_label выше:
-## node_data.tags — структурные требования УЗЛА графа (их проставляет
-## генератор), preset.tags — способности РЕСУРСА комнаты; путать их нельзя,
-## поэтому секции визуально разделены.
+## Слоты/вес/теги ПРЕСЕТА выделенного узла. Не то же, что «Теги» узла в
+## _info_label: node.tags — требования узла графа, preset.tags — способности комнаты.
 func _build_preset_section() -> Control:
 	_preset_section = VBoxContainer.new()
 
@@ -351,11 +283,7 @@ func _on_reset_view_pressed() -> void:
 	_host.frame_layer()
 
 
-## Выпадающее меню, а не чекбоксы в ряд: чекбоксов уже три и будет больше
-## («Двери» — заявленный, но пока не построенный четвёртый оверлей, см.
-## overlay_registry.gd), а в панели инструментов место не резиновое. Пункты —
-## циклом по реестру: новый оверлей — строка в OverlayRegistry.OVERLAYS, а не
-## правка этого кода.
+## Пункты — циклом по реестру: новый оверлей — строка в OverlayRegistry.OVERLAYS.
 func _build_visibility_menu() -> MenuButton:
 	_visibility_menu = MenuButton.new()
 	_visibility_menu.text = "Видимость"
@@ -373,9 +301,7 @@ func _build_visibility_menu() -> MenuButton:
 	return _visibility_menu
 
 
-## PopupMenu не переключает check-пункт сам — состояние ведём руками и тут же
-## применяем к вьюпорту, тем же id, каким пункт заведён (порядковый номер в
-## OverlayRegistry.OVERLAYS).
+## PopupMenu не переключает check-пункт сам; id пункта — индекс в OverlayRegistry.OVERLAYS.
 func _on_visibility_item_pressed(id: int) -> void:
 	var popup := _visibility_menu.get_popup()
 	var idx := popup.get_item_index(id)
@@ -393,20 +319,13 @@ func _on_random_seed_pressed() -> void:
 
 
 func _on_rebuild_pressed() -> void:
-	# Дизайнер мог поправить сцену комнаты (дверь, положение) с прошлой
-	# пересборки — без сброса тул продолжит показывать старую раскладку
-	# (см. RS_RoomLayout.clear_scene_cache).
+	# Без сброса кэша сцен раскладка осталась бы по правке двери до пересборки.
 	RS_RoomLayout.clear_scene_cache()
 	_rebuild_graph()
 
 
-## Восстанавливает сид/глубину/видимость оверлеев ДО генерации, камеру —
-## ПОСЛЕ (см. дальше почему), и только тогда подписывается на camera_changed.
-## Порядок важен: _rebuild_graph → _rebuild_layer → ViewportHost.show_layer
-## сама кадрирует камеру на весь слой (frame_layer, см. viewport_host.gd) и
-## эмитит camera_changed — подпишись раньше, и это автокадрирование тут же
-## перезаписало бы в EditorSettings ЕЩЁ НЕ ПРИМЕНЁННУЮ сохранённую позицию,
-## прежде чем restore_camera успеет её поставить.
+## Порядок важен: show_layer сама кадрирует камеру и эмитит camera_changed —
+## подписка раньше перезаписала бы сохранённую позицию до restore_camera.
 func _restore_state() -> void:
 	_seed_spin.value = EditorState.read(SETTINGS_SECTION, "seed", 0)
 	# button_pressed сам зовёт _on_seeds_toggled, панель встаёт вместе с кнопкой.
@@ -448,8 +367,6 @@ func _rebuild_graph() -> void:
 		_set_status("⚠ Не удалось загрузить " + Library.LIBRARY_PATH)
 		return
 	if _save_run_toggle.button_pressed:
-		# Перечитывается на каждую пересборку: после новой контрольной точки игрок
-		# уже в другой комнате, а после смерти — в другом комплексе.
 		var saved := UserResourceFile.read(SAVE_PATH, RS_WorldSave, TAB_TITLE) as RS_WorldSave
 		if saved != null:
 			show_save_run(saved)
@@ -471,12 +388,7 @@ func _build_from_seed() -> void:
 	EditorState.write(SETTINGS_SECTION, "seed", run_seed)
 
 
-## Комплекс забега из сейва [param saved] — тем же правилом, что вход в игре
-## (RunManager._run_gen_config): сид из (world_seed, death_count), ручки —
-## слепок начала забега, а если его нет или забег начат на другом генераторе,
-## текущие: вход сбросит такой забег и снимет ручки заново. Открывается слой
-## игрока с его комнатой выделенной — смотрят обычно туда, где он стоит.
-##
+## Комплекс забега из сейва [param saved] — по правилу входа в игре (см. вики).
 ## Сид из сейва в EditorState не пишется: выключив режим, возвращаешься к своему.
 func show_save_run(saved: RS_WorldSave) -> void:
 	var run_seed := saved.run_seed()
@@ -512,8 +424,6 @@ func _on_save_run_toggled(pressed: bool) -> void:
 	_rebuild_graph()
 
 
-## Сид в режиме сейва показывается, но не правится: правка молча строила бы уже
-## не забег из сейва, а кнопка оставалась бы нажатой.
 func _set_seed_editable(editable: bool) -> void:
 	_seed_spin.editable = editable
 	_random_btn.disabled = not editable
@@ -538,8 +448,6 @@ func _rebuild_layer() -> void:
 	_clear_selection()
 
 
-## Слой глубины [param depth] в том виде, в каком его рисуют оверлеи: узлы,
-## раскладка (та же RS_LayerPlan, что у игры) и подписи пресетов.
 func _layer_view(depth: int) -> LayerView:
 	var layer_nodes := _graph.get_nodes_by_depth(depth)
 	var view := LayerView.new(
@@ -550,16 +458,15 @@ func _layer_view(depth: int) -> LayerView:
 	return view
 
 
-## Ручки проекта. null — ресурса нет, тогда генератор возьмёт свои по умолчанию.
+## null — ресурса нет, генератор возьмёт ручки по умолчанию. CACHE_MODE_REPLACE —
+## правка в инспекторе видна по «Пересобрать».
 func _world_gen_config() -> RS_WorldGenConfig:
 	if not ResourceLoader.exists(WORLD_GEN_CONFIG_PATH):
 		return null
 	return ResourceLoader.load(WORLD_GEN_CONFIG_PATH, "", ResourceLoader.CACHE_MODE_REPLACE) as RS_WorldGenConfig
 
 
-## node_id -> имя пресета, для оверлея «Подписи». Тот же поиск, что
-## _preset_for делает для одного узла (инлайн-редактор) — здесь просто
-## для всех узлов слоя разом, до того как их отрисует ViewportHost.
+## node_id -> имя пресета, для оверлея «Подписи».
 func _preset_labels_for(layer_nodes: Array[RS_LevelNode]) -> Dictionary:
 	var labels := {}
 	for node_data: RS_LevelNode in layer_nodes:
@@ -607,9 +514,7 @@ func _node_report(node_data: RS_LevelNode) -> String:
 	lines.append("Рёбер: %d" % node_data.connections.size())
 	if not node_data.tags.is_empty():
 		lines.append("Теги: " + ", ".join(node_data.tags))
-	# Отдельной строкой от тегов — намеренно: это ДРУГАЯ ось подбора, и слитый
-	# с тегами тип ровно тем и путал бы, чего разведение осей избегает.
-	# После генерации здесь тип фактически вставшей комнаты, а не загаданный.
+	# Тип — другая ось подбора, чем теги; не сливать (см. «Цикл забега»).
 	lines.append("Тип: " + _room_type_label(node_data.room_type))
 	lines.append("Сцена: " + (node_data.room_scene_path if node_data.room_scene_path != "" else "—"))
 
@@ -633,10 +538,7 @@ func _room_type_label(id: StringName) -> String:
 	return "—" if id == &"" else String(id)
 
 
-## Пресет узла — обратной ссылки «узел → пресет» в данных нет, ищем по
-## совпадению пути сцены. Хаб узнаётся наравне с остальными (см.
-## GDT_Library.preset_for_scene): у него тоже есть RS_RoomPreset, просто вне
-## пула автоподбора.
+## Обратной ссылки «узел → пресет» нет — ищем по пути сцены (хаб тоже находится).
 func _preset_for(node_data: RS_LevelNode) -> RS_RoomPreset:
 	return Library.preset_for_scene(_library, node_data.room_scene_path)
 
@@ -660,10 +562,9 @@ func _selected_node_data() -> RS_LevelNode:
 #endregion
 
 
-#region Инлайн-редактор пресета (v3-стретч)
-## Пока идёт программное заполнение полей — value_changed на SpinBox иначе
-## тут же перечитывал бы то же значение обратно и сохранял ресурс без
-## реальной правки, на каждый клик по узлу.
+#region Инлайн-редактор пресета
+## Гасит эхо value_changed при программном заполнении: иначе каждый клик по узлу
+## «сохранял» бы пресет без правки.
 var _filling_preset_section := false
 
 
@@ -673,8 +574,6 @@ func _fill_preset_section() -> void:
 	_preset_label.tooltip_text = _editing_preset.resource_path
 	_slot_spin.value = _editing_preset.slot_count
 	_weight_spin.value = _editing_preset.weight
-	# Словарный запас перечитываем на каждое выделение: библиотеку мог поправить
-	# соседний инструмент или инспектор, пока вкладка была открыта.
 	_tag_cloud.set_vocabulary(_library)
 	_tag_cloud.show_for(_editing_preset)
 	_filling_preset_section = false
@@ -710,12 +609,9 @@ func _on_add_tag_pressed() -> void:
 		_set_status("Тег «%s» заведён и повешен." % tag)
 
 
-## Зовётся и облаком тегов через preset_changed — заполнение секции его тоже
-## трогает (show_for), поэтому флаг проверяем здесь, а не только в спинбоксах.
-##
-## Правка уходит в историю редактора как «снимок → текущее»: Ctrl+Z откатывает и
-## поле, и файл. [param merge] — для спинбоксов, чтобы тики одного перетаскивания
-## стали одним шагом, а не сотней.
+## Зовётся и облаком тегов (preset_changed), которое show_for тоже трогает —
+## поэтому флаг проверяется здесь. Правка идёт в историю как «снимок → текущее»;
+## [param merge] склеивает тики спинбокса в один шаг.
 func _save_editing_preset(merge := false) -> void:
 	if _filling_preset_section or _editing_preset == null:
 		return
@@ -737,10 +633,8 @@ func _save_editing_preset(merge := false) -> void:
 	_set_status("Сохранено: " + _editing_preset.resource_path.get_file())
 
 
-## После правки и после отката: форма показывает то, что в пресете сейчас.
-## Отложенно: правка приходит изнутри сигнала чекбокса облака тегов, а
-## перерисовка пересобирает облако — и освободила бы этот чекбокс посреди его же
-## сигнала.
+## Отложенно: правка приходит из сигнала чекбокса облака, а перерисовка пересобирает
+## облако и освободила бы чекбокс посреди его же сигнала.
 func _after_preset_edit(preset: RS_RoomPreset) -> void:
 	if preset == _editing_preset:
 		_refill_preset_section.call_deferred(preset)
@@ -753,22 +647,10 @@ func _refill_preset_section(preset: RS_RoomPreset) -> void:
 
 
 #region Прогон сидов
-## Гоняет генератор по N сидам и показывает, что реально выпало и почему остальные
-## пресеты отсеялись. Выбор берём из настоящего прогона (room_scene_path), причины
-## отсева — из RS_RoomPresetLibrary.explain_selection: жёсткие фильтры
-## (портал/теги) от rng не зависят, поэтому цифры честные. Уникальные комнаты
-## (хаб, выход) в отсеве не участвуют — их ставит конфиг, а не подбор, — и
-## считаются только в «Что выпало». Заодно — метрики коридорной раскладки: сколько
-## тайлов и каких кусков кита уходит на этаж (цена раскладки в арте) и насколько
-## коридор обволакивает комнаты.
-##
-## Прогон НЕ трогает ни _graph, ни вьюпорт: он строит свои графы и выбрасывает
-## их. Иначе кнопка «Прогнать» незаметно подменяла бы слой под камерой на
-## последний из просчитанных сидов.
+## Не трогает ни _graph, ни вьюпорт: свои графы строит и выбрасывает. Что считается
+## и откуда берутся причины отсева — в вики.
 func _on_preview_pressed() -> void:
-	# Как и «Пересобрать»: дизайнер мог поправить дверь в сцене, а прогон считает
-	# двери и стороны через кэш сцен RS_RoomLayout — без сброса таблицы «Двери
-	# комнат» и кусков кита посчитались бы по СТАРОЙ геометрии.
+	# Двери считаются через кэш сцен — без сброса цифры пойдут по старой геометрии.
 	RS_RoomLayout.clear_scene_cache()
 	if _library == null:
 		_rebuild_graph()
@@ -814,10 +696,8 @@ func _on_preview_pressed() -> void:
 
 			var explained: Dictionary = _library.explain_selection(node, rng, excluded)["reasons"]
 			for label: String in explained:
-				# Победителя броска у explain свой (у него отдельный rng), поэтому
-				# «выбран» сливаем с «дошёл до весов»: таблица отсева говорит только
-				# о ЖЁСТКИХ фильтрах, а они от rng не зависят. Кто реально выпал —
-				# в таблице «Что выпало», она из настоящего прогона.
+				# У explain свой rng и свой победитель: «выбран» сливаем с «дошёл до
+				# весов» — таблица отсева только о жёстких фильтрах.
 				var reason: String = explained[label]
 				if reason == RS_RoomPresetLibrary.REASON_SELECTED:
 					reason = RS_RoomPresetLibrary.REASON_CANDIDATE
@@ -831,11 +711,7 @@ func _on_preview_pressed() -> void:
 	_set_status("Прогнано сидов: %d, комнат: %d" % [seeds, nodes_total])
 
 
-## Коридоры по всем прогнанным этажам: сколько тайлов и каких кусков, насколько
-## коридор обволакивает комнаты, сколько обходных путей и тупиков
-## (RS_LayoutMetrics — те же цифры, что печатает dev/corridor_layout_check).
-## Отказов трассы быть не должно, но если правка ручек их вернула, увидеть это надо
-## здесь, а не в забеге.
+## Метрики RS_LayoutMetrics — те же, что печатает dev/corridor_layout_check.
 func _corridor_report(layout: RS_LayoutMetrics, failures: int) -> String:
 	var out := "\n[b]Коридоры[/b]: %d тайлов на %d этажей" % [layout.tiles, layout.floors]
 	if failures > 0:
@@ -844,12 +720,11 @@ func _corridor_report(layout: RS_LayoutMetrics, failures: int) -> String:
 	return out
 
 
-## Ключ «на весь комплекс» в таблице «Где встретить» — рядом с глубинами слоёв.
+## Ключ «на весь комплекс» в таблице «Где встретить».
 const ANYWHERE := -1
 
 
-## Сид засчитывается пресету один раз на слой и один раз на комплекс, сколько бы
-## комнат он там ни занял: таблица отвечает «встретит ли игрок», а не «сколько».
+## Сид засчитывается пресету раз на слой и раз на комплекс: «встретит ли», не «сколько».
 static func _count_presence(presence: Dictionary, seen: Dictionary) -> void:
 	for label: String in seen:
 		if not presence.has(label):
@@ -860,8 +735,7 @@ static func _count_presence(presence: Dictionary, seen: Dictionary) -> void:
 			counts[depth] = counts.get(depth, 0) + 1
 
 
-## Строка таблицы «Где встретить»: доля сидов, где пресет выпал на весь комплекс
-## и на каждом слое. Одна на отчёт и на проверку — формат у них не разъедется.
+## Одна на отчёт и на проверку — формат у них не разъедется.
 static func _presence_line(label: String, counts: Dictionary, seeds: int) -> String:
 	var line := "%-24s %4d%%" % [label, _percent(counts.get(ANYWHERE, 0), seeds)]
 	for depth: int in RS_LevelGraph.DEPTHS:
@@ -890,9 +764,6 @@ func _preview_report(
 		out += "%-24s %5d  %4.1f%%\n" % [label, picks[label], 100.0 * picks[label] / maxi(nodes_total, 1)]
 	out += "[/code]"
 
-	# Доля выше отвечает не на тот вопрос, который задаёт дизайнер. default_room
-	# была 2,4 % всех комнат — в сумме по 30 сидам она есть всегда, — а на слое
-	# хаба стояла в 4 % сидов, и за три забега её не встретили ни разу.
 	out += "\n[b]Где встретить[/b] (в скольких сидах выпал хотя бы раз; * — слой хаба, с него начинается забег)\n[code]"
 	var header := "%-24s %5s" % ["", "весь"]
 	for depth: int in RS_LevelGraph.DEPTHS:
@@ -940,10 +811,7 @@ func _preview_report(
 	return out
 
 
-## Подпись пресета по пути сцены — для колонки «что выпало». Ищем ТЕМ ЖЕ
-## поиском, что и боковая панель: пока у прогона был свой обход, он не знал про
-## library.hub, и хаб отчитывался как «вне библиотеки» в каждом прогоне.
-## Сцены действительно вне библиотеки (placeholder) показываем по имени файла.
+## Поиск тот же, что у боковой панели (иначе хаб отчитывался бы «вне библиотеки»).
 func _label_for_scene(scene_path: String) -> String:
 	var preset := Library.preset_for_scene(_library, scene_path)
 	if preset == null:

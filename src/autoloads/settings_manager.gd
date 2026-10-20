@@ -1,22 +1,18 @@
-# res://src/autoloads/settings_manager.gd
+# Настройки игрока: загрузка и сохранение, применение графики, окна, масштаба и раскладки клавиш.
+# Вики: [[Конвенции проекта]] (устройство перепривязки).
 extends Node
 
 const SETTINGS_PATH := "user://settings.tres"
-## Не preload: preload резолвится на компиляции и в debug/export-сборке падает на
-## кастомном ресурсе («Cannot get class ''», godotengine/godot#100100). Грузим в
-## рантайме через load() в _init — поэтому var, а не const.
+## Не preload: падает в debug/export на кастомном ресурсе (godotengine/godot#100100) — load() в _init.
 const DEFAULT_SETTINGS_PATH := "res://data/settings.tres"
 var DEFAULT_SETTINGS: RS_Settings
 
-## Тот же обход preload-бага (см. DEFAULT_SETTINGS выше) — каталог тоже
-## кастомный ресурс.
+## Тот же обход preload-бага.
 const GRAPHICS_PRESETS_PATH := "res://data/graphics_presets.tres"
 var GRAPHICS_PRESETS: RS_GraphicsPresetLibrary
 
-## Действия, доступные для переназначения, в порядке показа в настройках, и
-## ключи перевода их подписей.
-## pause_game сюда НЕ входит намеренно: Esc — инвариант UI (им закрывается любой
-## экран, включая сам экран настроек, где идёт захват клавиши).
+## Переназначаемые действия в порядке показа и ключи перевода подписей. pause_game не входит:
+## Esc — инвариант UI (закрывает любой экран, в том числе захват клавиши).
 const REBINDABLE_ACTIONS := {
 	&"move_forward": "ACTION_MOVE_FORWARD",
 	&"move_backward": "ACTION_MOVE_BACKWARD",
@@ -32,8 +28,7 @@ const REBINDABLE_ACTIONS := {
 	&"map_mini": "ACTION_MAP_MINI",
 }
 
-## Имена кнопок мыши — ключи перевода: OS.get_keycode_string умеет только
-## клавиши. Прочие кнопки — KEY_MOUSE_N с номером.
+## Имена кнопок мыши — ключи перевода; прочие — KEY_MOUSE_N.
 const MOUSE_BUTTON_NAMES := {
 	MOUSE_BUTTON_LEFT: "KEY_MOUSE_LEFT",
 	MOUSE_BUTTON_RIGHT: "KEY_MOUSE_RIGHT",
@@ -44,8 +39,7 @@ const MOUSE_BUTTON_NAMES := {
 	MOUSE_BUTTON_XBUTTON2: "KEY_MOUSE_5",
 }
 
-## Эмитится каждый раз, когда settings меняются (загрузка, Apply, Reset) —
-## подписывайтесь, если системе/UI нужно среагировать на смену настроек.
+## Эмитится при любой смене settings (загрузка, Apply, Reset).
 signal settings_changed(settings: RS_Settings)
 
 var settings: RS_Settings:
@@ -53,22 +47,19 @@ var settings: RS_Settings:
 		settings = value
 		_apply_runtime_effects()
 
-## Дефолтная раскладка из project.godot: action → код события. Снимается ОДИН раз
-## в _init, до того как настройки успели что-то переопределить в InputMap.
+## Дефолтная раскладка project.godot: action -> код. Снимается один раз в _init, до переопределений.
 var _default_codes: Dictionary = {}
 
 
 func _init() -> void:
 	DEFAULT_SETTINGS = load(DEFAULT_SETTINGS_PATH)
 	GRAPHICS_PRESETS = load(GRAPHICS_PRESETS_PATH)
-	# Автолоады создаются уже после инициализации InputMap из project.godot,
-	# поэтому здесь в нём ещё нетронутая дефолтная раскладка.
+	# Автолоады создаются после InputMap из project.godot — в нём ещё дефолтная раскладка.
 	_snapshot_default_codes()
 
 func _ready() -> void:
 	settings = _load()  # проходит через сеттер -> сразу применяет эффекты
-	# Масштаб интерфейса зависит от размера окна, а окно меняет не только
-	# «Применить»: его тянут руками и разворачивают на весь экран.
+	# Окно меняет не только «Применить»: его тянут руками и разворачивают.
 	get_window().size_changed.connect(_apply_ui_scale)
 
 func save() -> void:
@@ -80,33 +71,25 @@ func reset() -> void:
 func default_settings() -> RS_Settings:
 	return DEFAULT_SETTINGS.copy()
 
-## Пресет по id ("low"/"medium"/"high") или null — для &"custom" и любого
-## неизвестного id (например сейв старше проекта, из каталога пропал пресет).
+## Пресет по id или null — для &"custom" и неизвестного id.
 func preset_by_id(id: StringName) -> RS_GraphicsPreset:
 	return GRAPHICS_PRESETS.by_id(id) if GRAPHICS_PRESETS else null
 
-## Ступень теней из настроек или null — тени выключены (или id пропал из
-## каталога, что для игрока то же самое). Её дальность читают лампы уровня
-## (LevelLight): сами узлы сцены этот автолоад не трогает, см.
-## _apply_graphics_settings.
+## Ступень теней из настроек или null (тени выключены). Читают лампы (LevelLight).
 func shadow_level() -> RS_ShadowLevel:
 	if settings == null or GRAPHICS_PRESETS == null:
 		return null
 	return GRAPHICS_PRESETS.shadow_level(settings.shadow_quality)
 
 
-## Ступень экранных эффектов из настроек или null — эффектов нет. Читает её
-## окружение сцены (LevelEnvironment), по той же причине, что лампы — тени.
+## Ступень экранных эффектов или null; читает LevelEnvironment.
 func effects_level() -> RS_ScreenEffectsLevel:
 	if settings == null or GRAPHICS_PRESETS == null:
 		return null
 	return GRAPHICS_PRESETS.effects_level(settings.screen_effects)
 
 
-## Сейв с именованным пресетом приводится к пресету, каким он стал: игрок выбрал
-## «Высокий», а не набор чисел, и раз «Высокий» поменялся (или в нём появилось
-## новое поле, как ступень теней вместо флажка и атласа), он получает новый.
-## «Собственные» настройки не трогаются — их числа и есть выбор игрока.
+## Сейв с именованным пресетом приводится к пресету, каким он стал; «Собственные» не трогаются.
 func _load() -> RS_Settings:
 	var loaded := UserResourceFile.read(SETTINGS_PATH, RS_Settings, "SettingsManager") as RS_Settings
 	if loaded == null:
@@ -116,8 +99,7 @@ func _load() -> RS_Settings:
 		preset.apply_to(loaded)
 	return loaded
 
-## Побочные эффекты, которые должны применяться немедленно при смене настроек,
-## а не только на старте игры.
+## Эффекты, применяемые сразу при смене настроек, а не только на старте.
 func _apply_runtime_effects() -> void:
 	if settings == null:
 		return
@@ -128,18 +110,11 @@ func _apply_runtime_effects() -> void:
 	settings_changed.emit(settings)
 
 
-# ---------------------------------------------------------------------------
 # Графика
-# ---------------------------------------------------------------------------
 
 
-## "Тени выкл" — это занулённые атласы, а не свойство конкретного света: автолоад
-## не должен знать про DirectionalLight3D из world.tscn — сцена может смениться
-## (меню, будущие уровни), а настройка обязана продолжать работать без правки
-## каждой новой сцены. directional-атлас не зануляем совсем (0 там не валиден),
-## а сжимаем до минимума — эффект тот же, тени неотличимы от выключенных.
-## Дальность теней — свойство каждой лампы, и её ставят сами лампы (LevelLight)
-## по settings_changed, а не этот автолоад обходом дерева.
+## «Тени выкл» — занулённые атласы, а не свойство света: автолоад не знает про сцены.
+## directional-атлас сжимаем до минимума (0 не валиден). Дальность теней ставят сами лампы.
 func _apply_graphics_settings() -> void:
 	var level := shadow_level()
 	var atlas := level.atlas_size if level else 0
@@ -148,14 +123,10 @@ func _apply_graphics_settings() -> void:
 		RenderingServer.directional_soft_shadow_filter_set_quality(level.soft_filter)
 	var viewport := get_viewport()
 	if viewport:
-		# Во весь экран «разрешение» — это мельче экрана рисуемое 3D, поверх
-		# «Масштаба разрешения» (см. render_resolution_factor).
+		# Во весь экран «разрешение» — мельче рисуемое 3D, поверх «Масштаба разрешения».
 		var scale_3d := settings.render_scale * render_resolution_factor()
 		viewport.scaling_3d_scale = scale_3d
-		# Ниже 100 % — FSR1: он дешёвый и вытягивает резкость, которую растяжение
-		# билинейным фильтром съедает. FSR2 на встроенной графике сам стоит кадров,
-		# а выше 100 % (суперсэмплинг) FSR не работает вовсе. Решает итоговый
-		# масштаб, а не ползунок: разрешение ниже экрана — то же уменьшение.
+		# Ниже 100 % — FSR1 (дешёвый, возвращает резкость); выше — FSR не работает. Решает итоговый масштаб.
 		viewport.scaling_3d_mode = (
 			Viewport.SCALING_3D_MODE_FSR if scale_3d < 1.0 else Viewport.SCALING_3D_MODE_BILINEAR
 		)
@@ -185,31 +156,26 @@ func _apply_graphics_settings() -> void:
 	)
 
 
-# ---------------------------------------------------------------------------
 # Экран: режим окна, разрешение, масштаб интерфейса
-# ---------------------------------------------------------------------------
 
 const WINDOW_WINDOWED := &"windowed"
 const WINDOW_BORDERLESS := &"borderless"
 const WINDOW_FULLSCREEN := &"fullscreen"
 
-## Разрешения, которые предлагает список: 16:9 и 16:10 — то, что реально
-## стоит у игроков. Показываются только влезающие в экран (resolution_options).
+## Предлагаемые разрешения (16:9 и 16:10); показываются влезающие в экран.
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1280, 720), Vector2i(1366, 768), Vector2i(1440, 900), Vector2i(1600, 900),
 	Vector2i(1680, 1050), Vector2i(1920, 1080), Vector2i(1920, 1200), Vector2i(2560, 1440),
 	Vector2i(2560, 1600), Vector2i(3200, 1800), Vector2i(3840, 2160),
 ]
-## Фиксированные масштабы интерфейса. Целые — самые чёткие: линия в пиксель
-## остаётся линией в пиксель.
+## Фиксированные масштабы интерфейса; целые — самые чёткие.
 const UI_SCALES: Array[float] = [1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
 
-## Режим и разрешение, последними применённые к окну ([] — ещё ни разу), см.
-## _apply_display_settings.
+## Режим и разрешение, последними применённые к окну ([] — ещё ни разу).
 var _applied_window: Array = []
 
 
-## Базовое окно проекта — единица размеров интерфейса (project.godot).
+## Базовое окно проекта — единица размеров интерфейса.
 func base_size() -> Vector2i:
 	return Vector2i(
 		ProjectSettings.get_setting("display/window/size/viewport_width"),
@@ -217,8 +183,7 @@ func base_size() -> Vector2i:
 	)
 
 
-## Разрешения для списка в настройках: влезающие в экран, плюс сам экран, если
-## его нет среди стандартных.
+## Разрешения для списка: влезающие в экран плюс сам экран.
 func resolution_options() -> Array[Vector2i]:
 	var screen := DisplayServer.screen_get_size()
 	var options: Array[Vector2i] = []
@@ -230,8 +195,7 @@ func resolution_options() -> Array[Vector2i]:
 	return options
 
 
-## Масштабы интерфейса для списка: только те, при которых базовое окно ещё
-## влезает в экран, — больший интерфейс вылез бы за край.
+## Масштабы интерфейса, при которых базовое окно ещё влезает в экран.
 func ui_scale_options() -> Array[float]:
 	var screen := Vector2(DisplayServer.screen_get_size())
 	var fit := minf(screen.x / base_size().x, screen.y / base_size().y)
@@ -242,22 +206,14 @@ func ui_scale_options() -> Array[float]:
 	return options
 
 
-## Игра запущена из редактора встроенной во вкладку «Игра». Такое окно Godot
-## держит только оконным («Embedded window only supports Windowed mode.»), а его
-## размер задаёт редактор: смену режима он отвергает, а размер применяет
-## наполовину — картинка обрезается или стоит с пустыми полями. Поэтому режим и
-## разрешение здесь не применяются вовсе, а меню их гасит.
+## Игра встроена во вкладку редактора: окно только оконное, режим и размер задаёт редактор —
+## поэтому режим и разрешение не применяются, а меню их гасит.
 func is_window_locked() -> bool:
 	return Engine.is_embedded_in_editor()
 
 
-## Режим и размер окна. Godot не меняет разрешение монитора, поэтому во весь
-## экран «разрешение» — это то, в чём рисуется 3D (см. render_resolution_factor),
-## а размер окна — экран целиком.
-##
-## Окно трогается, только когда режим или разрешение поменялись с прошлого
-## применения: эффекты применяются на любое «Применить», и без этого правка
-## громкости сворачивала бы развёрнутое руками окно обратно в выбранный размер.
+## Режим и размер окна. Окно трогается, только когда режим или разрешение поменялись:
+## иначе правка громкости сворачивала бы развёрнутое руками окно.
 func _apply_display_settings() -> void:
 	var window := get_window()
 	if window == null or DisplayServer.get_name() == "headless":
@@ -279,8 +235,7 @@ func _apply_window_mode(window: Window) -> void:
 			if window.mode != Window.MODE_WINDOWED:
 				window.mode = Window.MODE_WINDOWED
 			var wanted := settings.resolution if settings.resolution != Vector2i.ZERO else base_size()
-			# Окно не больше рабочей области: иначе заголовок уезжает за край
-			# экрана, и окно не передвинуть.
+			# Окно не больше рабочей области: иначе заголовок уезжает за край.
 			var usable := DisplayServer.screen_get_usable_rect().size
 			if usable.x > 0:
 				wanted = wanted.min(usable)
@@ -289,11 +244,8 @@ func _apply_window_mode(window: Window) -> void:
 				window.move_to_center()
 
 
-## Во сколько раз 3D рисуется мельче экрана из-за выбранного разрешения: во весь
-## экран 1920×1080 на мониторе 2560×1440 — 0.75. В окне разрешение и есть
-## размер окна, множитель — 1. Сверху — 1: рисовать 3D крупнее экрана этот
-## пункт не обещает, для этого есть «Масштаб разрешения». Во встроенной в
-## редактор игре окно оконное, что бы ни стояло в настройках, — множитель 1.
+## Во сколько раз 3D рисуется мельче экрана из-за разрешения при полном экране; в окне и
+## во встроенной игре — 1; сверху зажато 1.
 func render_resolution_factor() -> float:
 	if settings == null or settings.window_mode == WINDOW_WINDOWED or settings.resolution == Vector2i.ZERO:
 		return 1.0
@@ -305,12 +257,8 @@ func render_resolution_factor() -> float:
 	return minf(1.0, float(settings.resolution.y) / screen.y)
 
 
-## Масштаб интерфейса. «Авто» — canvas_items растягивает базовое окно по окну
-## дробно (project.godot). Фиксированный множитель k сделан тем же режимом:
-## базовым размером назначается окно / k, и растяжение выходит ровно k — без
-## чёрных полей, которые даёт встроенный целый режим Godot: он округляет
-## множитель вниз и ставит игру посередине в рамке.
-## Пересчитывается на каждое изменение размера окна.
+## Масштаб интерфейса: фиксированный k — тот же canvas_items с базой окно / k, без чёрных полей
+## целого режима Godot. Пересчитывается при каждом изменении размера окна.
 func _apply_ui_scale() -> void:
 	var window := get_window()
 	if window == null or settings == null or window.size.x <= 0 or window.size.y <= 0:
@@ -321,13 +269,8 @@ func _apply_ui_scale() -> void:
 	window.content_scale_size = ui_content_size(window.size, base_size(), settings.ui_scale)
 
 
-## Базовый размер холста для окна [param window_size] при масштабе
-## [param ui_scale]: canvas_items растянет его по окну, и множитель выйдет ровно
-## тот, что задан. «Авто» (0) и окно меньше базового — сама база: фиксированный
-## масштаб в маленьком окне оставил бы раскладке меньше места, чем она
-## свёрстана. Масштаб больше, чем влезает, зажимается до влезающего. Не static
-## по той же причине, что event_to_code: до автолоада без class_name снаружи
-## дозваться можно только через инстанс.
+## Базовый размер холста для окна и масштаба. «Авто» и окно меньше базового — сама база; слишком
+## большой масштаб зажимается. Не static: до автолоада без class_name дозваться можно только через инстанс.
 func ui_content_size(window_size: Vector2i, base: Vector2i, ui_scale: float) -> Vector2i:
 	var size := Vector2(window_size)
 	var fit := minf(size.x / base.x, size.y / base.y)
@@ -337,15 +280,11 @@ func ui_content_size(window_size: Vector2i, base: Vector2i, ui_scale: float) -> 
 	return Vector2i(ceili(size.x / k), ceili(size.y / k))
 
 
-# ---------------------------------------------------------------------------
 # Управление: раскладка клавиш
-# ---------------------------------------------------------------------------
 
 
-## Раскатывает settings.keybinds поверх дефолтной раскладки. База каждый раз
-## перезагружается из project.godot: в настройках лежат только ОТЛИЧИЯ, поэтому
-## «Сброс» (пустой словарь) обязан вернуть управление к дефолту, а не оставить
-## прошлые переопределения висеть в InputMap.
+## Раскатывает settings.keybinds поверх дефолта. В настройках только ОТЛИЧИЯ, поэтому база
+## каждый раз перезагружается: «Сброс» не оставит старые переопределения.
 func _apply_keybinds() -> void:
 	InputMap.load_from_project_settings()
 	for action: StringName in settings.keybinds:
@@ -358,28 +297,22 @@ func _apply_keybinds() -> void:
 		InputMap.action_add_event(action, event)
 
 
-## Код действия по дефолтной раскладке project.godot ("" — действия нет или у
-## него нет ни клавиши, ни кнопки мыши).
+## Код действия по дефолтной раскладке ("" — действия или привязки нет).
 func default_code_for(action: StringName) -> String:
 	return _default_codes.get(action, "")
 
 
-## Читаемое имя ТЕКУЩЕЙ привязки действия — для подсказок в HUD ("F", "ЛКМ").
-## Читает InputMap, а не сейв, поэтому остаётся верным сразу после
-## переназначения. "" — у действия нет ни клавиши, ни кнопки мыши (тогда
-## подсказке нечего показывать и префикс лучше не рисовать вовсе).
+## Имя ТЕКУЩЕЙ привязки для подсказок HUD; читает InputMap, а не сейв. "" — привязки нет.
 func action_display_name(action: StringName) -> String:
 	var code := _first_code_of(action)
 	return code_display_name(code) if code != "" else ""
 
 
-## Отображаемое имя привязки для UI: "F", "ЛКМ", "—" для пустого/битого кода.
+## Имя привязки для UI: "F", "ЛКМ", "—" для пустого/битого кода.
 func code_display_name(code: String) -> String:
 	var event := code_to_event(code)
 	if event is InputEventKey:
-		# Клавиатурные имена движок отдаёт по-английски, и для букв и Shift это
-		# и есть надпись на клавише. Пробел — единственная частая клавиша, чьё имя
-		# игрок читает словом, поэтому переводим только его.
+		# Имена клавиш по-английски — это надпись на клавише; переводим только пробел.
 		if event.physical_keycode == KEY_SPACE:
 			return tr("KEY_SPACE")
 		return OS.get_keycode_string(event.physical_keycode)
@@ -391,16 +324,11 @@ func code_display_name(code: String) -> String:
 	return "—"
 
 
-## Кодирует событие ввода в короткую строку для сейва: "key:70", "mouse:1".
-## "" — событие непривязываемого типа (движение мыши, джойстик и т.п.).
-##
-## Не static, хотя от состояния не зависит: class_name у скрипта нет (его имя
-## занято автолоадом), поэтому единственный способ дозваться до кодека — через
-## инстанс автолоада, а статический вызов на инстансе парсер считает ошибкой.
+## Кодирует событие в строку для сейва: "key:70", "mouse:1"; "" — непривязываемый тип.
+## Не static: у скрипта нет class_name, а статический вызов на инстансе автолоада — ошибка парсера.
 func event_to_code(event: InputEvent) -> String:
 	if event is InputEventKey:
-		# physical_keycode: привязка к ФИЗИЧЕСКОЙ клавише, чтобы WASD не разъезжались
-		# на не-QWERTY раскладках (так же заданы действия в project.godot).
+		# physical_keycode: чтобы WASD не разъезжались на не-QWERTY раскладках.
 		var key := event as InputEventKey
 		var code: int = key.physical_keycode if key.physical_keycode != 0 else key.keycode
 		return "key:%d" % code
@@ -409,7 +337,7 @@ func event_to_code(event: InputEvent) -> String:
 	return ""
 
 
-## Обратная операция к event_to_code. null, если строка не разбирается.
+## Обратная к event_to_code; null, если строка не разбирается.
 func code_to_event(code: String) -> InputEvent:
 	var parts := code.split(":")
 	if parts.size() != 2 or not parts[1].is_valid_int():
@@ -431,8 +359,7 @@ func _snapshot_default_codes() -> void:
 		_default_codes[action] = _first_code_of(action)
 
 
-## Первая привязка действия, которую мы умеем кодировать (клавиша или кнопка
-## мыши). Действия в project.godot имеют по одному событию, но перебор надёжнее.
+## Первая привязка действия, которую умеем кодировать (клавиша или кнопка мыши).
 func _first_code_of(action: StringName) -> String:
 	if not InputMap.has_action(action):
 		return ""

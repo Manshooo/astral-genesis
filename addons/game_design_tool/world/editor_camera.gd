@@ -1,17 +1,7 @@
 ## res://addons/game_design_tool/world/editor_camera.gd
-## Фри-камера редакторского вьюпорта генератора: облёт по ПКМ (WASD, пока
-## зажата) и орбита по СКМ вокруг точки, которую передаёт хозяин (обычно —
-## выделенный узел). Сама камера ничего не знает про выделение или узлы графа —
-## это оставлено GDT_ViewportHost (`viewport_host.gd`), у которого есть
-## контекст сцены; камера только вращается, летает и умеет фокусироваться на
-## переданном AABB.
-##
-## @tool обязателен: скрипт живёт целиком внутри работающего редактора (это не
-## игровая камера), и без @tool Godot не станет вызывать её _ready/_process.
-##
-## Camera3D — не Control и GUI-события не получает; вызывающий (viewport_host)
-## перехватывает их через _gui_input и дёргает методы этого скрипта руками, а
-## не полагается на встроенную маршрутизацию ввода Godot.
+## Фри-камера вьюпорта генератора: облёт по ПКМ и орбита по СКМ. Про выделение
+## и узлы графа не знает — методы ей зовёт GDT_ViewportHost.
+## [[Редакторские инструменты]] §«Коридоры и сетка во вьюпорте».
 @tool
 extends Camera3D
 
@@ -21,15 +11,14 @@ const LOOK_SENSITIVITY := 0.004
 const ORBIT_SENSITIVITY := 0.01
 const ZOOM_STEP := 4.0
 const MIN_ORBIT_DISTANCE := 4.0
-## Множитель к наибольшему габариту AABB при автокадрировании — запас, чтобы
-## комната/слой не упирались в края вьюпорта.
+## Запас к наибольшему габариту AABB при автокадрировании.
 const FOCUS_FRAME_MARGIN := 0.9
 
 var _flying := false
 var _orbiting := false
 var _yaw := 0.0
 var _pitch := 0.0
-## Точка, вокруг которой вращает СКМ, и она же — центр последнего focus_on.
+## Центр орбиты СКМ и последнего focus_on.
 var _orbit_pivot := Vector3.ZERO
 var _orbit_distance := 30.0
 
@@ -54,9 +43,7 @@ func is_moving() -> bool:
 	return _flying or _orbiting
 
 
-## Хозяин зовёт перед set_orbiting(true) — камера сама не решает, вокруг чего
-## вращаться (это могла бы быть выделенная комната, а могла — точка перед
-## камерой; выбор оставлен вызывающему).
+## Хозяин зовёт перед set_orbiting(true): вокруг чего вращаться, решает он.
 func begin_orbit(pivot: Vector3) -> void:
 	_orbit_pivot = pivot
 	_orbit_distance = maxf(position.distance_to(pivot), MIN_ORBIT_DISTANCE)
@@ -66,11 +53,8 @@ func orbit_distance() -> float:
 	return _orbit_distance
 
 
-## Ставит камеру в сохранённое между сессиями положение (см. world_gen.gd,
-## EditorSettings.set_project_metadata) и пересчитывает _yaw/_pitch из НЕГО —
-## иначе первый же облёт/орбита дёрнул бы камеру к старому ракурсу, оставшемуся
-## с _ready(): та же ловушка, что уже была с пивотом орбиты без выделения
-## (см. GDT_ViewportHost._pivot_ahead_of_camera).
+## Восстанавливает сохранённое положение; _yaw/_pitch пересчитываются из него,
+## иначе первый облёт дёрнет камеру к ракурсу, оставшемуся с _ready().
 func restore_transform(pos: Vector3, rot_degrees: Vector3) -> void:
 	position = pos
 	rotation_degrees = rot_degrees
@@ -94,16 +78,13 @@ func dolly(direction: float) -> void:
 	position += -transform.basis.z * direction * ZOOM_STEP
 
 
-## Ставит камеру так, чтобы [param aabb] было видно целиком, орбитой вокруг её
-## центра — тот же пивот, которым потом воспользуется СКМ, если зажать её сразу
-## после F или после автокадрирования слоя.
+## Кадрирует [param aabb] целиком орбитой вокруг его центра (он же пивот СКМ).
 func focus_on(aabb: AABB) -> void:
 	var span: float = maxf(aabb.size.x, maxf(aabb.size.y, aabb.size.z))
 	_orbit_pivot = aabb.get_center()
 	_orbit_distance = maxf(span * FOCUS_FRAME_MARGIN, MIN_ORBIT_DISTANCE)
 	_apply_orbit()
-	# Последующий орбит-драг СКМ должен продолжить именно с этого ракурса, а не
-	# дёрнуться к последнему yaw/pitch, оставшемуся от предыдущей орбиты.
+	# Иначе следующий драг СКМ дёрнется к yaw/pitch прошлой орбиты.
 	_yaw = rotation.y
 	_pitch = rotation.x
 
@@ -137,6 +118,5 @@ func _apply_orbit() -> void:
 
 
 func _update_capture() -> void:
-	# Пока камера в движении (облёт или орбита) — курсор захвачен, как в родном
-	# 3D-редакторе: иначе бесконечный драг мышью упирается в край экрана.
+	# Захват курсора, как в родном 3D-редакторе: иначе драг упирается в край экрана.
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if (_flying or _orbiting) else Input.MOUSE_MODE_VISIBLE

@@ -1,34 +1,17 @@
 # res://src/ui/map/complex_map_screen.gd
-## Экран карты комплекса: большая карта на паузе, которую надо заслужить.
-##
-## Мини-карта в HUD даёт ориентацию на ходу, а здесь покупается ЗНАНИЕ
-## НАПЕРЁД: сколько именно, решает уровень улучшения у Архитектора
-## (ArchitectManager.map_level(), уровни — MapKnowledge).
-##
-## Вид — язык «Отголосок» (§9 «Меню — спека»). Слева — срез комплекса: слои
-## сверху вниз полосами (UI_MapStratum), на каждой этажи линиями и комнаты
-## штрихами, порталы между слоями — пунктиром через границу; срез заменил
-## список слоёв кнопками — он показывает сам комплекс, а не только имена.
-## Справа — этажи выбранного слоя сеткой планов (UI_MapFloor): в мире этажи
-## разнесены по высоте и в одной плоскости соседями не являются. Связывает
-## планы портал — наведение подсвечивает его второй конец, клик переносит к
-## нему, в том числе на другой слой.
-##
-## Данные экран получает в setup(), а не берёт у автолоадов сам: так его можно
-## собрать и проверить на любом сгенерированном графе, не запуская забег.
+## Экран карты комплекса: большая карта на паузе, которую надо заслужить — сколько знания, решает уровень улучшения у Архитектора (ArchitectManager.map_level(), MapKnowledge). Язык «Отголосок» (§9 «Меню — спека»):
+## слева срез комплекса (слои полосами UI_MapStratum, на них этажи линиями и комнаты штрихами, порталы пунктиром), справа этажи выбранного слоя сеткой планов (UI_MapFloor). Связывает планы портал: наведение
+## подсвечивает второй конец, клик переносит к нему. Данные приходят в setup(), не от автолоадов — экран собирается на любом графе без забега.
 class_name UI_ComplexMap
 extends UI_MenuScreen
 
-## Потолок клетки плана на экране, пикселей (§4): этаж из двух известных комнат
-## иначе раздуло бы на всю область, и шаг карты скакал бы от слоя к слою.
+## Потолок клетки плана на экране, px (§4): иначе этаж из двух комнат раздуло бы на всю область.
 const MAX_STEP := 34.0
-## Зазор между планами этажей и место под подпись этажа над планом.
+## Зазор между планами этажей и место под подпись этажа.
 const PLAN_GAP := 28.0
 const PLAN_TITLE := 24.0
 
-## Полосы среза и подписи этажей — по числу слоёв и этажей в графе, поэтому
-## экземплярами своих сцен («Конвенции проекта» §7). Планы этажей (UI_MapFloor)
-## — .new(): это один рисующий узел без детей, собирать там нечего.
+## Полосы среза и подписи этажей — экземплярами своих сцен («Конвенции проекта» §7); планы (UI_MapFloor) — .new(): один рисующий узел без детей.
 const STRATUM_SCENE := preload("res://src/ui/map/map_stratum.tscn")
 const FLOOR_TITLE_SCENE := preload("res://src/ui/map/floor_title.tscn")
 
@@ -46,13 +29,11 @@ var _visited: Array[StringName] = []
 var _plan_of: Callable
 var _current_depth := -1
 var _selected_depth := -1
-## Второй конец портала, по которому кликнули: держится, пока курсор гуляет
-## по другим комнатам, иначе после переноса на слой было бы не найти, куда попал.
+## Второй конец портала, по которому кликнули: держится, пока курсор гуляет по другим комнатам.
 var _pinned: StringName = &""
 var _floors: Array[UI_MapFloor] = []
 var _layer_buttons: Dictionary[int, Button] = {}
-## Уникальные комнаты по пути сцены: узел графа знает только сцену, а роль
-## («выход», «Архитектор») и значок лежат в RS_UniqueRoom конфига генерации.
+## Уникальные комнаты по пути сцены: роль и значок лежат в RS_UniqueRoom конфига, узел графа знает только сцену.
 var _unique_by_scene: Dictionary[String, RS_UniqueRoom] = {}
 var _types: RS_RoomTypeCatalog
 ## Порталы между соседними слоями для пунктира среза: [{ "depth", "x" }].
@@ -63,13 +44,11 @@ func _ready() -> void:
 	super._ready()
 	_slice_links.draw.connect(_draw_slice_links)
 	_slice.sort_children.connect(_slice_links.queue_redraw)
-	# Сетка планов считается от размера области, а он идёт за окном.
+	# Сетка планов считается от размера области — он идёт за окном.
 	_plans.resized.connect(_build_floors)
 
 
-## [param plan_of] — план слоя по глубине (в игре RunManager.plan_for_depth: тот
-## же кэш, по которому стоят комнаты). Остальное — состояние забега на момент
-## открытия: мир на паузе, пока экран открыт, и меняться оно не успевает.
+## [param plan_of] — план слоя по глубине (в игре RunManager.plan_for_depth, тот же кэш). Остальное — состояние забега на момент открытия (мир на паузе).
 func setup(
 	graph: RS_LevelGraph, level: int, here: StringName, visited: Array[StringName], plan_of: Callable
 ) -> void:
@@ -87,8 +66,7 @@ func setup(
 	select_layer(_current_depth if _current_depth != -1 else _first_open_layer())
 
 
-## Показывает слой [param depth]. Закрытый на этом уровне слой не выбирается —
-## полоса у него и так неактивна, а переход по порталу туда не ведёт.
+## Показывает слой depth; закрытый на этом уровне не выбирается.
 func select_layer(depth: int) -> void:
 	if not MapKnowledge.is_layer_open(_level, depth, _current_depth):
 		return
@@ -105,13 +83,12 @@ func selected_layer() -> int:
 	return _selected_depth
 
 
-## Планы этажей выбранного слоя — для проверок: что показано и где.
+## Планы этажей выбранного слоя — для проверок.
 func floor_views() -> Array[UI_MapFloor]:
 	return _floors
 
 
-## Строка про узел — то, что экран пишет под картой при наведении. Отдельно от
-## обработчика, чтобы проверка могла спросить текст без мыши.
+## Строка про узел под картой при наведении; отдельно от обработчика — для проверки без мыши.
 func describe(node_id: StringName) -> String:
 	var node_data := _graph.get_node_data(node_id) if _graph else null
 	if node_data == null:
@@ -141,7 +118,7 @@ func describe(node_id: StringName) -> String:
 	return " · ".join(parts)
 
 
-## Второй конец портала узла, если он виден на этом уровне; иначе "".
+## Второй конец портала узла, если виден на этом уровне; иначе "".
 func portal_pair(node_id: StringName) -> StringName:
 	var node_data := _graph.get_node_data(node_id) if _graph else null
 	if node_data == null:
@@ -154,10 +131,7 @@ func portal_pair(node_id: StringName) -> StringName:
 	return target.id if shown.has(target) else &""
 
 
-## Пометка содержимого комнаты для плана этажа, пусто — пометки нет. Только с
-## четвёртого уровня: тип комнаты — это и есть «содержимое», которое он продаёт.
-## Уникальная комната подписывается целиком (§9: «Выход», «Архитектор»), у
-## обычной — значок типа или его первая буква.
+## Пометка содержимого комнаты для плана этажа (пусто — нет) — только с четвёртого уровня: тип комнаты и есть «содержимое». Уникальная подписывается целиком, обычная — значком или буквой типа.
 func marker_of(node_data: RS_LevelNode) -> Dictionary:
 	if _level < MapKnowledge.LEVEL_CONTENTS or node_data.role != RS_LevelNode.Role.ROOM:
 		return {}
@@ -183,12 +157,10 @@ func _collect_content_sources() -> void:
 	_types = library.type_catalog if library else null
 
 
-# --- Срез -------------------------------------------------------------------
+# --- Срез ---
 
 
-## Слои сверху вниз, от поверхности: так они и лежат в комплексе. Закрытый на
-## этом уровне слой остаётся в срезе штриховкой — игрок видит, что знание можно
-## докупить, а не гадает, сколько слоёв вообще бывает.
+## Слои сверху вниз, от поверхности. Закрытый слой остаётся штриховкой: видно, что знание можно докупить.
 func _build_layer_list() -> void:
 	for child in _slice.get_children():
 		_slice.remove_child(child)
@@ -202,9 +174,7 @@ func _build_layer_list() -> void:
 		var is_open := MapKnowledge.is_layer_open(_level, depth, _current_depth)
 		var subtitle := ""
 		if depth == depths.front():
-			# Выход подписан всегда: даже на нулевом уровне Архитектора срез
-			# говорит, где цель, — задача игрока только путь (§6 «Игровой цикл —
-			# от и до»). Закрытый слой остаётся штриховкой, но не безымянной.
+			# Выход подписан всегда (§6 «Игровой цикл — от и до»): задача игрока только путь; закрытый слой штриховкой, но не безымянный.
 			subtitle = _surface_subtitle(is_open)
 		elif not is_open:
 			subtitle = tr("MAP_LAYER_CLOSED")
@@ -218,9 +188,7 @@ func _build_layer_list() -> void:
 	_slice_links.queue_redraw()
 
 
-## Этажи слоя линиями, на них комнаты — по их ширине в плане слоя. Показано то
-## же, что на планах этого уровня (MapKnowledge.visible_nodes): срез не выдаёт
-## больше, чем куплено.
+## Этажи слоя линиями, на них комнаты по ширине в плане; показано то же, что на планах (MapKnowledge.visible_nodes).
 func _fill_stratum(stratum: UI_MapStratum) -> void:
 	var depth := stratum.depth
 	var plan: RS_LayerPlan = _plan_of.call(depth)
@@ -260,8 +228,7 @@ func _fill_stratum(stratum: UI_MapStratum) -> void:
 		stratum.player_x = _player_x(plan, span)
 
 
-## Левая клетка и ширина слоя по X — по комнатам и коридорам плана: полосы
-## среза нормированы каждая на свой слой, у слоёв разная ширина.
+## Левая клетка и ширина слоя по X: полосы среза нормированы каждая на свой слой.
 func _plan_span_x(plan: RS_LayerPlan) -> Vector2:
 	var low := INF
 	var high := -INF
@@ -278,7 +245,7 @@ func _plan_span_x(plan: RS_LayerPlan) -> Vector2:
 	return Vector2(low, high - low)
 
 
-## Где игрок по X в срезе: по позе, если игрок есть, иначе — середина его узла.
+## Где игрок по X в срезе: по позе, иначе середина его узла.
 func _player_x(plan: RS_LayerPlan, span: Vector2) -> float:
 	var player := UI_MapFloor.player_node()
 	var x := 0.0
@@ -322,8 +289,7 @@ static func _depths_from_surface() -> Array:
 	return depths
 
 
-## Подпись слоя-поверхности: «выход» — всегда, «поверхность» — когда слой открыт
-## (на закрытом сказать о нём больше нечего).
+## Подпись поверхности: «выход» всегда, «поверхность» — когда слой открыт.
 func _surface_subtitle(is_open: bool) -> String:
 	if not is_open:
 		return tr("MAP_LAYER_EXIT")
@@ -340,14 +306,10 @@ func _layer_name(depth: int) -> String:
 	return title
 
 
-# --- Планы этажей ---------------------------------------------------------------
+# --- Планы этажей ---
 
 
-## План на каждый этаж, где есть что показать. На первом уровне неизвестный
-## этаж не рисуется вовсе: пустой план выдал бы, сколько этажей на слое.
-## Планы — сеткой: число колонок выбирается так, чтобы клетка плана вышла
-## крупнее (§9), а не всегда в ряд — два этажа рядом в узкой полосе были бы
-## мельче, чем один над другим.
+## План на каждый этаж, где есть что показать (на первом уровне неизвестный не рисуется — пустой выдал бы число этажей). Сеткой: колонок столько, чтобы клетка вышла крупнее (§9).
 func _build_floors() -> void:
 	for child in _plans.get_children():
 		_plans.remove_child(child)
@@ -389,7 +351,7 @@ func _build_floors() -> void:
 					"up": _leads_up(node_data, _graph.get_node_data(conn.target_node_id)),
 					"locked": _level >= MapKnowledge.LEVEL_CONTENTS and conn.is_locked(),
 				}
-		# Мир на паузе, так что позу хватает снять один раз.
+		# Мир на паузе — позу хватает снять один раз.
 		if player and here_data and here_data.depth == _selected_depth and here_data.floor_index == floor_index:
 			view.show_player = true
 			view.player_position = player.global_position
@@ -399,7 +361,7 @@ func _build_floors() -> void:
 
 		var columns: int = grid["columns"]
 		var cell: Vector2 = grid["cell"]
-		# Номер строки сетки — именно целое от деления, остаток тут не нужен.
+		# Номер строки сетки — целое от деления.
 		@warning_ignore("integer_division")
 		var origin := Vector2((i % columns) * (cell.x + PLAN_GAP), (i / columns) * (cell.y + PLAN_GAP))
 		var title: Label = FLOOR_TITLE_SCENE.instantiate()
@@ -413,8 +375,7 @@ func _build_floors() -> void:
 	_set_highlight(_pinned)
 
 
-## Сетка планов, при которой клетка плана крупнее всего:
-## { "columns": int, "cell": Vector2 — место под один план с подписью }.
+## Сетка планов, при которой клетка крупнее всего: { "columns": int, "cell": Vector2 — место под план с подписью }.
 func _plan_grid(count: int, plan: RS_LayerPlan) -> Dictionary:
 	var cols := 1.0
 	var rows := 1.0
@@ -455,8 +416,7 @@ func _on_node_hovered(node_id: StringName) -> void:
 		view.queue_redraw()
 
 
-## Клик по порталу ведёт к его второму концу: другой слой открывается сам,
-## второй конец остаётся в рамке, пока не кликнут по другому порталу.
+## Клик по порталу ведёт к его второму концу (другой слой открывается сам); второй конец остаётся в рамке.
 func _on_node_pressed(node_id: StringName) -> void:
 	var pair := portal_pair(node_id)
 	if pair == &"":
@@ -464,8 +424,7 @@ func _on_node_pressed(node_id: StringName) -> void:
 	_pinned = pair
 	var target := _graph.get_node_data(pair)
 	if target.depth != _selected_depth:
-		# Отложенно: клик пришёл из _gui_input плана, который пересборка
-		# слоя сейчас удалит.
+		# Отложенно: клик пришёл из _gui_input плана, который пересборка слоя удалит.
 		select_layer.call_deferred(target.depth)
 	else:
 		_set_highlight(pair)
@@ -488,8 +447,7 @@ func _room_name(node_data: RS_LevelNode) -> String:
 	return tr("MAP_ROOM")
 
 
-## Вверх — к поверхности (меньшая глубина) или, в пределах слоя, на этаж выше:
-## этажи слоя стоят один над другим по возрастанию индекса (RS_LayerPlan).
+## Вверх — к поверхности (меньшая глубина) или на этаж выше (индекс по возрастанию, RS_LayerPlan).
 static func _leads_up(from: RS_LevelNode, to: RS_LevelNode) -> bool:
 	if to.depth != from.depth:
 		return to.depth < from.depth

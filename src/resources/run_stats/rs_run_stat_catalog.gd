@@ -1,11 +1,5 @@
 ## res://src/resources/run_stats/rs_run_stat_catalog.gd
-## Из чего складывается сводка забега: какие показатели показывать и в каком
-## порядке. Данные — `data/run_stat_catalog.tres`, правятся в редакторе.
-##
-## Экран итогов не знает ни одного показателя по имени: он идёт по этому
-## каталогу и просит отформатировать значение. Поэтому «добавить в сводку
-## артефакты» — это ключ в [RS_RunStats], тот, кто его пишет, и строка здесь;
-## сам экран не меняется.
+## Из чего складывается сводка забега (data/run_stat_catalog.tres): показатели и порядок. Экран итогов не знает показателей по имени — идёт по каталогу.
 @tool
 class_name RS_RunStatCatalog
 extends Resource
@@ -13,7 +7,7 @@ extends Resource
 ## Порядок строк = порядок в сводке.
 @export var rows: Array[RS_RunStatRow] = []
 
-## Показывается, когда у показателя нечего показать, а прятать строку нельзя.
+## Когда показывать нечего, а прятать строку нельзя.
 const EMPTY_TEXT := "—"
 
 
@@ -31,8 +25,7 @@ func visible_rows(stats: RS_RunStats) -> Array[RS_RunStatRow]:
 	return out
 
 
-## Готовый текст значения для строки [param row]. Имена тел переводятся здесь —
-## в записи забега лежит ключ, а не строка (см. RS_RunBody.name_key).
+## Текст значения строки; имена тел переводятся здесь (в записи — ключ).
 func value_text(row: RS_RunStatRow, stats: RS_RunStats) -> String:
 	if row == null or stats == null:
 		return EMPTY_TEXT
@@ -40,8 +33,7 @@ func value_text(row: RS_RunStatRow, stats: RS_RunStats) -> String:
 		RS_RunStatRow.Format.TIME:
 			return format_time(stats.value(row.key))
 		RS_RunStatRow.Format.BODY_LIST:
-			# По видам с числом, а не каждое тело: список по телу рос с длиной
-			# забега и выталкивал кнопку «Возродиться» за нижний край экрана.
+			# По видам с числом: список по телу рос и выталкивал кнопку «Возродиться» за край экрана.
 			var counts: Dictionary[String, int] = {}
 			for body: RS_RunBody in stats.bodies:
 				if body == null:
@@ -56,8 +48,7 @@ func value_text(row: RS_RunStatRow, stats: RS_RunStats) -> String:
 			return str(int(roundf(stats.value(row.key))))
 
 
-## ММ:СС — намеренно без слов «мин» и «с»: двоеточие читается на любом языке и
-## не заводит ещё одну строку перевода на каждый показатель времени.
+## ММ:СС без слов «мин» и «с»: двоеточие читается на любом языке.
 static func format_time(seconds: float) -> String:
 	var total := int(maxf(seconds, 0.0))
 	# Минуты — именно целая часть, секунды берутся отдельно через остаток.

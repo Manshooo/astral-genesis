@@ -4,13 +4,11 @@
 class_name SquareGridTopology
 extends GridTopology
 
-## Стороны по часовой, если смотреть сверху: −Z, +X, +Z, −X. Порядок — контракт,
-## а не удобство: бит стороны в маске проёмов — 1 << индекс, и маски в таком
-## порядке уже лежат в данных (data/corridor_kit.tres).
+## Стороны по часовой сверху: −Z, +X, +Z, −X. Порядок — контракт: бит стороны в маске проёмов — 1 << индекс (data/corridor_kit.tres).
 enum Side { NORTH, EAST, SOUTH, WEST }
 
 const SIDE_COUNT := 4
-## Куда смещается клетка за стороной — по индексу стороны.
+## Смещение клетки за стороной — по индексу стороны.
 const OFFSETS: Array[Vector3i] = [
 	Vector3i(0, 0, -1),
 	Vector3i(1, 0, 0),
@@ -39,15 +37,12 @@ func side_toward(cell: Vector3i, other: Vector3i) -> int:
 	return OFFSETS.find(other - cell)
 
 
-## Манхэттен в плоскости уровня: шаг сдвигает клетку ровно на одну по X или Z.
+## Манхэттен в плоскости уровня.
 func min_steps(from: Vector3i, to: Vector3i) -> int:
 	return absi(to.x - from.x) + absi(to.z - from.z)
 
 
-## Клетки прямоугольного footprint [param size] = (ширина по X, уровней по Y,
-## длина по Z) от угловой клетки [param anchor] — наименьшей по всем осям.
-## Порядок — по уровням, внутри уровня по Z, затем по X: на нём держится порядок
-## сокетов (GridTopology.perimeter).
+## Клетки footprint size (X, уровни Y, Z) от угловой anchor; порядок (уровни, Z, X) держит порядок сокетов (GridTopology.perimeter).
 static func box(anchor: Vector3i, size: Vector3i) -> Array[Vector3i]:
 	var cells: Array[Vector3i] = []
 	for y in size.y:

@@ -1,26 +1,6 @@
-## Экран настроек языка «Отголосок» (§9 «Меню — спека»): черновик + три
-## вкладки. Настройки разложены по вкладкам («Графика», «Звук», «Управление»), и
-## меню про эту раскладку НИЧЕГО не знает — контролы собираются рекурсивным
-## обходом поддерева по утиному контракту (setting_key + get/set_setting_value +
-## сигнал setting_changed). Поэтому перенести настройку на другую вкладку или
-## завести новую — правка сцены, а не этого скрипта.
-##
-## Вкладки — ряд кнопок-мыслей над TabContainer со скрытыми ярлыками: ярлык
-## TabContainer не умеет ни эха, ни рваного штриха, ни точки фокуса (§5), а
-## кнопки умеют. Страницы по-прежнему держит TabContainer.
-##
-## Содержимое вкладки лежит в ScrollContainer не ради прокрутки, а ради
-## минимального размера: TabContainer запрашивает его по ВСЕМ вкладкам сразу, и
-## самая длинная — «Управление» с раскладкой — иначе растягивала бы экран и на
-## «Звуке» с единственным ползунком.
-##
-## Подсказка строки — в своей колонке справа, а не тултипом (§9): строка
-## (UI_SettingRow) сообщает, что на неё смотрят, экран показывает её название и
-## подсказку.
-##
-## Вкладка по умолчанию всегда первая и не зависит от того, откуда пришли (из
-## главного меню или из паузы): экран один, и один и тот же экран, открывающийся
-## по-разному, читался бы как две разные вещи.
+## Экран настроек «Отголосок» (§9 «Меню — спека»): черновик + три вкладки. Контролы собираются обходом поддерева по утиному контракту (setting_key + get/set_setting_value + setting_changed) — перенос настройки на вкладку правка сцены,
+## не скрипта. Вкладки — ряд кнопок-мыслей над TabContainer со скрытыми ярлыками (у ярлыка нет эха, штриха, фокуса, §5). Содержимое вкладки в ScrollContainer ради минимального размера (TabContainer запрашивает все вкладки сразу).
+## Подсказка строки — в колонке справа (§9). Вкладка по умолчанию всегда первая, откуда бы ни пришли. Вики: [[Конвенции проекта]] §6.
 extends UI_MenuScreen
 
 const CALIBRATION_SCENE := preload("res://src/ui/brightness_calibration/brightness_calibration.tscn")
@@ -39,12 +19,7 @@ var caller_node: Control = null
 
 var _controls: Array = []
 
-## Поля, из которых складывается пресет графики. Правка любого из них вручную
-## переводит graphics_preset_id на CUSTOM_PRESET_ID (см. _on_any_setting_changed) —
-## список централизован здесь же, рядом с единственным местом, которое его читает.
-## vsync_enabled сюда намеренно не входит: это не про качество картинки, а про
-## разрыв кадров на конкретном мониторе — независимая настройка, пресет её не
-## трогает (см. RS_GraphicsPreset).
+## Поля пресета графики: правка любого вручную переводит graphics_preset_id на CUSTOM_PRESET_ID. vsync_enabled не входит — независимая калибровка под монитор (RS_GraphicsPreset).
 const GRAPHICS_PRESET_FIELDS := [
 	"render_scale", "shadow_quality", "screen_effects", "glow_enabled", "aa_mode",
 ]
@@ -53,14 +28,10 @@ const CUSTOM_PRESET_ID := &"custom"
 ## Настройки окна, которые встроенная в редактор игра применить не может.
 const WINDOW_LOCKED_KEYS := ["window_mode", "resolution"]
 
-## Контрол выпадающего списка пресетов — держим отдельно от _controls, чтобы
-## после отката на CUSTOM обновить его отображение напрямую, в обход
-## setting_changed (иначе правка одного поля привела бы к повторной подмене
-## остальных полей значениями текущего, уже покинутого, пресета).
+## Список пресетов — отдельно от _controls: после отката на CUSTOM обновляем его в обход setting_changed (иначе остальные поля перезатёрлись бы покинутым пресетом).
 var _preset_control: Control = null
 
-## Черновик — независимая копия настроек. Все контролы читают/пишут только сюда.
-## SettingsManager.settings трогается один-единственный раз — в _on_apply_pressed().
+## Черновик — независимая копия; SettingsManager.settings трогается один раз, в _on_apply_pressed().
 var _draft: RS_Settings
 var _baseline: Dictionary = {}
 
@@ -74,10 +45,7 @@ func _ready() -> void:
 	_show_hint("", "")
 
 
-## Во встроенной в редактор игре режим и разрешение не применяются
-## (SettingsManager.is_window_locked) — строки гаснут, а подсказка говорит
-## почему, чтобы выбор не выглядел сломанным. Значения в черновике остаются:
-## отдельно запущенная игра применит их как обычно.
+## Во встроенной игре режим и разрешение не применяются (SettingsManager.is_window_locked) — строки гаснут, подсказка говорит почему; значения в черновике остаются.
 func _lock_window_rows() -> void:
 	if not SettingsManager.is_window_locked():
 		return
@@ -88,7 +56,7 @@ func _lock_window_rows() -> void:
 			row.hint_key = "SETTINGS_HINT_WINDOW_EMBEDDED"
 
 
-## Кнопка-вкладка N открывает страницу N: порядок кнопок и страниц один.
+## Кнопка-вкладка N открывает страницу N: порядок один.
 func _connect_tabs() -> void:
 	var i := 0
 	for button in _tab_buttons.get_children():
@@ -114,8 +82,7 @@ func _show_hint(title: String, hint_key: String) -> void:
 	_hint_text.text = tr(hint_key) if hint_key != "" else ""
 
 
-## Раскладка — не строка настроек, а целый блок, и подсказку о ней показываем,
-## пока мышь или фокус внутри блока.
+## Раскладка — целый блок: подсказку показываем, пока мышь или фокус внутри.
 func _process(_delta: float) -> void:
 	if not _keybinds.is_visible_in_tree():
 		return
@@ -138,8 +105,7 @@ func _collect_controls(node: Node) -> void:
 			_collect_controls(child)
 
 func _load_values() -> void:
-	# copy(), а не duplicate(): duplicate копирует ССЫЛКУ на keybinds, и правки
-	# раскладки применялись бы мимо кнопки «Применить» (см. RS_Settings.copy).
+	# copy(), а не duplicate(): тот копирует ССЫЛКУ на keybinds (RS_Settings.copy).
 	_draft = SettingsManager.settings.copy()
 	_apply_draft_to_controls()
 	_capture_baseline()
@@ -168,8 +134,7 @@ func _values_equal(a: Variant, b: Variant) -> bool:
 	if a is float and b is float:
 		return is_equal_approx(a, b)
 	if a is Dictionary and b is Dictionary:
-		# Раскладка клавиш (keybinds) — словарь, а черновик и baseline это всегда
-		# РАЗНЫЕ объекты; сверяем содержимое явно, не полагаясь на семантику ==.
+		# keybinds — словарь, черновик и baseline всегда РАЗНЫЕ объекты; сверяем содержимое явно.
 		return _dicts_equal(a, b)
 	return a == b
 
@@ -181,8 +146,7 @@ func _dicts_equal(a: Dictionary, b: Dictionary) -> bool:
 			return false
 	return true
 
-## «Применить» недоступна, пока черновик совпадает с применённым, — и строка
-## «есть непримененные изменения» рядом объясняет, когда она загорится.
+## «Применить» недоступна, пока черновик совпадает с применённым; строка рядом объясняет, когда загорится.
 func _update_apply_button() -> void:
 	var dirty := _has_unsaved_changes()
 	apply_button.disabled = not dirty
@@ -197,9 +161,7 @@ func _on_any_setting_changed(control: Variant) -> void:
 		_sync_preset_with_draft()
 	_update_apply_button()
 
-## Выбор пресета в списке раскатывает его значения на все поля черновика и
-## обновляет соответствующие контролы — иначе выбор "Высокий" был бы виден
-## только после Apply, а до тех пор слайдеры показывали бы старые цифры.
+## Выбор пресета раскатывает его значения на поля черновика и контролы (иначе виден только после Apply).
 func _apply_preset_to_draft(preset_id: StringName) -> void:
 	if preset_id == CUSTOM_PRESET_ID:
 		return  # "Собственный" выбран руками — раскатывать нечего
@@ -212,10 +174,7 @@ func _apply_preset_to_draft(preset_id: StringName) -> void:
 		if field_key in GRAPHICS_PRESET_FIELDS:
 			control.set_setting_value(_draft.get(field_key))
 
-## Правка отдельного графического поля разошлась с применённым пресетом —
-## список переводится на "Собственный". select() контрола не эмитит
-## setting_changed (в отличие от Range/CheckButton), так что это безопасно от
-## повторного заезда в _apply_preset_to_draft.
+## Правка графического поля разошлась с пресетом — список переводится на «Собственный»; select() не эмитит setting_changed, повторного заезда нет.
 func _sync_preset_with_draft() -> void:
 	var preset := SettingsManager.preset_by_id(_draft.graphics_preset_id)
 	if preset != null and preset.matches(_draft):
@@ -233,10 +192,7 @@ func _on_back_pressed() -> void:
 	UIManager.close_top()
 
 
-## Калибровка подбирает яркость черновика, а не применённую: здесь «Применить» —
-## единственная дверь в SettingsManager, и экран поверх её не обходит. Подобранное
-## возвращается в ползунок «Яркости», и он сам зажигает «Применить»: Range шлёт
-## value_changed и на присваивание из кода.
+## Калибровка подбирает яркость черновика: «Применить» — единственная дверь в SettingsManager. Подобранное возвращается в ползунок, и тот сам зажигает «Применить».
 func _on_calibration_pressed() -> void:
 	var screen := CALIBRATION_SCENE.instantiate() as UI_BrightnessCalibration
 	screen.brightness = _draft.brightness

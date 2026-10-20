@@ -1,23 +1,18 @@
 # res://src/systems/physics/s_enemy_ai.gd
-# ИИ врага: обнаружение, память, путь, удар. [[Захват тела]] → «Угроза» и
-# «Обнаружение, память и путь».
-#
-# Группа "physics": лучи обзора и к дверям — space-state Jolt безопасен только
-# из физпотока; и S_Walk читает move_direction в этом же физкадре.
+# ИИ врага: обнаружение, память, путь, удар ([[Захват тела]] → «Угроза», «Обнаружение, память и путь»). "physics": лучи обзора и к дверям — space-state только из физпотока.
 # Двигает через C_EnemyInput, НЕ C_PlayerInput: по нему десяток мест ищет игрока.
 class_name S_EnemyAI
 extends System
 
-## Атрибуция удара для сводки забега (S_Health.Damage.means).
+## Атрибуция удара для сводки (S_Health.Damage.means).
 const MEANS := &"enemy_melee"
 
-## Высота глаз цели над ногами, если у цели нет камеры (не E_Player).
+## Высота глаз цели над ногами, если у цели нет камеры.
 const FALLBACK_TARGET_EYE := 1.5
 
-## Длина луча к двери по ходу, м. Больше радиуса капсулы с запасом: полотно
-## успевает тронуться, пока враг подходит.
+## Длина луча к двери по ходу, м (с запасом на радиус капсулы).
 const DOOR_PROBE := 1.6
-## На какой высоте над ногами луч ищет полотно, м.
+## Высота луча поиска полотна над ногами, м.
 const DOOR_PROBE_HEIGHT := 1.0
 const MOVING_LAYER := 1 << 4
 
@@ -27,7 +22,7 @@ func deps() -> Dictionary[int, Array]:
 
 
 func query() -> QueryBuilder:
-	# Без C_Dead: труп встаёт на место врага отложенно, и в это окно мёртвый не бьёт.
+	# Без C_Dead: труп встаёт на место врага отложенно, мёртвый в это окно не бьёт.
 	return q.with_all([C_EnemyAI, C_EnemyInput, C_Velocity, C_Walk]).with_none([C_Dead])
 
 
@@ -65,8 +60,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 					inp.move_direction = Vector3.ZERO
 					_attack(entity, target, ai)
 				else:
-					# К месту, где видел, а не к цели: между проверками обзора
-					# враг не знает о ней больше, чем увидел.
+					# К месту, где видел, а не к цели: между проверками враг знает о ней лишь увиденное.
 					_steer(ai, node, inp, ai.last_seen_position, delta)
 			C_EnemyAI.State.SEARCHING:
 				_search(ai, node, inp, delta)
@@ -84,8 +78,7 @@ func _stand_down(ai: C_EnemyAI, inp: C_EnemyInput) -> void:
 # --- Обнаружение ---
 
 
-## true — проверка была на ЭТОМ кадре: last_seen_position обновляется только по
-## свежей, иначе устаревший результат подглядывал бы за целью.
+## true — проверка была на ЭТОМ кадре; last_seen_position обновляется только по свежей.
 func _update_sight(
 	ai: C_EnemyAI,
 	node: Node3D,
@@ -98,7 +91,7 @@ func _update_sight(
 	ai.sight_left -= delta
 	if ai.sight_left > 0.0:
 		return false
-	# Разброс — чтобы заметившие в один кадр не бросали лучи пачкой до конца забега.
+	# Разброс — чтобы заметившие в один кадр не бросали лучи пачкой.
 	ai.sight_left = ai.sight_interval * randf_range(0.8, 1.2)
 	ai.sees_target = _can_see(ai, node, target, target_node, offset, distance)
 	return true
@@ -175,8 +168,7 @@ func _search(ai: C_EnemyAI, node: Node3D, inp: C_EnemyInput, delta: float) -> vo
 	inp.move_direction = Vector3.ZERO
 
 
-## Шаг к [param goal]: по точкам пути навмеша, а без пути — по прямой.
-## move_direction — FORWARD после look_at, то есть уже в мировом базисе.
+## Шаг к goal: по точкам пути навмеша, без пути — по прямой; move_direction уже в мировом базисе.
 func _steer(
 	ai: C_EnemyAI, node: Node3D, inp: C_EnemyInput, goal: Vector3, delta: float
 ) -> void:
@@ -184,7 +176,7 @@ func _steer(
 	if ai.repath_left <= 0.0:
 		ai.repath_left = ai.repath_interval
 		var map := LayerNavigation.map_for(node, ai.nav_profile)
-		# Карта до первой синхронизации отвечает на запрос ошибкой в лог, а не пустым путём.
+		# Карта до первой синхронизации отвечает ошибкой в лог, а не пустым путём.
 		if not map.is_valid() or NavigationServer3D.map_get_iteration_id(map) == 0:
 			ai.path = PackedVector3Array()
 		else:
@@ -212,8 +204,7 @@ func _steer(
 		_open_door_ahead(node, heading)
 
 
-## Навмеш запечён сквозь проёмы, поэтому путь упирается в закрытое полотно.
-## S_DoorMotion.open, а не interact(): переход A_TravelThroughDoor — про игрока.
+## Навмеш запечён сквозь проёмы — путь упирается в закрытое полотно; S_DoorMotion.open, не interact() (тот про игрока).
 func _open_door_ahead(node: Node3D, heading: Vector3) -> void:
 	var from := node.global_position + Vector3.UP * DOOR_PROBE_HEIGHT
 	var ray := PhysicsRayQueryParameters3D.create(from, from + heading.normalized() * DOOR_PROBE, MOVING_LAYER)
@@ -246,7 +237,7 @@ func _attack(entity: Entity, target: Entity, ai: C_EnemyAI) -> void:
 	if ai.attack_cooldown_left > 0.0:
 		return
 	ai.attack_cooldown_left = ai.attack_interval
-	# Через воронку, не записью в C_Health: на следе удара держится сводка забега.
+	# Через воронку: на следе удара держится сводка забега.
 	S_Health.deal_damage(target, ai.attack_damage, entity, MEANS)
 
 

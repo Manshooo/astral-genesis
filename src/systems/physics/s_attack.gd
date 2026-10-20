@@ -1,47 +1,26 @@
 # res://src/systems/physics/s_attack.gd
-# Группа: "physics" — кастует луч от камеры, а Jolt крутится на отдельном потоке,
-# поэтому space-state безопасен только из _physics_process (как и детекторы).
-#
-# Ближний удар тела: по нажатию «attack» (E_Player._input взводит защёлку
-# C_PlayerInput.attack_pressed) бьёт ближайшую живую цель под крестиком в
-# пределах C_Attack.reach и проводит урон через единую воронку S_Health.
-# Способность — компонент и своя система, как прыжок и бег: у тела без C_Attack
-# нет и удара, а ветвления «что на мне надето» здесь нет.
-#
-# ВТОРАЯ ВЫБОРКА — про тех, у кого удара НЕТ, и она по той же причине, что у
-# S_Jump и S_Sprint: защёлку нажатия гасит тот, кто её съел, обе половины в
-# одном файле. Иначе нажатие призрака или ползуна выстрелило бы в тот миг, когда
-# игрок вселится в тело с ударом. Сообщаем «нечем» только игроку ВО ПЛОТИ:
-# призрак бить не умеет по замыслу (его способность — захват), и текст про
-# «тело» ему был бы враньём.
+# Группа "physics": луч от камеры (Jolt на своём потоке). Ближний удар тела по «attack» (защёлка C_PlayerInput.attack_pressed): ближайшая живая цель под крестиком в пределах
+# C_Attack.reach, урон через воронку S_Health. Способность — компонент и своя система. Вторая выборка — те, у кого удара НЕТ: защёлку гасит тот, кто её съел (см. S_Jump);
+# «нечем» сообщаем только игроку ВО ПЛОТИ (призрак бить не умеет по замыслу).
 class_name S_Attack
 extends System
 
-## Чем бьём — атрибуция удара для сводки забега (S_Health.Damage.means).
+## Чем бьём — атрибуция для сводки забега (S_Health.Damage.means).
 const MEANS := &"attack"
 
-## Класс угрозы существ дна. Удар тела ниже этого класса по существу этого класса
-## ослаблен (L5_RESISTANCE).
+## Класс угрозы существ дна; удар тела ниже этого класса по такому существу ослаблен (L5_RESISTANCE).
 const L5_CLASS := 5
 
-## Во сколько раз слабее бьёт тело класса ниже L5 по существу L5. L5 уничтожает
-## только другой L5 ([[Игровой цикл — от и до]], §2, решение 15.10): чтобы пройти
-## сбежавших к выходу, нужно тело с самого дна. Не ноль, а десятая доля: нулевой
-## урон неотличим от бага («бью — ничего не происходит»), а так слабое тело
-## хотя бы видимо царапает, и игрок понимает, что бьёт не тем. Число черновое,
-## подгоняет game-balance.
+## Во сколько раз слабее бьёт тело ниже L5 по существу L5 ([[Игровой цикл — от и до]] §2, решение 15.10): десятая доля, не ноль — нулевой урон неотличим от бага. Число черновое.
 const L5_RESISTANCE := 0.1
 
-## Слой enemies (бит 2): на нём стоят и живые враги, и кости трупов.
+## Слой enemies (бит 2): живые враги и кости трупов.
 const ENEMIES_BIT := 1 << 2
 
-## Что луч удара видит: стены (static_colliders, бит 0) и enemies. Стены нужны
-## затем, чтобы удар не доставал врага сквозь них; двери и прочая подвижная
-## геометрия на moving_colliders в маске нет.
+## Что видит луч удара: стены (бит 0, чтобы не доставать сквозь них) и enemies; двери на moving_colliders в маске нет.
 const RAY_MASK := (1 << 0) | ENEMIES_BIT
 
-## Сколько «не-целей» (трупы-рэгдоллы, свои же кости) луч готов пройти насквозь.
-## Предел — чтобы ошибка в данных не превратила один каст в сотню.
+## Сколько «не-целей» (трупы-рэгдоллы, свои кости) луч проходит насквозь — предел против ошибки в данных.
 const MAX_PIERCED := 8
 
 
@@ -52,8 +31,7 @@ func sub_systems() -> Array[Array]:
 	]
 
 
-## ПОСЛЕ перемещения — по той же причине, что у детекторов: луч идёт от камеры, и
-## целиться надо из точки, где тело стоит после этого тика.
+## ПОСЛЕ перемещения: луч идёт от камеры, целиться надо из точки после тика.
 func deps() -> Dictionary[int, Array]:
 	return {Runs.After: [S_Movement]}
 
@@ -68,8 +46,7 @@ func _attack(entities: Array[Entity], _components: Array, delta: float) -> void:
 			continue
 		inp.attack_pressed = false
 
-		# Открытый экран (C_UIBlocked) удара не получает: защёлку съели, чтобы она
-		# не дожила до закрытия меню, а бить сквозь меню нечем.
+		# Открытый экран (C_UIBlocked) удара не получает; защёлку съели, чтобы не дожила до закрытия меню.
 		if entity.has_component(C_UIBlocked):
 			continue
 		if attack.cooldown_left > 0.0:
@@ -83,8 +60,7 @@ func _attack(entities: Array[Entity], _components: Array, delta: float) -> void:
 		if target == null:
 			continue
 
-		# Через воронку, а не записью в C_Health.current: удар обязан оставить след
-		# «кто, кому, сколько и чем» (см. S_Health.deal_damage).
+		# Через воронку: удар обязан оставить след «кто, кому, сколько и чем» (S_Health.deal_damage).
 		S_Health.deal_damage(target, damage_against(entity, target, attack), entity, MEANS)
 		ECS.world.emit_event(&"attack_hit", entity, target)
 		C_ScreenMessage.show_on(entity, "HUD_MSG_HIT", cmd)
@@ -102,22 +78,15 @@ func _swallow(entities: Array[Entity], _components: Array, _delta: float) -> voi
 			C_ScreenMessage.show_on(entity, "HUD_MSG_NO_ATTACK", cmd)
 
 
-## Сколько урона реально получит [param target] от этого удара.
-##
-## ЕДИНСТВЕННОЕ МЕСТО, где урон удара может зависеть от цели: правило «существо
-## L5 почти неуязвимо для слабых» ([[Игровой цикл — от и до]], §2) лежит здесь, а
-## не в каждой боевой системе отдельно. Класс нападающего — класс тела, в котором
-## он сидит (C_Embodied.body_scene_path, тот же путь сцены, по которому считаются
-## очки за захват); класс цели — класс трупа врага (E_Enemy.threat_class). Без
-## тела (нет C_Embodied) нападающий — класс 0: бить он и так не умеет, но
-## функция публичная, и «неизвестное тело» обязано быть слабым, а не сильным.
+## Сколько урона реально получит target. ЕДИНСТВЕННОЕ МЕСТО, где урон зависит от цели: «существо L5 почти неуязвимо для слабых» ([[Игровой цикл — от и до]] §2). Класс нападающего — класс тела
+## (C_Embodied.body_scene_path), цели — класс трупа врага (E_Enemy.threat_class); без тела — класс 0 (неизвестное тело слабое).
 static func damage_against(attacker: Entity, target: Entity, attack: C_Attack) -> float:
 	if target_class(target) >= L5_CLASS and attacker_class(attacker) < L5_CLASS:
 		return attack.damage * L5_RESISTANCE
 	return attack.damage
 
 
-## Класс тела, в котором сидит [param attacker]; 0 — вне тела.
+## Класс тела, в котором сидит attacker; 0 — вне тела.
 static func attacker_class(attacker: Entity) -> int:
 	if attacker == null:
 		return 0
@@ -127,20 +96,14 @@ static func attacker_class(attacker: Entity) -> int:
 	return E_Body.class_of_scene(embodied.body_scene_path)
 
 
-## Класс угрозы цели; 0 — это не враг (у прочего живого нет шкалы L0..L5).
+## Класс угрозы цели; 0 — не враг.
 static func target_class(target: Entity) -> int:
 	var enemy := target as E_Enemy
 	return enemy.threat_class() if enemy else 0
 
 
-## Луч из камеры вперёд (−Z) на [param reach] метров: ближайшая живая цель удара
-## или null.
-##
-## Цель — сущность с прочностью, которую нельзя захватить (C_BodySnatchable
-## есть у трупов-тел: их не бьют, в них вселяются) и которая ещё не мертва.
-## Всё остальное на слое enemies — труп-рэгдолл, свои же кости — луч проходит
-## насквозь. А вот стена (коллайдер не на слое enemies) обрывает луч: за ней цели
-## нет.
+## Луч из камеры вперёд (−Z) на reach м: ближайшая живая цель или null. Цель — сущность с прочностью без C_BodySnatchable (в трупы вселяются, их не бьют);
+## прочее на слое enemies (рэгдоллы, свои кости) луч проходит насквозь, стена обрывает.
 static func find_target(attacker: Entity, cam: Camera3D, reach: float) -> Entity:
 	var from := cam.global_position
 	var to := from - cam.global_transform.basis.z * reach
@@ -155,8 +118,7 @@ static func find_target(attacker: Entity, cam: Camera3D, reach: float) -> Entity
 		var hit := space.intersect_ray(params)
 		if hit.is_empty():
 			return null
-		# Стену узнаём по слою, а не по отсутствию сущности: сама комната — тоже
-		# Entity, и «коллайдер без сущности» не нашёл бы ни одной стены.
+		# Стену узнаём по слою, не по отсутствию сущности: комната — тоже Entity.
 		var collider := hit.collider as CollisionObject3D
 		if collider == null or collider.collision_layer & ENEMIES_BIT == 0:
 			return null
@@ -168,8 +130,7 @@ static func find_target(attacker: Entity, cam: Camera3D, reach: float) -> Entity
 	return null
 
 
-## Поднимается от коллайдера вверх по дереву до сущности (коллайдер обычно —
-## дочерний CollisionShape3D или кость, а не сама сущность).
+## Вверх по дереву от коллайдера до сущности.
 static func _entity_of(collider: Object) -> Entity:
 	var node := collider as Node
 	while node:

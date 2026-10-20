@@ -1,7 +1,5 @@
 ## res://src/grid/square_grid_embedding.gd
-## Квадратная сетка в мире: клетка — квадрат cell_size по X и Z, уровни — друг
-## над другом через level_height по Y. Горизонталь и вертикаль заданы порознь:
-## у клетки-куба они совпадут, но сетка обязана уметь и уровни выше клетки.
+## Квадратная сетка в мире: клетка cell_size по X и Z, уровни через level_height по Y (у куба совпадут, но заданы порознь).
 @tool
 class_name SquareGridEmbedding
 extends GridEmbedding
@@ -10,9 +8,7 @@ extends GridEmbedding
 var cell_size: float
 ## Шаг уровней по высоте в метрах.
 var level_height: float
-## На сколько ниже пола уровня точка ещё принадлежит ему — в долях
-## level_height. То, что стоит на полу, своим origin бывает чуть ниже него, и без
-## запаса на границе округления уезжало бы уровнем ниже.
+## Допуск ниже пола уровня, в долях level_height: origin стоящего на полу бывает чуть ниже.
 var level_tolerance: float
 
 
@@ -31,10 +27,7 @@ func cell_at(world_position: Vector3) -> Vector3i:
 	return Vector3i(roundi(point.x), floori(point.y + level_tolerance), roundi(point.z))
 
 
-## Грань — сторона квадрата клетки: середина на полпути к соседу, концы — по
-## полклетки в обе стороны вдоль неё. Стороны у этого вложения те же, что у
-## квадратной топологии (SquareGridTopology.OFFSETS): вложение без пары ей не
-## бывает.
+## Грань — сторона квадрата: середина на полпути к соседу, концы по полклетки вдоль; стороны те же, что у SquareGridTopology.OFFSETS.
 func face_edge(cell: Vector3i, side: int) -> PackedVector3Array:
 	var offset := Vector3(SquareGridTopology.OFFSETS[side])
 	var mid := cell_origin(cell) + offset * cell_size * 0.5
@@ -42,18 +35,13 @@ func face_edge(cell: Vector3i, side: int) -> PackedVector3Array:
 	return PackedVector3Array([mid - along, mid + along])
 
 
-## Точка мира в координатах сетки — дробная: центр клетки в целых, граница на
-## половинах. Нужна тому, что рисует сетку в клетках, а живёт между ними, —
-## маркеру игрока на карте.
+## Точка мира в координатах сетки (дробная: центр клетки — целые) — маркеру игрока на карте.
 func grid_point(world_position: Vector3) -> Vector3:
 	return Vector3(
 		world_position.x / cell_size, world_position.y / level_height, world_position.z / cell_size
 	)
 
 
-## Поворот на [param turns] четвертей оборота вокруг вертикали — против часовой,
-## если смотреть сверху: так же, как rotation.y = turns · π/2. Стороны квадратной
-## топологии идут по часовой, поэтому четверть оборота здесь сдвигает сторону на
-## шаг назад (GridTopology.rotate_side с −turns).
+## Поворот на turns четвертей против часовой сверху (как rotation.y = turns·π/2); стороны топологии идут по часовой, поэтому в rotate_side −turns.
 func turn_basis(turns: int) -> Basis:
 	return Basis(Vector3.UP, turns * PI * 0.5)

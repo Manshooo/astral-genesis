@@ -1,17 +1,9 @@
 class_name A_TravelThroughDoor
 extends RS_InteractionAction
-## Переход по ребру графа: ведёт игрока в соседний узел, записанный в
-## C_DoorPortal этого интерактива (штампует RunManager при спавне слоя).
-## Учитывает замок и «пустой» выход — в обоих случаях даёт игроку экранное
-## сообщение, а не тишину. Что именно значит «пройти», решает RunManager.use_door:
-## дверь в коридор открывается на месте, портал и прежняя раскладка переносят.
-##
-## Базовый класс и для вертикального перехода: портал — та же дверь, только в
-## другой слой (см. A_UsePortal, он лишь переопределяет тексты).
-## Назначается на Entity через E_InteractableObject.actions в редакторе.
+## Переход по ребру графа в узел из C_DoorPortal (штампует RunManager). Замок и «пустой» выход дают экранное сообщение;
+## что значит «пройти», решает RunManager.use_door. База и для A_UsePortal (переопределяет тексты). Вики: [[Взаимодействие]].
 
-## Имена ключей для сообщения — ключи перевода. Инвентаря ключей ещё нет, так
-## что locked_by пока всегда level_access_key.
+## Ключи перевода имён ключей; инвентаря нет, locked_by пока всегда level_access_key.
 const KEY_NAMES := {
 	&"level_access_key": "ITEM_LEVEL_ACCESS_KEY",
 }
@@ -23,8 +15,7 @@ func execute(entity: Entity, _interactor: Node = null) -> void:
 		push_warning("%s: у «%s» нет C_DoorPortal" % [_class_label(), entity.name])
 		return
 
-	# Пустая цель = выход «заглушён»: у узла интерактивов больше, чем рёбер графа
-	# (см. LayerStreamer._seal_door). Проём/портал настоящий, но за ним ничего нет.
+	# Пустая цель = выход «заглушён»: у узла интерактивов больше, чем рёбер (LayerStreamer._seal_door).
 	if portal.target_node_id == &"":
 		_notify(_sealed_message())
 		return
@@ -33,8 +24,7 @@ func execute(entity: Entity, _interactor: Node = null) -> void:
 		_notify(tr("HUD_MSG_ENTRY_SEALED"))
 		return
 	if portal.is_locked():
-		# Ключей в игре ещё нет нигде, поэтому заперто = закрыто наглухо. Но
-		# игрок теперь хотя бы знает, ЧТО нужно, а не смотрит в молчащую дверь.
+		# Ключей в игре нет: заперто = наглухо, но игрок знает, ЧТО нужно.
 		_notify(_locked_message(portal.locked_by))
 		return
 
@@ -49,7 +39,7 @@ func _sealed_message() -> String:
 
 
 func _locked_message(key: StringName) -> String:
-	# tr() до подстановки: перевод узнаёт только строку-шаблон, а не собранную.
+	# tr() до подстановки: перевод узнаёт только строку-шаблон.
 	return tr("HUD_MSG_LOCKED_NEEDS") % _key_name(key)
 
 
@@ -61,7 +51,6 @@ func _key_name(key: StringName) -> String:
 	return tr(KEY_NAMES.get(key, str(key)))
 
 
-## Строка игроку. Прямая правка, без буфера, законна: interact() зовётся из
-## S_InteractInput через call_deferred, то есть уже ВНЕ прохода ECS.
+## Строка игроку: прямая правка законна — interact() идёт через call_deferred, вне прохода ECS.
 func _notify(line: String) -> void:
 	C_ScreenMessage.show_on(E_Player.find(), line)

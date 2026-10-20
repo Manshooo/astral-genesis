@@ -1,7 +1,5 @@
 # res://src/ui/settings/checkbox_setting.gd
-## Настройка-флажок: кольцо с точкой души внутри (вид — тема, CheckBox) и
-## подпись состояния «Вкл/Выкл» рядом (§5 «Меню — спека»). Подпись — не
-## украшение: кольцо без точки на тёмном фоне не всякий прочтёт как «выключено».
+## Настройка-флажок: кольцо с точкой души (вид — тема CheckBox) и подпись «Вкл/Выкл» рядом (§5 «Меню — спека»): кольцо без точки на тёмном не всякий прочтёт как «выключено».
 class_name CheckboxSetting
 extends CheckBox
 
@@ -25,8 +23,7 @@ func get_setting_value() -> bool:
 
 
 func set_setting_value(v: Variant) -> void:
-	# set_pressed_no_signal: значение из черновика — не правка игрока, и
-	# setting_changed от него зажёг бы «Применить» на ровном месте.
+	# set_pressed_no_signal: значение из черновика — не правка игрока, setting_changed зажёг бы «Применить».
 	set_pressed_no_signal(bool(v))
 	_refresh_text()
 

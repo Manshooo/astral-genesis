@@ -1,42 +1,25 @@
 # res://src/ui/menu/echo_button.gd
-## Кнопка-мысль языка «Отголосок» (§5 «Меню — спека»): без рамки и подложки.
-## Тема даёт ей шрифт, цвета состояний и поля (вариации EchoButton,
-## EchoButtonSmall, MenuTab); сама кнопка рисует то, чего StyleBox не умеет:
-## сиреневое эхо текста, рваный штрих, прорисовывающийся слева направо, и точку
-## фокуса с клавиатуры.
-##
-## Фокус обязан отличаться от наведения (§1): наведение — эхо и бледный штрих,
-## фокус — ещё и точка души слева, штрих в полную силу. Поэтому и рисуется всё
-## здесь: стиль focus у Button ложится поверх hover одинаковой рамкой и разницы
-## «мышь тут / клавиатура тут» не передаёт.
-##
-## Положение точки и штриха — константы вариации темы (dot_x, dot_radius,
-## rag_bottom, rag_hover_alpha, draw_rag), а не экспорты: у малой кнопки и
-## вкладки они свои, и задаются один раз в теме, а не в каждой сцене. Константы
-## темы целые, поэтому dot_radius — в десятых пикселя, rag_hover_alpha — в
-## процентах.
+## Кнопка-мысль языка «Отголосок» (§5 «Меню — спека»): без рамки и подложки; тема даёт шрифт, цвета и поля (EchoButton, EchoButtonSmall, MenuTab), кнопка рисует эхо текста, рваный штрих слева направо и точку фокуса.
+## Фокус обязан отличаться от наведения (§1) — поэтому рисуется здесь, а не StyleBox focus. Положение точки и штриха — константы вариации темы (dot_x, dot_radius в десятых px, rag_bottom, rag_hover_alpha в %, draw_rag).
 class_name UI_EchoButton
 extends Button
 
-## Сколько длится появление эха (§7: 140 мс linear).
+## Длительность появления эха (§7: 140 мс linear).
 const ECHO_IN := 0.14
-## Постоянная времени прорисовки штриха: к 220 мс он почти дорисован (§7).
+## Постоянная времени прорисовки штриха: к 220 мс почти дорисован (§7).
 const RAG_TAU := 0.07
 ## Появление точки фокуса (§7: 120 мс).
 const FOCUS_IN := 0.12
-## Период бегущего штриха «занято» (§7, возрождение: 1.4 с).
+## Период бегущего штриха «занято» (§7).
 const BUSY_PERIOD := 1.4
 
-## «Занято»: кнопка недоступна, а штрих под ней бежит — генерация идёт, игра не
-## зависла. Отдельно от disabled, потому что недоступная кнопка рисует пунктир.
+## «Занято»: кнопка недоступна, а штрих бежит — игра не зависла. Отдельно от disabled: недоступная рисует пунктир.
 var busy := false:
 	set(value):
 		busy = value
 		queue_redraw()
 
-## Отметка на самой кнопке — «Сохранено» в паузе (§7): кнопка недоступна, пока
-## отметка висит, но это не «нельзя», а «сделано», и вместо пунктира
-## недоступного у неё горит эхо.
+## Отметка на самой кнопке («Сохранено» в паузе, §7): «сделано», а не «нельзя» — горит эхо вместо пунктира.
 var marked := false:
 	set(value):
 		marked = value
@@ -49,7 +32,7 @@ var _phase := 0.0
 
 
 func _ready() -> void:
-	# Фаза по месту в списке: соседние пункты не должны дрожать хором.
+	# Фаза по месту в списке: соседние пункты не дрожат хором.
 	_phase = float(get_index()) * 1.7
 
 
@@ -65,8 +48,7 @@ func _process(delta: float) -> void:
 		rag_target = _const(&"rag_hover_alpha", 55) / 100.0
 	_rag = UI_HudMood.approach(_rag, rag_target, RAG_TAU, delta)
 	_focus = move_toward(_focus, 1.0 if has_focus() else 0.0, delta / FOCUS_IN)
-	# Каждый кадр, а не «пока что-то видно»: эхо дрожит постоянно, а гаснущему
-	# состоянию нужен ещё один кадр, чтобы стереться. Кнопок на экране — единицы.
+	# Каждый кадр: эхо дрожит постоянно, гаснущему нужен кадр, чтобы стереться.
 	if is_visible_in_tree():
 		queue_redraw()
 
@@ -83,8 +65,7 @@ func _draw() -> void:
 		UI_MenuStyle.draw_dotted(self, Vector2(left, y), Vector2(right, y),
 				Color(UI_MenuStyle.TEXT, 0.22))
 	elif _rag > 0.001 and _const(&"draw_rag", 1) != 0:
-		# Штрих прорисовывается долей длины, а его яркость — тем же _rag:
-		# наведение доводит его до α .55, фокус — до полной силы.
+		# Штрих прорисовывается долей длины, яркость — тем же _rag: наведение до α .55, фокус до полной.
 		var progress := clampf(_rag / maxf(_rag_cap(), 0.01), 0.0, 1.0)
 		var points := UI_MenuStyle.rag_points(Vector2(left, y), Vector2(right, y), progress)
 		if points.size() >= 2:
@@ -97,17 +78,14 @@ func _draw() -> void:
 		var center := Vector2(float(_const(&"dot_x", 10)), size.y / 2.0)
 		var radius := _const(&"dot_radius", 30) / 10.0 * lerpf(0.4, 1.0, _focus)
 		if disabled:
-			# Фокус на недоступном пункте всё равно виден: клавиатура должна
-			# знать, где она, — но без сиреневого, это не внимание души.
+			# Фокус на недоступном виден, но без сиреневого — это не внимание души.
 			draw_circle(center, radius, Color(UI_MenuStyle.TEXT_DIM, 0.5 * _focus))
 		else:
 			draw_circle(center, radius + 5.0, Color(UI_MenuStyle.HALO, UI_MenuStyle.HALO.a * _focus))
 			draw_circle(center, radius, Color(UI_HudMood.SOUL, _focus))
 
 
-## Эхо — копия строки сиреневым со сдвигом. Рисуется поверх текста кнопки, как
-## ::after в прототипе: α .30 текст не прячет. При нажатии эхо встаёт на место
-## строки (§7) — мысль «схлопнулась» в действие.
+## Эхо — копия строки сиреневым со сдвигом поверх текста (α .30); при нажатии встаёт на место строки (§7).
 func _draw_echo(style: StyleBox) -> void:
 	var shown := atr(text)
 	if shown == "":
@@ -126,7 +104,7 @@ func _draw_echo(style: StyleBox) -> void:
 	draw_string(font, baseline + offset, shown, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 
-## Бегущий штрих: окно в 40 % длины едет слева направо и уходит за край.
+## Бегущий штрих: окно в 40 % длины едет слева направо.
 func _draw_busy(left: float, right: float, y: float) -> void:
 	var t := fmod(UI_HudMood.now(), BUSY_PERIOD) / BUSY_PERIOD
 	var head := ease(t, 0.6)
@@ -141,8 +119,7 @@ func _draw_busy(left: float, right: float, y: float) -> void:
 		draw_polyline(window, Color(UI_HudMood.SOUL, 0.85), 1.2, true)
 
 
-## Предел _rag в текущем состоянии: доля прорисовки считается от него, иначе
-## штрих наведения (α .55) так и остался бы недорисованным наполовину.
+## Предел _rag в текущем состоянии: доля прорисовки считается от него (иначе штрих наведения недорисован).
 func _rag_cap() -> float:
 	if has_focus() or (toggle_mode and button_pressed):
 		return 1.0
@@ -162,7 +139,7 @@ func _current_style() -> StyleBox:
 	return get_theme_stylebox(&"normal")
 
 
-## Константа вариации или запасное значение, если тема её не объявила.
+## Константа вариации или запасное значение.
 func _const(theme_name: StringName, fallback: int) -> int:
 	if has_theme_constant(theme_name):
 		return get_theme_constant(theme_name)

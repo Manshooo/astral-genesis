@@ -1,25 +1,17 @@
 # res://src/resources/rs_graphics_preset.gd
-## Один уровень качества графики: разрешение, тени, сглаживание — одним
-## пакетом, а не отдельными настройками. Масштаб разрешения умышленно лежит
-## здесь же, а не отдельным ползунком: на слабом железе он идёт в связке с
-## остальным качеством, а не крутится независимо от него. Vsync сюда НЕ входит:
-## это про то, рвутся ли кадры на конкретном мониторе, а не про качество
-## картинки — тянуть его за пресетом смысла нет (см. RS_Settings.vsync_enabled).
+## Уровень качества графики пакетом (разрешение, тени, сглаживание). Масштаб разрешения здесь же; Vsync не входит —
+## про монитор, не про качество (RS_Settings.vsync_enabled). Вики: [[Конвенции проекта]] §6.
 class_name RS_GraphicsPreset
 extends Resource
 
 enum AAMode {OFF, FXAA, MSAA_2X, MSAA_4X}
 
-## Тени выключены — не ступень RS_ShadowLevel, а её отсутствие: атласы
-## зануляются, лампы тень не отбрасывают. Свет ламп при этом проходит сквозь
-## стены — это цена пункта, и подсказка в меню говорит о ней.
+## Тени выключены — не ступень, а её отсутствие: атласы занулены; свет ламп проходит сквозь стены (подсказка в меню говорит).
 const SHADOWS_OFF := &"off"
 
-## Ключ пресета ("low"/"medium"/"high") — то, что хранится в
-## RS_Settings.graphics_preset_id и в SettingsManager.preset_by_id().
+## Ключ пресета ("low"/"medium"/"high") — RS_Settings.graphics_preset_id.
 @export var id: StringName = &""
-## Ключ перевода названия в списке пресетов (SETTINGS_PRESET_*): пункт списка
-## переводится сам, данные хранят ключ, а не готовую строку.
+## Ключ перевода названия (SETTINGS_PRESET_*).
 @export var display_name: String = ""
 
 @export_range(0.5, 1.5, 0.05) var render_scale: float = 1.0
@@ -28,18 +20,14 @@ const SHADOWS_OFF := &"off"
 @export var shadow_quality: StringName = &"medium"
 ## Ступень экранных эффектов: id из RS_GraphicsPresetLibrary.effects_levels.
 @export var screen_effects: StringName = &"medium"
-## Свечение ярких мест. В пресете, хоть у игрока и отдельный флажок: на
-## встроенной графике размытие свечения — заметная доля кадра.
+## Свечение: в пресете — на встроенной графике размытие заметная доля кадра.
 @export var glow_enabled: bool = true
 
 @export_group("Сглаживание")
 @export var aa_mode: AAMode = AAMode.FXAA
 
 
-## Раскатывает пресет на настройки игрока. Одно место на меню (выбор в списке) и
-## на SettingsManager (сейв с именованным пресетом приводится к нынешнему
-## пресету): поле, добавленное в пресет, иначе пришлось бы вписывать в двух
-## местах, и одно из них забылось бы.
+## Раскатывает пресет на настройки: одно место на меню и на SettingsManager (поле не забудется в одном из двух).
 func apply_to(settings: RS_Settings) -> void:
 	settings.render_scale = render_scale
 	settings.shadow_quality = shadow_quality
@@ -48,7 +36,7 @@ func apply_to(settings: RS_Settings) -> void:
 	settings.aa_mode = aa_mode
 
 
-## Совпадают ли настройки с пресетом по всем его полям — то есть не «Собственные».
+## Совпадают ли настройки с пресетом по всем полям (не «Собственные»).
 func matches(settings: RS_Settings) -> bool:
 	return (
 		is_equal_approx(settings.render_scale, render_scale)

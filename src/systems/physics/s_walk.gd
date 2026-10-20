@@ -1,22 +1,6 @@
 # res://src/systems/physics/s_walk.gd
-# Группа: "physics". Ход по земле — по одной возможности одна система.
-#
-# Направление берётся в базисе САМОЙ сущности (куда развёрнут риг), а не камеры:
-# ходят ногами, а не взглядом. Тем и отличается от полёта (S_Flight), где базис
-# камеры и есть смысл механики.
-#
-# Старт и остановка мгновенные — инерции у шага нет намеренно: шутерный ход
-# читается как «управляемый», и инерция здесь ощущалась бы как лёд. Инерция —
-# признак полёта, и она живёт там.
-#
-# ДВЕ ВЫБОРКИ, а не одна: желаемое движение приходит либо от игрока
-# (C_PlayerInput), либо от простого ИИ (C_EnemyInput, см. S_EnemyAI) — это
-# сознательно РАЗНЫЕ компоненты, не один на двоих. Враг с C_PlayerInput уже
-# один раз сломал добрый десяток мест, ищущих «игрока» просто по наличию этого
-# компонента (RunManager.travel_to, S_InteractionDetector, HUD): с двумя
-# такими сущностями `execute_one()` мог вернуть врага, и переход через дверь
-# молча промахивался мимо настоящего игрока. Арифметика хода одна на обе
-# выборки — она вынесена в _walk().
+# Группа "physics". Ход по земле — по одной возможности одна система. Направление в базисе САМОЙ сущности (ходят ногами, не взглядом), старт и остановка мгновенные (инерция — признак полёта).
+# Две выборки: C_PlayerInput и C_EnemyInput (S_EnemyAI) — РАЗНЫЕ компоненты намеренно (враг с C_PlayerInput ломал поиск «игрока»); арифметика общая — _walk().
 class_name S_Walk
 extends System
 
@@ -42,7 +26,7 @@ func _walk_enemy(entities: Array[Entity], _components: Array, _delta: float) -> 
 
 func _walk(entity: Entity, move_direction: Vector3) -> void:
 	var vel := entity.get_component(C_Velocity) as C_Velocity
-	# Entity наследует Node, поэтому до Node3D — через двойной каст.
+	# Entity наследует Node — до Node3D двойной каст.
 	var node := entity as Node as Node3D
 	if node == null:
 		return
@@ -52,14 +36,10 @@ func _walk(entity: Entity, move_direction: Vector3) -> void:
 		vel.velocity.z = 0.0
 		return
 
-	# Скорость тела — база, поверх которой ложатся модификаторы души: «бегать
-	# быстрее в любом теле» обязано выражаться перком, а не правкой тел.
+	# Скорость тела — база, поверх модификаторы души.
 	var walk := entity.get_component(C_Walk) as C_Walk
 	var speed := C_StatModifiers.of(entity, C_StatModifiers.WALK_SPEED, walk.speed)
-	# Базис МИРОВОЙ: velocity у CharacterBody3D мировая, а transform — поворот
-	# относительно родителя. У игрока родитель — корень мира, и разницы не видно;
-	# враг — ребёнок комнаты, повёрнутой на четверть оборота, и с transform шёл
-	# мимо цели на −turns · 90° (ловит dev/enemy_ai_check).
+	# Базис МИРОВОЙ: velocity мировая, transform — относительно родителя; враг в комнате, повёрнутой на четверть, шёл бы мимо цели (ловит dev/enemy_ai_check).
 	var wish := (node.global_transform.basis * move_direction).normalized()
 	vel.velocity.x = wish.x * speed
 	vel.velocity.z = wish.z * speed

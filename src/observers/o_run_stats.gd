@@ -1,14 +1,6 @@
 # res://src/observers/o_run_stats.gd
-# Мост от событий мира к накопителю статистики забега (автолоад RunStats).
-#
-# Наблюдатель, а не подписка автолоада на сигналы: захват тела и урон живут
-# событиями ECS (`body_snatched`, `damage_dealt`), а подписаться на них можно
-# только отсюда. Логики здесь нет намеренно — что считать показателем, решает
-# RunStats; этот файл только доносит событие живым.
-#
-# Один наблюдатель на оба события (sub_observers), а не два узла в мире: ось
-# реакции разная, а адресат один, и регистрировать в world.tscn (и в каждой
-# headless-проверке) две ноды вместо одной — лишний повод забыть половину.
+# Мост от событий мира (`body_snatched`, `damage_dealt`) к накопителю RunStats; логики нет — что считать, решает RunStats.
+# Один наблюдатель на оба события (sub_observers): меньше узлов в world.tscn и в каждой headless-проверке.
 class_name O_RunStats
 extends Observer
 
@@ -20,8 +12,7 @@ func sub_observers() -> Array[Array]:
 	]
 
 
-## Захват состоялся. Путь сцены читаем с души, а не с тела: тела к этому моменту
-## в мире уже нет — захват его поглотил (см. S_BodySnatch про буфер команд).
+## Захват состоялся. Путь сцены — с души: тела в мире уже нет (см. S_BodySnatch).
 func _on_body_snatched(_event: Variant, soul: Entity, _payload: Variant = null) -> void:
 	var embodied := soul.get_component(C_Embodied) as C_Embodied
 	if embodied:

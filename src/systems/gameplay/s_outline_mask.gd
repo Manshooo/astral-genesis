@@ -1,35 +1,17 @@
-## Система: рисует обводку выделенного объекта постэффектом по экранной маске.
-##
-## Схема из трёх шагов. (1) Меши выделенной сущности стоят на отдельном слое
-## видимости — их туда переводит O_OutlineVisual. (2) Здесь этот слой рендерится
-## в маску: SubViewport с камерой-двойником, у которой cull_mask ровно один бит,
-## поэтому в кадр не попадает вообще ничего, кроме выделенного объекта. (3) По
-## маске полноэкранный шейдер считает контур (outline_mask.gdshader).
-##
-## Почему не material_overlay, как было раньше: контур, выдавленный из самой
-## геометрии, наследует её толщину (у мелких деталей тоньше, на плоскости
-## пропадает), обводит составной объект по частям и мерцает без material_override.
-## Маска ничего этого не знает — она плоская.
-##
-## Цена ограничена с двух сторон, потому что полноэкранный проход ради подсветки
-## одного объекта — главный риск этого подхода. Пока ничего не выделено, маска
-## переведена в UPDATE_DISABLED и не рендерится вовсе, а оверлей скрыт. Когда
-## выделено — шейдер гоняется не по всему экрану, а по прямоугольнику, в который
-## объект проецируется (плюс запас на толщину).
+## Обводка выделенного объекта постэффектом по экранной маске: меши на отдельном слое (O_OutlineVisual) рендерятся в SubViewport камерой-двойником
+## (cull_mask — один бит), по маске шейдер считает контур (outline_mask.gdshader). Не material_overlay: тот наследует толщину геометрии и обводит
+## составное по частям. Цена: без выделения маска в UPDATE_DISABLED, оверлей скрыт; иначе шейдер идёт по прямоугольнику проекции. Вики: [[Взаимодействие]].
 class_name S_OutlineMask
 extends System
 
-## Слой холста для оверлея. Ниже HUD (у него layer = -1), но выше 3D: обводка
-## относится к миру, а не к интерфейсу, и подсказка над ней перекрывать её не
-## должна наоборот.
+## Слой холста для оверлея: ниже HUD (-1), выше 3D — обводка относится к миру.
 const OVERLAY_CANVAS_LAYER := -2
 
 const OVERLAY_MATERIAL: ShaderMaterial = preload(
 	"res://assets/shared/materials/outline_mask.tres"
 )
 
-## Запас вокруг проекции объекта, px. Прямоугольник ножниц обязан быть шире самой
-## толстой обводки, иначе она обрежется ровно по краю силуэта.
+## Запас вокруг проекции объекта, px: шире самой толстой обводки, иначе обрежется по краю.
 const RECT_MARGIN := 8.0
 
 var _mask: SubViewport
@@ -37,10 +19,7 @@ var _mask_camera: Camera3D
 var _overlay: ColorRect
 
 
-## process_empty — не оптимизация, а условие работы: гасить обводку надо ровно
-## тогда, когда выделенного объекта не осталось, то есть когда выборка пуста.
-## Без этого флага GECS в такой кадр систему не зовёт, и последний контур завис
-## бы на экране навсегда.
+## process_empty — условие работы: гасить обводку надо, когда выборка пуста; без флага GECS систему в такой кадр не зовёт.
 func setup() -> void:
 	process_empty = true
 	_build_nodes()
@@ -58,8 +37,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 
 	var rect := _screen_rect(entities, camera)
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
-		# Объект есть, но на экране его нет (весь за спиной или за краем кадра) —
-		# рисовать нечего, и маску гонять незачем.
+		# Объект есть, но на экране его нет — маску гонять незачем.
 		_set_active(false)
 		return
 
@@ -70,11 +48,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 	_set_active(true)
 
 
-## Узлы строятся кодом, а не сценой: это механизм, а не авторский контент —
-## настраивать в редакторе тут нечего, кроме цвета и толщины, а они лежат в
-## outline_mask.tres. Сцена же требовала бы держать её в актуальном состоянии
-## руками (размер вьюпорта, cull_mask, окружение), причём любая её правка ломала
-## бы маску молча.
+## Узлы строятся кодом: механизм, не авторский контент (цвет и толщина — в outline_mask.tres); сцену пришлось бы держать актуальной руками.
 func _build_nodes() -> void:
 	var canvas := CanvasLayer.new()
 	canvas.name = "OutlineCanvas"
@@ -85,8 +59,7 @@ func _build_nodes() -> void:
 	_overlay.name = "OutlineOverlay"
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_overlay.visible = false
-	# Копия, а не сам ресурс: в материал пишется ViewportTexture конкретного
-	# прогона, и правка общего .tres из рантайма утащила бы её в файл.
+	# Копия: в материал пишется ViewportTexture прогона, правка общего .tres утащила бы её в файл.
 	var material := OVERLAY_MATERIAL.duplicate() as ShaderMaterial
 	_overlay.material = material
 	canvas.add_child(_overlay)
@@ -94,19 +67,17 @@ func _build_nodes() -> void:
 	_mask = SubViewport.new()
 	_mask.name = "OutlineMask"
 	_mask.transparent_bg = true
-	# Маска читается порогом по альфе, поэтому сглаживание ей не нужно, а стоит
-	# оно как обычный кадр. Мягкий край контура делает уже шейдер.
+	# Маска читается порогом по альфе — сглаживание не нужно; мягкий край делает шейдер.
 	_mask.msaa_3d = Viewport.MSAA_DISABLED
 	_mask.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	_mask.use_debanding = false
 	_mask.positional_shadow_atlas_size = 0
-	# Свет на маску не влияет — важен только факт попадания меша в кадр.
+	# Свет на маску не влияет.
 	_mask.debug_draw = Viewport.DEBUG_DRAW_UNSHADED
 	_mask.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(_mask)
 
-	# own_world_3d НЕ включаем: вложенный SubViewport по умолчанию рендерит мир
-	# родительского вьюпорта — тот же самый, что и игрок. Свой мир был бы пустым.
+	# own_world_3d НЕ включаем: вложенный SubViewport рендерит мир родителя; свой был бы пустым.
 	_mask_camera = Camera3D.new()
 	_mask_camera.name = "MaskCamera"
 	_mask_camera.cull_mask = O_OutlineVisual.OUTLINE_LAYER
@@ -117,9 +88,7 @@ func _build_nodes() -> void:
 	material.set_shader_parameter("mask_tex", _mask.get_texture())
 
 
-## Окружение маски: пустой фон и никакого неба. Без него SubViewport взял бы
-## WorldEnvironment сцены и залил бы маску небом — то есть единицами альфы на
-## весь экран, и «контуром» стала бы рамка вокруг кадра.
+## Окружение маски: пустой фон, без неба — иначе SubViewport залил бы маску альфой всего экрана.
 func _blank_environment() -> Environment:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
@@ -128,9 +97,7 @@ func _blank_environment() -> Environment:
 	return env
 
 
-## Камера-двойник обязана совпадать с игровой по ВСЕМ параметрам проекции, а не
-## только по положению: FOV — настройка игрока (RS_Settings), и разъехавшись на
-## пару градусов, маска дала бы контур со смещением в несколько пикселей.
+## Камера-двойник совпадает с игровой по ВСЕМ параметрам проекции (FOV — настройка игрока), иначе контур сместится.
 func _sync_camera(camera: Camera3D) -> void:
 	_mask_camera.global_transform = camera.global_transform
 	_mask_camera.projection = camera.projection
@@ -148,13 +115,8 @@ func _sync_size() -> void:
 		_mask.size = size
 
 
-## Прямоугольник на экране, за пределами которого контура заведомо нет: габарит
-## всех мешей сущности, спроецированный камерой, плюс запас на толщину.
-##
-## Пустой прямоугольник значит «рисовать нечего». Угол ЗА камерой ломает
-## unproject_position (точка за спиной проецируется как зеркальная), поэтому
-## частично зашедший за камеру объект честно обводится по всему экрану — это
-## редкий кадр, и ошибиться в нём дешевле, чем обрезать контур.
+## Прямоугольник, за пределами которого контура нет (габарит мешей, спроецированный камерой, плюс запас). Пустой — рисовать нечего. Угол ЗА камерой ломает unproject_position,
+## поэтому зашедший за камеру объект обводится по всему экрану — ошибиться дешевле, чем обрезать.
 func _screen_rect(entities: Array[Entity], camera: Camera3D) -> Rect2:
 	var screen := Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size)
 	var box := Rect2()
