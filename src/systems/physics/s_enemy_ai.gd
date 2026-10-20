@@ -55,6 +55,13 @@ const MEANS := &"enemy_melee"
 ## над ногами. У игрока берётся его камера, то есть глаза текущего тела.
 const FALLBACK_TARGET_EYE := 1.5
 
+## Длина луча к двери по ходу, м, от оси врага. Больше радиуса капсулы с запасом:
+## полотно успевает тронуться, пока враг подходит, и он не утыкается в него.
+const DOOR_PROBE := 1.6
+## На какой высоте над ногами луч ищет полотно, м.
+const DOOR_PROBE_HEIGHT := 1.0
+const MOVING_LAYER := 1 << 4
+
 
 func deps() -> Dictionary[int, Array]:
 	return {Runs.Before: [S_Walk]}
@@ -261,6 +268,36 @@ func _steer(
 		return
 	node.look_at(node.global_position + heading, Vector3.UP)
 	inp.move_direction = Vector3.FORWARD
+	if ai.opens_doors:
+		_open_door_ahead(node, heading)
+
+
+## Навмеш запечён сквозь проёмы (moving_colliders нет в маске шаблонов): путь
+## идёт прямо в закрытое полотно, и враг убирает его с дороги сам.
+## S_DoorMotion.open, а не interact(): A_TravelThroughDoor — про игрока.
+## Запертую и заваренную дверь враг не открывает.
+func _open_door_ahead(node: Node3D, heading: Vector3) -> void:
+	var from := node.global_position + Vector3.UP * DOOR_PROBE_HEIGHT
+	var ray := PhysicsRayQueryParameters3D.create(from, from + heading.normalized() * DOOR_PROBE, MOVING_LAYER)
+	var hit := node.get_world_3d().direct_space_state.intersect_ray(ray)
+	if hit.is_empty():
+		return
+	var door := _door_of(hit.collider as Node)
+	if door == null:
+		return
+	var portal := door.get_component(C_DoorPortal) as C_DoorPortal
+	if portal != null and (portal.is_locked() or portal.target_node_id == &""):
+		return
+	S_DoorMotion.open(door)
+
+
+func _door_of(leaf: Node) -> Entity:
+	var node := leaf
+	while node != null:
+		if node is Entity and (node as Entity).has_component(C_DoorMotion):
+			return node as Entity
+		node = node.get_parent()
+	return null
 
 
 func _flat_distance(a: Vector3, b: Vector3) -> float:

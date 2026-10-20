@@ -33,6 +33,11 @@ const WALL_Z := 20.0
 const BEAM_CENTER := Vector3(20.0, 0.0, -27.0)
 ## Низ балки: выше обычного агента навмеша (2.0), ниже крупного (2.75).
 const BEAM_BOTTOM := 2.3
+## Стена с дверью — по x, вдали от полос остальных сценариев; ставится только на
+## время своего сценария.
+const DOOR_X := 15.0
+const DOOR_SCENE := "res://src/entities/door/complex_door.tscn"
+const MOVING_LAYER := 1 << 4
 
 var _world: World
 var _player: E_Player
@@ -54,7 +59,7 @@ func _ready() -> void:
 
 	_world = _new_world()
 	_add_systems(_world, "physics", [
-		S_Gravity.new(), S_EnemyAI.new(), S_Walk.new(), S_Movement.new(),
+		S_Gravity.new(), S_EnemyAI.new(), S_Walk.new(), S_Movement.new(), S_DoorMotion.new(),
 	])
 
 	await _run()
@@ -72,6 +77,7 @@ func _run() -> void:
 	await _check_ray_rate()
 	await _check_memory()
 	await _check_path_around_obstacle()
+	await _check_door()
 	_check_template_covers_enemies()
 	await _check_sizes()
 	await _check_real_layer()
@@ -96,7 +102,7 @@ func _build_arena() -> void:
 	_box(BEAM_CENTER + Vector3(0.0, BEAM_BOTTOM + 0.25, 0.0), Vector3(4.0, 0.5, 3.0))
 
 
-func _box(center: Vector3, size: Vector3) -> void:
+func _box(center: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.collision_layer = STATIC_LAYER
 	body.collision_mask = 0
@@ -107,6 +113,7 @@ func _box(center: Vector3, size: Vector3) -> void:
 	body.add_child(shape)
 	body.position = center
 	_arena.add_child(body)
+	return body
 
 
 func _spawn_player() -> void:
@@ -369,6 +376,80 @@ func _check_path_around_obstacle() -> void:
 	await _physics(2)
 
 
+## Стена с настоящей дверью между врагом и местом, где он видел игрока. Ломалось
+## тихо: навмеш запекался с закрытым полотном, путь кончался у двери, и враг
+## упирался в неё навсегда — из комнаты не выходил никто.
+func _check_door() -> void:
+	var x := DOOR_X
+	var wall_a := _box(Vector3(x, 2.5, -5.3), Vector3(0.5, 5.0, 7.4))
+	var wall_b := _box(Vector3(x, 2.5, 5.3), Vector3(0.5, 5.0, 7.4))
+	var door := (load(DOOR_SCENE) as PackedScene).instantiate() as Entity
+	var door_node := door as Node as Node3D
+	door_node.position = Vector3(x, 0.0, 0.0)
+	door_node.rotation.y = PI / 2.0
+	_world.add_entity(door)
+	var motion := door.get_component(C_DoorMotion) as C_DoorMotion
+
+	_nav.bake(_world)
+	var guard := 0
+	while not _nav.is_ready() and guard < 600:
+		await _physics(1)
+		guard += 1
+	_check("навмеш с дверью запёкся", _nav.is_ready(), "ждали %d физкадров" % guard)
+
+	var goal := Vector3(x + 5.0, 0.0, 0.0)
+	_put_player(goal)
+	var enemy := _spawn_enemy(Vector3(x - 5.0, 0.0, 0.0), goal)
+	var node := enemy as Node as Node3D
+	_send_searching(_ai(enemy), goal)
+	var opened := false
+	var passed := false
+	for step in 120:
+		await _physics(5)
+		opened = opened or motion.phase != C_DoorMotion.Phase.CLOSED
+		if node.global_position.x > x + 1.0:
+			passed = true
+			break
+	_check("путь навмеша идёт сквозь проём", _ai(enemy).path.size() > 1, "точек %d" % _ai(enemy).path.size())
+	_check("враг открыл дверь на пути", opened, "")
+	_check("и вышел за неё", passed, "x=%.2f" % node.global_position.x)
+	await _drop(enemy)
+
+	while motion.phase != C_DoorMotion.Phase.CLOSED:
+		await _physics(5)
+	var portal := C_DoorPortal.new()
+	portal.target_node_id = &"behind"
+	portal.locked_by = &"level_access_key"
+	door.add_component(portal)
+	var locked_out := _spawn_enemy(Vector3(x - 5.0, 0.0, 0.0), goal)
+	_send_searching(_ai(locked_out), goal)
+	var touched := false
+	for step in 60:
+		await _physics(5)
+		touched = touched or motion.phase != C_DoorMotion.Phase.CLOSED
+	_check("запертую дверь враг не открывает и остаётся по эту сторону",
+		not touched and (locked_out as Node as Node3D).global_position.x < x,
+		"x=%.2f" % (locked_out as Node as Node3D).global_position.x)
+	await _drop(locked_out)
+
+	_world.remove_entity(door)
+	door_node.free()
+	wall_a.free()
+	wall_b.free()
+	_nav.clear()
+	await _physics(2)
+
+
+## Враг «помнит», где видел цель, но сейчас её не видит (за дверью).
+func _send_searching(ai: C_EnemyAI, at: Vector3) -> void:
+	ai.state = C_EnemyAI.State.SEARCHING
+	ai.last_seen_position = at
+	ai.search_left = 60.0
+	ai.arrived = false
+	ai.repath_left = 0.0
+	ai.sight_left = 999.0
+
+
 ## Параметры агента в данных покрывают тела врагов: иначе навмеш прокладывает путь
 ## там, где капсула врага не пройдёт, и маска геометрии разошлась бы с тем, во что
 ## враг упирается физически.
@@ -409,7 +490,8 @@ func _check_template_covers_enemies() -> void:
 			if capsule != null and (capsule.radius > profile.agent_radius or capsule.height > profile.agent_height):
 				uncovered.append("%s (капсула %.2f×%.2f, агент %.2f×%.2f)" % [
 					file, capsule.radius, capsule.height, profile.agent_radius, profile.agent_height])
-		var solid := (enemy as Node as CharacterBody3D).collision_mask & ~PLAYER_LAYER
+		# Подвижное (полотна дверей) враг убирает с пути сам — навмеш идёт сквозь.
+		var solid := (enemy as Node as CharacterBody3D).collision_mask & ~PLAYER_LAYER & ~MOVING_LAYER
 		if solid != profile.geometry_collision_mask:
 			mask_wrong.append(file)
 		(enemy as Node).free()
@@ -417,7 +499,7 @@ func _check_template_covers_enemies() -> void:
 	_check("у каждого врага шаблон навмеша из LayerNavigation.PROFILES", unknown.is_empty(), ", ".join(unknown))
 	_check("шаблон навмеша врага покрывает его капсулу", uncovered.is_empty(), "; ".join(uncovered))
 	_check(
-		"маска геометрии навмеша — это то, во что враг упирается, кроме игрока",
+		"маска геометрии навмеша — это то, во что враг упирается, кроме игрока и полотен дверей",
 		mask_wrong.is_empty(),
 		"расходятся: %s" % ", ".join(mask_wrong)
 	)
