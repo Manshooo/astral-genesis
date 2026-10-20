@@ -19,7 +19,7 @@ const HIT_DARK_TAU := 0.35
 ## Красная вспышка — по силе удара: полная от удара на HIT_FULL_SHARE
 ## максимума HP и больше, у мелкого — не меньше HIT_MIN_SHARE силы. Одинаковая
 ## вспышка на царапину и на полтела не говорила бы, насколько было больно.
-const HIT_RED := 0.5
+const HIT_RED := 0.3
 const HIT_RED_TAU := 0.5
 const HIT_FULL_SHARE := 0.25
 const HIT_MIN_SHARE := 0.2
@@ -30,6 +30,9 @@ const SHAKE_TAU := 0.18
 ## Волна вселения и выхода.
 const SHINE := 0.7
 const SHINE_TAU := 0.3
+## Предел крови по краю при малом HP. Не выше: кайма закрывала обзор как раз
+## тогда, когда он нужнее всего (решение 20.10).
+const BLOOD_PEAK := 0.40
 ## Смена тона души ↔ тела идёт вместе с цветом дуги.
 const TINT_SECONDS := 0.25
 ## За сколько прежняя раскладка пятен крови перетекает в новую после удара:
@@ -174,7 +177,7 @@ func update_params(vitals: UI_HudMood.Vitals, t: float, delta: float) -> void:
 	var shake := SHAKE_PX * exp(-since_hit / SHAKE_TAU) if vitals.has_health else 0.0
 	var blood := 0.0
 	if vitals.has_health:
-		blood = 0.70 * UI_HudMood.sstep(0.45, 0.10, vitals.health) + hit_red
+		blood = BLOOD_PEAK * UI_HudMood.sstep(0.45, 0.10, vitals.health) + hit_red
 
 	params = {
 		vignette = clampf(lerpf(soul_vignette, body_vignette, _body_mix), 0.0, 1.0),

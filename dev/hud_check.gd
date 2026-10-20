@@ -101,10 +101,12 @@ func _check_body_curve() -> void:
 
 # --- 3. Здоровье тела — только кровь -------------------------------------------
 func _check_blood_curve() -> void:
-	var table := {1.0: 0.0, 0.5: 0.0, 0.35: 0.14, 0.25: 0.42, 0.15: 0.66, 0.10: 0.70, 0.0: 0.70}
+	# Таблица спеки в долях пика: сам пик — константа, его ослабляли.
+	var table := {1.0: 0.0, 0.5: 0.0, 0.35: 0.2, 0.25: 0.6, 0.15: 0.943, 0.10: 1.0, 0.0: 1.0}
 	for h: float in table:
 		var p := _fx_at(_vitals(1.0, true, 1.0, h))
-		_check("кровь при HP %d %% — как в таблице спеки" % roundi(h * 100.0), _near(p.blood, table[h]), "%.3f" % p.blood)
+		var want: float = table[h] * UI_HudScreenFx.BLOOD_PEAK
+		_check("кровь при HP %d %% — как в таблице спеки" % roundi(h * 100.0), _near(p.blood, want), "%.3f против %.3f" % [p.blood, want])
 	var soul := _fx_at(_vitals(1.0))
 	_check("у души крови нет — прочности у неё нет", soul.blood == 0.0, str(soul.blood))
 
