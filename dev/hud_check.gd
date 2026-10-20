@@ -69,7 +69,7 @@ func _check_soul_curve() -> void:
 		var row: Array = table[f]
 		var p := _fx_at(_vitals(f))
 		_check(
-			"распад души на %d %% — как в таблице спеки" % roundi(f * 100.0),
+			"стабильность души на %d %% — как в таблице спеки" % roundi(f * 100.0),
 			_near(p.vignette, row[0]) and _near(p.desaturation, row[1]) and _near(p.distortion_px / 4.0, row[2]),
 			"виньетка %.3f, обесцвечивание %.3f, искажение %.3f" % [p.vignette, p.desaturation, p.distortion_px / 4.0]
 		)
