@@ -8,11 +8,11 @@ extends A_TravelThroughDoor
 
 
 func _sealed_message() -> String:
-	return "Портал мёртв: он никуда не ведёт"
+	return tr("HUD_MSG_PORTAL_SEALED")
 
 
 func _locked_message(key: StringName) -> String:
-	return "Портал заблокирован. Нужен %s" % _key_name(key)
+	return tr("HUD_MSG_PORTAL_LOCKED_NEEDS") % _key_name(key)
 
 
 func _class_label() -> String:

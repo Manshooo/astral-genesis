@@ -1,36 +1,6 @@
-## res://addons/game_design_tool/tabs/presets.gd
-## Вкладка «Редактор пресетов» единого редактора геймдизайна: таблица пресетов и
-## облако тегов слева, карточка выделенного — справа, проверка сцен — внизу.
-##
-## Что она закрывает:
-##   1. веса/slot_count/тип пресетов разбросаны по .tres рядом со своими сценами
-##      (src/levels/procedural/rooms/) — здесь они в одной таблице и правятся
-##      на месте;
-##   2. теги правились строкой через запятую — опечатка тихо создавала новый тег.
-##      Тег теперь только выбирается из списка известных;
-##   3. ЧТО тег значит, прочитать было негде — отсюда словарь (RS_RoomTagCatalog)
-##      и карточка тега;
-##   4. рассинхрон «заявленные слоты ↔ сцена» — «Проверка сцен».
-##
-## Сама вкладка — координатор: таблица пресетов, тулбар и «Новый пресет» живут
-## здесь, остальное — панели в tabs/presets/ (карточки, облако тегов, проверка),
-## которые делят общий контекст (tabs/presets/context.gd). Одним файлом вкладка
-## доросла до 1300 строк, где пять панелей ходили в одни и те же поля напрямую;
-## теперь правка идёт через контекст и историю редактора, а панели узнают о ней
-## сигналом — тем же путём после правки и после Ctrl+Z.
-##
-## ПОЧЕМУ «Редактор пресетов», а не прежний «Генератор»: генератор здесь не
-## запускается. «Прогнать сиды» живёт в «Генераторе мира» — вопрос «что реально
-## выпадает» про мир, а не про отдельный пресет.
-##
-## ПОЧЕМУ проверка — свёрнутая панель по кнопке-тумблеру: отчёт нужен раз в
-## несколько правок, а постоянно висящий пустой отчёт отъедал бы у таблиц высоту.
-## Состояние тумблера и соотношения сплиттеров переживают перезапуск редактора
-## (GDT_EditorState) — подвинутое рукой под свой монитор иначе съезжало бы.
-##
-## ПОЧЕМУ master-detail: описание тега длиннее ключа, и в облаке чипов его можно
-## показать разве что тултипом. Правая панель показывает то, что выделено
-## ПОСЛЕДНИМ — пресет или тег; выделения в двух таблицах независимы.
+## Вкладка «Редактор пресетов»: координатор — таблица пресетов, тулбар, «Новый пресет»;
+## остальное — панели в tabs/presets/ над общим контекстом (context.gd).
+## [[Редакторские инструменты]] → «Редактор пресетов: решения, которые легко сломать».
 @tool
 extends VBoxContainer
 
@@ -45,16 +15,12 @@ const TagCard := preload("res://addons/game_design_tool/tabs/presets/tag_card.gd
 const TagList := preload("res://addons/game_design_tool/tabs/presets/tag_list.gd")
 const SceneCheck := preload("res://addons/game_design_tool/tabs/presets/scene_check.gd")
 
-## Заголовок вкладки в TabContainer — тот берёт его из имени узла (см. _init).
 const TAB_TITLE := "Редактор пресетов"
 
-## Раздел проектных метаданных вкладки (см. GDT_EditorState). Свой, а не общий с
-## «Генератором мира»: общее имя означало бы, что переименование ключа в одной
-## вкладке молча ломает другую.
+## Свой раздел, не общий с «Генератором мира»: общий ключ молча ломал бы другую вкладку.
 const SETTINGS_SECTION := "presets_tool"
 
-## Только для «Новый пресет» — заготовки БЕЗ сцены. Готовые пресеты лежат РЯДОМ
-## со своей сценой, тем же именем — соглашение, на которое опирается Room Wizard.
+## Заготовки БЕЗ сцены; готовые пресеты лежат рядом со своей сценой под тем же именем (на этом стоит Room Wizard).
 const PRESET_DIR := "res://data/room"
 
 const COL_NAME := 0
@@ -66,7 +32,6 @@ const COL_TAGS := 5
 
 const COLOR_MISMATCH := Color(1, 0.45, 0.4)
 
-## Общее состояние панелей и единственный путь правки.
 var ctx := Context.new()
 
 var _tree: Tree
@@ -82,11 +47,7 @@ var _filter_chip: Button
 var _new_preset_dialog: ConfirmationDialog
 var _new_preset_edit: LineEdit
 
-## Фильтр таблицы по тегу — ставится из карточки тега, снимается чипом в тулбаре.
-## Отдельно от текстового: «покажи всё с vertical_hub» и «найди строку lab» —
-## разные вопросы.
 var _filter_tag := &""
-## Библиотека хоть раз загружалась — ленивая первая загрузка (см. _ready).
 var _loaded := false
 
 
@@ -97,9 +58,7 @@ func _init() -> void:
 	_build_ui()
 
 
-## Таблицу наполняем, когда вкладку впервые открыли, а не на старте редактора:
-## загрузка считает двери сцен всех комнат, и делать это ради вкладки, которую
-## могут не открыть ни разу за сессию, незачем.
+## Ленивая первая загрузка: она считает двери всех сцен, а вкладку могут не открыть ни разу.
 func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 	_on_visibility_changed()
@@ -182,8 +141,6 @@ func _on_check_toggled(pressed: bool) -> void:
 	EditorState.write(SETTINGS_SECTION, "check_panel", pressed)
 
 
-## Левая колонка: таблица пресетов и облако тегов. Разделитель между ними
-## двигается — у одной библиотеки длиннее список комнат, у другой словарь.
 func _build_lists() -> Control:
 	var column := VSplitContainer.new()
 	column.custom_minimum_size = Vector2(360, 0)
@@ -222,8 +179,6 @@ func _build_lists() -> Control:
 	return column
 
 
-## Правая панель. В ScrollContainer: высота карточки сверху не ограничена — тегов
-## в словаре может стать втрое больше.
 func _build_detail() -> Control:
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(260, 0)
@@ -272,7 +227,7 @@ func refresh() -> void:
 		_add_row(root, ctx.library.fallback, true)
 
 	_apply_filter()
-	_show_nothing()  # таблица только что очищена — выделения нет
+	_show_nothing()
 
 	var catalog_note := (
 		"" if ctx.tag_catalog else " ⚠ облако тегов не назначено библиотеке. Описаний не будет."
@@ -296,8 +251,6 @@ func _add_row(root: TreeItem, preset: RS_RoomPreset, is_fallback: bool) -> void:
 	Library.configure_range_cell(item, COL_WEIGHT, Library.WEIGHT_RANGE)
 	item.set_editable(COL_WEIGHT, true)
 
-	# Выпадающий список, а не свободный текст: тип у комнаты РОВНО ОДИН, и
-	# множество вариантов задано каталогом — печатать тут нечего.
 	item.set_cell_mode(COL_TYPE, TreeItem.CELL_MODE_RANGE)
 	item.set_text(COL_TYPE, ",".join(Library.type_labels(ctx.library, ctx.type_ids, true)))
 	item.set_editable(COL_TYPE, true)
@@ -306,7 +259,6 @@ func _add_row(root: TreeItem, preset: RS_RoomPreset, is_fallback: bool) -> void:
 		"Что это за помещение. ОТДЕЛЬНАЯ ось от тегов: тегами узел фильтруется"
 		+ " жёстко, типом — только предпочитается.",
 	)
-	# Read-only здесь: правка — в карточке справа (см. шапку про опечатки).
 	item.set_tooltip_text(COL_TAGS, "Правятся в карточке справа — выдели строку.")
 	_fill_row(item, preset)
 
@@ -317,8 +269,6 @@ func _fill_row(item: TreeItem, preset: RS_RoomPreset) -> void:
 	item.set_range(COL_WEIGHT, preset.weight)
 	item.set_range(COL_TYPE, ctx.type_index(preset.room_type))
 	item.set_text(COL_TAGS, ", ".join(preset.tags))
-	# «В сцене» красным, если заявленные слоты разошлись с дверьми сцены:
-	# генератор верит slot_count, а рёбра раздаются по реальным дверям.
 	var actual: int = ctx.actual_doors.get(preset.resource_path, -1)
 	if actual < 0 or actual == preset.slot_count:
 		item.clear_custom_color(COL_ACTUAL)
@@ -396,8 +346,6 @@ func _on_edit_in_inspector_pressed() -> void:
 	EditorInterface.edit_resource(preset)
 
 
-## Скрывает строки, не подходящие под фильтры. Строки не пересобираем — только
-## прячем: на каждую букву в поле поиска этого хватает.
 func _apply_filter() -> void:
 	var needle := _filter_edit.text.strip_edges().to_lower()
 	var root := _tree.get_root()
@@ -420,8 +368,7 @@ func _apply_filter() -> void:
 
 	_filter_chip.visible = _filter_tag != &""
 	_filter_chip.text = "тег: %s  ✕" % _filter_tag
-	# Отчитываемся и когда фильтр снят: иначе «Показано 3 из 12» висело бы над
-	# полной таблицей и врало ровно после того, как фильтр убрали.
+	# Статус и при снятом фильтре: иначе «Показано 3 из 12» врало бы над полной таблицей.
 	if shown < total:
 		_set_status("Показано %d из %d пресетов." % [shown, total])
 	else:
@@ -487,11 +434,7 @@ func _show_nothing() -> void:
 	_card_placeholder.visible = true
 
 
-## Новый тег заводится СРАЗУ в словаре, а не когда для него написали описание:
-## иначе он был бы неотличим от опечатки — ради этого различия словарь и
-## появился. Заведение в словаре — не шаг истории (Ctrl+Z снимет тег с пресета,
-## но запись словаря останется): описанный заранее тег без носителей — не ошибка.
-## Выделенному пресету тег тут же и вешается: заводят его обычно для комнаты.
+## Тег заводится в словаре сразу и вне истории; выделенному пресету вешается тут же (см. вики).
 func _on_new_tag_requested(text: String) -> void:
 	var tag := Tags.tagify(text)
 	if tag == &"":
@@ -517,10 +460,7 @@ func _on_new_preset_pressed() -> void:
 	Ui.popup_text_dialog(_new_preset_dialog, "Новый пресет — имя", "Новый пресет")
 
 
-## Пустой RS_RoomPreset в библиотеке — минимум, снимающий ручной поход в
-## FileSystem; сцену и остальные поля — «Открыть в инспекторе». В историю
-## редактора не идёт: это создание файла, а не правка, и «отменить» его значило
-## бы удалять файл с диска — такое инструмент молча делать не должен.
+## Вне истории редактора: «отменить» создание значило бы удалять файл с диска.
 func _on_new_preset_confirmed() -> void:
 	var entered := _new_preset_edit.text.strip_edges()
 	if entered == "":

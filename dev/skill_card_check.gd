@@ -46,7 +46,7 @@ func _run() -> void:
 	await _check_architect_tab()
 
 
-## Карточка — колонка шириной 340 с переносом по словам: длинное описание растит
+## Карточка — колонка с долей ширины экрана и переносом по словам: длинное описание растит
 ## её вниз. Ниже края экрана — значит кнопку покупки не видно.
 func _check_card_fits(locale: String) -> void:
 	var soul := PlayerSkillSave.new()
@@ -64,12 +64,15 @@ func _check_card_fits(locale: String) -> void:
 		var bottom := card.get_global_rect().end.y
 		if bottom > SCREEN_HEIGHT:
 			overflow.append("%s → низ %.0f" % [def.id, bottom])
-		if card.size.x > 341.0:
+		# Ширина колонки — доля экрана, а не число: длинное слово не должно
+		# раздвигать её минимум шире заявленного в сцене.
+		var floor_width := card.custom_minimum_size.x
+		if card.get_combined_minimum_size().x > floor_width + 1.0:
 			var widest := ""
 			for child in card.get_children():
-				if (child as Control).get_combined_minimum_size().x > 340.0:
+				if (child as Control).get_combined_minimum_size().x > floor_width:
 					widest += "%s=%.0f " % [child.name, (child as Control).get_combined_minimum_size().x]
-			overflow.append("%s → ширина %.0f (%s)" % [def.id, card.size.x, widest])
+			overflow.append("%s → минимум ширины %.0f (%s)" % [def.id, card.get_combined_minimum_size().x, widest])
 	_check("%s: карточка влезает в экран на каждом навыке" % locale, overflow.is_empty(), ", ".join(overflow))
 	_check("%s: при открытии выбран навык" % locale, graph.selected_id() != &"", "ничего не выбрано")
 	screen.queue_free()

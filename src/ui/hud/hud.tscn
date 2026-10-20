@@ -9,6 +9,7 @@
 [ext_resource type="Shader" uid="uid://ciywvn5r1fqu8" path="res://src/ui/hud/hud_screen_fx.gdshader" id="7_fx_shader"]
 [ext_resource type="Script" uid="uid://dh6qrlpmpgil0" path="res://src/ui/hud/hud_abilities.gd" id="8_abilities"]
 [ext_resource type="Script" uid="uid://b5i70w0s71k4j" path="res://src/ui/hud/hud_save_indicator.gd" id="9_save"]
+[ext_resource type="Script" path="res://src/ui/hud/health_bar.gd" id="13_health"]
 [ext_resource type="Texture2D" uid="uid://bfb8uqtkwjrfq" path="res://assets/ui/icons/save.svg" id="10_save_icon"]
 [ext_resource type="PackedScene" path="res://src/ui/hud/thought_line.tscn" id="11_line"]
 [ext_resource type="Script" uid="uid://vugbh7o11l2b" path="res://src/ui/hud/thought_label.gd" id="12_label"]
@@ -213,6 +214,22 @@ style = 1
 shadow_margin = Vector2(30, 8)
 centered = false
 echo_phase = 4.0
+
+[node name="HealthBar" type="Control" parent="Hud"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -130.0
+offset_top = -52.0
+offset_right = 130.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("13_health")
 
 [node name="SaveIndicator" type="TextureRect" parent="Hud" unique_id=1700000006]
 layout_mode = 1

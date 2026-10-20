@@ -1,27 +1,6 @@
-## res://addons/game_design_tool/dock/room_wizard.gd
-## Room Wizard — оборачивает открытую сцену комнаты в RS_RoomPreset без
-## ручного похода в FileSystem: сейчас это создать `.tres`, прописать в нём
-## `scene`, прописать путь руками в редакторе, потом ещё руками добавить в
-## библиотеку. Здесь — форма и две кнопки.
-##
-## Тонкий док, не вкладка главного экрана: работает ПОВЕРХ сцены, открытой в
-## обычном 3D-редакторе (EditorPlugin.scene_changed → scene_root), а главный
-## экран эту сцену прячет — см. [[Единый редактор геймдизайна]].
-##
-## Три решения, записанные в карточке заранее:
-##   - Существующий ресурс ищется СОГЛАШЕНИЕМ ИМЁН: <сцена>.tres рядом со
-##     сценой, тот же файл. Не поиском по scene.resource_path в библиотеке —
-##     тот надёжнее, но конвенция уже выбрана и должна быть одной на весь
-##     редактор (её теперь соблюдают все 12 существующих пресетов).
-##   - Библиотека — путь константой (GDT_Library.LIBRARY_PATH), она в проекте одна.
-##   - Подписи полей — локальный словарь (FIELD_LABELS), не сырые @export-
-##     имена и не трюк RS_EntityTemplate с _get_property_list.
-##
-## Форма НАСТОЯЩАЯ рефлексивная (get_property_list, не хардкод трёх полей):
-## новое скалярное @export-поле в RS_RoomPreset появится в форме само, разве
-## что без перевода в FIELD_LABELS — сырое имя лучше молчаливо потерянного
-## поля. scene, tags и room_type — не в общем цикле: первым распоряжается сам
-## Wizard (он и есть источник scene), у остальных своя вёрстка.
+## Room Wizard — оборачивает открытую сцену комнаты в RS_RoomPreset: форма и две кнопки.
+## Тонкий док поверх 3D-редактора, не вкладка главного экрана.
+## См. [[Редакторские инструменты]], [[Единый редактор геймдизайна]].
 @tool
 extends VBoxContainer
 
@@ -31,9 +10,7 @@ const Tags := preload("res://addons/game_design_tool/shared/tags.gd")
 const Library := preload("res://addons/game_design_tool/shared/library.gd")
 const TagCloud := preload("res://addons/game_design_tool/shared/tag_cloud.gd")
 
-## Поля scene, tags и room_type — своя вёрстка ниже, в общий рефлексивный цикл
-## не идут. Тип — выпадающий список: он у комнаты один и берётся из каталога,
-## а рефлексивная форма нарисовала бы StringName нередактируемой строкой.
+## Поля со своей вёрсткой — вне рефлексивного цикла.
 const CUSTOM_FIELDS := ["scene", "tags", "room_type"]
 const FIELD_LABELS := {
 	"display_name": "Название",
@@ -42,18 +19,10 @@ const FIELD_LABELS := {
 	"doors_max": "Дверей до",
 	"weight": "Вес",
 }
-## Поля степени комнаты — у каждого вида свои: у комнаты с дверями в сцене это
-## число её дверей (slot_count), у собранной по сокетам (C_RoomShell) — диапазон
-## doors_min..doors_max. Чужое поле форма прячет: показать оба — значит дать
-## дизайнеру ручку, которую генератор у этой комнаты не читает.
+## Поле степени комнаты зависит от вида: slot_count (двери в сцене) или doors_min..doors_max (сокеты).
 const SCENE_DOOR_FIELDS := ["slot_count"]
 const SOCKET_DOOR_FIELDS := ["doors_min", "doors_max"]
-## Границы спинбоксов ПОИМЕННО, а не одни на весь числовой тип. RS_RoomPreset
-## не носит @export_range, поэтому из get_property_list границы не достать — и
-## пока они задавались одним числом на TYPE_INT, любое новое целое поле молча
-## получало бы диапазон slot_count (0..12) и обрезало бы авторское значение при
-## первом же сохранении. Незнакомое поле получает широкий диапазон: показать
-## значение как есть безопаснее, чем подрезать его под чужую шкалу.
+## Границы спинбоксов поимённо; незнакомому полю — широкий диапазон (вики).
 const FIELD_RANGES := {
 	"slot_count": Library.SLOT_RANGE,
 	"doors_min": Library.SLOT_RANGE,
@@ -69,9 +38,7 @@ const TAG_HINT_WHERE := "вкладке «Геймдизайн» → «Реда�
 var _scene_path := ""
 var _preset_path := ""
 var _preset: RS_RoomPreset
-## Открытая сцена — коробка комнаты, собираемой по сокетам (C_RoomShell на корне).
-## Смотрим на живой корень сцены, а не в кэш RS_RoomLayout: компонент мог появиться
-## только что, в этой же сессии редактора.
+## Открытая сцена собирается по сокетам (C_RoomShell на корне) — смотрим живой корень, не кэш.
 var _is_shell := false
 
 var _scene_label: Label
@@ -161,8 +128,6 @@ func _set_status(text: String) -> void:
 
 
 #region Реакция на смену сцены
-## Зовёт EditorPlugin на scene_changed (см. plugin.gd) — этот узел сам не
-## подписан на редактор, у обычного Control нет доступа к такому сигналу.
 func refresh_for_scene(scene_root: Node) -> void:
 	_preset = null
 	_field_controls.clear()
@@ -183,7 +148,6 @@ func refresh_for_scene(scene_root: Node) -> void:
 	_is_shell = RS_RoomLayout.shell_of(scene_root) != null
 	_scene_label.text = scene_path.get_file()
 	_scene_label.tooltip_text = scene_path
-	# Соглашение имён: Room-ресурс — <сцена>.tres рядом со сценой, тот же файл.
 	_preset_path = scene_path.get_basename() + ".tres"
 
 	if ResourceLoader.exists(_preset_path):
@@ -202,21 +166,13 @@ func refresh_for_scene(scene_root: Node) -> void:
 	_set_active(true)
 
 
-## Хаб — исключение из общего правила: «Сохранить как Room-ресурс» ему нужен
-## как любой другой сцене (Room Wizard — единственный путь дать hub.tscn его
-## RS_RoomPreset), а вот «Добавить в библиотеку» — нет и не должен. Библиотека
-## отдаёт его RS_LevelGraph.HUB_ROOM_SCENE в обход отбора (домашний узел
-## получает хаб принудительно, не через select_preset); попади его пресет в
-## presets — пустые tags и slot_count=1 сделали бы hub кандидатом-победителем
-## для ЛЮБОГО непомеченного узла-тупика графа (см. RS_RoomPresetLibrary.hub).
+## Хаб не идёт в библиотеку: он ставится домашнему узлу в обход отбора (вики).
 func _set_active(active: bool) -> void:
 	_form_box.visible = active
 	_tag_cloud.visible = active
 	_type_option.disabled = not active
 	_save_btn.disabled = not active
-	# _scene_path не сбрасывается в false-ветках refresh_for_scene (там кнопка
-	# и так выключена через not active) — is_hub смотрим только пока active,
-	# иначе подсказка о хабе могла бы остаться от предыдущей сцены.
+	# _scene_path не сбрасывается в false-ветках — is_hub смотрим только при active.
 	var is_hub := active and _scene_path == RS_LevelGraph.HUB_ROOM_SCENE
 	_add_to_library_btn.disabled = not active or not ResourceLoader.exists(_preset_path) or is_hub
 	_add_to_library_btn.tooltip_text = (
@@ -228,10 +184,7 @@ func _set_active(active: bool) -> void:
 
 
 #region Рефлексивная форма
-## free(), не queue_free(): форма пересобирается на каждую смену сцены — тот
-## же принцип, что у оверлеев «Генератора мира» и облака тегов — отложенное
-## удаление копило бы старые контролы поверх новых при быстром переключении
-## вкладок сцены в редакторе.
+## free(), не queue_free(): отложенное удаление копило бы старые контролы.
 func _build_form() -> void:
 	for child: Node in _form_box.get_children():
 		child.free()
@@ -239,9 +192,7 @@ func _build_form() -> void:
 
 	var other_kind := SCENE_DOOR_FIELDS if _is_shell else SOCKET_DOOR_FIELDS
 	for prop: Dictionary in _preset.get_property_list():
-		# И SCRIPT_VARIABLE (объявлено в этом скрипте, не в базовом Resource —
-		# иначе в форму попали бы resource_local_to_scene и подобное), И
-		# EDITOR (реально @export, а не служебное поле).
+		# Оба флага: одного EDITOR мало, его несут и поля базового Resource.
 		if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE and prop.usage & PROPERTY_USAGE_EDITOR):
 			continue
 		if CUSTOM_FIELDS.has(prop.name) or other_kind.has(prop.name):
@@ -267,9 +218,7 @@ func _add_field_row(prop: Dictionary) -> void:
 		TYPE_FLOAT:
 			control = _spin_for(prop.name, DEFAULT_FLOAT_RANGE)
 		_:
-			# Тип, который форма ещё не умеет рисовать — появится, когда в
-			# RS_RoomPreset заведут поле такого типа. Честно показать
-			# значение текстом лучше, чем молча сделать вид, что поля нет.
+			# Тип без отрисовки: честнее показать значение текстом, чем скрыть поле.
 			control = Ui.label(str(_preset.get(prop.name)))
 
 	row.add_child(control)
@@ -288,9 +237,6 @@ func _spin_for(field_name: String, default_range: Dictionary) -> SpinBox:
 	return spin
 
 
-## Список типов помещений из каталога библиотеки. Тип, который у пресета уже
-## стоит, но каталогу неизвестен, дописывается отдельным пунктом — иначе
-## сохранение молча стёрло бы авторскую правку, подставив первый пункт.
 func _rebuild_type_options(library: RS_RoomPresetLibrary) -> void:
 	_type_ids = Library.type_ids(library, _preset)
 	_type_option.clear()
@@ -301,15 +247,9 @@ func _rebuild_type_options(library: RS_RoomPresetLibrary) -> void:
 	_type_option.select(index if index >= 0 else 0)
 
 
-## Переносит значения из формы в _preset. Зовётся перед сохранением, а не
-## держит _preset синхронизированным на каждое нажатие клавиши — дешевле и
-## ничего не теряет, потому что сохраняем мы только по кнопке.
-##
-## Теги в этом переносе не участвуют: облако пишет их прямо в _preset (см.
-## GDT_TagCloud — сохранением оно не занимается, а правкой в памяти да).
+## Теги не переносит: облако пишет их прямо в _preset.
 func _apply_form_to_preset() -> void:
-	# get_selected(), а не get_selected_id(): id совпадает с индексом только пока
-	# его никто не задал явно, а _type_ids индексируется именно позицией пункта.
+	# get_selected(), не get_selected_id(): _type_ids индексируется позицией пункта.
 	var selected := _type_option.get_selected()
 	_preset.room_type = (
 		_type_ids[selected] if selected >= 0 and selected < _type_ids.size() else &""

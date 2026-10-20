@@ -499,6 +499,7 @@ bones/32/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
 bones/32/scale = Vector3(1, 1, 1)
 
 [node name="body" type="MeshInstance3D" parent="Skeleton3D" unique_id=1061718026]
+extra_cull_margin = 3.0
 mesh = ExtResource("5_mesh")
 skin = SubResource("Skin_je7e3")
 skeleton = NodePath("..")

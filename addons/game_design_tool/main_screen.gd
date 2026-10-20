@@ -1,20 +1,7 @@
 ## res://addons/game_design_tool/main_screen.gd
-## Корень вкладки «Геймдизайн»: `TabContainer`, в который собраны инструменты,
-## завязанные конкретно на эту игру.
-##
-## Вкладки перечислены ЯВНЫМ списком, а не автопоиском файлов в `tabs/`:
-## автодискавери выглядит расширяемее, но превращает опечатку в имени файла в
-## молчаливо исчезнувшую вкладку. Дописать строку в массив — не та цена, ради
-## которой стоит терять предсказуемость.
-##
-## Общего состояния между вкладками нет и не задумано: инструменты независимы, а
-## заводить общий контекст «на будущее» значит связать их раньше, чем появилась
-## причина. Какая вкладка сейчас ОТКРЫТА — не их состояние, а состояние этого
-## экрана; персистентность current_tab здесь этому не противоречит.
-##
-## Вкладка = самодостаточный `Control` со своим `TAB_TITLE`; заголовок в
-## `TabContainer` берётся из `name` дочернего узла, поэтому вкладки ставят его
-## себе сами в `_init`.
+## Корень вкладки «Геймдизайн»: `TabContainer` с инструментами этой игры.
+## Вкладка — самодостаточный `Control`, заголовок берётся из его `name`.
+## См. [[Редакторские инструменты]].
 @tool
 extends VBoxContainer
 
@@ -26,20 +13,15 @@ const TAB_SCRIPTS: Array[GDScript] = [
 	preload("res://addons/game_design_tool/tabs/world_gen.gd"),
 ]
 
-## Свой раздел project metadata (см. GDT_EditorState) — не общий с вкладками:
-## та же причина, по которой у presets_tool и world_gen_tool разделы не общие.
+## Свой раздел project metadata, не общий с вкладками (см. GDT_EditorState).
 const SETTINGS_SECTION := "game_design_tool_main"
 
 
 func _init() -> void:
 	name = "GameDesignTool"
-	# Скрыт С РОЖДЕНИЯ, а не после add_child: редактор всё равно позовёт
-	# _make_visible при выборе вкладки, но _ready у вкладок срабатывает ВНУТРИ
-	# add_child — и если экран в этот момент виден, ленивая сборка «при первом
-	# показе» отрабатывает сразу на старте редактора, ради чего её и заводили.
+	# Скрыт с рождения: иначе ленивая сборка вкладок сработает на старте (вики, грабля 2).
 	visible = false
-	# Главный экран редактора — VBoxContainer, детей он растягивает по size flags,
-	# а не по якорям.
+	# Главный экран редактора — VBoxContainer: растягивает по size flags, не по якорям.
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 
@@ -54,9 +36,7 @@ func _init() -> void:
 		tab.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		tabs.add_child(tab)
 
-	# clampi — TabContainer.current_tab кидает ошибку "Index out of bounds" на
-	# значении вне диапазона, а не подрезает его сам; хранимый индекс может
-	# указывать за край, если список вкладок с прошлого запуска стал короче.
+	# clampi: current_tab кидает "Index out of bounds", а сохранённый индекс мог устареть.
 	tabs.current_tab = clampi(
 		EditorState.read(SETTINGS_SECTION, "current_tab", 0), 0, TAB_SCRIPTS.size() - 1
 	)

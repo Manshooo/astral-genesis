@@ -45,7 +45,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	var target := 1.0 if _shown != null else 0.0
+	var target := 1.0 if is_shown() else 0.0
 	_alpha = UI_HudMood.approach(_alpha, target, APPEAR_TAU if target > _alpha else FADE_TAU, delta)
 	if target == 0.0 and _alpha < 0.01:
 		_alpha = 0.0
@@ -64,7 +64,13 @@ func blur_px() -> float:
 
 ## Видна ли подсказка по смыслу (а не по прозрачности посреди угасания).
 func is_shown() -> bool:
-	return _shown != null
+	return _shown != null and (_shown.prompt_text != "" or _needs_body(_shown))
+
+
+## Механизм, до которого бестелесному не дотянуться. У дверей подписи нет, но
+## причину отказа призрак обязан прочитать до нажатия.
+func _needs_body(inter: C_Interactable) -> bool:
+	return inter.requires_body and not E_Player.is_embodied()
 
 
 ## Текст строки — для проверок.
@@ -96,7 +102,7 @@ func _on_component_added(entity: Entity, component: Variant) -> void:
 	if not (component is C_Highlighted):
 		return
 	var inter := entity.get_component(C_Interactable) as C_Interactable
-	if inter == null or inter.prompt_text == "":
+	if inter == null or (inter.prompt_text == "" and not inter.requires_body):
 		return  # интерактив без подписи — крестик подсветит, но текста нет
 	_shown = inter
 	_render()
@@ -122,11 +128,14 @@ func _render() -> void:
 	# tr() вручную: подсказка вклеивается в строку с клавишей, и перевод подписи
 	# склеенное уже не узнает. Старые подсказки — готовые строки, не ключи, и
 	# проходят через tr() как есть.
-	var prompt := tr(_shown.prompt_text)
-	# Механизм, до которого бестелесному не дотянуться: объясняем ПРИЧИНУ и не
-	# предлагаем клавишу — нажатие всё равно не пройдёт (см. S_InteractInput).
-	if _shown.requires_body and not E_Player.is_embodied():
-		_line.set_line("", tr("HUD_PROMPT_NEEDS_BODY") % prompt)
+	var prompt := tr(_shown.prompt_text) if _shown.prompt_text != "" else ""
+	# Объясняем ПРИЧИНУ и не предлагаем клавишу — нажатие всё равно не пройдёт
+	# (см. S_InteractInput).
+	if _needs_body(_shown):
+		var reason := tr("HUD_PROMPT_NEEDS_BODY") % prompt if prompt != "" else tr("HUD_PROMPT_NEEDS_BODY_BARE")
+		_line.set_line("", reason)
+		return
+	if prompt == "":
 		return
 
 	var key := SettingsManager.action_display_name(_shown.action_name) if _shown.show_key_hint else ""

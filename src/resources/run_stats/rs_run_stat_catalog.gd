@@ -40,11 +40,17 @@ func value_text(row: RS_RunStatRow, stats: RS_RunStats) -> String:
 		RS_RunStatRow.Format.TIME:
 			return format_time(stats.value(row.key))
 		RS_RunStatRow.Format.BODY_LIST:
-			var names := PackedStringArray()
+			# По видам с числом, а не каждое тело: список по телу рос с длиной
+			# забега и выталкивал кнопку «Возродиться» за нижний край экрана.
+			var counts: Dictionary[String, int] = {}
 			for body: RS_RunBody in stats.bodies:
 				if body == null:
 					continue
-				names.append(tr(body.name_key) if body.name_key != &"" else EMPTY_TEXT)
+				var body_name := tr(body.name_key) if body.name_key != &"" else EMPTY_TEXT
+				counts[body_name] = counts.get(body_name, 0) + 1
+			var names := PackedStringArray()
+			for body_name: String in counts:
+				names.append(body_name if counts[body_name] == 1 else tr("RUN_STAT_BODY_COUNT") % [body_name, counts[body_name]])
 			return ", ".join(names) if not names.is_empty() else EMPTY_TEXT
 		_:
 			return str(int(roundf(stats.value(row.key))))

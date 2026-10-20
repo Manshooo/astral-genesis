@@ -2,6 +2,6 @@
 
 [resource]
 geometry_parsed_geometry_type = 1
-geometry_collision_mask = 49
+geometry_collision_mask = 33
 agent_height = 2.75
 agent_radius = 0.5

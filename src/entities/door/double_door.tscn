@@ -14,6 +14,7 @@ script = ExtResource("4_travel")
 
 [sub_resource type="Resource" id="Interactable"]
 script = ExtResource("4_interactable")
+requires_body = true
 metadata/_custom_type_script = "uid://ccafy2i1kdi4a"
 
 [sub_resource type="Resource" id="Motion"]

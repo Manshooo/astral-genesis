@@ -29,6 +29,9 @@ func execute(entity: Entity, _interactor: Node = null) -> void:
 		_notify(_sealed_message())
 		return
 
+	if portal.locked_by == C_DoorPortal.ENTRY_SEAL:
+		_notify(tr("HUD_MSG_ENTRY_SEALED"))
+		return
 	if portal.is_locked():
 		# Ключей в игре ещё нет нигде, поэтому заперто = закрыто наглухо. Но
 		# игрок теперь хотя бы знает, ЧТО нужно, а не смотрит в молчащую дверь.

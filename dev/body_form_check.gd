@@ -43,6 +43,13 @@ func _run(world: World) -> void:
 			collider != null and (collider.collision_layer & 4) != 0,
 			str(collider.collision_layer) if collider else "не CollisionObject3D"
 		)
+		# Скиненный меш пропадал вплотную при взгляде вверх, пока ступни вне кадра:
+		# отсечение шло по рамке, не покрывающей тело (запас на рост — лечение,
+		# подтверждённое живым прогоном 20.10).
+		var mesh := RS_EntityVisuals.primary(probe as Entity) as GeometryInstance3D
+		_check("%s: запас отсечения меша не меньше роста тела" % name,
+			mesh != null and mesh.extra_cull_margin >= mesh.get_aabb().size.y,
+			"%.2f против %.2f" % [mesh.extra_cull_margin, mesh.get_aabb().size.y] if mesh else "нет меша")
 		var form := E_Body.form_of(probe)
 		_check("%s: несёт габарит" % name, form != null and form.shape != null, str(form))
 		_check(

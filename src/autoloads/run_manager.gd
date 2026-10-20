@@ -30,7 +30,7 @@ signal room_changed(node_id: StringName)
 signal layer_changed(depth: int)
 ## Игрок сбежал на поверхность — забег (и пока вся игра) окончен победой.
 signal run_finished
-## БФЖ распался: запас жизни иссяк, пока душа была развоплощена (проигрыш).
+## Душа потеряла стабильность: запас иссяк, пока она была развоплощена (проигрыш).
 signal died
 
 ## Главное меню — куда уходит экран концовки по кнопке «В меню» и откуда игрок
@@ -46,7 +46,7 @@ const ENDING_SCENE := "res://src/ui/ending/ending_screen.tscn"
 ## забег при этом уже закрыт (_ending), и смерть в эти секунды ничего не
 ## меняет.
 const ENDING_FADE_DURATION := 1.4
-## Экран ИТОГОВ ЗАБЕГА: показывается после распада БФЖ (см. die). Имя константы
+## Экран ИТОГОВ ЗАБЕГА: показывается после потери стабильности души (см. die). Имя константы
 ## и путь сцены остались от экрана смерти, которым он был раньше.
 const DEATH_SCENE := "res://src/ui/death_screen/death_screen.tscn"
 ## Сцена души-БФЖ. Спавним её скриптом при входе в забег, а не кладём в world.tscn:
@@ -657,6 +657,7 @@ func note_presence(world_position: Vector3) -> void:
 		return
 	current_node_id = node_id
 	layer.reveal_around(node_id)
+	_sync_entry_seal()
 	_checkpoint(node_id)
 	room_changed.emit(node_id)
 
@@ -683,6 +684,7 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 
 	current_node_id = node_id
 	layer.reveal_around(node_id)
+	_sync_entry_seal()
 	# Смена комнаты — гранула сохранения забега: дальше игрок продолжит отсюда.
 	#
 	# А вот ВХОД в забег (came_from пуст: старт, загрузка, возрождение) точкой не
@@ -699,6 +701,24 @@ func _enter_node(node_id: StringName, came_from: StringName = &"") -> void:
 		PlayerPlacement.in_room(player, room, came_from)
 	else:
 		PlayerPlacement.in_corridor(player, layer.corridor_tiles.get(node_id, []))
+
+
+## Хаб закрыт для всех, кроме того, кто в нём стоит: вернуться в лабораторию —
+## значит бесконечно жить у инкубатора. Выводится из текущего узла, а не
+## хранится флагом: сейв уже помнит узел, и загрузка в коридоре сама даёт
+## запертую дверь.
+func _sync_entry_seal() -> void:
+	var hub := layer.room(current_graph.entry_node_id) if current_graph else null
+	if hub == null:
+		return
+	var sealed := current_node_id != current_graph.entry_node_id
+	for door in hub.doors:
+		var portal := door.get_component(C_DoorPortal) as C_DoorPortal
+		if portal == null or portal.target_node_id == &"":
+			continue
+		portal.locked_by = C_DoorPortal.ENTRY_SEAL if sealed else &""
+		if sealed:
+			S_DoorMotion.close(door)
 
 
 ## Загружает слой [param depth]: спавн — у стримера, а максимум глубины и сигнал

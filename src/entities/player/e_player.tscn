@@ -70,5 +70,6 @@ omni_attenuation = 1.5
 shape = SubResource("SphereShape3D_ml67e")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
+extra_cull_margin = 3.0
 gi_mode = 2
 mesh = SubResource("SphereMesh_b1rd4")

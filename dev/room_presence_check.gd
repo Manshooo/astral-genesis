@@ -109,6 +109,8 @@ func _check_run() -> void:
 	var entry := RunManager.current_graph.entry_node_id
 	_check("вход в забег — входной узел", RunManager.current_node_id == entry,
 		"текущий '%s'" % RunManager.current_node_id)
+	_check("на старте дверь хаба не заперта",
+		_hub_door_locks(entry).all(func(l): return l == &""), str(_hub_door_locks(entry)))
 
 	_room_changes.clear()
 	_tick()
@@ -138,6 +140,11 @@ func _check_run() -> void:
 		WorldSave.save.current_node_id == neighbour
 			and WorldSave.save.visited_node_ids.has(neighbour), "")
 
+	var hub_doors := _hub_door_locks(entry)
+	_check("вышедшему хаб запечатан: все двери хаба на ENTRY_SEAL",
+		not hub_doors.is_empty() and hub_doors.all(func(l): return l == C_DoorPortal.ENTRY_SEAL),
+		str(hub_doors))
+
 	_tick()
 	_check("повторный такт на месте сигнала не шлёт", _room_changes.size() == 1,
 		str(_room_changes))
@@ -151,6 +158,10 @@ func _check_run() -> void:
 	_tick()
 	_check("вернулся пешком — текущим снова стал вход", RunManager.current_node_id == entry,
 		"текущий '%s'" % RunManager.current_node_id)
+	# Пешком назад игрок не попадёт — путь ему закрыт дверью; сюда его ставит
+	# проверка (как телепорт меню отладки), и внутри хаба замок снимается.
+	_check("стоящему в хабе дверь хаба снова открыта",
+		_hub_door_locks(entry).all(func(l): return l == &""), str(_hub_door_locks(entry)))
 
 	var other_depth := _node_on_other_depth()
 	RunManager.travel_to(other_depth)
@@ -173,6 +184,16 @@ func _same_layer_neighbour(node_id: StringName) -> StringName:
 		if target and target.role == RS_LevelNode.Role.CORRIDOR:
 			return target.id
 	return &""
+
+
+## Замки дверей хаба, ведущих куда-то (заваренные не в счёт).
+func _hub_door_locks(entry: StringName) -> Array[StringName]:
+	var locks: Array[StringName] = []
+	for door in RunManager.layer.room(entry).doors:
+		var portal := door.get_component(C_DoorPortal) as C_DoorPortal
+		if portal and portal.target_node_id != &"":
+			locks.append(portal.locked_by)
+	return locks
 
 
 func _node_on_other_depth() -> StringName:

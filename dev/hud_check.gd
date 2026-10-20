@@ -24,6 +24,8 @@ func _ready() -> void:
 	_check_turmoil()
 	await _check_message()
 	await _check_thought_line()
+	await _check_door_prompt()
+	_check_health_bar()
 	_check_key_names()
 	_check_scene()
 	_check_minimap_strokes()
@@ -68,7 +70,7 @@ func _check_soul_curve() -> void:
 		var row: Array = table[f]
 		var p := _fx_at(_vitals(f))
 		_check(
-			"распад души на %d %% — как в таблице спеки" % roundi(f * 100.0),
+			"стабильность души на %d %% — как в таблице спеки" % roundi(f * 100.0),
 			_near(p.vignette, row[0]) and _near(p.desaturation, row[1]) and _near(p.distortion_px / 4.0, row[2]),
 			"виньетка %.3f, обесцвечивание %.3f, искажение %.3f" % [p.vignette, p.desaturation, p.distortion_px / 4.0]
 		)
@@ -100,10 +102,12 @@ func _check_body_curve() -> void:
 
 # --- 3. Здоровье тела — только кровь -------------------------------------------
 func _check_blood_curve() -> void:
-	var table := {1.0: 0.0, 0.5: 0.0, 0.35: 0.14, 0.25: 0.42, 0.15: 0.66, 0.10: 0.70, 0.0: 0.70}
+	# Таблица спеки в долях пика: сам пик — константа, его ослабляли.
+	var table := {1.0: 0.0, 0.5: 0.0, 0.35: 0.2, 0.25: 0.6, 0.15: 0.943, 0.10: 1.0, 0.0: 1.0}
 	for h: float in table:
 		var p := _fx_at(_vitals(1.0, true, 1.0, h))
-		_check("кровь при HP %d %% — как в таблице спеки" % roundi(h * 100.0), _near(p.blood, table[h]), "%.3f" % p.blood)
+		var want: float = table[h] * UI_HudScreenFx.BLOOD_PEAK
+		_check("кровь при HP %d %% — как в таблице спеки" % roundi(h * 100.0), _near(p.blood, want), "%.3f против %.3f" % [p.blood, want])
 	var soul := _fx_at(_vitals(1.0))
 	_check("у души крови нет — прочности у неё нет", soul.blood == 0.0, str(soul.blood))
 
@@ -269,6 +273,59 @@ func _check_thought_line() -> void:
 	_check("тень мысли шире строки, а не фиксированной коробкой", shadow.size.x > row.size.x and row.size.x > 0.0, "%s / %s" % [shadow.size, row.size])
 	_check("строка центрирована по своей точке", is_equal_approx(row.position.x, -row.size.x / 2.0), str(row.position))
 	line.queue_free()
+
+
+# --- 8б. Дверь без подписи всё равно объясняет призраку отказ ------------------
+# Без игрока в мире E_Player.is_embodied() ложно — это и есть призрак.
+func _check_door_prompt() -> void:
+	var unopenable: Array[String] = []
+	for path in ["res://src/entities/door/complex_door.tscn", "res://src/entities/door/double_door.tscn",
+			"res://src/entities/door/exit_door.tscn"]:
+		var door := (load(path) as PackedScene).instantiate() as Entity
+		var inter: C_Interactable = null
+		for res in door.component_resources:
+			if res is C_Interactable:
+				inter = res
+		if inter == null or not inter.requires_body:
+			unopenable.append(path.get_file())
+		door.free()
+	_check("двери открываются только телом", unopenable.is_empty(), ", ".join(unopenable))
+
+	var hud := (load("res://src/ui/hud/hud.tscn") as PackedScene).instantiate()
+	add_child(hud)
+	await get_tree().process_frame
+	var prompt := hud.get_node("Hud/Prompt") as UI_HudPrompt
+	var door_inter := C_Interactable.new()
+	door_inter.requires_body = true
+	prompt.set("_shown", door_inter)
+	prompt.call("_render")
+	_check("дверь без подписи говорит призраку «нужно тело»",
+		prompt.is_shown() and prompt.shown_text() == tr("HUD_PROMPT_NEEDS_BODY_BARE"), prompt.shown_text())
+	var silent := C_Interactable.new()
+	prompt.set("_shown", silent)
+	_check("интерактив без подписи и без требования тела молчит", not prompt.is_shown(), "")
+	hud.queue_free()
+	await get_tree().process_frame
+
+
+# --- 8в. Шкала здоровья: видна во плоти, след удара догоняет --------------------
+func _check_health_bar() -> void:
+	var bar := UI_HealthBar.new()
+	bar.update_state(_vitals(1.0), 0.016)
+	_check("у души шкалы здоровья нет", bar.target_alpha == 0.0, str(bar.target_alpha))
+	bar.update_state(_vitals(1.0, true, 1.0, 1.0), 0.016)
+	_check("целое тело — шкала тусклая, но видна",
+		bar.target_alpha > 0.0 and bar.target_alpha < UI_HealthBar.HURT_ALPHA, str(bar.target_alpha))
+	bar.update_state(_vitals(1.0, true, 1.0, 0.4), 0.016)
+	_check("раненое — в полную силу", bar.target_alpha == UI_HealthBar.HURT_ALPHA, str(bar.target_alpha))
+	_check("сразу после удара след стоит на прежнем HP", bar.trail() > 0.9, "%.2f" % bar.trail())
+	for i in 120:
+		bar.update_state(_vitals(1.0, true, 1.0, 0.4), 0.05)
+	_check("через секунды след догнал текущее HP", absf(bar.trail() - 0.4) < 0.01, "%.3f" % bar.trail())
+	bar.update_state(_vitals(1.0), 0.016)
+	bar.update_state(_vitals(1.0, true, 1.0, 0.9), 0.016)
+	_check("новое тело не тянет след от прошлого", is_equal_approx(bar.trail(), 0.9), "%.2f" % bar.trail())
+	bar.free()
 
 
 # --- 9. Имена клавиш переводятся --------------------------------------------

@@ -1,6 +1,6 @@
 keys,ru,en
 RUN_SUMMARY_TITLE_DEATH,СОЗНАНИЕ УГАСЛО,CONSCIOUSNESS FADED
-RUN_SUMMARY_SUBTITLE_DEATH,"БФЖ распался, не найдя нового тела.","The incorporeal one decayed, finding no new body."
+RUN_SUMMARY_SUBTITLE_DEATH,"Душа потеряла стабильность, не найдя нового тела.","The soul lost its stability, finding no new body."
 RUN_SUMMARY_HEADING,ИТОГИ ЗАБЕГА,RUN SUMMARY
 RUN_SUMMARY_REVIVE,Возродиться,Revive
 RUN_SUMMARY_REVIVING,Возрождение…,Reviving…
@@ -23,6 +23,7 @@ RUN_STAT_TIME,Время забега,Run time
 RUN_STAT_ROOMS,Комнат пройдено,Rooms visited
 RUN_STAT_BODIES,Тел занято,Bodies taken
 RUN_STAT_BODY_LIST,Какие тела,Which bodies
+RUN_STAT_BODY_COUNT,%s ×%d,%s ×%d
 RUN_STAT_DAMAGE_TAKEN,Урона получено,Damage taken
 RUN_STAT_DAMAGE_DEALT,Урона нанесено,Damage dealt
 RUN_STAT_SKILL_POINTS,Очков души получено,Soul points earned
@@ -95,8 +96,13 @@ MAP_TYPE_ARTIFACT_CONTAINMENT,Содержание артефактов,Artifact
 MAP_TYPE_RECREATION,Отдых и досуг,Recreation
 HUD_PROMPT_SKILL_TREE,Древо навыков,Skill tree
 HUD_PROMPT_NEEDS_BODY,Нужно тело: %s,Needs a body: %s
+HUD_PROMPT_NEEDS_BODY_BARE,Нужно тело,Needs a body
 HUD_MSG_LOCKED_NEEDS,Заперто. Нужен %s,Locked. Requires %s
 HUD_MSG_SEALED,Прохода нет: проём заварен,No way through: the doorway is welded shut
+HUD_MSG_ENTRY_SEALED,Лаборатория запечатана. Назад дороги нет,The lab has sealed itself. There is no way back
+HUD_MSG_PORTAL_SEALED,Портал мёртв: он никуда не ведёт,The portal is dead: it leads nowhere
+HUD_MSG_PORTAL_LOCKED_NEEDS,Портал заблокирован. Нужен %s,The portal is blocked. Requires %s
+HUD_PROMPT_USE,Использовать,Use
 HUD_MSG_NO_JUMP,Этому телу нечем прыгать,This body has nothing to jump with
 HUD_MSG_NO_SPRINT,Это тело не умеет бегать,This body can't run
 HUD_MSG_NO_ATTACK,Этому телу нечем бить,This body has nothing to strike with
@@ -233,8 +239,8 @@ SKILL_BODY_SNATCH_NAME,Захват тела,Body snatch
 SKILL_BODY_SNATCH_DESC,Позволяет управлять трупами.,Lets you take control of corpses.
 SKILL_CAPTURE_PRECISION_NAME,Точная хватка,Precise grip
 SKILL_CAPTURE_PRECISION_DESC,Повышает шанс успешного захвата тела.,Raises the chance that a capture succeeds.
-SKILL_LIFESPAN_NAME,Длительность жизни,Lifespan
-SKILL_LIFESPAN_DESC,Увеличивает запас жизни души — дольше вне тела и в теле.,Raises the soul’s lifespan — longer outside a body and inside one.
+SKILL_LIFESPAN_NAME,Стабильность души,Soul stability
+SKILL_LIFESPAN_DESC,Увеличивает запас стабильности души — дольше вне тела и в теле.,Raises the soul’s stability — longer outside a body and inside one.
 SKILL_DECAY_CAPACITY_NAME,Крепкая плоть,Hardy flesh
 SKILL_DECAY_CAPACITY_DESC,Увеличивает запас распада захваченного тела.,Raises the decay reserve of a captured body.
 SKILL_GRACEFUL_EXIT_NAME,Чистый выход,Clean exit
