@@ -24,6 +24,7 @@ func _ready() -> void:
 	_check_turmoil()
 	await _check_message()
 	await _check_thought_line()
+	await _check_door_prompt()
 	_check_key_names()
 	_check_scene()
 	_check_minimap_strokes()
@@ -269,6 +270,39 @@ func _check_thought_line() -> void:
 	_check("тень мысли шире строки, а не фиксированной коробкой", shadow.size.x > row.size.x and row.size.x > 0.0, "%s / %s" % [shadow.size, row.size])
 	_check("строка центрирована по своей точке", is_equal_approx(row.position.x, -row.size.x / 2.0), str(row.position))
 	line.queue_free()
+
+
+# --- 8б. Дверь без подписи всё равно объясняет призраку отказ ------------------
+# Без игрока в мире E_Player.is_embodied() ложно — это и есть призрак.
+func _check_door_prompt() -> void:
+	var unopenable: Array[String] = []
+	for path in ["res://src/entities/door/complex_door.tscn", "res://src/entities/door/double_door.tscn",
+			"res://src/entities/door/exit_door.tscn"]:
+		var door := (load(path) as PackedScene).instantiate() as Entity
+		var inter: C_Interactable = null
+		for res in door.component_resources:
+			if res is C_Interactable:
+				inter = res
+		if inter == null or not inter.requires_body:
+			unopenable.append(path.get_file())
+		door.free()
+	_check("двери открываются только телом", unopenable.is_empty(), ", ".join(unopenable))
+
+	var hud := (load("res://src/ui/hud/hud.tscn") as PackedScene).instantiate()
+	add_child(hud)
+	await get_tree().process_frame
+	var prompt := hud.get_node("Hud/Prompt") as UI_HudPrompt
+	var door_inter := C_Interactable.new()
+	door_inter.requires_body = true
+	prompt.set("_shown", door_inter)
+	prompt.call("_render")
+	_check("дверь без подписи говорит призраку «нужно тело»",
+		prompt.is_shown() and prompt.shown_text() == tr("HUD_PROMPT_NEEDS_BODY_BARE"), prompt.shown_text())
+	var silent := C_Interactable.new()
+	prompt.set("_shown", silent)
+	_check("интерактив без подписи и без требования тела молчит", not prompt.is_shown(), "")
+	hud.queue_free()
+	await get_tree().process_frame
 
 
 # --- 9. Имена клавиш переводятся --------------------------------------------

@@ -95,8 +95,13 @@ MAP_TYPE_ARTIFACT_CONTAINMENT,Содержание артефактов,Artifact
 MAP_TYPE_RECREATION,Отдых и досуг,Recreation
 HUD_PROMPT_SKILL_TREE,Древо навыков,Skill tree
 HUD_PROMPT_NEEDS_BODY,Нужно тело: %s,Needs a body: %s
+HUD_PROMPT_NEEDS_BODY_BARE,Нужно тело,Needs a body
 HUD_MSG_LOCKED_NEEDS,Заперто. Нужен %s,Locked. Requires %s
 HUD_MSG_SEALED,Прохода нет: проём заварен,No way through: the doorway is welded shut
+HUD_MSG_ENTRY_SEALED,Лаборатория запечатана. Назад дороги нет,The lab has sealed itself. There is no way back
+HUD_MSG_PORTAL_SEALED,Портал мёртв: он никуда не ведёт,The portal is dead: it leads nowhere
+HUD_MSG_PORTAL_LOCKED_NEEDS,Портал заблокирован. Нужен %s,The portal is blocked. Requires %s
+HUD_PROMPT_USE,Использовать,Use
 HUD_MSG_NO_JUMP,Этому телу нечем прыгать,This body has nothing to jump with
 HUD_MSG_NO_SPRINT,Это тело не умеет бегать,This body can't run
 HUD_MSG_NO_ATTACK,Этому телу нечем бить,This body has nothing to strike with
