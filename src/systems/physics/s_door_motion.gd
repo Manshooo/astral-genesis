@@ -22,6 +22,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 			if motion.progress >= 1.0:
 				motion.phase = C_DoorMotion.Phase.OPEN
 				motion.held = 0.0
+				_signal(entity, motion, motion.stopped_signal)
 			_place_leaves(entity, motion)
 		elif motion.phase == C_DoorMotion.Phase.OPEN:
 			motion.held += delta
@@ -32,6 +33,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 			motion.progress = maxf(0.0, motion.progress - step)
 			if motion.progress <= 0.0:
 				motion.phase = C_DoorMotion.Phase.CLOSED
+				_signal(entity, motion, motion.stopped_signal)
 			_place_leaves(entity, motion)
 
 
@@ -65,7 +67,7 @@ static func _set_interactive(door: Entity, enabled: bool) -> void:
 		inter.enabled = enabled
 
 
-## Состояние двери — сигнал в её единственное событие; что прозвучит, решает проект звука. Инстанс заводится на первом сигнале и живёт с дверью; null от AudioManager — дверь молчит, пробуем снова на следующем ходу.
+## Состояние двери — сигнал в её единственное событие: старт хода в каждую сторону и его конец; что прозвучит, решает проект звука. Инстанс заводится на первом сигнале и живёт с дверью; null от AudioManager — дверь молчит, пробуем снова на следующем ходу.
 static func _signal(door: Entity, motion: C_DoorMotion, signal_name: String) -> void:
 	if motion.sound == null:
 		motion.sound = AudioManager.create_event_instance(motion.event_path)

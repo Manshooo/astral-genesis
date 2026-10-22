@@ -32,11 +32,14 @@ enum Phase {
 @export_group("Звук")
 
 ## Событие byProd двери — одно на все её состояния.
-@export var event_path: String = "event:/vfx/door"
+@export var event_path: String = "event:/sfx/door"
 ## Сигнал в событие на старте открытия: звук сопровождает движение полотна.
 @export var opened_signal: String = "door_opened"
 ## Сигнал в событие на старте закрытия.
 @export var closed_signal: String = "door_closed"
+## Сигнал в событие, когда полотно доехало до конца хода в любую сторону: звук не знает duration
+## и держит петлю, пока его не остановят.
+@export var stopped_signal: String = "door_stopped"
 
 ## Текущая фаза; состояние, не настройка.
 var phase: Phase = Phase.CLOSED
