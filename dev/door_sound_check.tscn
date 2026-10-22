@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dev/door_sound_check.gd" id="1_door_sound"]
+
+[node name="DoorSoundCheck" type="Node"]
+script = ExtResource("1_door_sound")
