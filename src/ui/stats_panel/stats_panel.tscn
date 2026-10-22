@@ -1,0 +1,301 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/stats_panel/stats_panel.gd" id="1_panel"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/menu_backdrop.tscn" id="2_backdrop"]
+[ext_resource type="Shader" path="res://src/ui/menu/menu_backdrop.gdshader" id="3_shader"]
+[ext_resource type="PackedScene" path="res://src/ui/stats_panel/stats_slot.tscn" id="4_slot"]
+[ext_resource type="PackedScene" path="res://src/ui/stats_panel/stats_bank_item.tscn" id="5_bank"]
+[ext_resource type="PackedScene" path="res://src/ui/hud/thought_line.tscn" id="6_line"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dim"]
+resource_local_to_scene = true
+shader = ExtResource("3_shader")
+shader_parameter/amount = 0.0
+shader_parameter/blur_lod = 1.0
+shader_parameter/desaturate = 0.0
+shader_parameter/scrim = Color(0.024, 0.02, 0.035, 0.62)
+shader_parameter/tint = Color(0.071, 0.039, 0.118, 0)
+shader_parameter/void_amount = 0.0
+
+[node name="StatsPanel" type="Control" node_paths=PackedStringArray("content")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_panel")
+content = NodePath("Content")
+
+[node name="Backdrop" parent="." instance=ExtResource("2_backdrop")]
+material = SubResource("ShaderMaterial_dim")
+layout_mode = 1
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Column" type="VBoxContainer" parent="Content"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 96.0
+offset_bottom = 96.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 40
+
+[node name="Vitals" type="HBoxContainer" parent="Content/Column"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 120
+
+[node name="Body" type="VBoxContainer" parent="Content/Column/Vitals"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="BodyCaption" type="Label" parent="Content/Column/Vitals/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsCaption"
+theme_override_colors/font_color = Color(0.94, 0.75, 0.38, 1)
+text = "HUD_STATS_BODY_NONE"
+uppercase = true
+
+[node name="HealthRow" type="HBoxContainer" parent="Content/Column/Vitals/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="Content/Column/Vitals/Body/HealthRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"HudStatsRow"
+text = "HUD_STATS_HEALTH"
+
+[node name="HealthValue" type="Label" parent="Content/Column/Vitals/Body/HealthRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsValue"
+text = "0 / 0"
+
+[node name="HealthBar" type="ColorRect" parent="Content/Column/Vitals/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 4)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.93, 0.91, 0.95, 0.14)
+
+[node name="Fill" type="ColorRect" parent="Content/Column/Vitals/Body/HealthBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_right = 0.0
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.78, 0.18, 0.16, 1)
+
+[node name="ReserveRow" type="HBoxContainer" parent="Content/Column/Vitals/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="Content/Column/Vitals/Body/ReserveRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"HudStatsRow"
+text = "HUD_STATS_RESERVE"
+
+[node name="ReserveValue" type="Label" parent="Content/Column/Vitals/Body/ReserveRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsValue"
+theme_override_colors/font_color = Color(0.94, 0.75, 0.38, 1)
+
+[node name="NoBody" type="Label" parent="Content/Column/Vitals/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsRow"
+theme_override_colors/font_color = Color(0.71, 0.68, 0.75, 1)
+text = "HUD_STATS_NO_BODY"
+
+[node name="Soul" type="VBoxContainer" parent="Content/Column/Vitals"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="SoulCaption" type="Label" parent="Content/Column/Vitals/Soul"]
+layout_mode = 2
+theme_type_variation = &"HudStatsCaption"
+theme_override_colors/font_color = Color(0.79, 0.66, 0.95, 1)
+text = "HUD_STATS_SOUL"
+uppercase = true
+
+[node name="StabilityRow" type="HBoxContainer" parent="Content/Column/Vitals/Soul"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="Content/Column/Vitals/Soul/StabilityRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"HudStatsRow"
+text = "HUD_STATS_STABILITY"
+
+[node name="StabilityValue" type="Label" parent="Content/Column/Vitals/Soul/StabilityRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsValue"
+theme_override_colors/font_color = Color(0.79, 0.66, 0.95, 1)
+
+[node name="MindsRow" type="HBoxContainer" parent="Content/Column/Vitals/Soul"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="Content/Column/Vitals/Soul/MindsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"HudStatsRow"
+text = "HUD_STATS_MINDS"
+
+[node name="MindsValue" type="Label" parent="Content/Column/Vitals/Soul/MindsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsValue"
+
+[node name="Abilities" type="VBoxContainer" parent="Content/Column"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Caption" type="Label" parent="Content/Column/Abilities"]
+layout_mode = 2
+theme_type_variation = &"HudStatsCaption"
+text = "HUD_STATS_ABILITIES"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="Slots" type="HBoxContainer" parent="Content/Column/Abilities"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Slot1" parent="Content/Column/Abilities/Slots" instance=ExtResource("4_slot")]
+layout_mode = 2
+
+[node name="Slot2" parent="Content/Column/Abilities/Slots" instance=ExtResource("4_slot")]
+layout_mode = 2
+
+[node name="Slot3" parent="Content/Column/Abilities/Slots" instance=ExtResource("4_slot")]
+layout_mode = 2
+
+[node name="Slot4" parent="Content/Column/Abilities/Slots" instance=ExtResource("4_slot")]
+layout_mode = 2
+
+[node name="Bank" type="VBoxContainer" parent="Content/Column"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="BankCaption" type="Label" parent="Content/Column/Bank"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsCaption"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="BankCells" type="HBoxContainer" parent="Content/Column/Bank"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Bank1" parent="Content/Column/Bank/BankCells" instance=ExtResource("5_bank")]
+layout_mode = 2
+
+[node name="Bank2" parent="Content/Column/Bank/BankCells" instance=ExtResource("5_bank")]
+layout_mode = 2
+
+[node name="Bank3" parent="Content/Column/Bank/BankCells" instance=ExtResource("5_bank")]
+layout_mode = 2
+
+[node name="Bank4" parent="Content/Column/Bank/BankCells" instance=ExtResource("5_bank")]
+layout_mode = 2
+
+[node name="Bank5" parent="Content/Column/Bank/BankCells" instance=ExtResource("5_bank")]
+layout_mode = 2
+
+[node name="Hints" type="VBoxContainer" parent="Content/Column"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="MoveHint" type="Control" parent="Content/Column/Hints"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="Move" parent="Content/Column/Hints/MoveHint" instance=ExtResource("6_line")]
+unique_name_in_owner = true
+style = 1
+shadow_margin = Vector2(0, 0)
+
+[node name="Rules" type="Label" parent="Content/Column/Hints"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudStatsNote"
+horizontal_alignment = 1
+
+[node name="Refusal" type="Label" parent="Content/Column/Hints"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"HudMessage"
+horizontal_alignment = 1
+
+[node name="Release" type="HBoxContainer" parent="Content"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -28.0
+offset_top = -42.0
+offset_right = -28.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Before" type="Label" parent="Content/Release"]
+layout_mode = 2
+theme_type_variation = &"HudStatsNote"
+text = "HUD_STATS_RELEASE_BEFORE"
+
+[node name="Key" type="Label" parent="Content/Release"]
+unique_name_in_owner = true
+layout_mode = 2
+auto_translate_mode = 2
+theme_type_variation = &"HudStatsNoteKey"
+
+[node name="After" type="Label" parent="Content/Release"]
+layout_mode = 2
+theme_type_variation = &"HudStatsNote"
+text = "HUD_STATS_RELEASE_AFTER"

@@ -30,6 +30,7 @@ const REBINDABLE_ACTIONS := {
 	&"leave_body": "ACTION_LEAVE_BODY",
 	&"map": "ACTION_MAP",
 	&"map_mini": "ACTION_MAP_MINI",
+	&"stats": "ACTION_STATS",
 }
 
 ## Имена кнопок мыши — ключи перевода; прочие — KEY_MOUSE_N.

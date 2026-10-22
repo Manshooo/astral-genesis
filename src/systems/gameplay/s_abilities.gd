@@ -40,6 +40,9 @@ func _use(entity: Entity, view: C_AbilityLoadout.SlotView) -> void:
 	if ability == null:
 		C_ScreenMessage.show_on(entity, "HUD_MSG_SLOT_EMPTY", cmd)
 		return
+	if ability.graft_left > 0.0:
+		C_ScreenMessage.show_on(entity, "HUD_MSG_ABILITY_GRAFTING", cmd)
+		return
 	# Поглощённая проснётся кадром позже (S_AbilityLoadout через буфер): до того она не компонент.
 	if entity.get_component(ability.get_script()) != ability:
 		return

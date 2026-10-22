@@ -9,6 +9,7 @@ enum State { EMPTY, LOCKED, BODY, SOUL }
 ## Затемнение отката снизу вверх — цвет «тени мысли».
 const COOLDOWN_SHADE := Color(0.02, 0.02, 0.04, 0.62)
 const FILL := Color(0.02, 0.02, 0.04, 0.4)
+const GRAFT_ALPHA := 0.28
 ## Точка спящей поглощённой под способностью тела.
 const SLEEP_DOT_RADIUS := 2.0
 const DASH := 3.0
@@ -33,6 +34,8 @@ var hovered := false:
 		queue_redraw()
 ## Доля оставшегося отката, 0 — готова.
 var cooldown_share := 0.0
+## Доля прирастания после переноса из банка, 0…1; 0 — не прирастает (заливка soul снизу вверх, макет 14).
+var graft_share := 0.0
 
 @onready var _number: Label = %Number
 @onready var _cooldown: Label = %Cooldown
@@ -51,6 +54,10 @@ func show_ability(
 	icon = ability.icon if ability else null
 	sleeping = is_sleeping
 	cooldown_share = 0.0
+	graft_share = 0.0
+	var graft_time := GameConfig.config.ability_graft_time
+	if ability and ability.graft_left > 0.0 and graft_time > 0.0:
+		graft_share = clampf(1.0 - ability.graft_left / graft_time, 0.0, 1.0)
 	var seconds := 0.0
 	if ability and ability.cooldown > 0.0 and next_state != State.LOCKED:
 		seconds = ability.cooldown_left
@@ -66,7 +73,7 @@ func _draw() -> void:
 	match state:
 		State.BODY:
 			draw_rect(box, FILL)
-			draw_rect(box.grow(-0.5), _alpha(UI_HudMood.BODY, 0.6), false, 1.0)
+			draw_rect(box.grow(-0.5), UI_HudMood.OVER if hovered else _alpha(UI_HudMood.BODY, 0.6), false, 1.0)
 		State.SOUL:
 			if hovered:
 				draw_rect(box, _alpha(UI_HudMood.SOUL, 0.14))
@@ -80,7 +87,8 @@ func _draw() -> void:
 				draw_rect(box, FILL)
 				draw_rect(box.grow(-0.5), _alpha(UI_HudMood.SOUL, 0.5), false, 1.0)
 		State.EMPTY:
-			draw_rect(box.grow(-0.5), _alpha(UI_HudMood.TEXT, 0.2), false, 1.0)
+			var edge := UI_HudMood.OVER if hovered else _alpha(UI_HudMood.TEXT, 0.2)
+			draw_rect(box.grow(-0.5), edge, false, 1.0)
 		State.LOCKED:
 			_draw_dashed_box(box.grow(-0.5), _alpha(UI_HudMood.TEXT, 0.2))
 	if state == State.LOCKED:
@@ -89,6 +97,9 @@ func _draw() -> void:
 		var tint := UI_HudMood.BODY if state == State.BODY else UI_HudMood.SOUL
 		# Значок — половина ячейки: 22 у слота, 16 у банка, как в макете.
 		_draw_icon(icon, size.x * 0.5, tint)
+	if graft_share > 0.0:
+		var grown := box.size.y * graft_share
+		draw_rect(Rect2(0.0, box.size.y - grown, box.size.x, grown), _alpha(UI_HudMood.SOUL, GRAFT_ALPHA))
 	if cooldown_share > 0.0:
 		var shade := box.size.y * cooldown_share
 		draw_rect(Rect2(0.0, box.size.y - shade, box.size.x, shade), COOLDOWN_SHADE)
