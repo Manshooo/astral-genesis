@@ -8,6 +8,8 @@
 [ext_resource type="Script" uid="uid://b61v0sxtcd1gw" path="res://src/components/gameplay/skills/c_flight.gd" id="6_flight"]
 [ext_resource type="Script" uid="uid://cnev7gn6q1ip3" path="res://src/components/gameplay/skills/c_phasing.gd" id="7_phasing"]
 [ext_resource type="Script" path="res://src/components/rendering/c_soul_glow.gd" id="8_glow"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/effect_flight.svg" id="9_flight_icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/effect_phasing.svg" id="10_phasing_icon"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("3_6qelm")
@@ -26,10 +28,14 @@ script = ExtResource("6_flight")
 speed = 4.0
 acceleration = 9.0
 damping = 3.5
+effect_key = &"HUD_EFFECT_FLIGHT"
+effect_icon = ExtResource("9_flight_icon")
 metadata/_custom_type_script = "uid://b61v0sxtcd1gw"
 
 [sub_resource type="Resource" id="Resource_phasing"]
 script = ExtResource("7_phasing")
+effect_key = &"HUD_EFFECT_PHASING"
+effect_icon = ExtResource("10_phasing_icon")
 metadata/_custom_type_script = "uid://cnev7gn6q1ip3"
 
 [sub_resource type="Resource" id="Resource_glow"]

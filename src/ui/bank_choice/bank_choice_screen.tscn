@@ -1,0 +1,137 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/bank_choice/bank_choice_screen.gd" id="1_screen"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/menu_backdrop.tscn" id="2_backdrop"]
+[ext_resource type="Shader" path="res://src/ui/menu/menu_backdrop.gdshader" id="3_shader"]
+[ext_resource type="PackedScene" path="res://src/ui/hud/ability_cell.tscn" id="4_cell"]
+[ext_resource type="PackedScene" path="res://src/ui/menu/key_hint_button.tscn" id="5_hint"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dim"]
+resource_local_to_scene = true
+shader = ExtResource("3_shader")
+shader_parameter/amount = 0.0
+shader_parameter/blur_lod = 1.6
+shader_parameter/desaturate = 0.4
+shader_parameter/scrim = Color(0.024, 0.02, 0.035, 0.74)
+shader_parameter/void_amount = 0.0
+
+[node name="BankChoice" type="Control" node_paths=PackedStringArray("first_focus", "content")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_screen")
+first_focus = NodePath("Content/Column/Skip")
+content = NodePath("Content")
+
+[node name="Backdrop" parent="." instance=ExtResource("2_backdrop")]
+material = SubResource("ShaderMaterial_dim")
+layout_mode = 1
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Paused" type="Label" parent="Content"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 56.0
+offset_bottom = 70.0
+grow_horizontal = 2
+theme_type_variation = &"HudPauseCaption"
+text = "HUD_PAUSED"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="Column" type="VBoxContainer" parent="Content"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 118.0
+offset_bottom = 118.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 30
+
+[node name="Head" type="VBoxContainer" parent="Content/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Content/Column/Head"]
+layout_mode = 2
+theme_type_variation = &"HudBankChoiceTitle"
+text = "HUD_BANK_FULL"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Content/Column/Head"]
+layout_mode = 2
+theme_type_variation = &"HudBankChoiceHint"
+text = "HUD_BANK_FULL_HINT"
+horizontal_alignment = 1
+
+[node name="Offer" type="VBoxContainer" parent="Content/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Caption" type="Label" parent="Content/Column/Offer"]
+layout_mode = 2
+theme_type_variation = &"HudBankChoiceCaption"
+theme_override_colors/font_color = Color(0.79, 0.66, 0.95, 1)
+text = "HUD_BANK_NEW"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="Cell" parent="Content/Column/Offer" instance=ExtResource("4_cell")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Name" type="Label" parent="Content/Column/Offer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudBankChoiceName"
+horizontal_alignment = 1
+
+[node name="Origin" type="Label" parent="Content/Column/Offer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudBankChoiceSub"
+horizontal_alignment = 1
+
+[node name="Replace" type="VBoxContainer" parent="Content/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Caption" type="Label" parent="Content/Column/Replace"]
+layout_mode = 2
+theme_type_variation = &"HudBankChoiceCaption"
+text = "HUD_BANK_REPLACE"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="Options" type="HBoxContainer" parent="Content/Column/Replace"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Skip" parent="Content/Column" instance=ExtResource("5_hint")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+action_key = "HUD_BANK_SKIP"
+
+[connection signal="pressed" from="Content/Column/Skip" to="." method="_on_skip_pressed"]

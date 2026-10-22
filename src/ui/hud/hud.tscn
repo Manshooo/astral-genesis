@@ -18,7 +18,7 @@
 [ext_resource type="Texture2D" path="res://src/ui/hud/thought_shadow.tres" id="15_shadow"]
 [ext_resource type="Script" path="res://src/ui/hud/hud_ability_slots.gd" id="16_slots"]
 [ext_resource type="PackedScene" path="res://src/ui/hud/ability_cell.tscn" id="17_cell"]
-[ext_resource type="Script" path="res://src/ui/hud/hud_soul_effects.gd" id="18_effects"]
+[ext_resource type="Script" path="res://src/ui/hud/hud_effects.gd" id="18_effects"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_blot"]
 noise_type = 2
@@ -218,26 +218,23 @@ shadow_margin = Vector2(30, 8)
 centered = false
 echo_phase = 4.0
 
-[node name="SoulEffects" type="Control" parent="Hud"]
+[node name="Effects" type="Control" parent="Hud"]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_left = 72.0
-offset_top = -60.0
+offset_top = -124.0
 offset_right = 72.0
-offset_bottom = -60.0
-grow_vertical = 2
+offset_bottom = -124.0
 mouse_filter = 2
 script = ExtResource("18_effects")
 
-[node name="Title" parent="Hud/SoulEffects" instance=ExtResource("11_line")]
+[node name="Groups" type="VBoxContainer" parent="Hud/Effects"]
 unique_name_in_owner = true
 layout_mode = 0
-style = 1
-shadow_margin = Vector2(30, 8)
-centered = false
-echo_phase = 1.0
+mouse_filter = 2
+theme_override_constants/separation = 22
 
 [node name="AbilitySlots" type="Control" parent="Hud"]
 layout_mode = 1

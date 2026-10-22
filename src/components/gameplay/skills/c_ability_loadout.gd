@@ -69,11 +69,11 @@ func view(soul: Entity, number: int) -> SlotView:
 
 
 ## Поглотить способность тела: в первый открытый пустой слот души, иначе в банк, иначе в очередь выбора.
-## Уже известная душе не дублируется.
-func absorb(soul: Entity, ability: C_Ability) -> Placement:
+## Уже известная душе не дублируется. [param source] — ключ имени тела, из которого способность забрана.
+func absorb(soul: Entity, ability: C_Ability, source: StringName = &"") -> Placement:
 	if knows(ability):
 		return Placement.KNOWN
-	var copy := ability.absorbed_copy()
+	var copy := ability.absorbed_copy(source)
 	for i in open_slots(soul):
 		if slots[i] == null:
 			var next := slots.duplicate()

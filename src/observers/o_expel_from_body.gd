@@ -67,6 +67,8 @@ static func _settle_lifespan(soul: Entity, voluntary: bool) -> void:
 				)
 				# Поглощение — тот же чистый выход (решение 22.10): способности тела остаются душе до конца забега.
 				absorb_abilities(soul)
+			elif _wears_abilities(soul):
+				C_ScreenMessage.show_on(soul, "HUD_MSG_ABSORB_UNRIPE")
 	else:
 		var keep := C_StatModifiers.of(
 			soul, C_StatModifiers.DEATH_KEEP, GameConfig.config.lifespan_death_fraction
@@ -79,18 +81,28 @@ static func absorb_abilities(soul: Entity) -> void:
 	var loadout := soul.get_component(C_AbilityLoadout) as C_AbilityLoadout
 	if loadout == null:
 		return
+	var embodied := soul.get_component(C_Embodied) as C_Embodied
+	var source := E_Body.name_key_of_scene(embodied.body_scene_path) if embodied else &""
 	var message := ""
 	for component in E_Body.worn_by(soul):
 		var ability := component as C_Ability
 		if ability == null:
 			continue
-		match loadout.absorb(soul, ability):
+		match loadout.absorb(soul, ability, source):
 			C_AbilityLoadout.Placement.SLOT:
 				message = tr_line("HUD_MSG_ABILITY_ABSORBED", ability)
 			C_AbilityLoadout.Placement.BANK:
 				message = tr_line("HUD_MSG_ABILITY_BANKED", ability)
 	if message != "":
 		C_ScreenMessage.show_on(soul, message)
+
+
+## Надето ли тело со способностями: ранний выход стоит объяснить, а бессильное тело — нет.
+static func _wears_abilities(soul: Entity) -> bool:
+	for component in E_Body.worn_by(soul):
+		if component is C_Ability:
+			return true
+	return false
 
 
 ## Строка сообщения с именем способности: подстановка уже переведённым именем («HUD — спека» §12).

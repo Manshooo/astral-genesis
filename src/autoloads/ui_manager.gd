@@ -5,7 +5,7 @@ extends Node
 const PAUSE_MENU_SCENE = preload("res://src/ui/pause_menu/pause_menu.tscn")
 const SKILL_TREE_SCENE = preload("res://src/ui/skill_tree/skill_tree_ui.tscn")
 const COMPLEX_MAP_SCENE = preload("res://src/ui/map/complex_map_screen.tscn")
-const ABILITY_CHOICE_SCENE = preload("res://src/ui/ability_choice/ability_choice_screen.tscn")
+const BANK_CHOICE_SCENE = preload("res://src/ui/bank_choice/bank_choice_screen.tscn")
 
 ## Включать из игровой сцены: влияет на автопаузу по Esc и возврат курсора в захват.
 var enabled: bool = false
@@ -45,7 +45,7 @@ func _process(_delta: float) -> void:
 	var loadout := player.get_component(C_AbilityLoadout) as C_AbilityLoadout if player else null
 	if loadout == null or loadout.pending.is_empty():
 		return
-	var screen: UI_AbilityChoiceScreen = ABILITY_CHOICE_SCENE.instantiate()
+	var screen: UI_BankChoiceScreen = BANK_CHOICE_SCENE.instantiate()
 	push_screen(screen, true, null, screen.on_closed)
 	screen.setup(player, loadout)
 
