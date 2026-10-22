@@ -140,12 +140,15 @@ func _draw_overflow(
 ) -> void:
 	var extra := _vitals.overflow
 	# Свой жгут, свита в другую сторону: одинаковые слились бы в ленту.
+	var main := _strand(center, radius + 7.75, extra, amp * 0.8, drift + 5.1, -t, helix, 0.0)
 	_draw_braid(
-		_strand(center, radius + 7.75, extra, amp * 0.8, drift + 5.1, -t, helix, 0.0),
-		_with_alpha(UI_HudMood.OVER, alpha), 1.3,
+		main, _with_alpha(UI_HudMood.OVER, alpha), 1.3,
 		_strand(center, radius + 7.75, extra, amp * 0.8, drift + 5.1, -t, helix, PI),
 		_with_alpha(UI_HudMood.OVER, ECHO_ALPHA * alpha), 1.0
 	)
+	var main_points: PackedVector2Array = main.points
+	if not main_points.is_empty():
+		draw_circle(main_points[-1], 1.4, _with_alpha(UI_HudMood.OVER, alpha))
 	for i in 5:
 		var phase := fmod(t * 0.55 + i / 5.0, 1.0)
 		var along := fmod(i * 0.37 + 0.11, 1.0)
