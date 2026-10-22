@@ -5,6 +5,7 @@ extends Node
 const PAUSE_MENU_SCENE = preload("res://src/ui/pause_menu/pause_menu.tscn")
 const SKILL_TREE_SCENE = preload("res://src/ui/skill_tree/skill_tree_ui.tscn")
 const COMPLEX_MAP_SCENE = preload("res://src/ui/map/complex_map_screen.tscn")
+const ABILITY_CHOICE_SCENE = preload("res://src/ui/ability_choice/ability_choice_screen.tscn")
 
 ## Включать из игровой сцены: влияет на автопаузу по Esc и возврат курсора в захват.
 var enabled: bool = false
@@ -33,6 +34,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif enabled:
 		_open_pause_menu()
 		get_viewport().set_input_as_handled()
+
+
+## Поглощённая способность не влезла в полный банк — спросить игрока. Поллинг, а не событие: поглощение идёт отложенно из выхода (O_ExpelFromBody),
+## а поверх открытого экрана выбор подождёт, пока стек опустеет.
+func _process(_delta: float) -> void:
+	if not enabled or not _stack.is_empty():
+		return
+	var player := E_Player.find()
+	var loadout := player.get_component(C_AbilityLoadout) as C_AbilityLoadout if player else null
+	if loadout == null or loadout.pending.is_empty():
+		return
+	var screen: UI_AbilityChoiceScreen = ABILITY_CHOICE_SCENE.instantiate()
+	push_screen(screen, true, null, screen.on_closed)
+	screen.setup(player, loadout)
 
 
 func _open_pause_menu() -> void:

@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/menu/echo_button.gd" id="1_echo"]
+
+[node name="Option" type="Button"]
+size_flags_horizontal = 4
+theme_type_variation = &"EchoButton"
+alignment = 0
+script = ExtResource("1_echo")

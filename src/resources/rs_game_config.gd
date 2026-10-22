@@ -52,6 +52,12 @@ enum PortalTransition { FADE, CURTAIN }
 ## Доля номинала без навыка «Сбор эссенции» — база стата essence_gain; касание Архитектора её не множит.
 @export_range(0.0, 1.0, 0.01) var essence_gain_base: float = 0.3
 
+@export_group("Способности")
+## Открытых слотов с начала игры — база стата ability_slots; слоты 2–4 открывает ветка слотов.
+@export_range(0, 4) var ability_slots_base: int = 1
+## Ячеек банка поглощённых способностей — база стата bank_slots (вариант 3 карточки «Способности тел»).
+@export_range(0, 5) var bank_slots_base: int = 2
+
 @export_group("World generation")
 ## Библиотека пресетов комнат; пусто = все узлы получают placeholder-комнату.
 @export var room_preset_library: RS_RoomPresetLibrary

@@ -106,6 +106,22 @@ HUD_PROMPT_USE,Использовать,Use
 HUD_MSG_NO_JUMP,Этому телу нечем прыгать,This body has nothing to jump with
 HUD_MSG_NO_SPRINT,Это тело не умеет бегать,This body can't run
 HUD_MSG_NO_ATTACK,Этому телу нечем бить,This body has nothing to strike with
+HUD_MSG_SLOT_LOCKED,Этот слот ещё закрыт,This slot is still locked
+HUD_MSG_SLOT_EMPTY,В этом слоте ничего нет,Nothing in this slot
+HUD_MSG_ABILITY_NEEDS_BODY,Для этого нужно тело,This needs a body
+HUD_MSG_HEALTH_FULL,Тело и так цело,The body is already whole
+HUD_MSG_ABILITY_ABSORBED,Поглощено: %s,Absorbed: %s
+HUD_MSG_ABILITY_BANKED,В банк: %s,To the bank: %s
+HUD_MSG_ABILITY_DROPPED,Не взято: %s,Left behind: %s
+HUD_BANK,Банк · %d/%d,Bank · %d/%d
+HUD_SOUL_INCORPOREAL,Бесплотность,Incorporeality
+HUD_EFFECT_FLIGHT,Полёт,Flight
+HUD_EFFECT_PHASING,Просачивание,Seeping
+ABILITY_REGENERATION,Регенерация,Regeneration
+ABILITY_CHOICE_TITLE,Банк полон,The bank is full
+ABILITY_CHOICE_NEW,Поглощено: %s. Куда его деть?,Absorbed: %s. Where does it go?
+ABILITY_CHOICE_REPLACE,Заменить: %s,Replace: %s
+ABILITY_CHOICE_DECLINE,Не брать,Leave it
 HUD_MSG_HIT,Удар достиг цели,The blow lands
 HUD_MSG_NO_ROOM,Тело здесь не поместится,The body won't fit here
 HUD_MSG_SKILL_CONDITION,Душа усвоила: %s,The soul has learned: %s
@@ -212,6 +228,10 @@ ACTION_SPRINT,Бег,Sprint
 ACTION_INTERACT,Взаимодействие,Interact
 ACTION_SNATCH_BODY,Захват тела,Possess a body
 ACTION_ATTACK,Удар,Strike
+ACTION_ABILITY_1,Способность 1,Ability 1
+ACTION_ABILITY_2,Способность 2,Ability 2
+ACTION_ABILITY_3,Способность 3,Ability 3
+ACTION_ABILITY_4,Способность 4,Ability 4
 ACTION_LEAVE_BODY,Покинуть тело,Leave the body
 ACTION_MAP,Карта,Map
 HINT_BACK,Назад,Back

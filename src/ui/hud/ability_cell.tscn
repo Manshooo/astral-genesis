@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/hud/ability_cell.gd" id="1_cell"]
+
+[node name="AbilityCell" type="Control"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_cell")
+
+[node name="Number" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 4.0
+offset_top = 1.0
+offset_right = 14.0
+offset_bottom = 14.0
+mouse_filter = 2
+theme_type_variation = &"HudSlotNumber"
+
+[node name="Cooldown" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"HudSlotCooldown"
+horizontal_alignment = 1
+vertical_alignment = 1

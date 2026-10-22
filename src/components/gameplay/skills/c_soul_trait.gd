@@ -4,3 +4,8 @@ extends Component
 ## трейты тела уезжают с телом, возможности души на время воплощения ЗАСЫПАЮТ. Снимает и возвращает O_SoulTraits
 ## СВЕЖИМИ копиями из component_resources сцены души (E_Player.soul_traits): заначка не пережила бы
 ## пересадку тело→тело (буфер коалесцирует remove+add C_Embodied). Авторить — в сцене души, не в define_components().
+
+
+## Ключ перевода эффекта «Бесплотности» в левой части HUD (UI_HudSoulEffects); пусто — не показывать.
+func effect_key() -> StringName:
+	return &""

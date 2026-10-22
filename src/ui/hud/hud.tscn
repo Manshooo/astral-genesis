@@ -16,6 +16,9 @@
 [ext_resource type="PackedScene" path="res://src/ui/hud/mini_map.tscn" id="13_minimap"]
 [ext_resource type="Shader" uid="uid://448euylitwb5" path="res://src/ui/hud/thought_blur.gdshader" id="14_blur"]
 [ext_resource type="Texture2D" path="res://src/ui/hud/thought_shadow.tres" id="15_shadow"]
+[ext_resource type="Script" path="res://src/ui/hud/hud_ability_slots.gd" id="16_slots"]
+[ext_resource type="PackedScene" path="res://src/ui/hud/ability_cell.tscn" id="17_cell"]
+[ext_resource type="Script" path="res://src/ui/hud/hud_soul_effects.gd" id="18_effects"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_blot"]
 noise_type = 2
@@ -214,6 +217,111 @@ style = 1
 shadow_margin = Vector2(30, 8)
 centered = false
 echo_phase = 4.0
+
+[node name="SoulEffects" type="Control" parent="Hud"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 72.0
+offset_top = -60.0
+offset_right = 72.0
+offset_bottom = -60.0
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("18_effects")
+
+[node name="Title" parent="Hud/SoulEffects" instance=ExtResource("11_line")]
+unique_name_in_owner = true
+layout_mode = 0
+style = 1
+shadow_margin = Vector2(30, 8)
+centered = false
+echo_phase = 1.0
+
+[node name="AbilitySlots" type="Control" parent="Hud"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("16_slots")
+
+[node name="Slots" type="HBoxContainer" parent="Hud/AbilitySlots"]
+layout_mode = 1
+offset_left = -103.0
+offset_top = -100.0
+offset_right = 103.0
+offset_bottom = -56.0
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Slot1" parent="Hud/AbilitySlots/Slots" instance=ExtResource("17_cell")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Slot2" parent="Hud/AbilitySlots/Slots" instance=ExtResource("17_cell")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Slot3" parent="Hud/AbilitySlots/Slots" instance=ExtResource("17_cell")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Slot4" parent="Hud/AbilitySlots/Slots" instance=ExtResource("17_cell")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Bank" type="VBoxContainer" parent="Hud/AbilitySlots"]
+layout_mode = 1
+offset_left = 135.0
+offset_top = -106.0
+offset_right = 319.0
+offset_bottom = -56.0
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="BankCaption" type="Label" parent="Hud/AbilitySlots/Bank"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudBankCaption"
+uppercase = true
+
+[node name="BankCells" type="HBoxContainer" parent="Hud/AbilitySlots/Bank"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Bank1" parent="Hud/AbilitySlots/Bank/BankCells" instance=ExtResource("17_cell")]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+compact = true
+
+[node name="Bank2" parent="Hud/AbilitySlots/Bank/BankCells" instance=ExtResource("17_cell")]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+compact = true
+
+[node name="Bank3" parent="Hud/AbilitySlots/Bank/BankCells" instance=ExtResource("17_cell")]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+compact = true
+
+[node name="Bank4" parent="Hud/AbilitySlots/Bank/BankCells" instance=ExtResource("17_cell")]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+compact = true
+
+[node name="Bank5" parent="Hud/AbilitySlots/Bank/BankCells" instance=ExtResource("17_cell")]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+compact = true
 
 [node name="HealthBar" type="Control" parent="Hud"]
 layout_mode = 1

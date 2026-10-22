@@ -154,7 +154,10 @@ static func class_of_scene(path: String) -> int:
 
 
 ## Носится ли компонент телом — ЕДИНСТВЕННОЕ определение: им надевают (S_BodySnatch), снимают (O_ExpelFromBody) и читают сцену.
+## Поглощённая способность — уже душе, не телу: с телом не уходит.
 static func is_wearable(component: Object) -> bool:
+	if component is C_Ability and (component as C_Ability).absorbed:
+		return false
 	return component is C_BodyTrait or component is C_Health
 
 

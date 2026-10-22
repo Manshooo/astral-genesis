@@ -207,6 +207,24 @@ func _restore_player_progress() -> void:
 		decay.maximum = saved.body_lifespan_max
 		decay.remaining = saved.body_lifespan_remaining
 
+	var loadout := player.get_component(C_AbilityLoadout) as C_AbilityLoadout
+	if loadout:
+		_restore_abilities(loadout, saved)
+
+
+## Поглощённые способности из сейва; проснутся сами (S_AbilityLoadout). Слотов в сейве может быть меньше четырёх — забег до способностей.
+func _restore_abilities(loadout: C_AbilityLoadout, saved: RS_WorldSave) -> void:
+	var slots: Array[C_Ability] = []
+	for i in C_AbilityLoadout.MAX_SLOTS:
+		var held: C_Ability = saved.ability_slots[i] if i < saved.ability_slots.size() else null
+		slots.append(held.absorbed_copy() if held else null)
+	loadout.slots = slots
+	var bank: Array[C_Ability] = []
+	for held in saved.ability_bank:
+		if held:
+			bank.append(held.absorbed_copy())
+	loadout.bank = bank
+
 
 ## Возвращает душу в тело, в котором её сохранили. Облик и характеристики — из сцены тела
 ## (E_Body), из сейва только состояние и потолки; прибавки скиллов пересобирает O_ApplySkillEffects.
@@ -579,6 +597,10 @@ func _checkpoint(node_id: StringName, persist: bool = true) -> void:
 		if health:
 			body_health = health.current
 			body_health_max = health.maximum
+		var loadout := player.get_component(C_AbilityLoadout) as C_AbilityLoadout
+		if loadout:
+			# Ждущие ответа на полный банк в сейв не идут: вылет посреди выбора — это «не брать».
+			WorldSave.record_abilities(loadout.slots, loadout.bank)
 
 	WorldSave.record_progress(
 		node_id,

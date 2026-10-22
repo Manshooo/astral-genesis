@@ -11,3 +11,7 @@ extends C_SoulTrait
 
 ## Затухание, когда клавиши отпущены, м/с². Меньше — дольше несёт по инерции.
 @export var damping: float = 3.5
+
+
+func effect_key() -> StringName:
+	return &"HUD_EFFECT_FLIGHT"

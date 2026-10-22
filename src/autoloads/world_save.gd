@@ -62,6 +62,22 @@ func record_progress(
 	progress_saved.emit()
 
 
+## Поглощённые способности к следующей контрольной точке: на диск их пишет record_progress. Копии — сейв не делит объекты с живой душой.
+func record_abilities(slots: Array, bank: Array) -> void:
+	var saved_slots: Array[C_Ability] = []
+	for ability in slots:
+		saved_slots.append(_saved_copy(ability))
+	var saved_bank: Array[C_Ability] = []
+	for ability in bank:
+		saved_bank.append(_saved_copy(ability))
+	save.ability_slots = saved_slots
+	save.ability_bank = saved_bank
+
+
+static func _saved_copy(ability: C_Ability) -> C_Ability:
+	return ability.absorbed_copy() if ability else null
+
+
 ## Итоги ЗАВЕРШЁННОГО забега: переживают clear_run() и пишутся на диск сразу (закрытая на экране итогов игра).
 func record_run_summary(stats: RS_RunStats) -> void:
 	save.last_run = stats
