@@ -129,6 +129,31 @@ HUD_BANK_SKIP,Не брать,Leave it
 HUD_BANK_SLOT,слот %d,slot %d
 HUD_BANK_ORIGIN,слот %d · %s,slot %d · %s
 HUD_BANK_HOVER,наведено: заменить,replace this
+HUD_STATS_BODY,Тело · %s,Body · %s
+HUD_STATS_BODY_NONE,Тело,Body
+HUD_STATS_NO_BODY,Без тела,No body
+HUD_STATS_HEALTH,Здоровье,Health
+HUD_STATS_RESERVE,Запас тела,Body reserve
+HUD_STATS_SECONDS,%d с,%d s
+HUD_STATS_SOUL,Душа,Soul
+HUD_STATS_STABILITY,Стабильность,Stability
+HUD_STATS_MINDS,Поглощено сознаний,Minds absorbed
+HUD_STATS_ABILITIES,Способности,Abilities
+HUD_STATS_FROM_BODY,от тела,from the body
+HUD_STATS_ABSORBED,поглощена,absorbed
+HUD_STATS_ABSORBED_FROM,поглощена · %s,absorbed · %s
+HUD_STATS_GRAFTING,прирастает · %d с,grafting · %d s
+HUD_STATS_LOCKED,Закрыт,Locked
+HUD_STATS_SLOT_BRANCH,ветка слота %d,slot %d branch
+HUD_STATS_EMPTY,Пусто,Empty
+HUD_STATS_BANK_LOCKED,навык души,soul skill
+HUD_STATS_PICKED,выберите слот,pick a slot
+HUD_STATS_MOVE,Перенести в открытый слот,Move to an open slot
+HUD_STATS_RULES,способность прирастает %d с · в бою недоступно,an ability takes %d s to graft · not during a fight
+"HUD_STATS_RELEASE_BEFORE","отпустите ","release "
+"HUD_STATS_RELEASE_AFTER",", чтобы закрыть"," to close"
+HUD_MSG_ABILITY_GRAFTING,Способность ещё прирастает,The ability is still grafting
+HUD_MSG_TRANSFER_COMBAT,В бою способность не перенести,No moving abilities mid-fight
 HUD_MSG_HIT,Удар достиг цели,The blow lands
 HUD_MSG_NO_ROOM,Тело здесь не поместится,The body won't fit here
 HUD_MSG_SKILL_CONDITION,Душа усвоила: %s,The soul has learned: %s
@@ -152,6 +177,7 @@ KEY_SPACE,Пробел,Space
 HUD_MAP_HIDE,Свернуть,Hide
 HUD_MAP_FULL,Вся карта,Full map
 ACTION_MAP_MINI,Мини-карта,Mini-map
+ACTION_STATS,Показатели (удерживать),Stats (hold)
 MAP_TERMINAL_ONLY,Карта целиком — на терминале в хабе,The full map is at the hub terminal
 MENU_TITLE,Astral Genesis,Astral Genesis
 MENU_NEW_GAME,Новая игра,New game

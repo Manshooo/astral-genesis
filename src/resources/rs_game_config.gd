@@ -57,6 +57,10 @@ enum PortalTransition { FADE, CURTAIN }
 @export_range(0, 4) var ability_slots_base: int = 1
 ## Ячеек банка поглощённых способностей — база стата bank_slots (вариант 3 карточки «Способности тел»).
 @export_range(0, 5) var bank_slots_base: int = 2
+## Сколько способность из банка прирастает к слоту, прежде чем заработает, с: банк — не переключатель билда посреди драки.
+@export_range(0.0, 30.0, 0.1) var ability_graft_time: float = 3.0
+## Сколько секунд после урона по игроку перенос из банка закрыт («в бою»).
+@export_range(0.0, 30.0, 0.1) var combat_window: float = 5.0
 
 @export_group("World generation")
 ## Библиотека пресетов комнат; пусто = все узлы получают placeholder-комнату.

@@ -35,7 +35,8 @@ func _process(delta: float) -> void:
 		if signature != _signature:
 			_signature = signature
 			_bright_until = UI_HudMood.now() + BRIGHT_FOR
-		target_alpha = 1.0 if UI_HudMood.now() < _bright_until else IDLE_ALPHA
+		var bright := UI_HudMood.now() < _bright_until or UI_StatsPanel.is_open(get_tree())
+		target_alpha = 1.0 if bright else IDLE_ALPHA
 	var tau := APPEAR_TAU if target_alpha > modulate.a else FADE_TAU
 	modulate.a = UI_HudMood.approach(modulate.a, target_alpha, tau, delta)
 

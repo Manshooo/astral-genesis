@@ -6,6 +6,7 @@ const PAUSE_MENU_SCENE = preload("res://src/ui/pause_menu/pause_menu.tscn")
 const SKILL_TREE_SCENE = preload("res://src/ui/skill_tree/skill_tree_ui.tscn")
 const COMPLEX_MAP_SCENE = preload("res://src/ui/map/complex_map_screen.tscn")
 const BANK_CHOICE_SCENE = preload("res://src/ui/bank_choice/bank_choice_screen.tscn")
+const STATS_PANEL_SCENE = preload("res://src/ui/stats_panel/stats_panel.tscn")
 
 ## Включать из игровой сцены: влияет на автопаузу по Esc и возврат курсора в захват.
 var enabled: bool = false
@@ -26,6 +27,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("map_mini") and not event.is_echo():
 		_toggle_mini_map()
 		return
+	if event.is_action_pressed(UI_StatsPanel.ACTION) and not event.is_echo():
+		open_stats_panel()
+		return
 	if not event.is_action_pressed("pause_game") or event.is_echo():
 		return
 	if not _stack.is_empty():
@@ -39,6 +43,10 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Поглощённая способность не влезла в полный банк — спросить игрока. Поллинг, а не событие: поглощение идёт отложенно из выхода (O_ExpelFromBody),
 ## а поверх открытого экрана выбор подождёт, пока стек опустеет.
 func _process(_delta: float) -> void:
+	# Отпускание ловится опросом, а не событием: после Alt+Tab окно его не получит, и экран остался бы висеть.
+	if not _stack.is_empty() and _stack.back().screen is UI_StatsPanel \
+			and not Input.is_action_pressed(UI_StatsPanel.ACTION):
+		close_top()
 	if not enabled or not _stack.is_empty():
 		return
 	var player := E_Player.find()
@@ -152,6 +160,21 @@ func open_skill_tree(skill_manager, tree_data: RS_SkillTree) -> void:
 	var skill_ui: SkillTreeUI = SKILL_TREE_SCENE.instantiate()
 	push_blocking_screen(skill_ui)
 	skill_ui.setup(skill_manager, tree_data)
+
+
+## Показатели по удержанию (макет 14): поверх идущей игры, только с пустым стеком и пока игрок жив.
+func open_stats_panel() -> UI_StatsPanel:
+	if not enabled or not _stack.is_empty():
+		return null
+	var player := E_Player.find()
+	var loadout := player.get_component(C_AbilityLoadout) as C_AbilityLoadout if player else null
+	if loadout == null or player.has_component(C_Dead):
+		return null
+	get_viewport().set_input_as_handled()
+	var screen: UI_StatsPanel = STATS_PANEL_SCENE.instantiate()
+	push_blocking_screen(screen)
+	screen.setup(player, loadout)
+	return screen
 
 
 ## Экран поверх идущей игры: ввод игрока блокируется (курсор нужен экрану), паузы нет. Блок снимает колбэк закрытия.

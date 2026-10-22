@@ -44,6 +44,7 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_ability_loadout.gd" id="41_loadout"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_abilities.gd" id="42_abilities"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_regeneration.gd" id="43_regen"]
+[ext_resource type="Script" path="res://src/observers/o_combat_mark.gd" id="44_combatmark"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -231,6 +232,9 @@ script = ExtResource("24_runstats")
 
 [node name="O_BodyThoughts" type="Node" parent="World/Systems"]
 script = ExtResource("88_bodythoughts")
+
+[node name="O_CombatMark" type="Node" parent="World/Systems"]
+script = ExtResource("44_combatmark")
 
 [node name="O_ApplySkillEffects" type="Node" parent="World/Systems" unique_id=687585807]
 script = ExtResource("8_a20vb")

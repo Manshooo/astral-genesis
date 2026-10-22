@@ -12,12 +12,16 @@ const ACTIONS: Array[StringName] = [&"ability_1", &"ability_2", &"ability_3", &"
 
 ## Чем кончилось поглощение одной способности.
 enum Placement { SLOT, BANK, BANK_FULL, KNOWN }
+## Чем кончился перенос из банка в слот (экран показателей).
+enum Transfer { DONE, LOCKED, IN_COMBAT, NOTHING }
 
 ## Слоты души 1–4 по индексу 0–3; null — пусто. Массивы ПЕРЕСОБИРАЮТСЯ, не правятся на месте (C_StatModifiers._refold).
 var slots: Array[C_Ability] = [null, null, null, null]
 var bank: Array[C_Ability] = []
 ## Не поместились в полный банк и ждут ответа игрока (экран выбора).
 var pending: Array[C_Ability] = []
+## Сколько ещё душа «в бою» после урона по ней, с (O_CombatMark ставит, S_AbilityLoadout тикает). Не в сейве.
+var combat_left := 0.0
 
 
 ## Что видно и что работает в слоте [member number]: снимок на кадр для S_Abilities и HUD.
@@ -105,6 +109,31 @@ func resolve_pending(index: int) -> C_Ability:
 	next_bank[index] = taken
 	bank = next_bank
 	return dropped
+
+
+## Перенос ячейки банка [param bank_index] в слот [param number]: занятый слот меняется с ней местами.
+## Перенесённая прирастает ability_graft_time; ушедшая в банк перестаёт прирастать.
+func bank_to_slot(soul: Entity, bank_index: int, number: int) -> Transfer:
+	if bank_index < 0 or bank_index >= bank.size() or number < 1 or number > MAX_SLOTS:
+		return Transfer.NOTHING
+	if number > open_slots(soul):
+		return Transfer.LOCKED
+	if combat_left > 0.0:
+		return Transfer.IN_COMBAT
+	var next_slots := slots.duplicate()
+	var next_bank := bank.duplicate()
+	var moving: C_Ability = next_bank[bank_index]
+	var displaced: C_Ability = next_slots[number - 1]
+	moving.graft_left = GameConfig.config.ability_graft_time
+	next_slots[number - 1] = moving
+	if displaced:
+		displaced.graft_left = 0.0
+		next_bank[bank_index] = displaced
+	else:
+		next_bank.remove_at(bank_index)
+	slots = next_slots
+	bank = next_bank
+	return Transfer.DONE
 
 
 ## Та же способность (по классу) уже есть у души — в слоте, банке или очереди.
