@@ -38,7 +38,7 @@ func _apply_fov(settings: RS_Settings) -> void:
 
 ## Компоненты-идентичность БФЖ, независимые от тела; C_StatModifiers — слой модификаторов принадлежит душе.
 func define_components() -> Array:
-	return [C_BodySnatch.new(), C_Lifespan.new(), C_StatModifiers.new()]
+	return [C_BodySnatch.new(), C_Lifespan.new(), C_StatModifiers.new(), C_AbilityLoadout.new()]
 
 
 ## Возможности САМОЙ души — свежие копии из сцены. Читаем component_resources: во плоти возможности сняты
@@ -106,6 +106,13 @@ func _input(event: InputEvent) -> void:
 		var inp := get_component(C_PlayerInput) as C_PlayerInput
 		if inp:
 			inp.attack_pressed = true
+
+	# Клавиша слота — номер; что в слоте и можно ли, решает S_Abilities.
+	for i in C_AbilityLoadout.ACTIONS.size():
+		if event.is_action_pressed(C_AbilityLoadout.ACTIONS[i]) and not event.is_echo():
+			var inp := get_component(C_PlayerInput) as C_PlayerInput
+			if inp:
+				inp.ability_pressed = i + 1
 
 	# Захват тела (snatch_body): здесь только флаг, выполняет S_BodySnatch.
 	if event.is_action_pressed("snatch_body") and not event.is_echo():

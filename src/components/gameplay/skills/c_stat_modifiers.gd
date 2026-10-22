@@ -22,6 +22,8 @@ const OVERFLOW_LEAK := &"overflow_leak"        ## RS_GameConfig.lifespan_overflo
 const DEATH_KEEP := &"death_keep"              ## RS_GameConfig.lifespan_death_fraction
 ## Доля номинала эссенции из находок и тайников (база — essence_gain_base, навык поднимает до 1.0); касание Архитектора не множит.
 const ESSENCE_GAIN := &"essence_gain"
+const ABILITY_SLOTS := &"ability_slots"        ## открытые слоты способностей, база RS_GameConfig.ability_slots_base
+const BANK_SLOTS := &"bank_slots"              ## ячейки банка способностей, база RS_GameConfig.bank_slots_base
 
 const ALL: Array[StringName] = [
 	CAPTURE_RANGE,
@@ -37,6 +39,7 @@ const ALL: Array[StringName] = [
 	DEATH_KEEP,
 	ESSENCE_GAIN,
 ]
+# ABILITY_SLOTS и BANK_SLOTS войдут в ALL вместе с веткой слотов: каталог обязан быть занят навыками (skill_economy_check).
 
 ## источник → {"flat": {стат: сумма}, "mult": {стат: произведение}}; по источникам — чтобы снять один целиком.
 var _sources: Dictionary = {}

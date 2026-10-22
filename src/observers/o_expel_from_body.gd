@@ -65,8 +65,34 @@ static func _settle_lifespan(soul: Entity, voluntary: bool) -> void:
 				RunStats.award_soul_points(
 					RS_RunStats.POINTS_CLEAN_EXIT, RS_SoulPointsTable.current().clean_exit_points
 				)
+				# Поглощение — тот же чистый выход (решение 22.10): способности тела остаются душе до конца забега.
+				absorb_abilities(soul)
 	else:
 		var keep := C_StatModifiers.of(
 			soul, C_StatModifiers.DEATH_KEEP, GameConfig.config.lifespan_death_fraction
 		)
 		life.current = minf(life.current, life.effective_max(soul) * keep)
+
+
+## Способности надетого тела — душе: в открытый слот, в банк или в очередь выбора (полный банк спрашивает экран, UIManager). Зовётся до снятия трейтов.
+static func absorb_abilities(soul: Entity) -> void:
+	var loadout := soul.get_component(C_AbilityLoadout) as C_AbilityLoadout
+	if loadout == null:
+		return
+	var message := ""
+	for component in E_Body.worn_by(soul):
+		var ability := component as C_Ability
+		if ability == null:
+			continue
+		match loadout.absorb(soul, ability):
+			C_AbilityLoadout.Placement.SLOT:
+				message = tr_line("HUD_MSG_ABILITY_ABSORBED", ability)
+			C_AbilityLoadout.Placement.BANK:
+				message = tr_line("HUD_MSG_ABILITY_BANKED", ability)
+	if message != "":
+		C_ScreenMessage.show_on(soul, message)
+
+
+## Строка сообщения с именем способности: подстановка уже переведённым именем («HUD — спека» §12).
+static func tr_line(key: String, ability: C_Ability) -> String:
+	return TranslationServer.translate(key) % TranslationServer.translate(ability.name_key)

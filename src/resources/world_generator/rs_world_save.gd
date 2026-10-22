@@ -37,6 +37,10 @@ extends Resource
 ## Остаток кармана тела и его объём (C_BodyDecay): иначе загрузка вернула бы тело с полным запасом.
 @export var body_lifespan_remaining: float = 0.0
 @export var body_lifespan_max: float = 0.0
+## Поглощённые способности (C_AbilityLoadout): слоты души по индексу (null — пусто) и банк. Копии компонентов — числа
+## способности переживают правку сцены тела, как потолки HP и запаса.
+@export var ability_slots: Array[C_Ability] = []
+@export var ability_bank: Array[C_Ability] = []
 ## Тела, уже поглощённые в забеге (C_BodyOrigin.body_id): комнаты из сида, без пометки съеденное воскресло бы.
 @export var consumed_body_ids: Array[StringName] = []
 ## Узлы, чью разовую награду забега уже забрали (встреча с Архитектором); иначе выход в меню давал бы награду заново.
@@ -74,5 +78,7 @@ func clear_run() -> void:
 	body_health_max = 0.0
 	body_lifespan_remaining = 0.0
 	body_lifespan_max = 0.0
+	ability_slots = []
+	ability_bank = []
 	consumed_body_ids.clear()
 	rewarded_node_ids.clear()

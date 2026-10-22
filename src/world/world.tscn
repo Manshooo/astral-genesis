@@ -41,6 +41,9 @@
 [ext_resource type="Script" path="res://src/systems/physics/s_attack.gd" id="38_attack"]
 [ext_resource type="Script" path="res://src/observers/o_enemy_death.gd" id="39_enemydeath"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_skill_conditions.gd" id="40_skillcond"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_ability_loadout.gd" id="41_loadout"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_abilities.gd" id="42_abilities"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_regeneration.gd" id="43_regen"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -116,6 +119,18 @@ group = &"gameplay"
 
 [node name="S_SkillConditions" type="Node" parent="World/Systems/gameplay" unique_id=1979994360]
 script = ExtResource("40_skillcond")
+group = &"gameplay"
+
+[node name="S_AbilityLoadout" type="Node" parent="World/Systems/gameplay" unique_id=1979994370]
+script = ExtResource("41_loadout")
+group = &"gameplay"
+
+[node name="S_Abilities" type="Node" parent="World/Systems/gameplay" unique_id=1979994371]
+script = ExtResource("42_abilities")
+group = &"gameplay"
+
+[node name="S_Regeneration" type="Node" parent="World/Systems/gameplay" unique_id=1979994372]
+script = ExtResource("43_regen")
 group = &"gameplay"
 
 [node name="S_SoulGlow" type="Node" parent="World/Systems/gameplay" unique_id=1979994353]
