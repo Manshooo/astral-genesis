@@ -15,6 +15,10 @@ extends C_BodyTrait
 
 @export var icon: Texture2D
 
+## Ключ имени тела, из которого душа забрала способность (E_Body.display_name_key); у способности тела пуст.
+## Хранится в сейве, но не в инспекторе: его ставит поглощение.
+@export_storage var source_key: StringName = &""
+
 ## Сколько ждать до следующего применения, с. Рабочее состояние: копия в банке хранит своё.
 var cooldown_left := 0.0
 
@@ -30,9 +34,20 @@ func refusal(_owner: Entity) -> String:
 	return ""
 
 
-## Копия для души: число и иконка те же, состояние с нуля.
-func absorbed_copy() -> C_Ability:
+## Сколько секунд ещё идёт эффект применения и сколько он длится целиком; 0 — эффекта нет (HUD рисует его слева, §7в).
+func effect_left() -> float:
+	return 0.0
+
+
+func effect_duration() -> float:
+	return 0.0
+
+
+## Копия для души: число и иконка те же, состояние с нуля. [param source] — имя тела-источника; пусто — оставить прежнее (загрузка сейва).
+func absorbed_copy(source: StringName = &"") -> C_Ability:
 	var copy := duplicate() as C_Ability
+	if source != &"":
+		copy.source_key = source
 	copy.absorbed = true
 	copy.cooldown_left = 0.0
 	copy.requested = false

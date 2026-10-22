@@ -14,6 +14,14 @@ var heal_left := 0.0
 var time_left := 0.0
 
 
+func effect_left() -> float:
+	return maxf(time_left, 0.0)
+
+
+func effect_duration() -> float:
+	return seconds
+
+
 ## Лечить нечего без тела, а целое тело — лишний откат.
 func refusal(owner: Entity) -> String:
 	var health := owner.get_component(C_Health) as C_Health if owner else null

@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[node name="EffectGroup" type="VBoxContainer"]
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Caption" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudEffectCaption"
+uppercase = true
+
+[node name="Rows" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6

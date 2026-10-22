@@ -13,7 +13,7 @@ extends "res://dev/check_harness.gd"
 const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 const HOUND_SCENE := "res://src/entities/body/e_body_hound.tscn"
 const HUD_SCENE := "res://src/ui/hud/hud.tscn"
-const CHOICE_SCENE := "res://src/ui/ability_choice/ability_choice_screen.tscn"
+const CHOICE_SCENE := "res://src/ui/bank_choice/bank_choice_screen.tscn"
 
 
 ## Разные классы — разные способности: душа не берёт вторую копию того же класса.
@@ -78,14 +78,20 @@ func _check_hound_scene() -> void:
 	_check("у Регенерации есть имя и иконка", regen.name_key != &"" and regen.icon != null, "")
 
 
+## C_Embodied — ради имени тела: поглощение подписывает им способность, эффекты — свою группу.
 func _wear_hound(player: Entity) -> void:
 	for worn in E_Body.traits_of_scene(HOUND_SCENE):
 		player.add_component(worn)
+	var embodied := C_Embodied.new()
+	embodied.body_scene_path = HOUND_SCENE
+	player.add_component(embodied)
 
 
 func _shed_body(player: Entity) -> void:
 	for worn in E_Body.worn_by(player):
 		player.remove_component(worn)
+	if player.has_component(C_Embodied):
+		player.remove_component(C_Embodied)
 
 
 func _tick(seconds: float, step: float = 0.1) -> void:
@@ -105,10 +111,20 @@ func _check_wear_and_absorb(player: Entity, loadout: C_AbilityLoadout) -> void:
 	var view := loadout.view(player, 1)
 	_check("во плоти слот 1 — способность тела", view.body is C_Regeneration and view.soul == null, "")
 
+	# Ранний выход (тело выжато меньше чем наполовину) не поглощает и говорит об этом мыслью.
+	var decay := player.get_component(C_BodyDecay) as C_BodyDecay
+	decay.remaining = decay.effective_maximum(player)
+	O_ExpelFromBody._settle_lifespan(player, true)
+	var unripe := player.get_component(C_ScreenMessage) as C_ScreenMessage
+	_check("ранний выход: поглощения нет, мысль объясняет",
+		loadout.slots[0] == null and unripe != null and unripe.text == "HUD_MSG_ABSORB_UNRIPE",
+		unripe.text if unripe else "нет мысли")
+
 	O_ExpelFromBody.absorb_abilities(player)
 	var absorbed := loadout.slots[0]
 	_check("чистый выход кладёт способность в открытый слот души",
 		absorbed is C_Regeneration and absorbed.absorbed, str(loadout.slots))
+	_check("поглощённая помнит тело-источник", absorbed.source_key == &"BODY_HOUND", str(absorbed.source_key))
 	_check("поглощённая — копия, а не компонент тела", absorbed != view.body, "")
 	_check("поглощённая не уезжает с телом", not E_Body.is_wearable(absorbed), "")
 
@@ -171,12 +187,18 @@ func _check_regeneration(player: Entity) -> void:
 	inp.ability_pressed = 1
 	_tick(0.1)
 	_check("применение ставит откат", regen.cooldown_left > 19.0, str(regen.cooldown_left))
+	var healing := _timed_effect(player)
+	_check("пока лечит, слева эффект в группе тела с остатком",
+		healing != null and healing.caption_key == &"BODY_HOUND" and healing.tint == UI_HudMood.BODY
+			and healing.left > 4.0 and is_equal_approx(healing.duration, 5.0),
+		"нет эффекта" if healing == null else "%s %s %.1f/%.1f" % [healing.caption_key, healing.tint, healing.left, healing.duration])
 	_tick(5.0)
 	var expected := 50.0 + 150.0 * 0.3
 	_check("за 5 с вернулось 30 % максимума", absf(health.current - expected) < 1.0,
 		"HP=%.1f, ждали %.1f" % [health.current, expected])
 	_tick(1.0)
 	_check("после конца лечение не идёт", absf(health.current - expected) < 1.0, "HP=%.1f" % health.current)
+	_check("лечение кончилось — эффект слева ушёл", _timed_effect(player) == null, "")
 
 	inp.ability_pressed = 1
 	health.current = 60.0
@@ -184,6 +206,14 @@ func _check_regeneration(player: Entity) -> void:
 	_check("на откате нажатие пропадает", absf(health.current - 60.0) < 0.01, "HP=%.1f" % health.current)
 	_shed_body(player)
 	_tick(0.1)
+
+
+## Временный эффект способности среди эффектов слева или null.
+func _timed_effect(player: Entity) -> UI_HudEffects.Effect:
+	for effect in UI_HudEffects.collect(player):
+		if effect.duration > 0.0:
+			return effect
+	return null
 
 
 func _check_slots_stat(player: Entity) -> void:
@@ -200,6 +230,8 @@ func _check_save_round_trip(loadout: C_AbilityLoadout) -> void:
 	_check("сейв: слот души вернулся поглощённой копией",
 		restored.slots[0] is C_Regeneration and restored.slots[0].absorbed
 			and restored.slots[0] != loadout.slots[0], str(restored.slots))
+	_check("сейв: тело-источник сохранилось", restored.slots[0].source_key == &"BODY_HOUND",
+		str(restored.slots[0].source_key))
 	_check("сейв: пустые слоты пустые", restored.slots.size() == 4 and restored.slots[1] == null, "")
 	_check("сейв: банк вернулся", restored.bank.size() == 2, str(restored.bank))
 
@@ -223,25 +255,32 @@ func _check_hud(player: Entity, loadout: C_AbilityLoadout) -> void:
 	_shed_body(player)
 	_tick(0.1)
 
-	var effects := UI_HudSoulEffects.active_effects(player)
-	_check("HUD: вне тела «Бесплотность» показывает полёт и просачивание",
-		effects.has("HUD_EFFECT_FLIGHT") and effects.has("HUD_EFFECT_PHASING"), str(effects))
+	var names := PackedStringArray()
+	for effect in UI_HudEffects.collect(player):
+		if effect.caption_key == &"HUD_EFFECT_INCORPOREAL" and effect.icon != null:
+			names.append(effect.name_key)
+	_check("HUD: вне тела «Бесплотность» показывает полёт и просачивание со значками",
+		names.has("HUD_EFFECT_FLIGHT") and names.has("HUD_EFFECT_PHASING"), str(names))
 	hud.queue_free()
 
 
 func _check_choice_screen(player: Entity, loadout: C_AbilityLoadout) -> void:
 	loadout.absorb(player, FakeDash.new())
-	var screen := (load(CHOICE_SCENE) as PackedScene).instantiate() as UI_AbilityChoiceScreen
+	var screen := (load(CHOICE_SCENE) as PackedScene).instantiate() as UI_BankChoiceScreen
 	add_child(screen)
 	screen.setup(player, loadout)
 	await get_tree().process_frame
-	var options := screen.get_node("Content/Column/Options").get_child_count()
+	var options := screen.get_node("Content/Column/Replace/Options").get_child_count()
 	_check("экран выбора: по кнопке на ячейку банка", options == loadout.bank.size(), str(options))
+	var nameless := loadout.slots[0].duplicate() as C_Ability
+	nameless.source_key = &""
+	_check("экран выбора: у поглощённой строка источника называет тело",
+		UI_BankChoiceScreen.origin_line(loadout.slots[0]) != UI_BankChoiceScreen.origin_line(nameless), "")
 	screen.choose(1)
 	_check("экран выбора: замена применилась", loadout.bank[1] is FakeDash and loadout.pending.is_empty(), "")
 
 	loadout.absorb(player, FakeSpit.new())
-	var closed := (load(CHOICE_SCENE) as PackedScene).instantiate() as UI_AbilityChoiceScreen
+	var closed := (load(CHOICE_SCENE) as PackedScene).instantiate() as UI_BankChoiceScreen
 	add_child(closed)
 	closed.setup(player, loadout)
 	closed.on_closed()

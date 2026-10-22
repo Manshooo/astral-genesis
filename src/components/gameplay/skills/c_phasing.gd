@@ -6,7 +6,3 @@ extends C_SoulTrait
 ## Бит слоя permeable (layer_6): что проницаемо, решает контент. Несущие стены остаются твёрдыми
 ## для всех. Константа здесь, потому что её читает и S_BodySnatch._fits.
 const PERMEABLE_BIT := 1 << 5
-
-
-func effect_key() -> StringName:
-	return &"HUD_EFFECT_PHASING"

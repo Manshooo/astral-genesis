@@ -12,6 +12,7 @@ const FILL := Color(0.02, 0.02, 0.04, 0.4)
 ## Точка спящей поглощённой под способностью тела.
 const SLEEP_DOT_RADIUS := 2.0
 const DASH := 3.0
+const GLOW_STEPS := 5
 const LOCK_ICON := preload("res://assets/ui/icons/lock.svg")
 
 ## Ячейка банка: меньше, без номера.
@@ -20,6 +21,16 @@ const LOCK_ICON := preload("res://assets/ui/icons/lock.svg")
 var state := State.EMPTY
 var icon: Texture2D
 var sleeping := false
+## Новая способность на экране полного банка: полная сирень и свечение (макет 16).
+var glowing := false:
+	set(value):
+		glowing = value
+		queue_redraw()
+## Наведённая ячейка банка там же: светлеет к over.
+var hovered := false:
+	set(value):
+		hovered = value
+		queue_redraw()
 ## Доля оставшегося отката, 0 — готова.
 var cooldown_share := 0.0
 
@@ -57,8 +68,17 @@ func _draw() -> void:
 			draw_rect(box, FILL)
 			draw_rect(box.grow(-0.5), _alpha(UI_HudMood.BODY, 0.6), false, 1.0)
 		State.SOUL:
-			draw_rect(box, FILL)
-			draw_rect(box.grow(-0.5), _alpha(UI_HudMood.SOUL, 0.5), false, 1.0)
+			if hovered:
+				draw_rect(box, _alpha(UI_HudMood.SOUL, 0.14))
+				_draw_glow(box, UI_HudMood.OVER, 0.25)
+				draw_rect(box.grow(-0.5), UI_HudMood.OVER, false, 1.0)
+			elif glowing:
+				draw_rect(box, FILL)
+				_draw_glow(box, UI_HudMood.SOUL, 0.3)
+				draw_rect(box.grow(-0.5), UI_HudMood.SOUL, false, 1.0)
+			else:
+				draw_rect(box, FILL)
+				draw_rect(box.grow(-0.5), _alpha(UI_HudMood.SOUL, 0.5), false, 1.0)
 		State.EMPTY:
 			draw_rect(box.grow(-0.5), _alpha(UI_HudMood.TEXT, 0.2), false, 1.0)
 		State.LOCKED:
@@ -67,7 +87,8 @@ func _draw() -> void:
 		_draw_icon(LOCK_ICON, 10.0 if compact else 14.0, _alpha(UI_HudMood.TEXT, 0.4))
 	elif icon:
 		var tint := UI_HudMood.BODY if state == State.BODY else UI_HudMood.SOUL
-		_draw_icon(icon, 16.0 if compact else 22.0, tint)
+		# Значок — половина ячейки: 22 у слота, 16 у банка, как в макете.
+		_draw_icon(icon, size.x * 0.5, tint)
 	if cooldown_share > 0.0:
 		var shade := box.size.y * cooldown_share
 		draw_rect(Rect2(0.0, box.size.y - shade, box.size.x, shade), COOLDOWN_SHADE)
@@ -78,6 +99,13 @@ func _draw() -> void:
 func _draw_icon(texture: Texture2D, side: float, tint: Color) -> void:
 	var rect := Rect2((size - Vector2(side, side)) / 2.0, Vector2(side, side))
 	draw_texture_rect(texture, rect, false, tint)
+
+
+## Свечение — рамки наружу с убывающей альфой: StyleBox с тенью собирать в коде нельзя, а _draw — рисование.
+func _draw_glow(box: Rect2, color: Color, alpha: float) -> void:
+	for i in range(1, GLOW_STEPS + 1):
+		var fade := 1.0 - float(i) / float(GLOW_STEPS + 1)
+		draw_rect(box.grow(float(i) * 2.0), _alpha(color, alpha * fade * fade), false, 2.0)
 
 
 ## Закрытый слот — пунктиром: сплошная рамка читалась бы как «пусто, но доступно».

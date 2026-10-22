@@ -6,6 +6,6 @@ extends Component
 ## пересадку тело→тело (буфер коалесцирует remove+add C_Embodied). Авторить — в сцене души, не в define_components().
 
 
-## Ключ перевода эффекта «Бесплотности» в левой части HUD (UI_HudSoulEffects); пусто — не показывать.
-func effect_key() -> StringName:
-	return &""
+## Эффект «Бесплотности» в левой части HUD (UI_HudEffects): ключ перевода и значок; пустой ключ — не показывать.
+@export var effect_key: StringName = &""
+@export var effect_icon: Texture2D
