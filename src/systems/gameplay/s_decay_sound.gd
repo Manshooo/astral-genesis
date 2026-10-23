@@ -1,5 +1,5 @@
 # res://src/systems/gameplay/s_decay_sound.gd
-# Группа "gameplay". Ведёт петлю распада (C_DecaySound): вступает, когда убывающий карман падает ниже порога дуги, и глохнет над ним; напряжение — параметром события.
+# Группа "gameplay". Ведёт петлю распада (C_DecaySound): проступает, когда убывающий карман падает ниже порога дуги, и гаснет над ним; напряжение — параметром события.
 # Запас и сила распада — через UI_HudMood.read_vitals и decay(), не своими формулами: звук разошёлся бы с дугой и экраном. Вики: [[Звук]] §3б.
 class_name S_DecaySound
 extends System
@@ -22,8 +22,8 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 
 		if d <= 0.0:
 			if sound.instance != null:
-				sound.instance.stop()
-				# Ссылку роняем: пока её держат, держат и голос (освобождает деструктор биндинга).
+				# Затухание доигрывает рантайм: просто уронить ссылку — деструктор биндинга оборвал бы голос сразу.
+				sound.instance.release_after_fade_out(sound.fade_out)
 				sound.instance = null
 			continue
 
@@ -33,6 +33,7 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 			if sound.instance == null:
 				continue
 			sound.instance.start()
+			sound.instance.fade_in(sound.fade_in)
 
 		if not sound.intensity_parameter.is_empty():
 			sound.instance.set_parameter(sound.intensity_parameter, lerpf(sound.intensity_calm, sound.intensity_max, d))

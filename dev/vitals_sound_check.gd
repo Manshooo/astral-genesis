@@ -18,12 +18,16 @@ class _LoopRecorder:
 
 	var values: Array[float] = []
 	var stopped := false
+	var faded_out := -1.0
 
 	func set_parameter(_name: String, value: float) -> void:
 		values.append(value)
 
 	func stop() -> void:
 		stopped = true
+
+	func release_after_fade_out(duration: float) -> void:
+		faded_out = duration
 
 
 var _requests: Array[String] = []
@@ -105,9 +109,12 @@ func _check_decay(world: World) -> void:
 		"у порога %.3f, у нуля %.3f, диапазон %.2f–%.2f" % [calm, tense, sound.intensity_calm, sound.intensity_max],
 	)
 
-	# --- 6. Снова над порогом — петля глохнет ------------------------------
+	# --- 6. Снова над порогом — петля гаснет, а не обрывается --------------
 	life.current = full
 	ECS.process(0.016, "gameplay")
-	_check("над порогом петля останавливается и отпускается", recorder.stopped and sound.instance == null,
-		"stop: %s" % recorder.stopped)
+	_check(
+		"над порогом петля гаснет за fade_out и отдаётся рантайму, а не обрывается",
+		is_equal_approx(recorder.faded_out, sound.fade_out) and not recorder.stopped and sound.instance == null,
+		"затухание %.2f с (ждали %.2f), stop: %s" % [recorder.faded_out, sound.fade_out, recorder.stopped],
+	)
 	world.remove_entity(soul)
