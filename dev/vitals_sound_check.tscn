@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dev/vitals_sound_check.gd" id="1_vitals_sound"]
+
+[node name="VitalsSoundCheck" type="Node"]
+script = ExtResource("1_vitals_sound")

@@ -51,6 +51,9 @@ func _try_capture(soul: Entity, bs: C_BodySnatch) -> void:
 		return
 
 	_embody(soul, body, form)
+	# Только удавшийся захват: воплощение загрузкой сейва идёт мимо _try_capture и звучать не должно.
+	var soul_node := soul as Node as Node3D
+	AudioManager.play_event_3d(bs.capture_event, soul_node.global_position if soul_node else Vector3.ZERO)
 
 
 ## Структурные правки — через cmd (правило v9); буфер применяется после process() (PER_SYSTEM), remove+add коалесцируются в один переезд архетипа.
