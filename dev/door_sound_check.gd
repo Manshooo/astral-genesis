@@ -1,13 +1,15 @@
 extends "res://dev/check_harness.gd"
-## Проверка сигналов двери в её звуковое событие (`S_DoorMotion` → `C_DoorMotion.sound`).
+## Проверка звука хода двери (`S_DoorMotion` → `C_DoorMotion.sound`).
 ## Запуск: godot --headless dev/door_sound_check.tscn
 ##
-## Инвариант тихий: событие двери держит петлю привода, пока не придёт сигнал конца
-## хода, и пропущенный door_stopped звучит мотором, который не глохнет, — ошибки нет.
+## Инвариант тихий: событие хода держит петлю привода, пока не придёт stop, и
+## пропущенный stop звучит мотором, который не глохнет, а ход без своего события —
+## тишиной; ошибки не бросает ни то, ни другое.
 ##
-## Событие подменено записывающим объектом: S_DoorMotion заводит инстанс, только если
-## поле пусто, и дальше лишь шлёт в него сигналы. Так проверка не зависит ни от
-## рантайма byProd, ни от собранного проекта звука, которых в репозитории нет.
+## Старт хода наблюдается по `AudioManager.event_requested` — он шлётся до всякой
+## проверки на загруженный проект. Окончание — подставным объектом в
+## `C_DoorMotion.sound`, положенным после старта: так проверка не зависит ни от
+## рантайма byProd, ни от того, есть ли событие в собранном проекте звука.
 
 const DOOR_SCENES := [
 	"res://src/entities/door/complex_door.tscn",
@@ -15,19 +17,26 @@ const DOOR_SCENES := [
 ]
 
 
-## Записывает сигналы вместо ByProdEventInstance.
-class _SignalRecorder:
+## Записывает, что сделали с инстансом события, вместо ByProdEventInstance.
+class _InstanceRecorder:
 	extends RefCounted
 
-	var signals: Array[String] = []
+	var calls: Array[String] = []
 
 	func send_signal(signal_name: String) -> void:
-		signals.append(signal_name)
+		calls.append("signal:" + signal_name)
+
+	func release_when_finished() -> void:
+		calls.append("release")
+
+
+var _requests: Array[String] = []
 
 
 func _ready() -> void:
 	var world := _new_world()
 	_add_systems(world, "physics", [S_DoorMotion.new()])
+	AudioManager.event_requested.connect(func(path: String, _position: Vector3) -> void: _requests.append(path))
 
 	for path: String in DOOR_SCENES:
 		await _run(world, path)
@@ -46,59 +55,70 @@ func _run(world: World, path: String) -> void:
 	if motion == null:
 		return
 
-	var recorder := _SignalRecorder.new()
-	motion.sound = recorder
 	# Сколько физкадров на ход в одну сторону — с запасом, по duration двери, а не литералом.
 	var travel := ceili(motion.duration * Engine.physics_ticks_per_second) + 5
+	var ended := ["signal:" + motion.stop_signal, "release"]
 
-	# --- 1. Открытие: сигнал на старте и сигнал на конце хода ----------
+	# --- 1. Открытие: своё событие на старте, stop и отдача рантайму на конце ---
+	_requests.clear()
 	S_DoorMotion.open(door)
-	await _physics(2)
 	_check(
-		"%s: на старте открытия — opened, конца хода ещё нет" % name,
-		recorder.signals == [motion.opened_signal],
-		"сигналы: %s" % [recorder.signals],
+		"%s: старт открытия заводит событие хода" % name,
+		_requests == [motion.event_path],
+		"запросы: %s" % [_requests],
 	)
+	var opening := _InstanceRecorder.new()
+	motion.sound = opening
 	await _physics(travel)
 	_check(
-		"%s: доехав до открытой, дверь шлёт stopped ровно раз" % name,
-		recorder.signals == [motion.opened_signal, motion.stopped_signal]
-			and motion.phase == C_DoorMotion.Phase.OPEN,
-		"сигналы: %s, фаза %d" % [recorder.signals, motion.phase],
+		"%s: доехав до открытой, ход получает stop и уходит рантайму" % name,
+		opening.calls == ended and motion.sound == null and motion.phase == C_DoorMotion.Phase.OPEN,
+		"вызовы: %s, фаза %d" % [opening.calls, motion.phase],
 	)
 
-	# --- 2. Стоит открытой — новых сигналов нет -------------------------
-	recorder.signals.clear()
-	await _physics(int(Engine.physics_ticks_per_second * motion.hold * 0.5))
-	_check("%s: стоящая открытой дверь молчит" % name, recorder.signals.is_empty(), "сигналы: %s" % [recorder.signals])
-
-	# --- 3. Закрытие сама по hold: closed, затем stopped ----------------
-	await _physics(int(Engine.physics_ticks_per_second * motion.hold) + travel)
+	# --- 2. Закрытие по hold — тот же путь: новое событие, stop на конце ---------
+	_requests.clear()
+	await _physics(int(Engine.physics_ticks_per_second * motion.hold) + 2)
 	_check(
-		"%s: закрылась сама — closed, затем stopped" % name,
-		recorder.signals == [motion.closed_signal, motion.stopped_signal]
-			and motion.phase == C_DoorMotion.Phase.CLOSED,
-		"сигналы: %s, фаза %d" % [recorder.signals, motion.phase],
+		"%s: закрытие заводит своё событие хода, тот же путь, что открытие" % name,
+		_requests == [motion.event_path] and motion.phase == C_DoorMotion.Phase.CLOSING,
+		"запросы: %s, фаза %d" % [_requests, motion.phase],
+	)
+	var closing := _InstanceRecorder.new()
+	motion.sound = closing
+	await _physics(travel)
+	_check(
+		"%s: доехав до закрытой, ход получает stop и уходит рантайму" % name,
+		closing.calls == ended and motion.sound == null and motion.phase == C_DoorMotion.Phase.CLOSED,
+		"вызовы: %s, фаза %d" % [closing.calls, motion.phase],
 	)
 
-	# --- 4. Разворот посреди закрытия: opened без stopped ---------------
+	# --- 3. Разворот посреди закрытия: прерванный ход без окончания ------------
 	S_DoorMotion.open(door)
 	await _physics(travel)
-	recorder.signals.clear()
 	S_DoorMotion.close(door)
+	var interrupted := _InstanceRecorder.new()
+	motion.sound = interrupted
 	await _physics(travel / 3)
+	_requests.clear()
 	S_DoorMotion.open(door)
-	await _physics(2)
 	_check(
-		"%s: развёрнутая с середины закрытия — closed, opened и без stopped" % name,
-		recorder.signals == [motion.closed_signal, motion.opened_signal],
-		"сигналы: %s — stopped посреди хода оборвал бы звук до упора" % [recorder.signals],
+		"%s: развёрнутый ход не получает stop — удар в упор посреди проёма" % name,
+		interrupted.calls.is_empty() and motion.sound != interrupted,
+		"вызовы прерванного: %s" % [interrupted.calls],
 	)
+	_check(
+		"%s: разворот заводит новое событие хода" % name,
+		_requests == [motion.event_path],
+		"запросы: %s" % [_requests],
+	)
+	var reopening := _InstanceRecorder.new()
+	motion.sound = reopening
 	await _physics(travel)
 	_check(
-		"%s: после разворота доехала и прислала stopped" % name,
-		recorder.signals.back() == motion.stopped_signal and motion.phase == C_DoorMotion.Phase.OPEN,
-		"сигналы: %s" % [recorder.signals],
+		"%s: после разворота ход доезжает и получает stop" % name,
+		reopening.calls == ended and motion.phase == C_DoorMotion.Phase.OPEN,
+		"вызовы: %s" % [reopening.calls],
 	)
 
 	motion.sound = null

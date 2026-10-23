@@ -45,6 +45,7 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_abilities.gd" id="42_abilities"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_regeneration.gd" id="43_regen"]
 [ext_resource type="Script" path="res://src/observers/o_combat_mark.gd" id="44_combatmark"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_decay_sound.gd" id="45_decaysound"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -136,6 +137,10 @@ group = &"gameplay"
 
 [node name="S_SoulGlow" type="Node" parent="World/Systems/gameplay" unique_id=1979994353]
 script = ExtResource("36_soulglow")
+group = &"gameplay"
+
+[node name="S_DecaySound" type="Node" parent="World/Systems/gameplay"]
+script = ExtResource("45_decaysound")
 group = &"gameplay"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

@@ -2,7 +2,7 @@ class_name C_DoorMotion
 extends Component
 ## Ход двери: куда и за сколько уезжает полотно, сколько стоит открытой, текущая фаза. Одиночное полотно вверх,
 ## створки двустворчатой — вбок. Двигает S_DoorMotion, открывает RunManager.use_door. Лежит в сцене двери всегда:
-## настройки — свойство типа двери, а звуковое событие одно на жизнь двери. Фаза в сейв не идёт.
+## настройки — свойство типа двери, а звуковое событие заводится на каждый ход. Фаза в сейв не идёт.
 
 ## Фаза хода — полем, а не тегами: переходы без структурных правок через cmd ([[GECS и правила движка]], FSM).
 enum Phase {
@@ -31,15 +31,10 @@ enum Phase {
 
 @export_group("Звук")
 
-## Событие byProd двери — одно на все её состояния.
+## Событие byProd одного хода полотна — в любую сторону.
 @export var event_path: String = "event:/sfx/door"
-## Сигнал в событие на старте открытия: звук сопровождает движение полотна.
-@export var opened_signal: String = "door_opened"
-## Сигнал в событие на старте закрытия.
-@export var closed_signal: String = "door_closed"
-## Сигнал в событие, когда полотно доехало до конца хода в любую сторону: звук не знает duration
-## и держит петлю, пока его не остановят.
-@export var stopped_signal: String = "door_stopped"
+## Сигнал в событие, когда полотно доехало: звук не знает duration и держит петлю, пока его не остановят.
+@export var stop_signal: String = "stop"
 
 ## Текущая фаза; состояние, не настройка.
 var phase: Phase = Phase.CLOSED
@@ -47,6 +42,6 @@ var phase: Phase = Phase.CLOSED
 var progress: float = 0.0
 ## Сколько секунд дверь уже стоит открытой полностью.
 var held: float = 0.0
-## Живой ByProdEventInstance двери. Тип Object: рантайма byProd может не быть, а ссылка на класс валит парсер
-## (как C_Footsteps.loop_instance); держится всю жизнь двери.
+## ByProdEventInstance текущего хода; null — дверь стоит. Тип Object: рантайма byProd может не быть, а ссылка на
+## класс валит парсер (как C_Footsteps.loop_instance).
 var sound: Object = null
