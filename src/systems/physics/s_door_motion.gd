@@ -22,7 +22,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 			if motion.progress >= 1.0:
 				motion.phase = C_DoorMotion.Phase.OPEN
 				motion.held = 0.0
-				_signal(entity, motion, motion.stopped_signal)
+				_stop_sound(motion)
 			_place_leaves(entity, motion)
 		elif motion.phase == C_DoorMotion.Phase.OPEN:
 			motion.held += delta
@@ -33,7 +33,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 			motion.progress = maxf(0.0, motion.progress - step)
 			if motion.progress <= 0.0:
 				motion.phase = C_DoorMotion.Phase.CLOSED
-				_signal(entity, motion, motion.stopped_signal)
+				_stop_sound(motion)
 			_place_leaves(entity, motion)
 
 
@@ -47,7 +47,7 @@ static func open(door: Entity) -> bool:
 		return false
 	motion.phase = C_DoorMotion.Phase.OPENING
 	_set_interactive(door, false)
-	_signal(door, motion, motion.opened_signal)
+	_start_sound(door, motion)
 	return true
 
 
@@ -58,7 +58,7 @@ static func close(door: Entity) -> void:
 		return
 	motion.phase = C_DoorMotion.Phase.CLOSING
 	_set_interactive(door, true)
-	_signal(door, motion, motion.closed_signal)
+	_start_sound(door, motion)
 
 
 static func _set_interactive(door: Entity, enabled: bool) -> void:
@@ -67,15 +67,25 @@ static func _set_interactive(door: Entity, enabled: bool) -> void:
 		inter.enabled = enabled
 
 
-## Состояние двери — сигнал в её единственное событие: старт хода в каждую сторону и его конец; что прозвучит, решает проект звука. Инстанс заводится на первом сигнале и живёт с дверью; null от AudioManager — дверь молчит, пробуем снова на следующем ходу.
-static func _signal(door: Entity, motion: C_DoorMotion, signal_name: String) -> void:
+## Событие двери — один ход: старт, петля, пока полотно едет, и окончание по сигналу stop ([[Звук]] §3а). Ход, развёрнутый
+## посередине, глушится сразу — его окончание (удар в упор) посреди проёма прозвучало бы ложно; новый старт перекрывает обрыв.
+## null от AudioManager — ход идёт молча.
+static func _start_sound(door: Entity, motion: C_DoorMotion) -> void:
+	motion.sound = AudioManager.create_event_instance(motion.event_path)
 	if motion.sound == null:
-		motion.sound = AudioManager.create_event_instance(motion.event_path)
-		if motion.sound == null:
-			return
-		motion.sound.set_3d_attributes((door as Node as Node3D).global_position, Vector3.ZERO)
-		motion.sound.start()
-	motion.sound.send_signal(signal_name)
+		return
+	motion.sound.set_3d_attributes((door as Node as Node3D).global_position, Vector3.ZERO)
+	motion.sound.start()
+
+
+## Полотно доехало: сигнал окончания и владение — рантайму. Просто уронить ссылку нельзя: деструктор биндинга оборвал бы
+## звук окончания вместе с голосом.
+static func _stop_sound(motion: C_DoorMotion) -> void:
+	if motion.sound == null:
+		return
+	motion.sound.send_signal(motion.stop_signal)
+	motion.sound.release_when_finished()
+	motion.sound = null
 
 
 static func _place_leaves(entity: Entity, motion: C_DoorMotion) -> void:
