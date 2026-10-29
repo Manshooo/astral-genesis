@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RS_RoomPreset" format=3]
+
+[ext_resource type="PackedScene" path="res://src/levels/procedural/rooms/canteen/canteen_room.tscn" id="1_scene"]
+[ext_resource type="Script" uid="uid://wiaffa7aebsm" path="res://src/resources/world_generator/rs_room_preset.gd" id="2_preset"]
+
+[resource]
+script = ExtResource("2_preset")
+display_name = "Столовая"
+scene = ExtResource("1_scene")
+doors_min = 1
+doors_max = 3
+room_type = &"canteen"
+metadata/_custom_type_script = "uid://wiaffa7aebsm"

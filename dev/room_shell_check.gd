@@ -10,7 +10,7 @@ extends "res://dev/check_harness.gd"
 ##   1. все комнаты генератора — коробки, и коробка каждой = footprint × клетка;
 ##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5) и не
 ##      выходят за footprint коробки (в толщу стены — можно);
-##   3. сборка на настоящих деталях каждого кита в игре (P, X): план с комнатой
+##   3. сборка на настоящих деталях каждого кита в игре (P, X, A): план с комнатой
 ##      2×2×1 и веткой, стены и торцы по маске — и лучи по коллизии, как у
 ##      corridor_spawn_check; у коробки со стенами в меше — заглушки на
 ##      невыбранных сокетах и ни одной стены поверх нарисованных;
@@ -30,6 +30,7 @@ const KIT_P_ROOM := "res://src/levels/procedural/rooms/kit_p/room_p_2x2x1.tscn"
 const KIT_ROOMS: Array[String] = [
 	KIT_P_ROOM,
 	"res://src/levels/procedural/rooms/kit_x/room_x_2x2x1.tscn",
+	"res://src/levels/procedural/rooms/kit_a/room_a_2x2x1.tscn",
 	"res://src/levels/procedural/rooms/kit_p/room_p_walled_2x2x1.tscn",
 ]
 ## Зона перед сокетом, свободная от пропов: 3 м вдоль стены, 2 м вглубь комнаты,
