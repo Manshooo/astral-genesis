@@ -2,7 +2,9 @@
 
 [ext_resource type="Script" path="res://src/resources/dressing/rs_place_setting.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_glass/SM_glass.glb" id="2_glass"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_bowl/SM_bowl.glb" id="3_bowl"]
 
 [resource]
 script = ExtResource("1_script")
+deep_bowl = ExtResource("3_bowl")
 glass = ExtResource("2_glass")

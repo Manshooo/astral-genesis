@@ -45,6 +45,11 @@ _subresources={
 "use_external/enabled": true,
 "use_external/fallback_path": "res://assets/materials/MAT_furniture.tres",
 "use_external/path": "uid://cs5xo7m48fxr"
+},
+"MAT_furniture_metal": {
+"use_external/enabled": true,
+"use_external/fallback_path": "res://assets/materials/MAT_furniture_metal.tres",
+"use_external/path": "res://assets/materials/MAT_furniture_metal.tres"
 }
 }
 }
