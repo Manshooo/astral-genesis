@@ -9,8 +9,9 @@ extends "res://dev/check_harness.gd"
 ## Пять частей:
 ##   1. все комнаты генератора — коробки, и коробка каждой = footprint × клетка;
 ##   2. пропы не заходят в зоны перед сокетами ([[Метрики и кит]] §3, §5) и не
-##      выходят за footprint коробки (в толщу стены — можно);
-##   3. сборка на настоящих деталях каждого кита в игре (P, X): план с комнатой
+##      выходят за footprint коробки (в толщу стены — можно) — и в сцене, и после
+##      обстановки по сиду (RoomDressing) на многих сидах;
+##   3. сборка на настоящих деталях каждого кита в игре (P, X, A): план с комнатой
 ##      2×2×1 и веткой, стены и торцы по маске — и лучи по коллизии, как у
 ##      corridor_spawn_check; у коробки со стенами в меше — заглушки на
 ##      невыбранных сокетах и ни одной стены поверх нарисованных;
@@ -30,6 +31,7 @@ const KIT_P_ROOM := "res://src/levels/procedural/rooms/kit_p/room_p_2x2x1.tscn"
 const KIT_ROOMS: Array[String] = [
 	KIT_P_ROOM,
 	"res://src/levels/procedural/rooms/kit_x/room_x_2x2x1.tscn",
+	"res://src/levels/procedural/rooms/kit_a/room_a_2x2x1.tscn",
 	"res://src/levels/procedural/rooms/kit_p/room_p_walled_2x2x1.tscn",
 ]
 ## Зона перед сокетом, свободная от пропов: 3 м вдоль стены, 2 м вглубь комнаты,
@@ -42,6 +44,8 @@ const CHEST := 1.5
 ## Выше проёма (4.25), но ниже потолка коридора (5.0): здесь и стена комнаты, и
 ## торец коридора обязаны быть сплошными.
 const ABOVE_OPENING := 4.8
+## Сидов на обстановку комнаты: разброс мал, нарушение — хвост распределения.
+const DRESSING_SEEDS := 200
 
 
 func _ready() -> void:
@@ -115,7 +119,26 @@ func _check_zones(path: String, plan: RS_LayerPlan) -> void:
 	# Содержимое, перенесённое из комнаты 18 м, могло остаться там, где теперь стена.
 	var inside := _props_outside(room, plan)
 	_check("%s: пропы не выходят за footprint коробки" % path.get_file(), inside.is_empty(), ", ".join(inside))
+	var dressed := not room.find_children("*", "Node3D", true, false).filter(
+		func(n: Node) -> bool: return n.has_method(RoomDressing.METHOD)).is_empty()
 	room.queue_free()
+	if dressed:
+		_check_dressed_zones(path, plan)
+
+
+## Обстановка по сиду двигает пропы со своих мест (RoomDressing): сцена может быть чистой, а сдвинутый стул —
+## встать в зону перед сокетом на одном сиде из многих. Поэтому та же сверка — на каждом из DRESSING_SEEDS.
+func _check_dressed_zones(path: String, plan: RS_LayerPlan) -> void:
+	var problems: Array[String] = []
+	for run_seed in DRESSING_SEEDS:
+		var room := (load(path) as PackedScene).instantiate() as Node3D
+		add_child(room)
+		RoomDressing.dress_room(room, &"room", 1, run_seed)
+		for hit in _props_in_zones(room, plan) + _props_outside(room, plan):
+			problems.append("сид %d: %s" % [run_seed, hit])
+		room.free()
+	_check("%s: обстановка на %d сидах не заходит в зоны сокетов и за footprint" % [path.get_file(), DRESSING_SEEDS],
+		problems.is_empty(), ", ".join(problems.slice(0, 5)))
 
 
 ## Пропы, чья геометрия в плане выходит за границу клеток коробки. Толща стены
