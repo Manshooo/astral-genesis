@@ -593,8 +593,8 @@ class GP_OT_rename_textures(Operator):
 
     bl_idname = "godot_pipeline.rename_textures"
     bl_label = "Rename Textures"
-    bl_description = ("Rename Ucupaint's baked images to the project convention "
-                      "(T_door_albedo, T_door_orm, T_door_n), files on disk included")
+    bl_description = ("Rename Ucupaint's baked images and bake targets to the project "
+                      "convention (T_door_albedo, T_door_orm, T_door_n), files on disk included")
     bl_options = {'REGISTER', 'UNDO'}
 
     scope: EnumProperty(
@@ -620,6 +620,14 @@ class GP_OT_rename_textures(Operator):
     def _plan(self, context):
         return ucupaint.plan_renames(self._images(context), self.base.strip(), self.rename_files)
 
+    def _target_plan(self, context):
+        if self.scope == 'ALL':
+            trees = ucupaint.all_layer_trees()
+        else:
+            trees = ucupaint.layer_trees_of_materials(
+                ucupaint.materials_of_objects(context.selected_objects))
+        return ucupaint.plan_target_renames(trees, self.base.strip())
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=460)
 
@@ -630,6 +638,7 @@ class GP_OT_rename_textures(Operator):
         layout.prop(self, "base")
 
         plans, skipped = self._plan(context)
+        targets = self._target_plan(context)
         layout.separator()
 
         if plans:
@@ -653,8 +662,16 @@ class GP_OT_rename_textures(Operator):
                     sorted({p.suffix for p in stray})), icon='ERROR')
                 warn.label(text="AO, roughness и metallic должны быть упакованы в ORM",
                            icon='BLANK1')
-        else:
+        elif not targets:
             layout.label(text="Нечего переименовывать", icon='CHECKMARK')
+
+        if targets:
+            box = layout.box()
+            box.label(text="Цели запечки Ucupaint (%d)" % len(targets), icon='NODETREE')
+            for plan in targets[:8]:
+                box.label(text="%s  ->  %s" % (plan.old_name, plan.new_name), icon='BLANK1')
+            if len(targets) > 8:
+                box.label(text="… ещё %d" % (len(targets) - 8), icon='BLANK1')
 
         if skipped:
             box = layout.box()
@@ -664,7 +681,9 @@ class GP_OT_rename_textures(Operator):
 
     def execute(self, context):
         plans, _skipped = self._plan(context)
-        if not plans:
+        # Цели считаются до переименования картинок: имя цели берётся из её картинки.
+        targets = self._target_plan(context)
+        if not plans and not targets:
             self.report({'WARNING'}, "Нечего переименовывать")
             return {'CANCELLED'}
 
@@ -676,6 +695,12 @@ class GP_OT_rename_textures(Operator):
                 problems.append("%s: %s" % (plan.image.name, error))
             else:
                 done += 1
+        for plan in targets:
+            error = ucupaint.apply_target_plan(plan)
+            if error:
+                problems.append("%s: %s" % (plan.old_name, error))
+            else:
+                done += 1
 
         for message in problems:
             print("[godot_pipeline] %s" % message)
@@ -683,7 +708,7 @@ class GP_OT_rename_textures(Operator):
             self.report({'WARNING'}, "%d переименовано, %d с ошибкой (см. консоль)"
                         % (done, len(problems)))
         else:
-            self.report({'INFO'}, "%d текстур(ы) переименовано" % done)
+            self.report({'INFO'}, "%d текстур(ы) и целей запечки переименовано" % done)
         return {'FINISHED'}
 
 

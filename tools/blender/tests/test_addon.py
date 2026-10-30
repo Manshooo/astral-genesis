@@ -57,6 +57,12 @@ CASES = [
     ("UCU_MAT_Door Normal", "T_Door_n"),
     # Уже испорченное прежним ренеймером имя чинится повторным прогоном.
     ("T_Ucupaint_MAT_architect_artifact_albedo", "T_architect_artifact_albedo"),
+    # Конвертация в Ucupaint 3.0 дописывает « 1», Blender — «.001».
+    ("T_Door_albedo 1", "T_Door_albedo"),
+    ("MAT_door Color.001", "T_door_albedo"),
+    # Каналы 3.0: высота отдельно от нормали, векторное смещение — не высота.
+    ("MAT_door Height", "T_door_height"),
+    ("MAT_door Vector Displacement", "T_door_vdm"),
 ]
 for source, expected in CASES:
     got = ucupaint.target_name(source)
@@ -71,6 +77,34 @@ for source in ("Armor", "Colorful", "Shield_arm", "upper_arm", "MAT_door"):
 
 plans, skipped = ucupaint.plan_renames([], "", False)
 check(plans == [] and skipped == [], "пустой список не падает")
+
+print("--- цели запечки Ucupaint 3.0 ---")
+# Тест идёт с --factory-startup, без Ucupaint, поэтому дерево слоёв — заглушка
+# с теми же полями, что читает ренеймер.
+from types import SimpleNamespace as NS                        # noqa: E402
+
+
+def fake_target(name, image_name=""):
+    node = NS(image=NS(name=image_name)) if image_name else None
+    return NS(name=name, data_type='IMAGE', baked_node=name if node else ""), node
+
+
+targets = [
+    fake_target("T_Door_albedo 1", "T_Door_albedo 1"),        # конвертированная
+    fake_target("MAT_crate Roughness"),                       # канал печёт сюда
+    fake_target("MAT_crate ORM"),                             # цель ORM каналов
+    fake_target("MAT_crate Normal without Height"),           # запасная Ucupaint
+]
+nodes = {t.baked_node: n for t, n in targets if n is not None}
+tree = NS(name="Ucupaint MAT_crate", nodes=NS(get=nodes.get), yp=NS(
+    channels=[NS(bake_target_name=n) for n in
+              ("T_Door_albedo 1", "MAT_crate Roughness", "MAT_crate ORM")],
+    bake_targets=[t for t, _ in targets]))
+got = {p.old_name: p.new_name for p in ucupaint.plan_target_renames([tree])}
+check(got == {"T_Door_albedo 1": "T_Door_albedo",
+              "MAT_crate Roughness": "T_crate_roughness",
+              "MAT_crate ORM": "T_crate_orm"},
+      "цели по конвенции, запасная не тронута (получено %r)" % got)
 
 
 # -- 2. имена слоёв ---------------------------------------------------------
@@ -285,7 +319,7 @@ for name in ("T_door_albedo.png", "T_door_n.png", "T_door_orm.png", "T_door_emis
 
 # Промежуточные: именно из них Ucupaint собирает ORM, но в игре они не нужны.
 for name in ("T_door_ao.png", "T_door_roughness.png", "T_door_metallic.png",
-             "T_door_height.png"):
+             "T_door_height.png", "T_door_vdm.png"):
     check(textures.classify(name) == "intermediate", "остаётся в .blend: %s" % name)
 
 # Нераспознанное копируется, а не выбрасывается: ошибиться в эту сторону дешевле.

@@ -22,6 +22,10 @@ import bpy
 # token has to win, or «Ambient Occlusion» is read as «Occlusion»… and worse,
 # «Base Color» as «Color» would be right by luck while «Color Mask» would not.
 CHANNEL_MAP = [
+    # Канал Ucupaint 3.0. Без своей строки «Vector Displacement» читался бы по
+    # хвосту как «displacement», то есть как карта высот, а это другая карта.
+    ("vector displacement", "vdm"),
+    ("vdm", "vdm"),
     ("ambient occlusion", "ao"),
     ("occlusion roughness metallic", "orm"),
     ("ao roughness metallic", "orm"),
@@ -62,6 +66,11 @@ CANONICAL = {"albedo", "orm", "n", "emission"}
 SEPARATORS = " _-."
 PREFIX = "T_"
 
+# Хвост дубликата: «.001» дописывает Blender, « 1» — Ucupaint. Конвертация файла
+# в Ucupaint 3.0 переименовывает каждую запечённую картинку в уникальное имя и
+# сталкивается с ней же самой: «T_door_albedo» становится «T_door_albedo 1».
+DUPLICATE_TAIL = re.compile(r"(?: \d+|\.\d{3})$")
+
 
 def _strip_separators(text: str) -> str:
     return text.strip(SEPARATORS)
@@ -69,6 +78,7 @@ def _strip_separators(text: str) -> str:
 
 def split_channel(name: str):
     """(base, suffix) for an image name, or (name, "") when nothing matched."""
+    name = DUPLICATE_TAIL.sub("", name)
     lowered = name.lower()
     best = None
     for token, suffix in CHANNEL_MAP:
@@ -138,6 +148,92 @@ def materials_of_objects(objects):
                 seen.add(mat.name)
                 materials.append(mat)
     return materials
+
+
+# -- цели запечки (Ucupaint 3.0) ----------------------------------------------
+#
+# С 3.0 каждый канал печётся в цель запечки, и картинку цель называет своим
+# именем. Цель, названная по конвенции, сразу печёт T_door_albedo, и Save All
+# Baked Images пишет T_door_albedo.png: переименовывать после каждой новой
+# запечки становится нечего. Поэтому ренеймер правит и цели, а не только картинки.
+
+def _is_layer_tree(tree) -> bool:
+    yp = getattr(tree, "yp", None)
+    return yp is not None and getattr(yp, "is_ypaint_node", False)
+
+
+def layer_trees_of_materials(materials):
+    """Ucupaint layer trees used directly by these materials, in a stable order."""
+    trees = []
+    seen = set()
+    for mat in materials:
+        if not mat or not mat.use_nodes or mat.node_tree is None:
+            continue
+        for node in mat.node_tree.nodes:
+            tree = getattr(node, "node_tree", None)
+            if tree is not None and _is_layer_tree(tree) and tree.name not in seen:
+                seen.add(tree.name)
+                trees.append(tree)
+    return trees
+
+
+def all_layer_trees():
+    return [tree for tree in bpy.data.node_groups if _is_layer_tree(tree)]
+
+
+def _baked_image(tree, target):
+    node = tree.nodes.get(target.baked_node) if target.baked_node else None
+    return getattr(node, "image", None)
+
+
+class TargetPlan:
+    """One Ucupaint bake target and its new name."""
+
+    def __init__(self, tree, target, new_name):
+        self.tree = tree
+        self.target = target
+        self.old_name = target.name
+        self.new_name = new_name
+
+
+def plan_target_renames(trees, override: str = ""):
+    """Bake targets to rename, as a list of TargetPlan.
+
+    Only targets that matter: a channel bakes into it, or it already holds a
+    baked image.  The rest are Ucupaint's own spares — «Normal without Height»
+    is read as a height map by its tail, and renaming it would only add noise.
+    The name comes from the baked image when there is one, so the target and
+    its image end up with the same name.
+    """
+    plans = []
+    for tree in trees:
+        yp = tree.yp
+        used = {channel.bake_target_name for channel in yp.channels}
+        taken = {target.name for target in yp.bake_targets}
+        for target in yp.bake_targets:
+            if target.data_type != 'IMAGE':
+                continue
+            image = _baked_image(tree, target)
+            if target.name not in used and image is None:
+                continue
+            new_name = ""
+            if image is not None:
+                new_name = target_name(image.name, override)
+            if not new_name:
+                new_name = target_name(target.name, override)
+            if not new_name or new_name == target.name or new_name in taken:
+                continue
+            taken.add(new_name)
+            plans.append(TargetPlan(tree, target, new_name))
+    return plans
+
+
+def apply_target_plan(plan) -> str:
+    """Rename one bake target. Its own update repoints the channels using it."""
+    plan.target.name = plan.new_name
+    if plan.target.name != plan.new_name:
+        return "имя цели не встало: %s" % plan.target.name
+    return ""
 
 
 class Plan:
