@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/props/SM_tray/SM_tray.glb" id="1_tray"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_dish/SM_dish.glb" id="2_dish"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_glass/SM_glass.glb" id="3_glass"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_cup/SM_cup.glb" id="4_cup"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_fork/SM_fork.glb" id="5_fork"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_spoon/SM_spoon.glb" id="6_spoon"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_tea_spoon/SM_tea_spoon.glb" id="7_tea_spoon"]
+
+[node name="PlaceSetting" type="Node3D"]
+
+[node name="Tray" parent="." instance=ExtResource("1_tray")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+
+[node name="Dish" parent="." instance=ExtResource("2_dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0.007, 0.002)
+
+[node name="Glass" parent="." instance=ExtResource("3_glass")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.007, 0.09)
+
+[node name="Cup" parent="." instance=ExtResource("4_cup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 0.007, -0.05)
+
+[node name="Fork" parent="." instance=ExtResource("5_fork")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0.009, -0.09)
+
+[node name="Spoon" parent="." instance=ExtResource("6_spoon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.085, 0.009, -0.09)
+
+[node name="TeaSpoon" parent="." instance=ExtResource("7_tea_spoon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, 0.009, -0.09)

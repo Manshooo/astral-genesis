@@ -7,9 +7,14 @@
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_A_shell_2x2x1/SM_room_A_shell_2x2x1.glb" id="5_mesh"]
 [ext_resource type="PackedScene" path="res://src/levels/lamp.tscn" id="lamp"]
 [ext_resource type="PackedScene" path="res://src/entities/body/e_body_scientist.tscn" id="body"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_cafe_table/SM_cafe_table.glb" id="table"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_cafe_chair/SM_cafe_chair.glb" id="chair"]
+[ext_resource type="PackedScene" path="res://src/levels/procedural/rooms/canteen/place_setting.tscn" id="setting"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_tray/SM_tray.glb" id="tray"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_dish/SM_dish.glb" id="dish"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_glass/SM_glass.glb" id="glass"]
+[ext_resource type="PackedScene" path="res://assets/props/SM_cup/SM_cup.glb" id="cup"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_desk_A/SM_desk_A.glb" id="desk"]
-[ext_resource type="PackedScene" path="res://assets/props/SM_chair_A/SM_chair_A.glb" id="chair"]
-[ext_resource type="PackedScene" path="res://assets/props/SM_pot_A/SM_pot_A.glb" id="pot"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_shelf_A/SM_shelf_A.glb" id="shelf_a"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_shelf_B/SM_shelf_B.glb" id="shelf_b"]
 
@@ -25,16 +30,19 @@ component_resources = Array[ExtResource("2_component")]([SubResource("Shell")])
 [node name="Visual" parent="." instance=ExtResource("5_mesh")]
 
 [node name="SpawnPoint" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.8, -2)
 
 [node name="LampWest" parent="." instance=ExtResource("lamp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 6.3, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 6.3, 0)
 
 [node name="LampEast" parent="." instance=ExtResource("lamp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 6.3, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 6.3, 0)
+
+[node name="LampCentre" parent="." instance=ExtResource("lamp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.6, 2.5)
 
 [node name="LampCounter" parent="." instance=ExtResource("lamp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.3, -5.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.3, -5.2)
 
 [node name="EssenceSpot1" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.825, -6.9)
@@ -43,139 +51,193 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.825, -6.9)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.4, 0, 0.6)
 
 [node name="EnemySpawn1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.1, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.2, 0.1, 6.2)
 
 [node name="EnemySpawn2" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.1, -5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 0.1, -6.2)
 
-[node name="BodyAisle1" parent="." instance=ExtResource("body")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, -1.5)
+[node name="BodyQueue1" parent="." instance=ExtResource("body")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.6, 0, -4.3)
 
-[node name="BodyAisle2" parent="." instance=ExtResource("body")]
-transform = Transform3D(0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588, 0.2, 0, 1.8)
+[node name="BodyQueue2" parent="." instance=ExtResource("body")]
+transform = Transform3D(0.5, 0, 0.866, 0, 1, 0, -0.866, 0, 0.5, 1.0, 0, -3.4)
 
-[node name="BodyEast" parent="." instance=ExtResource("body")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 4.9, 0, 0.2)
+[node name="BodyAisle" parent="." instance=ExtResource("body")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2, 0, 2)
 
-[node name="TableWest" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 0, 0)
+[node name="TableA" type="Node3D" parent="."]
+transform = Transform3D(0.9848, 0, 0.1736, 0, 1, 0, -0.1736, 0, 0.9848, -4, 0, -4)
 
-[node name="Desk1" parent="TableWest" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, -3)
+[node name="Table" parent="TableA" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="Desk2" parent="TableWest" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, -1)
+[node name="Chair1" parent="TableA" instance=ExtResource("chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
 
-[node name="Desk3" parent="TableWest" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 1)
+[node name="Setting1" parent="TableA" instance=ExtResource("setting")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.42)
 
-[node name="Desk4" parent="TableWest" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 3)
+[node name="Chair2" parent="TableA" instance=ExtResource("chair")]
+transform = Transform3D(-0.342, 0, -0.9397, 0, 1, 0, 0.9397, 0, -0.342, 1.25, 0, 0)
 
-[node name="ChairW1" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, -3.5)
+[node name="Chair3" parent="TableA" instance=ExtResource("chair")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
 
-[node name="ChairW2" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(-0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, -0.2588, -1.2, 0, -2.5)
+[node name="Glass3" parent="TableA" instance=ExtResource("glass")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -0.0868, 0.752, -0.4924)
 
-[node name="ChairW3" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, -1.5)
+[node name="Chair4" parent="TableA" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
 
-[node name="ChairW4" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, -0.5)
+[node name="TableB" type="Node3D" parent="."]
+transform = Transform3D(0.9962, 0, -0.0872, 0, 1, 0, 0.0872, 0, 0.9962, 4, 0, -4)
 
-[node name="ChairW5" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, 0.5)
+[node name="Table" parent="TableB" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="ChairW6" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, 1.5)
+[node name="Chair1" parent="TableB" instance=ExtResource("chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
 
-[node name="ChairW7" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, 2.5)
+[node name="Chair2" parent="TableB" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
 
-[node name="ChairE1" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, -0.1736, -0.9848, 1, 0, 0, 0, -0.9848, 0.1736, 1.52, 0.33, -3.4)
+[node name="Setting2" parent="TableB" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.42, 0.752, 0)
 
-[node name="ChairE2" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, -2.5)
+[node name="Chair3" parent="TableB" instance=ExtResource("chair")]
+transform = Transform3D(0.9063, 0, 0.4226, 0, 1, 0, -0.4226, 0, 0.9063, 0, 0, -1.25)
 
-[node name="ChairE3" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, -1.5)
+[node name="Setting3" parent="TableB" instance=ExtResource("setting")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.42)
 
-[node name="ChairE4" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, -0.5)
+[node name="TableC" type="Node3D" parent="."]
+transform = Transform3D(0.766, 0, 0.6428, 0, 1, 0, -0.6428, 0, 0.766, -4, 0, 0)
 
-[node name="ChairE5" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, 0.5)
+[node name="Table" parent="TableC" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="ChairE6" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(-0.4226, 0, -0.9063, 0, 1, 0, 0.9063, 0, -0.4226, 1.25, 0, 1.5)
+[node name="Chair1" parent="TableC" instance=ExtResource("chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
 
-[node name="ChairE7" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, 2.5)
+[node name="Chair2" parent="TableC" instance=ExtResource("chair")]
+transform = Transform3D(0.5, 0, -0.866, 0, 1, 0, 0.866, 0, 0.5, 0.7361, 0, -0.425)
 
-[node name="ChairE8" parent="TableWest" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, 3.5)
+[node name="Chair3" parent="TableC" instance=ExtResource("chair")]
+transform = Transform3D(0.5, -0.866, 0, 0, 0, 1, -0.866, -0.5, 0, -1.3856, 0.39, -0.8)
 
-[node name="TableEast" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 0, 0)
+[node name="TableD" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="Desk1" parent="TableEast" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, -3)
+[node name="Table" parent="TableD" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="Desk2" parent="TableEast" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, -1)
+[node name="Chair1" parent="TableD" instance=ExtResource("chair")]
+transform = Transform3D(-0.9063, 0, -0.4226, 0, 1, 0, 0.4226, 0, -0.9063, 0, 0, 1.25)
 
-[node name="Desk3" parent="TableEast" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 1)
+[node name="Setting1" parent="TableD" instance=ExtResource("setting")]
+transform = Transform3D(0.6428, 0, 0.766, 0, 1, 0, -0.766, 0, 0.6428, 0.2198, 0.752, 0.4713)
 
-[node name="Desk4" parent="TableEast" instance=ExtResource("desk")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 3)
+[node name="Chair2" parent="TableD" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
 
-[node name="ChairW1" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, -3.5)
+[node name="Cup2" parent="TableD" instance=ExtResource("cup")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4924, 0.752, -0.0868)
 
-[node name="ChairW2" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, -2.5)
+[node name="Chair3" parent="TableD" instance=ExtResource("chair")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
 
-[node name="ChairW3" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, -1.5)
+[node name="Chair4" parent="TableD" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
 
-[node name="ChairW4" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5, -1.4, 0, -0.5)
+[node name="Setting4" parent="TableD" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.42, 0.752, 0)
 
-[node name="ChairW5" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0.2079, 0, 0.9781, 0, 1, 0, -0.9781, 0, 0.2079, -1.15, 0, 0.5)
+[node name="TableE" type="Node3D" parent="."]
+transform = Transform3D(0.9063, 0, 0.4226, 0, 1, 0, -0.4226, 0, 0.9063, 4, 0, 0)
 
-[node name="ChairW6" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0.1736, 0.9848, 1, 0, 0, 0, 0.9848, -0.1736, -1.52, 0.33, 1.6)
+[node name="Table" parent="TableE" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="ChairW7" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, 2.5)
+[node name="Chair1" parent="TableE" instance=ExtResource("chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
 
-[node name="ChairW8" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.8, 0, 3.5)
+[node name="Chair2" parent="TableE" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
 
-[node name="ChairE1" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, -3.5)
+[node name="Chair3" parent="TableE" instance=ExtResource("chair")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
 
-[node name="ChairE2" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, -2.5)
+[node name="Chair4" parent="TableE" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
 
-[node name="ChairE4" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, -0.5)
+[node name="TableF" type="Node3D" parent="."]
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, -4, 0, 4)
 
-[node name="ChairE5" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, 0.5)
+[node name="Table" parent="TableF" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="ChairE6" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, 1.5)
+[node name="Chair1" parent="TableF" instance=ExtResource("chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
 
-[node name="ChairE7" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0.342, 0, -0.9397, 0, 1, 0, 0.9397, 0, 0.342, 1.3, 0, 2.5)
+[node name="Setting1" parent="TableF" instance=ExtResource("setting")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.42)
 
-[node name="ChairE8" parent="TableEast" instance=ExtResource("chair")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.8, 0, 3.5)
+[node name="Chair2" parent="TableF" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+
+[node name="Setting2" parent="TableF" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.42, 0.752, 0)
+
+[node name="Chair3" parent="TableF" instance=ExtResource("chair")]
+transform = Transform3D(0.9063, 0, 0.4226, 0, 1, 0, -0.4226, 0, 0.9063, 0, 0, -1.25)
+
+[node name="Setting3" parent="TableF" instance=ExtResource("setting")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.42)
+
+[node name="Dish4" parent="TableF" instance=ExtResource("dish")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4924, 0.752, 0.0868)
+
+[node name="TableG" type="Node3D" parent="."]
+transform = Transform3D(0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071, 0, 0, 4)
+
+[node name="Table" parent="TableG" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Chair1" parent="TableG" instance=ExtResource("chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+
+[node name="Chair2" parent="TableG" instance=ExtResource("chair")]
+transform = Transform3D(0.1736, 0, -0.9848, 0, 1, 0, 0.9848, 0, 0.1736, 1.0825, 0, -0.625)
+
+[node name="Glass2" parent="TableG" instance=ExtResource("glass")]
+transform = Transform3D(-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5, 0.383, 0.752, -0.3214)
+
+[node name="Chair3" parent="TableG" instance=ExtResource("chair")]
+transform = Transform3D(0.5, 0, 0.866, 0, 1, 0, -0.866, 0, 0.5, -0.7361, 0, -0.425)
+
+[node name="TableH" type="Node3D" parent="."]
+transform = Transform3D(0.9962, 0, 0.0872, 0, 1, 0, -0.0872, 0, 0.9962, 4, 0, 4)
+
+[node name="Table" parent="TableH" instance=ExtResource("table")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Chair1" parent="TableH" instance=ExtResource("chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+
+[node name="Setting1" parent="TableH" instance=ExtResource("setting")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.42)
+
+[node name="Chair2" parent="TableH" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+
+[node name="Chair3" parent="TableH" instance=ExtResource("chair")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
+
+[node name="Chair4" parent="TableH" instance=ExtResource("chair")]
+transform = Transform3D(0, -1, 0, 0, 0, 1, -1, 0, 0, -1.6, 0.39, 0)
+
+[node name="Setting4" parent="TableH" instance=ExtResource("setting")]
+transform = Transform3D(0.766, 0, -0.6428, 0, 1, 0, 0.6428, 0, 0.766, -0.4713, 0.752, 0.2198)
 
 [node name="Counter" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6.9)
@@ -186,44 +248,74 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 0)
 [node name="Desk2" parent="Counter" instance=ExtResource("desk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
 
-[node name="Pot1" parent="Counter" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.825, -0.15)
+[node name="Tray1" parent="Counter" instance=ExtResource("tray")]
+transform = Transform3D(0.9994, 0, -0.0349, 0, 1, 0, 0.0349, 0, 0.9994, -1.4, 0.828, 0.05)
 
-[node name="Pot2" parent="Counter" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.15, 0.825, 0.2)
+[node name="Tray2" parent="Counter" instance=ExtResource("tray")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 0.835, 0.05)
 
-[node name="Pot3" parent="Counter" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.825, -0.1)
+[node name="Tray3" parent="Counter" instance=ExtResource("tray")]
+transform = Transform3D(0.9994, 0, 0.0349, 0, 1, 0, -0.0349, 0, 0.9994, -1.4, 0.842, 0.05)
 
-[node name="Pot4" parent="Counter" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 0.825, 0.15)
+[node name="Tray4" parent="Counter" instance=ExtResource("tray")]
+transform = Transform3D(0.9994, 0, -0.0349, 0, 1, 0, 0.0349, 0, 0.9994, -1.4, 0.849, 0.05)
 
-[node name="Pot5" parent="Counter" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.825, -0.2)
+[node name="Tray5" parent="Counter" instance=ExtResource("tray")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 0.856, 0.05)
 
-[node name="Pot1" parent="TableWest" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.825, -3.2)
+[node name="Tray6" parent="Counter" instance=ExtResource("tray")]
+transform = Transform3D(0.9994, 0, 0.0349, 0, 1, 0, -0.0349, 0, 0.9994, -1.4, 0.863, 0.05)
 
-[node name="Pot2" parent="TableWest" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.825, -1.4)
+[node name="Dish1" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.825, -0.1)
 
-[node name="Pot3" parent="TableWest" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.825, 0.9)
+[node name="Dish2" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.833, -0.1)
 
-[node name="Pot4" parent="TableWest" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.825, 2.7)
+[node name="Dish3" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.841, -0.1)
 
-[node name="Pot1" parent="TableEast" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.825, -2.6)
+[node name="Dish4" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.849, -0.1)
 
-[node name="Pot2" parent="TableEast" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.825, -0.3)
+[node name="Dish5" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.857, -0.1)
 
-[node name="Pot3" parent="TableEast" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.825, 1.6)
+[node name="DishB1" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.825, 0.2)
 
-[node name="Pot4" parent="TableEast" instance=ExtResource("pot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.825, 3.3)
+[node name="DishB2" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.833, 0.2)
+
+[node name="DishB3" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.841, 0.2)
+
+[node name="DishB4" parent="Counter" instance=ExtResource("dish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.849, 0.2)
+
+[node name="Glass1" parent="Counter" instance=ExtResource("glass")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.825, -0.2)
+
+[node name="Glass2" parent="Counter" instance=ExtResource("glass")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.825, -0.1)
+
+[node name="Glass3" parent="Counter" instance=ExtResource("glass")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 0.825, -0.2)
+
+[node name="Glass4" parent="Counter" instance=ExtResource("glass")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.825, 0.05)
+
+[node name="Glass5" parent="Counter" instance=ExtResource("glass")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.68, 0.825, 0.06)
+
+[node name="Cup1" parent="Counter" instance=ExtResource("cup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.825, -0.15)
+
+[node name="Cup2" parent="Counter" instance=ExtResource("cup")]
+transform = Transform3D(0.766, 0, 0.6428, 0, 1, 0, -0.6428, 0, 0.766, 1.35, 0.825, 0.1)
+
+[node name="Cup3" parent="Counter" instance=ExtResource("cup")]
+transform = Transform3D(0.1736, 0, 0.9848, 0, 1, 0, -0.9848, 0, 0.1736, 1.55, 0.825, -0.1)
 
 [node name="ShelfWest" parent="." instance=ExtResource("shelf_a")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.15, 0, 0)
