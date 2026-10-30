@@ -315,6 +315,8 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	_spawn_roster_enemies(entity, node_data)
 	# Находки эссенции на маркерах — до add_entity (LayerFinds.place_in_room).
 	LayerFinds.place_in_room(entity, node_data, graph.run_seed)
+	# Обстановка по сиду — до add_entity и навмеша: убранный стул не должен в него попасть (RoomDressing).
+	RoomDressing.dress_room(entity, node_data.id, node_data.depth, graph.run_seed)
 
 	ECS.world.add_entity(entity)
 

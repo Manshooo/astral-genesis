@@ -14,6 +14,8 @@
 [ext_resource type="PackedScene" path="res://assets/props/SM_dish/SM_dish.glb" id="dish"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_glass/SM_glass.glb" id="glass"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_cup/SM_cup.glb" id="cup"]
+[ext_resource type="Script" path="res://src/levels/dressing/prop_jitter.gd" id="jitter_script"]
+[ext_resource type="Resource" path="res://data/chair_jitter.tres" id="chair_jitter"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_desk_A/SM_desk_A.glb" id="desk"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_shelf_A/SM_shelf_A.glb" id="shelf_a"]
 [ext_resource type="PackedScene" path="res://assets/props/SM_shelf_B/SM_shelf_B.glb" id="shelf_b"]
@@ -73,21 +75,35 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableA" instance=ExtResource("chair")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting1" parent="TableA" instance=ExtResource("setting")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.42)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableA" instance=ExtResource("chair")]
-transform = Transform3D(-0.342, 0, -0.9397, 0, 1, 0, 0.9397, 0, -0.342, 1.25, 0, 0)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting2" parent="TableA" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4, 0.752, 0)
 
 [node name="Chair3" parent="TableA" instance=ExtResource("chair")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
-[node name="Glass3" parent="TableA" instance=ExtResource("glass")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -0.0868, 0.752, -0.4924)
+[node name="Setting3" parent="TableA" instance=ExtResource("setting")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.4)
 
 [node name="Chair4" parent="TableA" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting4" parent="TableA" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4, 0.752, 0)
 
 [node name="TableB" type="Node3D" parent="."]
 transform = Transform3D(0.9962, 0, -0.0872, 0, 1, 0, 0.0872, 0, 0.9962, 4, 0, -4)
@@ -97,18 +113,35 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableB" instance=ExtResource("chair")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting1" parent="TableB" instance=ExtResource("setting")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableB" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting2" parent="TableB" instance=ExtResource("setting")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.42, 0.752, 0)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4, 0.752, 0)
 
 [node name="Chair3" parent="TableB" instance=ExtResource("chair")]
-transform = Transform3D(0.9063, 0, 0.4226, 0, 1, 0, -0.4226, 0, 0.9063, 0, 0, -1.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting3" parent="TableB" instance=ExtResource("setting")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.42)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.4)
+
+[node name="Chair4" parent="TableB" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting4" parent="TableB" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4, 0.752, 0)
 
 [node name="TableC" type="Node3D" parent="."]
 transform = Transform3D(0.766, 0, 0.6428, 0, 1, 0, -0.6428, 0, 0.766, -4, 0, 0)
@@ -118,12 +151,25 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableC" instance=ExtResource("chair")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting1" parent="TableC" instance=ExtResource("setting")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableC" instance=ExtResource("chair")]
 transform = Transform3D(0.5, 0, -0.866, 0, 1, 0, 0.866, 0, 0.5, 0.7361, 0, -0.425)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting2" parent="TableC" instance=ExtResource("setting")]
+transform = Transform3D(-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5, 0.3464, 0.752, -0.2)
 
 [node name="Chair3" parent="TableC" instance=ExtResource("chair")]
 transform = Transform3D(0.5, -0.866, 0, 0, 0, 1, -0.866, -0.5, 0, -1.3856, 0.39, -0.8)
+
+[node name="Setting3" parent="TableC" instance=ExtResource("setting")]
+transform = Transform3D(-0.5, 0, -0.866, 0, 1, 0, 0.866, 0, -0.5, -0.3464, 0.752, -0.2)
 
 [node name="TableD" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
@@ -132,25 +178,36 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableD" instance=ExtResource("chair")]
-transform = Transform3D(-0.9063, 0, -0.4226, 0, 1, 0, 0.4226, 0, -0.9063, 0, 0, 1.25)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting1" parent="TableD" instance=ExtResource("setting")]
-transform = Transform3D(0.6428, 0, 0.766, 0, 1, 0, -0.766, 0, 0.6428, 0.2198, 0.752, 0.4713)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableD" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
-[node name="Cup2" parent="TableD" instance=ExtResource("cup")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4924, 0.752, -0.0868)
+[node name="Setting2" parent="TableD" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4, 0.752, 0)
 
 [node name="Chair3" parent="TableD" instance=ExtResource("chair")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting3" parent="TableD" instance=ExtResource("setting")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.4)
 
 [node name="Chair4" parent="TableD" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting4" parent="TableD" instance=ExtResource("setting")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.42, 0.752, 0)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4, 0.752, 0)
 
 [node name="TableE" type="Node3D" parent="."]
 transform = Transform3D(0.9063, 0, 0.4226, 0, 1, 0, -0.4226, 0, 0.9063, 4, 0, 0)
@@ -160,15 +217,35 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableE" instance=ExtResource("chair")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting1" parent="TableE" instance=ExtResource("setting")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableE" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting2" parent="TableE" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4, 0.752, 0)
 
 [node name="Chair3" parent="TableE" instance=ExtResource("chair")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting3" parent="TableE" instance=ExtResource("setting")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.4)
 
 [node name="Chair4" parent="TableE" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting4" parent="TableE" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4, 0.752, 0)
 
 [node name="TableF" type="Node3D" parent="."]
 transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, -4, 0, 4)
@@ -178,24 +255,35 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableF" instance=ExtResource("chair")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting1" parent="TableF" instance=ExtResource("setting")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.42)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableF" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting2" parent="TableF" instance=ExtResource("setting")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.42, 0.752, 0)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4, 0.752, 0)
 
 [node name="Chair3" parent="TableF" instance=ExtResource("chair")]
-transform = Transform3D(0.9063, 0, 0.4226, 0, 1, 0, -0.4226, 0, 0.9063, 0, 0, -1.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting3" parent="TableF" instance=ExtResource("setting")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.42)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.4)
 
-[node name="Dish4" parent="TableF" instance=ExtResource("dish")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4924, 0.752, 0.0868)
+[node name="Chair4" parent="TableF" instance=ExtResource("chair")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting4" parent="TableF" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4, 0.752, 0)
 
 [node name="TableG" type="Node3D" parent="."]
 transform = Transform3D(0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071, 0, 0, 4)
@@ -205,15 +293,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableG" instance=ExtResource("chair")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting1" parent="TableG" instance=ExtResource("setting")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableG" instance=ExtResource("chair")]
-transform = Transform3D(0.1736, 0, -0.9848, 0, 1, 0, 0.9848, 0, 0.1736, 1.0825, 0, -0.625)
+transform = Transform3D(0.5, 0, -0.866, 0, 1, 0, 0.866, 0, 0.5, 0.7361, 0, -0.425)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
-[node name="Glass2" parent="TableG" instance=ExtResource("glass")]
-transform = Transform3D(-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5, 0.383, 0.752, -0.3214)
+[node name="Setting2" parent="TableG" instance=ExtResource("setting")]
+transform = Transform3D(-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5, 0.3464, 0.752, -0.2)
 
 [node name="Chair3" parent="TableG" instance=ExtResource("chair")]
 transform = Transform3D(0.5, 0, 0.866, 0, 1, 0, -0.866, 0, 0.5, -0.7361, 0, -0.425)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting3" parent="TableG" instance=ExtResource("setting")]
+transform = Transform3D(-0.5, 0, -0.866, 0, 1, 0, 0.866, 0, -0.5, -0.3464, 0.752, -0.2)
 
 [node name="TableH" type="Node3D" parent="."]
 transform = Transform3D(0.9962, 0, 0.0872, 0, 1, 0, -0.0872, 0, 0.9962, 4, 0, 4)
@@ -223,21 +323,33 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Chair1" parent="TableH" instance=ExtResource("chair")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
 
 [node name="Setting1" parent="TableH" instance=ExtResource("setting")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.42)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.752, 0.4)
 
 [node name="Chair2" parent="TableH" instance=ExtResource("chair")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0.85, 0, 0)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting2" parent="TableH" instance=ExtResource("setting")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.4, 0.752, 0)
 
 [node name="Chair3" parent="TableH" instance=ExtResource("chair")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85)
+script = ExtResource("jitter_script")
+jitter = ExtResource("chair_jitter")
+
+[node name="Setting3" parent="TableH" instance=ExtResource("setting")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.752, -0.4)
 
 [node name="Chair4" parent="TableH" instance=ExtResource("chair")]
 transform = Transform3D(0, -1, 0, 0, 0, 1, -1, 0, 0, -1.6, 0.39, 0)
 
 [node name="Setting4" parent="TableH" instance=ExtResource("setting")]
-transform = Transform3D(0.766, 0, -0.6428, 0, 1, 0, 0.6428, 0, 0.766, -0.4713, 0.752, 0.2198)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.4, 0.752, 0)
 
 [node name="Counter" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6.9)
