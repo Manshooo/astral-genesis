@@ -69,6 +69,15 @@ Blender не в `PATH`. Путь — `C:\Program Files\Blender Foundation\Blende
 пишутся инструментами правки файлов, а не heredoc'ом в bash: тот молча склеивает
 строки с обратным слэшем.
 
+**В облачной сессии** Blender нет, но раннер работает и на Linux: сборка
+`linux.x86_64` с [builder.blender.org](https://builder.blender.org/download/daily/)
+(архив ~400 МБ, ставить не нужно) распаковывается в scratchpad, и пути
+передаются явно — умолчания у раннера виндовые:
+
+```bash
+pwsh tools/blender/tests/run_addon_tests.ps1 -BlenderPath <распакованный>/blender -GodotPath "$GODOT" -Work <scratchpad>/gp_work
+```
+
 Прежде чем утверждать, что в стороннем аддоне чего-то нет, — grep по его
 исходнику. Ucupaint лежит в
 `%APPDATA%\Blender Foundation\Blender\5.3\extensions\blender_org\ucupaint`;

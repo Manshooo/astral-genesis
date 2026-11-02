@@ -659,9 +659,9 @@ check(split(["vent_A"], profile="Prop", prefix_mode='CUSTOM', custom_prefix="PR_
       == [["PR_vent_A"]], "свой префикс")
 
 
-# -- 11. Blender 5.3: центр коллекции, проект, цветовые пространства ----------
+# -- 12. Blender 5.3: центр коллекции, проект, цветовые пространства ----------
 
-print("\n=== 11. Blender 5.3 ===")
+print("\n=== 12. Blender 5.3 ===")
 from godot_pipeline import paths                                 # noqa: E402
 from godot_pipeline.exporter import build_gltf_kwargs            # noqa: E402
 
@@ -687,7 +687,7 @@ origin = validate_mod._export_origin(tile_coll, list(tile_coll.objects))
 warned = any("Instance Offset" in m for m in tile_messages())
 if supports_center_mode('INSTANCE_OFFSET'):
     check(tuple(origin) == (2.0, 0.0, 0.0) and not warned,
-          "проверка клетки считает от Instance Offset (получено %s)" % tuple(origin))
+          "проверка клетки считает от Instance Offset (получено %s)" % (tuple(origin),))
 else:
     check(tuple(origin) != (2.0, 0.0, 0.0) and warned,
           "до 5.3 Instance Offset не действует, и валидатор об этом говорит")

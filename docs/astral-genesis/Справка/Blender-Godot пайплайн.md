@@ -486,40 +486,20 @@ README арт-репозитория.
 - **Конфиг цвета** — один на проект. Оставить Blender по умолчанию: Godot читает
   карты как sRGB, а запечка в ACES даёт другие числа в тех же именах.
 
-Создаётся из интерфейса, файл пишет сам Blender:
+Проект заведён 02.11: проект `Astral Genesis Art`, переменная `godot_project` =
+`{project_root}/../astral-genesis` (Filepath), библиотека `Kit` = `{project_root}`
+с методом **Link**. Файл записал сам Blender (`project.new`, `config_save`), а не
+рука, — формат его, а не наш ([Blender Projects](https://developer.blender.org/docs/features/core/blender_projects/)).
+Правится в редакторе **Project** → *Save Project*; в git идёт только
+`project.toml`, остальное в `.blender_project/` — кэши машины.
 
-1. Открыть любой `.blend` из арт-репозитория → редактор **Project** → *New
-   Project…*, корень — корень арт-репозитория, имя `Astral Genesis Art`.
-2. **Variables** → *Add Variable* → **Filepath**, имя `godot_project`, значение
-   `{project_root}/../astral-genesis` (папка клона игры рядом; другое имя
-   папки — другое значение).
-3. **Asset Libraries** → библиотека `Kit`, путь `{project_root}`, метод
-   импорта **Link**. Пункт с той же папкой в Preferences после этого убрать,
-   иначе ассеты задвоятся в браузере.
-4. *Save Project* — и закоммитить `.blender_project/project.toml`. Остальное
-   в `.blender_project/` — кэши, в `.gitignore`.
+Что держать в голове:
 
-Во вкладке **Godot** аддона под корнем проекта должно стать
-`from Blender project variable`. Ожидаемый `project.toml` (по формату из
-[документации Blender Projects](https://developer.blender.org/docs/features/core/blender_projects/);
-сверить с тем, что запишет Blender, а не писать руками):
-
-```toml
-schema_version = 1
-name = "Astral Genesis Art"
-
-[[variables]]
-name = "godot_project"
-type = "STRING"
-subtype = "FILEPATH"
-value = "{project_root}/../astral-genesis"
-
-[[asset_libraries]]
-name = "Kit"
-import_method = "LINK"
-path = "{project_root}"
-use_relative_path = true
-```
+- **Клон игры ждётся рядом, в папке `astral-genesis`.** Лежит иначе — поле
+  Godot Project в настройках аддона перебивает переменную; откуда аддон взял
+  путь, видно во вкладке **Godot**.
+- **Пункт той же папки в Preferences → Asset Libraries убрать** — оставшийся с
+  до-5.3 времён, он задвоит ассеты в браузере.
 
 ### Материал и файлы
 
