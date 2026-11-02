@@ -24,14 +24,18 @@ STATUS_ICON = {
 
 def _draw_project_status(layout, context):
     prefs = get_prefs(context)
-    root = paths.project_root(prefs)
+    root, source = paths.resolve_project_root(prefs)
     box = layout.box()
     if paths.is_valid_project(root):
         box.label(text=root, icon='CHECKMARK')
+        box.label(text="from " + source)
     else:
         box.label(text="Godot project not found", icon='ERROR')
         box.operator("godot_pipeline.detect_project", icon='VIEWZOOM')
         box.label(text="or set it in Preferences > Add-ons", icon='PREFERENCES')
+        if getattr(bpy.data, "project", None) is not None:
+            box.label(text="or add the '%s' variable to the Blender project" % paths.PROJECT_VARIABLE,
+                      icon='FILE_FOLDER')
     return prefs, root
 
 

@@ -123,12 +123,17 @@ def target_name(image_name: str, override: str = "") -> str:
     return "%s%s_%s" % (PREFIX, base, suffix)
 
 
+def uses_nodes(mat) -> bool:
+    # С 5.0 use_nodes всегда True и уходит в 6.0; до 5.0 False значит «дерево не действует».
+    return mat is not None and getattr(mat, "use_nodes", True) and mat.node_tree is not None
+
+
 def images_of_materials(materials):
     """Image datablocks referenced by these materials, in a stable order."""
     images = []
     seen = set()
     for mat in materials:
-        if not mat or not mat.use_nodes or mat.node_tree is None:
+        if not uses_nodes(mat):
             continue
         for node in mat.node_tree.nodes:
             image = getattr(node, "image", None)
@@ -167,7 +172,7 @@ def layer_trees_of_materials(materials):
     trees = []
     seen = set()
     for mat in materials:
-        if not mat or not mat.use_nodes or mat.node_tree is None:
+        if not uses_nodes(mat):
             continue
         for node in mat.node_tree.nodes:
             tree = getattr(node, "node_tree", None)

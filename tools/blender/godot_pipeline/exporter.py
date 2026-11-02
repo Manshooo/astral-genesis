@@ -273,7 +273,10 @@ def build_gltf_kwargs(profile, collection, filepath: str) -> dict:
         "use_active_scene": False,
         "use_active_collection": False,
         "collection": collection.name,
+        # Blender 5.3 заменил флаг перечислением, а фильтр ниже молча отбросил бы
+        # старый ключ — ассет уехал бы от начала мира. Передаются оба, остаётся известный.
         "at_collection_center": bool(collection.godot.at_center),
+        "collection_center_mode": 'CENTER_MASS' if collection.godot.at_center else 'WORLD_ORIGIN',
 
         # Geometry
         "export_apply": bool(profile.apply_modifiers),

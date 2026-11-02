@@ -660,6 +660,97 @@ check(split(["vent_A"], profile="Prop", prefix_mode='CUSTOM', custom_prefix="PR_
       == [["PR_vent_A"]], "свой префикс")
 
 
+# -- 11. Blender 5.3: центр коллекции, проект, цветовые пространства ----------
+
+print("\n=== 11. Blender 5.3 ===")
+from godot_pipeline import paths                                 # noqa: E402
+from godot_pipeline.exporter import build_gltf_kwargs            # noqa: E402
+
+center_coll = bpy.data.collections.new("SM_center_T")
+scene.collection.children.link(center_coll)
+center_obj = bpy.data.objects.new("center_T", piece_mesh)
+center_obj.location = (16.0, 4.0, 0.0)
+center_coll.objects.link(center_obj)
+center_coll.godot.is_asset = True
+center_coll.godot.profile = "Level Chunk"
+center_coll.godot.dest_dir = "assets"
+bpy.context.view_layer.update()
+
+kwargs = build_gltf_kwargs(chunk, center_coll, os.path.join(OUT, "center.glb"))
+center_keys = {"at_collection_center", "collection_center_mode"} & set(kwargs)
+# Фильтр неизвестных ключей молча съел бы центр: на 5.3 at_collection_center больше нет.
+check(len(center_keys) == 1, "экспортёр получает ровно один ключ центра (получено %s)"
+      % sorted(center_keys))
+
+
+def exported_translation(at_center):
+    center_coll.godot.at_center = at_center
+    export_asset(bpy.context, prefs, center_coll, OUT, chunk)
+    with open(asset_paths(OUT, chunk, center_coll)[0], "rb") as handle:
+        handle.read(12)
+        length, _ = struct.unpack("<II", handle.read(8))
+        data = json.loads(handle.read(length))
+    node = next(n for n in data["nodes"] if n.get("name") == "center_T")
+    return node.get("translation", [0.0, 0.0, 0.0])
+
+
+moved = exported_translation(True)
+check(all(abs(v) < 1e-4 for v in moved), "«Export at Origin» снимает смещение (получено %s)" % moved)
+moved = exported_translation(False)
+check(abs(moved[0] - 16.0) < 1e-4, "без него объект остаётся в 16 м по X (получено %s)" % moved)
+
+
+class FakeVariable:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+
+class FakeProject:
+    def __init__(self, root_path, *variables):
+        self.root_path = root_path
+        self.variables = list(variables)
+
+
+art = os.path.join(OUT, "art")
+game = os.path.normpath(os.path.join(OUT, "game"))
+for value, label in (("{project_root}/../game", "шаблон {project_root}"),
+                     ("../game", "путь от корня проекта"),
+                     (game, "абсолютный путь")):
+    got = paths.blender_project_root(FakeProject(art, FakeVariable("godot_project", value)))
+    check(got == game, "корень Godot из переменной проекта: %s (получено %r)" % (label, got))
+check(paths.blender_project_root(FakeProject(art, FakeVariable("godot_project", "  "))) == "",
+      "пустая переменная — корня нет")
+check(paths.blender_project_root(FakeProject(art, FakeVariable("other", "../game"))) == "",
+      "чужая переменная не читается")
+check(paths.resolve_project_root(prefs)[1] == paths.SOURCE_PREFERENCES,
+      "настройка аддона выигрывает у проекта")
+
+cs_mat = bpy.data.materials.new("MAT_cs")
+if not getattr(cs_mat, "node_tree", None):
+    cs_mat.use_nodes = True
+albedo = bpy.data.images.new("T_cs_albedo", 4, 4)
+orm = bpy.data.images.new("T_cs_orm", 4, 4)
+for image in (albedo, orm):
+    cs_mat.node_tree.nodes.new('ShaderNodeTexImage').image = image
+
+
+def colorspace_messages():
+    found = []
+    validate_mod._check_colorspaces(found, "SM_cs", [cs_mat])
+    return " | ".join(i.message for i in found)
+
+
+albedo.colorspace_settings.name = "sRGB"
+orm.colorspace_settings.name = "Non-Color"
+check(colorspace_messages() == "", "albedo в sRGB и ORM в Non-Color — без претензий")
+albedo.colorspace_settings.name = "Non-Color"
+check("T_cs_albedo" in colorspace_messages(), "albedo в Non-Color ловится (баг Ucupaint 3.0.0)")
+albedo.colorspace_settings.name = "sRGB"
+orm.colorspace_settings.name = "sRGB"
+check("T_cs_orm" in colorspace_messages(), "ORM в sRGB ловится")
+
+
 print("")
 if failures:
     print("=== ИТОГ: ПРОВАЛОВ %d" % len(failures))

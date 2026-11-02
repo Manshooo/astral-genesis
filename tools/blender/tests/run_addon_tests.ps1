@@ -48,7 +48,7 @@
 
 [CmdletBinding()]
 param(
-	[string]$BlenderPath = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe",
+	[string]$BlenderPath = "C:\Program Files\Blender Foundation\Blender 5.3\blender.exe",
 	[string]$GodotPath = "",
 	[string]$Work = "C:\Users\$env:USERNAME\AppData\Local\Temp\gp_addon_tests",
 	[ValidateSet("all", "blender", "godot")]

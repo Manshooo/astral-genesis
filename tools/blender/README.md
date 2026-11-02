@@ -62,7 +62,7 @@ pwsh tools/blender/tests/run_addon_tests.ps1
 
 ## Blender из агента
 
-Blender не в `PATH`. Путь — `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe`,
+Blender не в `PATH`. Путь — `C:\Program Files\Blender Foundation\Blender 5.3\blender.exe`,
 он же значение по умолчанию `-BlenderPath` в `tests/run_addon_tests.ps1`. Если
 подключён MCP-сервер Blender, работа идёт через него — он видит открытую сцену;
 иначе `blender.exe --background --python <скрипт>`. Python-скрипты для Blender
@@ -71,7 +71,7 @@ Blender не в `PATH`. Путь — `C:\Program Files\Blender Foundation\Blende
 
 Прежде чем утверждать, что в стороннем аддоне чего-то нет, — grep по его
 исходнику. Ucupaint лежит в
-`%APPDATA%\Blender Foundation\Blender\5.2\extensions\blender_org\ucupaint`;
+`%APPDATA%\Blender Foundation\Blender\5.3\extensions\blender_org\ucupaint`;
 половина его поведения (например, «Enable Baked Outside», см.
 [Blender-Godot пайплайн §6](../../docs/astral-genesis/Справка/Blender-Godot%20пайплайн.md))
 в интерфейсе не видна.

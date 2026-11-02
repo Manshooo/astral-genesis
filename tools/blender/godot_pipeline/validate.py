@@ -12,7 +12,7 @@ import os
 import bpy
 from mathutils import Vector
 
-from . import exporter, paths
+from . import exporter, paths, ucupaint
 from .naming import INVALID_NODE_CHARS, footprint_of, has_manual_suffix, object_export_name
 
 ERROR = 'ERROR'
@@ -489,3 +489,34 @@ def _check_materials(issues, asset, objects, profile):
                             "so images land next to every other asset in the folder"))
     if profile.material_policy == 'EXTERNAL' and not materials:
         issues.append(Issue(INFO, asset, "no materials to link"))
+    _check_colorspaces(issues, asset, materials)
+
+
+# Запечка пишет на диск числа в пространстве картинки, а Godot читает PNG без него:
+# карта данных в sRGB (или цвет в Non-Color) уезжает с другими значениями.
+DATA_MAPS = {"orm", "n", "ao", "roughness", "metallic", "height", "vdm"}
+COLOR_MAPS = {"albedo", "emission"}
+
+
+def _is_data(image) -> bool:
+    settings = image.colorspace_settings
+    # По флагу, а не по имени: конфиг OCIO проекта (5.3) называет пространства по-своему.
+    flag = getattr(settings, "is_data", None)
+    if flag is not None:
+        return bool(flag)
+    return settings.name == "Non-Color"
+
+
+def _check_colorspaces(issues, asset, materials):
+    for image in ucupaint.images_of_materials(materials):
+        suffix = ucupaint.split_channel(image.name)[1]
+        data = _is_data(image)
+        if suffix in COLOR_MAPS and data:
+            issues.append(Issue(WARNING, asset,
+                                "color map %r is Non-Color: a bake into it is stored without sRGB "
+                                "encoding and looks too dark in Godot (Ucupaint 3.0.0 did this to "
+                                "color+alpha targets; update to 3.0.1 and re-bake)" % image.name))
+        elif suffix in DATA_MAPS and not data and not image.is_float:
+            issues.append(Issue(WARNING, asset,
+                                "data map %r is in a color space (%s), not Non-Color: its values "
+                                "are gamma-encoded on bake" % (image.name, image.colorspace_settings.name)))
