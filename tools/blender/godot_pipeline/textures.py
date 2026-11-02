@@ -51,7 +51,7 @@ def images_of(materials):
     images = []
     seen = set()
     for mat in materials:
-        if not mat.use_nodes or mat.node_tree is None:
+        if not ucupaint.uses_nodes(mat):
             continue
         for node in mat.node_tree.nodes:
             image = getattr(node, "image", None)

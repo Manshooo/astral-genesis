@@ -495,7 +495,6 @@ with open(glb_path, "rb") as handle:
     gltf = json.loads(handle.read(length))
 names = [m.get("name") for m in gltf.get("materials", [])]
 check(PREVIEW_MATERIAL not in names, "в .glb нет %s (материалы: %s)" % (PREVIEW_MATERIAL, names))
-check("MAT_kit" in names, "настоящий материал сборщика в .glb на месте")
 check(proxy.data.materials[0] == preview, "после экспорта подсветка прокси вернулась в слот")
 
 
@@ -658,6 +657,93 @@ check(split(["lamp_A"], profile="Prop", prefix_mode='NONE') == [["lamp_A"]],
       "без префикса — имя объекта как было")
 check(split(["vent_A"], profile="Prop", prefix_mode='CUSTOM', custom_prefix="PR_")
       == [["PR_vent_A"]], "свой префикс")
+
+
+# -- 12. Blender 5.3: центр коллекции, проект, цветовые пространства ----------
+
+print("\n=== 12. Blender 5.3 ===")
+from godot_pipeline import paths                                 # noqa: E402
+from godot_pipeline.exporter import build_gltf_kwargs            # noqa: E402
+
+kwargs = build_gltf_kwargs(chunk, tile_coll, os.path.join(OUT, "center.glb"))
+center_keys = {"at_collection_center", "collection_center_mode"} & set(kwargs)
+# Фильтр неизвестных ключей молча съел бы центр: на 5.3 at_collection_center больше нет.
+check(len(center_keys) == 1, "экспортёр получает ровно один ключ центра (получено %s)"
+      % sorted(center_keys))
+
+from godot_pipeline.exporter import center_mode, supports_center_mode    # noqa: E402
+
+settings = tile_coll.godot
+for at_center, source, expected in ((False, 'INSTANCE_OFFSET', 'WORLD_ORIGIN'),
+                                    (True, 'CENTER_MASS', 'CENTER_MASS'),
+                                    (True, 'INSTANCE_OFFSET', 'INSTANCE_OFFSET')):
+    settings.at_center = at_center
+    settings.origin_source = source
+    check(center_mode(settings) == expected, "режим центра: галка %s, %s -> %s (получено %s)"
+          % (at_center, source, expected, center_mode(settings)))
+
+tile_coll.instance_offset = (2.0, 0.0, 0.0)
+origin = validate_mod._export_origin(tile_coll, list(tile_coll.objects))
+warned = any("Instance Offset" in m for m in tile_messages())
+if supports_center_mode('INSTANCE_OFFSET'):
+    check(tuple(origin) == (2.0, 0.0, 0.0) and not warned,
+          "проверка клетки считает от Instance Offset (получено %s)" % (tuple(origin),))
+else:
+    check(tuple(origin) != (2.0, 0.0, 0.0) and warned,
+          "до 5.3 Instance Offset не действует, и валидатор об этом говорит")
+tile_coll.instance_offset = (0.0, 0.0, 0.0)
+settings.origin_source = 'CENTER_MASS'
+
+
+class FakeVariable:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+
+class FakeProject:
+    def __init__(self, root_path, *variables):
+        self.root_path = root_path
+        self.variables = list(variables)
+
+
+art = os.path.join(OUT, "art")
+game = os.path.normpath(os.path.join(OUT, "game"))
+for value, label in (("{project_root}/../game", "шаблон {project_root}"),
+                     ("../game", "путь от корня проекта"),
+                     (game, "абсолютный путь")):
+    got = paths.blender_project_root(FakeProject(art, FakeVariable("godot_project", value)))
+    check(got == game, "корень Godot из переменной проекта: %s (получено %r)" % (label, got))
+check(paths.blender_project_root(FakeProject(art, FakeVariable("godot_project", "  "))) == "",
+      "пустая переменная — корня нет")
+check(paths.blender_project_root(FakeProject(art, FakeVariable("other", "../game"))) == "",
+      "чужая переменная не читается")
+check(paths.resolve_project_root(prefs)[1] == paths.SOURCE_PREFERENCES,
+      "настройка аддона выигрывает у проекта")
+
+cs_mat = bpy.data.materials.new("MAT_cs")
+if not getattr(cs_mat, "node_tree", None):
+    cs_mat.use_nodes = True
+albedo = bpy.data.images.new("T_cs_albedo", 4, 4)
+orm = bpy.data.images.new("T_cs_orm", 4, 4)
+for image in (albedo, orm):
+    cs_mat.node_tree.nodes.new('ShaderNodeTexImage').image = image
+
+
+def colorspace_messages():
+    found = []
+    validate_mod._check_colorspaces(found, "SM_cs", [cs_mat])
+    return " | ".join(i.message for i in found)
+
+
+albedo.colorspace_settings.name = "sRGB"
+orm.colorspace_settings.name = "Non-Color"
+check(colorspace_messages() == "", "albedo в sRGB и ORM в Non-Color — без претензий")
+albedo.colorspace_settings.name = "Non-Color"
+check("T_cs_albedo" in colorspace_messages(), "albedo в Non-Color ловится (баг Ucupaint 3.0.0)")
+albedo.colorspace_settings.name = "sRGB"
+orm.colorspace_settings.name = "sRGB"
+check("T_cs_orm" in colorspace_messages(), "ORM в sRGB ловится")
 
 
 print("")

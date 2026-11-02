@@ -25,12 +25,46 @@ def find_project_root(start: str) -> str:
     return ""
 
 
-def project_root(prefs) -> str:
-    """Configured Godot project root, or one auto-detected from the .blend location."""
+# Переменная проекта Blender (5.3+): исходники лежат в своём арт-репозитории, вне
+# Godot-проекта, а настройка аддона одна на все проекты Blender этой машины.
+PROJECT_VARIABLE = "godot_project"
+PROJECT_ROOT_TOKEN = "{project_root}"
+
+SOURCE_PREFERENCES = "add-on preferences"
+SOURCE_BLENDER_PROJECT = "Blender project variable"
+SOURCE_BLEND_LOCATION = "search from the .blend"
+
+
+def blender_project_root(project=None) -> str:
+    """Godot root from the active Blender project's variable, or "" (no project, no variable, before 5.3)."""
+    if project is None:
+        project = getattr(bpy.data, "project", None)
+    if project is None:
+        return ""
+    variable = next((v for v in project.variables if v.name == PROJECT_VARIABLE), None)
+    value = getattr(variable, "value", "") if variable is not None else ""
+    if not isinstance(value, str) or not value.strip():
+        return ""
+    base = project.root_path
+    value = value.strip().replace(PROJECT_ROOT_TOKEN, base)
+    if not os.path.isabs(value):
+        value = os.path.join(base, value)
+    return os.path.normpath(value)
+
+
+def resolve_project_root(prefs):
+    """(root, source): the add-on setting wins, then the Blender project, then a search up from the .blend."""
     configured = bpy.path.abspath(prefs.godot_project) if prefs.godot_project else ""
     if configured and os.path.isdir(configured):
-        return os.path.normpath(configured)
-    return find_project_root(bpy.data.filepath)
+        return os.path.normpath(configured), SOURCE_PREFERENCES
+    from_project = blender_project_root()
+    if from_project:
+        return from_project, SOURCE_BLENDER_PROJECT
+    return find_project_root(bpy.data.filepath), SOURCE_BLEND_LOCATION
+
+
+def project_root(prefs) -> str:
+    return resolve_project_root(prefs)[0]
 
 
 def is_valid_project(root: str) -> bool:

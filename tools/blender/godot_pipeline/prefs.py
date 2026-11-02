@@ -128,7 +128,8 @@ class GodotPipelinePrefs(AddonPreferences):
 
     godot_project: StringProperty(
         name="Godot Project",
-        description="Folder containing project.godot. Leave empty to search upwards from the "
+        description="Folder containing project.godot. Leave empty to take it from the Blender "
+                    "project's 'godot_project' variable (5.3+) or to search upwards from the "
                     ".blend file location",
         subtype='DIR_PATH',
         default="",
@@ -152,9 +153,9 @@ class GodotPipelinePrefs(AddonPreferences):
 
         box = layout.box()
         box.prop(self, "godot_project")
-        root = paths.project_root(self)
+        root, source = paths.resolve_project_root(self)
         if paths.is_valid_project(root):
-            box.label(text=root, icon='CHECKMARK')
+            box.label(text="%s  (%s)" % (root, source), icon='CHECKMARK')
         elif root:
             box.label(text="No project.godot in " + root, icon='ERROR')
         else:

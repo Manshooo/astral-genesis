@@ -259,6 +259,22 @@ def _supported_kwargs(kwargs: dict) -> dict:
     return {key: value for key, value in kwargs.items() if key in known}
 
 
+def center_mode(settings) -> str:
+    """collection_center_mode for these collection settings."""
+    if not settings.at_center:
+        return 'WORLD_ORIGIN'
+    return settings.origin_source
+
+
+def supports_center_mode(mode: str) -> bool:
+    """Whether this build's glTF exporter knows the mode (Blender 5.3+ has collection_center_mode)."""
+    try:
+        prop = bpy.ops.export_scene.gltf.get_rna_type().properties.get("collection_center_mode")
+    except Exception:
+        return False
+    return prop is not None and mode in {item.identifier for item in prop.enum_items}
+
+
 def build_gltf_kwargs(profile, collection, filepath: str) -> dict:
     external_materials = profile.material_policy == 'EXTERNAL'
     kwargs = {
@@ -273,7 +289,10 @@ def build_gltf_kwargs(profile, collection, filepath: str) -> dict:
         "use_active_scene": False,
         "use_active_collection": False,
         "collection": collection.name,
+        # Blender 5.3 заменил флаг перечислением, а фильтр ниже молча отбросил бы
+        # старый ключ — ассет уехал бы от начала мира. Передаются оба, остаётся известный.
         "at_collection_center": bool(collection.godot.at_center),
+        "collection_center_mode": center_mode(collection.godot),
 
         # Geometry
         "export_apply": bool(profile.apply_modifiers),
