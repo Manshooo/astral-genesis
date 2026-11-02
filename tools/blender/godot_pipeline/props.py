@@ -257,6 +257,17 @@ class GP_CollectionSettings(PropertyGroup):
         name="Export at Origin", default=True,
         description="Export around the collection's own center instead of the world origin, so "
                     "assets can be laid out anywhere convenient inside the .blend")
+    # Отдельным полем, а не перечислением вместо галки: у старых файлов галка уже стоит,
+    # и её смысл («центр масс») обязан остаться прежним.
+    origin_source: EnumProperty(
+        name="Origin",
+        items=(
+            ('CENTER_MASS', "Center of Mass",
+             "Average position of the collection's root objects"),
+            ('INSTANCE_OFFSET', "Instance Offset",
+             "The collection's Instance Offset, set explicitly (glTF exporter of Blender 5.3+)"),
+        ),
+        default='CENTER_MASS')
     include_children: BoolProperty(
         name="Include Child Collections", default=True)
     skip: BoolProperty(

@@ -22,6 +22,12 @@ STATUS_ICON = {
 }
 
 
+def _wrapped_label(layout, text: str, icon: str = 'NONE'):
+    # label_multiline есть с 5.3; на старых длинная строка обрезается, как раньше.
+    draw = getattr(layout, "label_multiline", None) or layout.label
+    draw(text=text, icon=icon)
+
+
 def _draw_project_status(layout, context):
     prefs = get_prefs(context)
     root, source = paths.resolve_project_root(prefs)
@@ -288,7 +294,7 @@ class GP_PT_report(Panel):
                 row = box.row()
                 row.alert = issue.level == validate.ERROR
                 label = "%s: %s" % (issue.asset, issue.message) if issue.asset else issue.message
-                row.label(text=label, icon=LEVEL_ICON.get(issue.level, 'INFO'))
+                _wrapped_label(row, label, LEVEL_ICON.get(issue.level, 'INFO'))
             if len(ops.LAST_ISSUES) > 40:
                 box.label(text="... %d more, see the console" % (len(ops.LAST_ISSUES) - 40))
 
@@ -301,7 +307,7 @@ class GP_PT_report(Panel):
                 row.label(text="%s  %s" % (result.collection.name, result.path),
                           icon=STATUS_ICON.get(result.status, 'DOT'))
                 for message in result.messages:
-                    box.label(text="    " + message, icon='BLANK1')
+                    _wrapped_label(box, message, 'BLANK1')
 
         if not ops.LAST_ISSUES and not ops.LAST_RESULTS:
             layout.label(text="Nothing run yet")
@@ -334,6 +340,16 @@ def draw_collection_settings(layout, context, collection):
 
     col = layout.column(align=True)
     col.prop(settings, "at_center")
+    sub = col.column(align=True)
+    sub.enabled = settings.at_center
+    sub.prop(settings, "origin_source", text="")
+    if settings.at_center and settings.origin_source == 'INSTANCE_OFFSET':
+        row = sub.row(align=True)
+        row.prop(collection, "instance_offset", text="")
+        if hasattr(bpy.types, "COLLECTION_MT_context_menu_instance_offset"):
+            row.menu("COLLECTION_MT_context_menu_instance_offset", icon='DOWNARROW_HLT', text="")
+        if not exporter.supports_center_mode('INSTANCE_OFFSET'):
+            sub.label(text="Needs Blender 5.3+: exported at center of mass", icon='ERROR')
     col.prop(settings, "include_children")
     col.prop(settings, "skip")
 

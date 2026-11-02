@@ -671,6 +671,29 @@ center_keys = {"at_collection_center", "collection_center_mode"} & set(kwargs)
 check(len(center_keys) == 1, "экспортёр получает ровно один ключ центра (получено %s)"
       % sorted(center_keys))
 
+from godot_pipeline.exporter import center_mode, supports_center_mode    # noqa: E402
+
+settings = tile_coll.godot
+for at_center, source, expected in ((False, 'INSTANCE_OFFSET', 'WORLD_ORIGIN'),
+                                    (True, 'CENTER_MASS', 'CENTER_MASS'),
+                                    (True, 'INSTANCE_OFFSET', 'INSTANCE_OFFSET')):
+    settings.at_center = at_center
+    settings.origin_source = source
+    check(center_mode(settings) == expected, "режим центра: галка %s, %s -> %s (получено %s)"
+          % (at_center, source, expected, center_mode(settings)))
+
+tile_coll.instance_offset = (2.0, 0.0, 0.0)
+origin = validate_mod._export_origin(tile_coll, list(tile_coll.objects))
+warned = any("Instance Offset" in m for m in tile_messages())
+if supports_center_mode('INSTANCE_OFFSET'):
+    check(tuple(origin) == (2.0, 0.0, 0.0) and not warned,
+          "проверка клетки считает от Instance Offset (получено %s)" % tuple(origin))
+else:
+    check(tuple(origin) != (2.0, 0.0, 0.0) and warned,
+          "до 5.3 Instance Offset не действует, и валидатор об этом говорит")
+tile_coll.instance_offset = (0.0, 0.0, 0.0)
+settings.origin_source = 'CENTER_MASS'
+
 
 class FakeVariable:
     def __init__(self, name, value):

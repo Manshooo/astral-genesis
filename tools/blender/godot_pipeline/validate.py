@@ -77,19 +77,33 @@ def validate(context, prefs, collections):
         _check_cell(issues, name, collection, objects, profile)
         _check_rig(issues, name, collection, objects, profile)
         _check_root_type(issues, name, collection, objects, profile)
+        _check_origin(issues, name, collection)
 
     return issues
+
+
+def _check_origin(issues, asset, collection):
+    mode = exporter.center_mode(collection.godot)
+    if mode == 'INSTANCE_OFFSET' and not exporter.supports_center_mode(mode):
+        issues.append(Issue(WARNING, asset,
+                            "origin is set to Instance Offset, but this Blender's glTF exporter "
+                            "does not know it (needs 5.3+): the asset is exported around the "
+                            "center of mass instead"))
 
 
 def _export_origin(collection, objects):
     """Точка, которая станет началом координат .glb.
 
     Повторяет экспортёр glTF: «Export at Origin» ставит в ноль среднее положение
-    корневых объектов коллекции, а не центр габарита. Считать габарит от другой
-    точки значило бы проверять не тот файл, что уедет в Godot.
+    корневых объектов коллекции (или Instance Offset, где экспортёр его знает), а не
+    центр габарита. Считать габарит от другой точки значило бы проверять не тот файл,
+    что уедет в Godot.
     """
-    if not collection.godot.at_center:
+    mode = exporter.center_mode(collection.godot)
+    if mode == 'WORLD_ORIGIN':
         return Vector()
+    if mode == 'INSTANCE_OFFSET' and exporter.supports_center_mode(mode):
+        return Vector(collection.instance_offset)
     members = set(objects)
     roots = [obj for obj in objects if obj.parent not in members]
     if not roots:
