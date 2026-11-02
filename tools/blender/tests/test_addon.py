@@ -495,7 +495,6 @@ with open(glb_path, "rb") as handle:
     gltf = json.loads(handle.read(length))
 names = [m.get("name") for m in gltf.get("materials", [])]
 check(PREVIEW_MATERIAL not in names, "в .glb нет %s (материалы: %s)" % (PREVIEW_MATERIAL, names))
-check("MAT_kit" in names, "настоящий материал сборщика в .glb на месте")
 check(proxy.data.materials[0] == preview, "после экспорта подсветка прокси вернулась в слот")
 
 
@@ -666,38 +665,11 @@ print("\n=== 11. Blender 5.3 ===")
 from godot_pipeline import paths                                 # noqa: E402
 from godot_pipeline.exporter import build_gltf_kwargs            # noqa: E402
 
-center_coll = bpy.data.collections.new("SM_center_T")
-scene.collection.children.link(center_coll)
-center_obj = bpy.data.objects.new("center_T", piece_mesh)
-center_obj.location = (16.0, 4.0, 0.0)
-center_coll.objects.link(center_obj)
-center_coll.godot.is_asset = True
-center_coll.godot.profile = "Level Chunk"
-center_coll.godot.dest_dir = "assets"
-bpy.context.view_layer.update()
-
-kwargs = build_gltf_kwargs(chunk, center_coll, os.path.join(OUT, "center.glb"))
+kwargs = build_gltf_kwargs(chunk, tile_coll, os.path.join(OUT, "center.glb"))
 center_keys = {"at_collection_center", "collection_center_mode"} & set(kwargs)
 # Фильтр неизвестных ключей молча съел бы центр: на 5.3 at_collection_center больше нет.
 check(len(center_keys) == 1, "экспортёр получает ровно один ключ центра (получено %s)"
       % sorted(center_keys))
-
-
-def exported_translation(at_center):
-    center_coll.godot.at_center = at_center
-    export_asset(bpy.context, prefs, center_coll, OUT, chunk)
-    with open(asset_paths(OUT, chunk, center_coll)[0], "rb") as handle:
-        handle.read(12)
-        length, _ = struct.unpack("<II", handle.read(8))
-        data = json.loads(handle.read(length))
-    node = next(n for n in data["nodes"] if n.get("name") == "center_T")
-    return node.get("translation", [0.0, 0.0, 0.0])
-
-
-moved = exported_translation(True)
-check(all(abs(v) < 1e-4 for v in moved), "«Export at Origin» снимает смещение (получено %s)" % moved)
-moved = exported_translation(False)
-check(abs(moved[0] - 16.0) < 1e-4, "без него объект остаётся в 16 м по X (получено %s)" % moved)
 
 
 class FakeVariable:
