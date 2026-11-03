@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "MAT_hound_fp"
+use_z_clip_scale = true
+z_clip_scale = 0.4
+use_fov_override = true
+fov_override = 70.0
