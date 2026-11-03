@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://1d4bjood4d0l" path="res://src/entities/incubator/e_incubator.tscn" id="4_htmip"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="5_levelenv"]
 [ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_scientist_stub.tscn" id="7_scientist"]
-[ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_hound_stub.tscn" id="8_hound"]
+[ext_resource type="PackedScene" path="res://src/levels/menu_map/menu_hound.tscn" id="8_hound"]
 [ext_resource type="PackedScene" uid="uid://djmjulnyrgth6" path="res://assets/props/interactive/SM_door_double/SM_door_double.glb" id="9_1m5cf"]
 [ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_fluorescent_stub.tscn" id="9_lamp"]
 
@@ -55,7 +55,7 @@ transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, -7.266845, 2.
 [node name="Lab" type="Node3D" parent="." unique_id=2002035298]
 
 [node name="Hound" parent="Lab" unique_id=1467555041 instance=ExtResource("8_hound")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -3.3, 0, -1.9)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -3.42, 0, -2.05)
 metadata/menu_action = "eat"
 
 [node name="ScientistEaten" parent="Lab" unique_id=1585663280 instance=ExtResource("7_scientist")]

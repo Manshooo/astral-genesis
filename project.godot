@@ -173,6 +173,7 @@ locale/fallback="ru"
 3d_physics/layer_4="interactives"
 3d_physics/layer_5="moving_colliders"
 3d_physics/layer_6="permeable"
+3d_physics/layer_7="solid_actors"
 
 [network]
 

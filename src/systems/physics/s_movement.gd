@@ -6,6 +6,10 @@ extends System
 ## Высота порога, которую move_and_slide() перешагивает сам: пороги и мелкие ступеньки ниже не останавливают ходьбу.
 const STEP_HEIGHT := 0.16
 
+## Сколько секунд без опоры тело ещё на земле: на ступеньке move_and_slide() теряет пол на кадр-другой, и тело
+## мигало бы клипом полёта.
+const AIR_GRACE := 0.08
+
 
 func query() -> QueryBuilder:
 	return q.with_all([C_Velocity]).iterate([C_Velocity])
@@ -47,6 +51,18 @@ func process(entities: Array[Entity], components: Array, delta: float) -> void:
 				_try_step(body, vel.velocity, pre_move_position)
 
 		vel.velocity = body.velocity
+		_update_grounded(vel, body, delta)
+
+
+## Нет опоры дольше AIR_GRACE или тело пошло вверх — не на земле, пока снова не встанет на пол. Скорость тут не
+## порог: в верхней точке прыжка и в начале падения она около нуля.
+func _update_grounded(vel: C_Velocity, body: CharacterBody3D, delta: float) -> void:
+	if body.is_on_floor():
+		vel.air_time = 0.0
+		vel.grounded = true
+		return
+	vel.air_time += delta
+	vel.grounded = vel.grounded and vel.velocity.y <= 0.0 and vel.air_time < AIR_GRACE
 
 
 ## Порог ниже STEP_HEIGHT — не стена: приподнимаем тело, повторяем движение над препятствием, опускаем (ручной «step offset» через move_and_collide). Самокорректируется:

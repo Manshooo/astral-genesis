@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://src/ui/menu/setting_row.gd" id="10_row"]
 [ext_resource type="PackedScene" path="res://src/ui/menu/key_hint_button.tscn" id="11_hint"]
 [ext_resource type="Script" path="res://src/ui/settings/window_mode_setting.gd" id="14_window"]
+[ext_resource type="Script" path="res://src/ui/settings/camera_motion_setting.gd" id="15_camera_motion"]
 [ext_resource type="Script" path="res://src/ui/settings/resolution_setting.gd" id="15_resolution"]
 [ext_resource type="Script" path="res://src/ui/settings/ui_scale_setting.gd" id="16_uiscale"]
 
@@ -388,6 +389,22 @@ custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 auto_translate_mode = 2
 theme_type_variation = &"MenuValue"
+
+[node name="CameraMotion" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox"]
+layout_mode = 2
+script = ExtResource("10_row")
+hint_key = "SETTINGS_HINT_CAMERA_MOTION"
+
+[node name="Label" type="Label" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/CameraMotion"]
+layout_mode = 2
+theme_type_variation = &"MenuRowLabel"
+text = "SETTINGS_CAMERA_MOTION"
+
+[node name="OptionButton" type="OptionButton" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox/CameraMotion"]
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("15_camera_motion")
+setting_key = "camera_motion"
 
 [node name="MaxFPS" type="HBoxContainer" parent="Content/Body/Pages/SETTINGS_TAB_GRAPHICS/Margin/VBox" unique_id=11120038]
 layout_mode = 2

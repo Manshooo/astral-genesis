@@ -27,6 +27,43 @@ static func primary(entity: Entity) -> GeometryInstance3D:
 	return all[0] if not all.is_empty() else null
 
 
+## AnimationTree облика тела или врага (в их сцене он один) или null.
+static func animation_tree(entity: Node) -> AnimationTree:
+	var found := animation_trees(entity)
+	return found[0] if not found.is_empty() else null
+
+
+## Все AnimationTree сущности: у рига во плоти их два — облик (BodyAnimation) и руки-муляж на камере.
+static func animation_trees(entity: Node) -> Array[AnimationTree]:
+	var found: Array[AnimationTree] = []
+	if entity == null:
+		return found
+	for node in entity.find_children("*", "AnimationTree", true, false):
+		found.append(node as AnimationTree)
+	return found
+
+
+## Суффиксы мешей облика, которые носитель-игрок не видит, но тень от них есть (контракт рига, [[Пайплайн персонажей]]).
+const FIRST_PERSON_HIDDEN := ["_head", "_arms"]
+
+
+## Голова и руки облика — «только тенью»: камера рига стоит у глаз и упиралась бы в них.
+static func hide_from_wearer(appearance: Node) -> void:
+	for node in appearance.find_children("*", "GeometryInstance3D", true, false):
+		var geo := node as GeometryInstance3D
+		for suffix in FIRST_PERSON_HIDDEN:
+			if String(geo.name).ends_with(suffix):
+				geo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+
+
+## Снимает рэгдолл с облика, который никогда не падает (враг — его гибель отдаёт труп, риг): кости рэгдолла лежат
+## на static_colliders, и капсула носителя упиралась бы в собственное тело.
+static func strip_ragdoll(appearance: Node) -> void:
+	for simulator in appearance.find_children("*", "PhysicalBoneSimulator3D", true, false):
+		simulator.get_parent().remove_child(simulator)
+		simulator.free()
+
+
 ## Трансформ узла относительно корня: произведение локальных по цепочке. global_transform не годится — detached-инстанс
 ## (E_Body.visual_of_scene). Узел == корень → IDENTITY.
 static func transform_relative_to(node: Node, root: Node) -> Transform3D:

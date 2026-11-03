@@ -39,6 +39,7 @@ func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
 				collision.shape = form.restore_shape
 			if camera:
 				camera.transform = form.restore_camera
+	_remember_eyes(player, camera)
 
 
 ## Сажает камеру на уровень глаз тела: маркер Eyes — от подошвы, камера — в координатах рига, перевод через foot_offset
@@ -58,5 +59,16 @@ func _place_camera(player: E_Player, form: C_BodyForm, camera: Camera3D) -> void
 		eyes = lift.y * 2.0 * EYE_LEVEL_FALLBACK
 
 	var wanted := camera.transform
+	# От базы, а не от камеры: при пересадке в камере ещё стоит смещение головы прошлого облика.
+	var look := player.get_component(C_FPSCamera) as C_FPSCamera
+	if look and look.eye_position != Vector3.INF:
+		wanted.origin = look.eye_position
 	wanted.origin.y = eyes - lift.y
 	camera.transform = wanted
+
+
+## База глаз для S_FirstPersonMotion — там, куда форма только что поставила камеру.
+func _remember_eyes(player: E_Player, camera: Camera3D) -> void:
+	var look := player.get_component(C_FPSCamera) as C_FPSCamera
+	if look and camera:
+		look.eye_position = camera.position

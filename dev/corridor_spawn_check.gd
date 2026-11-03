@@ -13,6 +13,7 @@ extends "res://dev/check_harness.gd"
 ## Запускать: godot --headless dev/corridor_spawn_check.tscn
 
 const RUN_SEED := 424242
+const HOUND_BODY := "res://src/entities/body/e_body_hound.tscn"
 ## Луч вдоль тайла — из центра до грани клетки без этого запаса, то есть внутри
 ## СВОЕЙ клетки. Стены коридора стоят ближе грани, так что поворот он различает,
 ## а рамка торца у двери (откос начинается в 0.35 м от грани) и закрытая дверь за
@@ -45,6 +46,7 @@ func _ready() -> void:
 	var world := _new_world()
 	_add_systems(world, "gameplay", [S_RoomPresence.new()])
 	_add_systems(world, "physics", [S_DoorMotion.new()])
+	world.add_observer(O_BodyForm.new())
 
 	GameConfig.config.world_gen = _base_config.duplicate() as RS_WorldGenConfig
 	var fresh := RS_WorldSave.new()
@@ -65,6 +67,7 @@ func _ready() -> void:
 	_check_visibility("в коридоре хаба после шага присутствием")
 	await _check_minimap()
 	await _check_reload_in_corridor()
+	await _check_reload_embodied()
 
 	RunManager._end_run()
 	_restore()
@@ -405,6 +408,28 @@ func _check_reload_in_corridor() -> void:
 		RunManager.current_graph.nodes.size() == nodes_before and RunManager.current_node_id == branch,
 		"узлов %d из %d, узел '%s'" % [RunManager.current_graph.nodes.size(), nodes_before, RunManager.current_node_id])
 	_check("и игрок стоит на тайле своей ветки", plan.node_at(_player().global_position) == branch, "")
+
+
+## Сейв в теле высокого существа: подошва капсулы над полом тайла. Ставили центр капсулы на полметра над тайлом —
+## у hound (2.5 м) низ уходил под пол, и Jolt ронял игрока сквозь мир.
+func _check_reload_embodied() -> void:
+	var branch := RunManager.current_node_id
+	var saved := WorldSave.save
+	saved.body_scene_path = HOUND_BODY
+	saved.body_health = 100.0
+	saved.body_health_max = 100.0
+	RunManager.enter_complex(RUN_SEED)
+	await get_tree().physics_frame
+	var player := _player() as Node as E_Player
+	var tile := RunManager.layer.corridor_tiles.get(branch, [null])[0] as Node3D
+	var form := E_Body.form_of_scene(HOUND_BODY) as C_BodyForm
+	var sole: float = player.global_position.y - form.foot_offset().y
+	_check("загрузка в теле hound: надет его габарит", player.foot_offset().is_equal_approx(form.foot_offset()),
+		"%s вместо %s" % [player.foot_offset(), form.foot_offset()])
+	_check("и подошва капсулы над полом тайла, а не под ним",
+		tile != null and sole >= tile.global_position.y - 0.001,
+		"подошва %.2f, пол %.2f" % [sole, tile.global_position.y if tile else NAN])
+	saved.body_scene_path = ""
 
 
 # ---------------------------------------------------------------------------

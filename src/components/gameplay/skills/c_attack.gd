@@ -4,6 +4,9 @@ extends C_BodyTrait
 ## Нет компонента = бить нечем. C_BodyTrait, чтобы удар ехал с телом при захвате. Враг бьёт через C_EnemyAI.
 ## Вики: [[Захват тела]].
 
+## Клипы, без которых анимированное тело с этой способностью не обходится (dev/body_clips_check).
+const CLIPS: Array[StringName] = [&"attack"]
+
 ## Урон за удар, абсолютный.
 @export var damage: float = 10.0
 

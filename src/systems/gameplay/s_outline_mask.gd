@@ -104,6 +104,8 @@ func _sync_camera(camera: Camera3D) -> void:
 	_mask_camera.fov = camera.fov
 	_mask_camera.size = camera.size
 	_mask_camera.frustum_offset = camera.frustum_offset
+	_mask_camera.h_offset = camera.h_offset
+	_mask_camera.v_offset = camera.v_offset
 	_mask_camera.keep_aspect = camera.keep_aspect
 	_mask_camera.near = camera.near
 	_mask_camera.far = camera.far

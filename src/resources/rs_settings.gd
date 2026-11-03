@@ -14,6 +14,14 @@ extends Resource
 const FOV_MIN := 90.0
 const FOV_MAX := 110.0
 
+## Сила покачивания камеры в теле — качка шага и бега, клевок укуса (S_FirstPersonMotion); для тех, кого укачивает.
+## Где голова облика, не трогает: это не качка, а место глаз.
+@export_range(0.0, 1.0) var camera_motion: float = CAMERA_MOTION_WEAK
+
+const CAMERA_MOTION_OFF := 0.0
+const CAMERA_MOTION_WEAK := 0.5
+const CAMERA_MOTION_FULL := 1.0
+
 @export_group("Interaction")
 @export var interact_range: float = 3.0        ## Дальность луча взаимодействия
 

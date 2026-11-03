@@ -233,19 +233,31 @@ func _check_layers(world: World, player: E_Player, enemy: E_Enemy) -> void:
 	var enemy_body := enemy as Node as CharacterBody3D
 	_check(
 		"игрок на слое player — не на static_colliders, где он был бы стеной",
-		player_body.collision_layer == PLAYER_LAYER,
+		player_body.collision_layer & ~C_Phasing.SOLID_ACTOR_BIT == PLAYER_LAYER,
 		"layer=%d" % player_body.collision_layer
 	)
 	_check(
-		"враг на слое enemies — не на moving_colliders, слое подвижной геометрии",
-		enemy_body.collision_layer == ENEMIES_LAYER,
+		"враг на слоях enemies и solid_actors — не на moving_colliders, слое подвижной геометрии",
+		enemy_body.collision_layer == ENEMIES_LAYER | C_Phasing.SOLID_ACTOR_BIT,
 		"layer=%d" % enemy_body.collision_layer
 	)
-	var enemy_solid := STATIC_LAYER | PLAYER_LAYER | MOVING_LAYER | C_Phasing.PERMEABLE_BIT
+	var enemy_solid := STATIC_LAYER | C_Phasing.SOLID_ACTOR_BIT | MOVING_LAYER | C_Phasing.PERMEABLE_BIT
 	_check(
-		"враг упирается в стены, в игрока, в подвижную и в проницаемую геометрию",
+		"враг упирается в стены, в других врагов и игрока во плоти, в подвижную и в проницаемую геометрию",
 		enemy_body.collision_mask & enemy_solid == enemy_solid,
 		"mask=%d" % enemy_body.collision_mask
+	)
+	# Тела-цели и душа на слоях enemies/player: в маске врага их нет, иначе душа толкала бы врага, а
+	# корневая капсула трупа стояла бы невидимым столбом.
+	_check(
+		"враг не упирается ни в душу, ни в тела-цели",
+		enemy_body.collision_mask & (PLAYER_LAYER | ENEMIES_LAYER) == 0,
+		"mask=%d" % enemy_body.collision_mask
+	)
+	_check(
+		"душа (C_Phasing) снята с solid_actors, во плоти — на нём",
+		player_body.collision_layer & C_Phasing.SOLID_ACTOR_BIT == (0 if player.has_component(C_Phasing) else C_Phasing.SOLID_ACTOR_BIT),
+		"layer=%d, фазируется=%s" % [player_body.collision_layer, player.has_component(C_Phasing)]
 	)
 	# Проницаемый бит у игрока ведёт S_Phasing (призрак — без него, во плоти — с
 	# ним), здесь он не сверяется. А тела-цели захвата на слое enemies игроку не

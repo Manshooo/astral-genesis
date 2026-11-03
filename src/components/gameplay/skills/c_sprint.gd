@@ -5,6 +5,9 @@ extends C_BodyTrait
 ## на ходьбу действует на бег.
 @export var speed_multiplier: float = 1.7
 
+## Клипы, без которых анимированное тело с этой способностью не обходится (dev/body_clips_check).
+const CLIPS: Array[StringName] = [&"run"]
+
 ## Действие бега; резолвится из InputMap по имени (как C_Jump.action_name).
 @export var action_name: StringName = &"sprint"
 

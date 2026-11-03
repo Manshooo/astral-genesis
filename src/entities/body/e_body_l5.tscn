@@ -11,6 +11,8 @@
 [ext_resource type="Script" uid="uid://ctjphmeky1e32" path="res://src/components/gameplay/skills/c_footsteps.gd" id="9_footsteps"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_attack.gd" id="10_attack"]
 [ext_resource type="Material" path="res://assets/shared/materials/palette_l5.tres" id="11_tone"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_body_animation.gd" id="12_animation"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_first_person_motion.gd" id="13_fp_motion"]
 
 [sub_resource type="Resource" id="Resource_health"]
 script = ExtResource("3_health")
@@ -48,24 +50,47 @@ damage = 40.0
 reach = 2.4
 interval = 0.7
 
+[sub_resource type="Resource" id="Resource_animation"]
+script = ExtResource("12_animation")
+walk_clip_speed = 1.84
+run_clip_speed = 4.5
+trot_clip_speed = 4.5
+
+[sub_resource type="Resource" id="Resource_fp_motion"]
+script = ExtResource("13_fp_motion")
+run_low = 0.33
+stand_head = Vector3(0, -0.007, -0.214)
+trot_head = Vector3(0, -0.058, -0.253)
+trot_low = 0.15
+run_head = Vector3(0, -1.275, -0.936)
+bite_head = Vector3(0, -0.137, -0.52)
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_l5"]
 radius = 0.44
-height = 2.8
+height = 2.52
 
 [node name="e_body_l5" unique_id=1735200105 instance=ExtResource("1_base")]
 display_name_key = &"BODY_L5"
 body_class = 5
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_animation"), SubResource("Resource_fp_motion")])
 
-[node name="Skeleton3D" parent="." index="0"]
-transform = Transform3D(-1.4, 0, 0, 0, 1.4, 0, 0, 0, -1.4, 0, 0, 0)
+[node name="Visual" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 
-[node name="headog" parent="Skeleton3D" index="0"]
+[node name="hound_body" parent="Visual/hound_skel/Skeleton3D"]
 material_override = ExtResource("11_tone")
 
-[node name="CollisionShape3D" parent="." index="1"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.28, 0)
+[node name="hound_head" parent="Visual/hound_skel/Skeleton3D"]
+material_override = ExtResource("11_tone")
+
+[node name="hound_arms" parent="Visual/hound_skel/Skeleton3D"]
+material_override = ExtResource("11_tone")
+
+[node name="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.26, 0)
 shape = SubResource("CapsuleShape3D_l5")
 
-[node name="Eyes" parent="." index="2"]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 2.56, -0.154)
+[node name="Eyes" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 2.28, -0.18)
+
+[editable path="Visual"]

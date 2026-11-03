@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/SK_hound_fp_arms/SK_hound_fp_arms.glb" id="1_arms"]
+[ext_resource type="AnimationNodeBlendTree" path="res://data/animation/quadruped_fp_tree.tres" id="2_tree"]
+[ext_resource type="AnimationLibrary" path="res://assets/characters/_rigs/quadruped/ANIM_quadruped_fp.glb" id="3_clips"]
+
+[node name="FpArms" type="Node3D"]
+
+[node name="Arms" parent="." instance=ExtResource("1_arms")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="hound_fp_arms" parent="Arms/hound_fp_skel/Skeleton3D"]
+cast_shadow = 0
+extra_cull_margin = 1.5
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+root_node = NodePath("../Arms")
+tree_root = ExtResource("2_tree")
+libraries = {
+&"quadruped_fp": ExtResource("3_clips")
+}
+
+[editable path="Arms"]

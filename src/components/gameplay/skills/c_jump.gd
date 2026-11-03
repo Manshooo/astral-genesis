@@ -2,6 +2,9 @@ class_name C_Jump
 extends C_BodyTrait
 ## Умение прыгать и его сила у этого тела; нет компонента = прыгать нечем (тело не попадает в выборку S_Jump).
 
+## Клипы, без которых анимированное тело с этой способностью не обходится (dev/body_clips_check).
+const CLIPS: Array[StringName] = [&"jump", &"jump_air", &"jump_land"]
+
 ## Начальная скорость прыжка вверх, м/с. АБСОЛЮТНАЯ.
 @export var velocity: float = 6.0
 

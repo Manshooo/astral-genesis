@@ -14,22 +14,51 @@ extends Entity
 @export_range(0, 5) var body_class: int = 0
 
 
-## Облик тела (меш, материал, трансформ) из СЦЕНЫ — единственный источник правды, правило геометрии у
-## RS_EntityVisuals. Трансформ относительно корня (подошвы): поворот МОДЕЛИ внутри сцены входит, поворот тела в комнате — нет.
-## Подошву считаем по форме того же тела (C_BodyVisual.foot_offset). null — визуала нет.
+## Руки-муляж, которые риг при вселении вешает на камеру (гибрид от первого лица). Свойство сцены, как display_name_key;
+## пусто — тело без рук в кадре.
+@export var fp_arms_scene: PackedScene
+
+
+## Труп только что был врагом и падает (клип гибели, потом рэгдолл), а не лежит с начала. Ставит O_EnemyDeath до add_child.
+var dying := false
+
+
+## Узел облика: инстанс сцены SK_*.tscn — её и надевает риг (C_BodyVisual.scene).
+const VISUAL_NODE := "Visual"
+
+
+## Облик тела из СЦЕНЫ — единственный источник правды, правило геометрии у RS_EntityVisuals. Трансформ относительно
+## корня (подошвы): поворот МОДЕЛИ внутри сцены входит, поворот тела в комнате — нет. Подошву считаем по форме того же
+## тела (C_BodyVisual.foot_offset). null — визуала нет.
 static func visual_of(body: Node) -> C_BodyVisual:
 	var entity := body as Entity
 	if entity == null:
 		return null
-	var geo := RS_EntityVisuals.primary(entity) as MeshInstance3D
-	if geo == null or geo.mesh == null:
-		return null
+
+	var visual := C_BodyVisual.new()
+	var appearance := entity.get_node_or_null(VISUAL_NODE) as Node3D
+	if appearance != null and not appearance.scene_file_path.is_empty():
+		visual.scene = load(appearance.scene_file_path) as PackedScene
+		visual.mesh_transform = RS_EntityVisuals.transform_relative_to(appearance, entity)
+		for geo: GeometryInstance3D in appearance.find_children("*", "GeometryInstance3D", true, false):
+			if geo.material_override != null:
+				visual.material_overrides[geo.name] = geo.material_override
+		var tree := RS_EntityVisuals.animation_tree(entity)
+		if tree != null:
+			visual.tree_root = tree.tree_root
+			for key in tree.get_animation_library_list():
+				visual.libraries[key] = tree.get_animation_library(key)
+		if entity is E_Body:
+			visual.fp_arms = (entity as E_Body).fp_arms_scene
+	else:
+		var geo := RS_EntityVisuals.primary(entity) as MeshInstance3D
+		if geo == null or geo.mesh == null:
+			return null
+		visual.mesh = geo.mesh
+		visual.material_override = geo.material_override
+		visual.mesh_transform = RS_EntityVisuals.transform_relative_to(geo, entity)
 
 	var form := form_of(entity)
-	var visual := C_BodyVisual.new()
-	visual.mesh = geo.mesh
-	visual.material_override = geo.material_override
-	visual.mesh_transform = RS_EntityVisuals.transform_relative_to(geo, entity)
 	visual.foot_offset = form.foot_offset() if form else Vector3.ZERO
 	return visual
 

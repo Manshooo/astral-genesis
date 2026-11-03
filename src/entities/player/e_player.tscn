@@ -53,6 +53,9 @@ script = ExtResource("11_decaysound")
 margin = 0.06
 radius = 0.26
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_eyereach"]
+radius = 0.12
+
 [sub_resource type="Resource" id="Resource_cloud"]
 script = ExtResource("12_cloud")
 
@@ -189,3 +192,11 @@ local_coords = false
 visibility_aabb = AABB(-10, -4, -10, 20, 10, 20)
 process_material = SubResource("Process_trail")
 draw_pass_1 = SubResource("QuadMesh_card")
+
+[node name="BodyAnimation" type="AnimationTree" parent="."]
+active = false
+
+[node name="EyeReach" type="SpringArm3D" parent="."]
+collision_mask = 17
+shape = SubResource("SphereShape3D_eyereach")
+spring_length = 0.0
