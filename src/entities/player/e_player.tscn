@@ -49,6 +49,9 @@ script = ExtResource("11_decaysound")
 margin = 0.06
 radius = 0.26
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_eyereach"]
+radius = 0.12
+
 [sub_resource type="SphereMesh" id="SphereMesh_b1rd4"]
 radius = 0.25
 height = 0.5
@@ -83,3 +86,11 @@ shape = SubResource("SphereShape3D_ml67e")
 extra_cull_margin = 3.0
 gi_mode = 2
 mesh = SubResource("SphereMesh_b1rd4")
+
+[node name="BodyAnimation" type="AnimationTree" parent="."]
+active = false
+
+[node name="EyeReach" type="SpringArm3D" parent="."]
+collision_mask = 17
+shape = SubResource("SphereShape3D_eyereach")
+spring_length = 0.0

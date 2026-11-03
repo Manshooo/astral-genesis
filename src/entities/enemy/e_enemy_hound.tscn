@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" uid="uid://dtsbk0vab2ynp" path="res://src/entities/enemy/e_enemy.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://yf7vkrby4iip" path="res://src/entities/enemy/e_enemy.gd" id="1_enemy"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
 [ext_resource type="Script" uid="uid://dt7g6v8bchojd" path="res://src/components/gameplay/c_enemy_ai.gd" id="3_ai"]
 [ext_resource type="Script" uid="uid://ye3ihee7rux0" path="res://src/components/gameplay/c_enemy_input.gd" id="4_input"]
@@ -9,7 +9,11 @@
 [ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="7_health"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_footsteps.gd" id="8_footsteps"]
 [ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="9_corpse"]
-[ext_resource type="ArrayMesh" uid="uid://cj64cfj8vbtjo" path="res://assets/monsters/models/monsters_headog.res" id="10_mesh"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_body_animation.gd" id="10_animation"]
+[ext_resource type="PackedScene" path="res://assets/characters/SK_hound/SK_hound.tscn" id="11_visual"]
+[ext_resource type="AnimationNodeBlendTree" path="res://data/animation/quadruped_tree.tres" id="12_tree"]
+[ext_resource type="AnimationLibrary" uid="uid://dtjyfqjf53qxb" path="res://assets/characters/_rigs/quadruped/ANIM_quadruped.glb" id="13_clips"]
+[ext_resource type="NavigationMesh" path="res://data/enemy_navmesh_large.tres" id="14_nav"]
 
 [sub_resource type="Resource" id="Resource_ai"]
 script = ExtResource("3_ai")
@@ -17,6 +21,7 @@ aggro_range = 14.0
 attack_range = 1.6
 attack_damage = 9.0
 attack_interval = 0.5
+nav_profile = ExtResource("14_nav")
 
 [sub_resource type="Resource" id="Resource_input"]
 script = ExtResource("4_input")
@@ -37,17 +42,33 @@ current = 60.0
 script = ExtResource("8_footsteps")
 stride = 1.25
 
+[sub_resource type="Resource" id="Resource_animation"]
+script = ExtResource("10_animation")
+walk_clip_speed = 1.84
+run_clip_speed = 4.5
+trot_clip_speed = 4.5
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_hound"]
-radius = 0.313
-height = 1.83
+radius = 0.44
+height = 2.52
 
-[node name="Enemy" unique_id=1735200203 instance=ExtResource("1_base")]
+[node name="Enemy" type="CharacterBody3D"]
+collision_layer = 68
+collision_mask = 113
+script = ExtResource("1_enemy")
 corpse_scene = ExtResource("9_corpse")
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_ai"), SubResource("Resource_input"), SubResource("Resource_velocity"), SubResource("Resource_walk"), SubResource("Resource_health"), SubResource("Resource_footsteps")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_ai"), SubResource("Resource_input"), SubResource("Resource_velocity"), SubResource("Resource_walk"), SubResource("Resource_health"), SubResource("Resource_footsteps"), SubResource("Resource_animation")])
 
-[node name="CollisionShape3D" parent="." index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.915, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.26, 0)
 shape = SubResource("CapsuleShape3D_hound")
 
-[node name="Visual" parent="." index="1"]
-mesh = ExtResource("10_mesh")
+[node name="Visual" parent="." instance=ExtResource("11_visual")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+root_node = NodePath("../Visual")
+tree_root = ExtResource("12_tree")
+libraries = {
+&"quadruped": ExtResource("13_clips")
+}

@@ -32,6 +32,8 @@ static func replace_with_corpse(enemy: Entity) -> void:
 		return
 
 	var corpse := scene.instantiate() as Entity
+	if corpse is E_Body:
+		(corpse as E_Body).dying = true
 	# Место — ДО add_child и локальным трансформом: рэгдолл трупа стартует в _ready внутри add_child, сдвиг корня после оставил бы труп в начале координат.
 	(corpse as Node as Node3D).transform = (parent as Node3D).global_transform.affine_inverse() * placement \
 			if parent is Node3D else placement

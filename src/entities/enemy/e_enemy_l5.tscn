@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://src/entities/body/e_body_l5.tscn" id="9_corpse"]
 [ext_resource type="Material" path="res://assets/shared/materials/palette_l5.tres" id="10_tone"]
 [ext_resource type="NavigationMesh" path="res://data/enemy_navmesh_large.tres" id="11_nav"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_body_animation.gd" id="12_animation"]
 
 [sub_resource type="Resource" id="Resource_ai"]
 script = ExtResource("3_ai")
@@ -39,18 +40,34 @@ current = 240.0
 script = ExtResource("8_footsteps")
 stride = 1.75
 
+[sub_resource type="Resource" id="Resource_animation"]
+script = ExtResource("12_animation")
+walk_clip_speed = 1.84
+run_clip_speed = 4.5
+trot_clip_speed = 4.5
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_l5"]
 radius = 0.44
-height = 2.56
+height = 2.52
 
 [node name="Enemy" unique_id=1735200205 instance=ExtResource("1_base")]
 corpse_scene = ExtResource("9_corpse")
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_ai"), SubResource("Resource_input"), SubResource("Resource_velocity"), SubResource("Resource_walk"), SubResource("Resource_health"), SubResource("Resource_footsteps")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_ai"), SubResource("Resource_input"), SubResource("Resource_velocity"), SubResource("Resource_walk"), SubResource("Resource_health"), SubResource("Resource_footsteps"), SubResource("Resource_animation")])
 
-[node name="CollisionShape3D" parent="." index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.28, 0)
+[node name="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.26, 0)
 shape = SubResource("CapsuleShape3D_l5")
 
-[node name="Visual" parent="." index="1"]
-transform = Transform3D(-1.4, 0, 0, 0, 1.4, 0, 0, 0, -1.4, 0, 0, 0)
+[node name="Visual" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="hound_body" parent="Visual/hound_skel/Skeleton3D"]
 material_override = ExtResource("10_tone")
+
+[node name="hound_head" parent="Visual/hound_skel/Skeleton3D"]
+material_override = ExtResource("10_tone")
+
+[node name="hound_arms" parent="Visual/hound_skel/Skeleton3D"]
+material_override = ExtResource("10_tone")
+
+[editable path="Visual"]

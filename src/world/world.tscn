@@ -46,6 +46,8 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_regeneration.gd" id="43_regen"]
 [ext_resource type="Script" path="res://src/observers/o_combat_mark.gd" id="44_combatmark"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_decay_sound.gd" id="45_decaysound"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_body_animation.gd" id="46_bodyanim"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_first_person_motion.gd" id="47_fpmotion"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -141,6 +143,14 @@ group = &"gameplay"
 
 [node name="S_DecaySound" type="Node" parent="World/Systems/gameplay"]
 script = ExtResource("45_decaysound")
+group = &"gameplay"
+
+[node name="S_BodyAnimation" type="Node" parent="World/Systems/gameplay"]
+script = ExtResource("46_bodyanim")
+group = &"gameplay"
+
+[node name="S_FirstPersonMotion" type="Node" parent="World/Systems/gameplay"]
+script = ExtResource("47_fpmotion")
 group = &"gameplay"
 
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]

@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/SK_hound/SK_hound.tscn" id="1_visual"]
+[ext_resource type="AnimationLibrary" uid="uid://dtjyfqjf53qxb" path="res://assets/characters/_rigs/quadruped/ANIM_quadruped.glb" id="2_clips"]
+
+[node name="MenuHound" type="Node3D"]
+
+[node name="Visual" parent="." instance=ExtResource("1_visual")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+root_node = NodePath("../Visual")
+libraries = {
+&"": ExtResource("2_clips")
+}

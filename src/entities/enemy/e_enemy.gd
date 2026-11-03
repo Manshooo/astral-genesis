@@ -10,6 +10,13 @@ extends Entity
 @export var corpse_scene: PackedScene
 
 
+func _ready() -> void:
+	if Engine.is_editor_hint():
+		return
+	# Гибель врага отдаёт труп (O_EnemyDeath) — рэгдолл облику не нужен.
+	RS_EntityVisuals.strip_ragdoll(self)
+
+
 ## Класс угрозы врага L0..L5 — класс его трупа (второго числа нет). 0, если трупа нет.
 func threat_class() -> int:
 	if corpse_scene == null:

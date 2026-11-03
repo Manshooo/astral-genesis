@@ -229,6 +229,11 @@ SETTINGS_AA,Сглаживание,Anti-aliasing
 SETTINGS_AA_OFF,Выкл,Off
 SETTINGS_VSYNC,Вертикальная синхронизация,Vertical synchronization
 SETTINGS_FOV,Поле зрения,Field of view
+SETTINGS_CAMERA_MOTION,Покачивание камеры,Camera motion
+SETTINGS_CAMERA_MOTION_OFF,Выкл,Off
+SETTINGS_CAMERA_MOTION_WEAK,Слабо,Reduced
+SETTINGS_CAMERA_MOTION_FULL,Полностью,Full
+"SETTINGS_HINT_CAMERA_MOTION","Качка камеры на шаге и бегу и рывок при укусе. Если укачивает, ослабьте или выключите.","Camera sway while walking and running, and the jolt of a bite. Reduce or turn it off if it makes you feel sick."
 SETTINGS_FPS_LIMIT,Ограничение FPS,Frame rate limit
 SETTINGS_FPS_UNLIMITED,без ограничения,unlimited
 SETTINGS_VOLUME_MASTER,Общая громкость,Master volume
