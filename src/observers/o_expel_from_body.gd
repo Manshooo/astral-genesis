@@ -62,7 +62,23 @@ static func _exit_of(soul: Entity, voluntary: bool) -> Dictionary:
 		"placement": placement,
 		"velocity": velocity.velocity if velocity else Vector3.ZERO,
 		"voluntary": voluntary,
+		"pose": _worn_pose(soul),
 	}
+
+
+## Поза надетого тела в миг выхода — с его скелета, если меш облика к скелету привязан: брошенное тело продолжит
+## из неё, а не из позы покоя. Пока риг носит один меш без скелета — пусто ([[Переработка тел — анимации, вид из тела, рэгдолл]]).
+static func _worn_pose(soul: Entity) -> Dictionary:
+	var slot := RS_EntityVisuals.primary(soul) as MeshInstance3D
+	if slot == null or slot.skeleton.is_empty():
+		return {}
+	var skeleton := slot.get_node_or_null(slot.skeleton) as Skeleton3D
+	if skeleton == null:
+		return {}
+	var pose := {}
+	for bone in skeleton.get_bone_count():
+		pose[skeleton.get_bone_name(bone)] = skeleton.get_bone_pose(bone)
+	return pose
 
 
 ## Разгон принадлежал телу: оно и уходит по инерции (O_SoulExit), а у души нет массы — она уносит лишь долю

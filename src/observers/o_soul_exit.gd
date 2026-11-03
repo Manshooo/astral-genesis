@@ -24,4 +24,4 @@ func each(_event: Variant, entity: Entity, payload: Variant = null) -> void:
 	var fx := FX_SCENE.instantiate() as SoulExitFx
 	# Рядом с душой, а не под комнатой: эффект живёт пару секунд и снос комнаты ему не нужен.
 	soul.get_parent().add_child(fx)
-	fx.start(body_scene, exit.placement, exit.velocity, soul)
+	fx.start(body_scene, exit.placement, exit.velocity, soul, exit.get("pose", {}))

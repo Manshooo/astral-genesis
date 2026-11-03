@@ -176,6 +176,23 @@ func _run(world: World) -> void:
 	_check("брошенное тело испарилось", not is_instance_valid(husk), "")
 	_check("эффект выхода убрал себя сам", not is_instance_valid(fx), "")
 
+	# --- 4. Брошенное тело продолжает из позы, в которой его бросили ------
+	# Риг пока носит один меш без скелета, и живой позы в событии нет — поза задаётся здесь: одна кость повёрнута.
+	var probe := (load(CRAWLER_SCENE) as PackedScene).instantiate()
+	var probe_skeleton := probe.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	var bone_name := probe_skeleton.get_bone_name(probe_skeleton.get_bone_count() - 1)
+	var bent := Transform3D(Basis(Vector3.RIGHT, 1.2), probe_skeleton.get_bone_pose_position(probe_skeleton.get_bone_count() - 1))
+	probe.free()
+	var pose_fx := O_SoulExit.FX_SCENE.instantiate() as SoulExitFx
+	(player as Node).get_parent().add_child(pose_fx)
+	pose_fx.start(load(CRAWLER_SCENE) as PackedScene, Transform3D(Basis.IDENTITY, Vector3(0, 0, 10)), Vector3.ZERO,
+		player as Node as Node3D, {bone_name: bent})
+	var husk_skeleton := pose_fx._husk.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	var got := husk_skeleton.get_bone_pose_rotation(husk_skeleton.find_bone(bone_name))
+	_check("брошенное тело встаёт в позу, в которой его застал выход, а не в позу покоя",
+		got.is_equal_approx(bent.basis.get_rotation_quaternion()), "%s вместо %s" % [got, bent.basis.get_rotation_quaternion()])
+	pose_fx.queue_free()
+
 
 ## Распад, отданный облику; −1 — не отдан вовсе (параметр экземпляра не выставлен).
 func _decay_of(node: GeometryInstance3D) -> float:
