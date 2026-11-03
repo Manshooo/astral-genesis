@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="VisualShader" path="res://assets/shared/shaders/body_burn.tres" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/shared/shaders/soul_noise.tres" id="2_noise"]
+
+[resource]
+shader = ExtResource("1_shader")
+shader_parameter/noise_scale = 0.9
+shader_parameter/edge_width = 0.09
+shader_parameter/char_width = 0.25
+shader_parameter/edge_color = Color(0.8, 0.55, 1, 1)
+shader_parameter/edge_energy = 8.0
+shader_parameter/roughness = 0.85
+shader_parameter/noise_tex = ExtResource("2_noise")

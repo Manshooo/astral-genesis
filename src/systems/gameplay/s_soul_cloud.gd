@@ -20,6 +20,8 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 
 
 func _show(entity: Entity, cloud: C_SoulCloud, shown: bool) -> void:
+	# Вышла из тела — сгусток разворачивается из сжатого; появилась с самого начала (applied = −1) — сразу целиком.
+	cloud.unfold = 0.0 if shown and cloud.applied == 0 else 1.0
 	cloud.applied = int(shown)
 	for path in [cloud.root_path, cloud.wisps_path]:
 		var node := entity.get_node_or_null(path) as Node3D
@@ -44,13 +46,16 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 	if cloud.offsets.size() != cloud.count:
 		_seed_cards(cloud, head)
 	cloud.time += delta
+	cloud.unfold = minf(cloud.unfold + delta / maxf(cloud.unfold_seconds, 0.001), 1.0)
+	var grow := smoothstep(0.0, 1.0, cloud.unfold)
+	var spread := lerpf(0.25, 1.0, grow)
 	var center := (entity as Node as Node3D).global_position
 	_record(cloud, center, delta)
 	# Голова стоит в центре души, карточки — относительно неё: AABB вокруг узла, а не вокруг начала мира,
 	# где уровень может и не лежать.
 	head.global_transform = Transform3D(Basis.IDENTITY, center)
 	head.set_instance_shader_parameter(&"blob_center", center)
-	_apply_decay(entity, cloud, head)
+	_apply_decay(entity, cloud, head, grow)
 
 	var eye := Vector3.ZERO
 	var camera := entity.get_viewport().get_camera_3d()
@@ -62,9 +67,9 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 	for i in cloud.count:
 		var s := cloud.seeds[i]
 		var wobble := Vector3(sin(cloud.time * 0.9 + s * 6.0), sin(cloud.time * 1.1 + s * 4.0), cos(cloud.time * 0.8 + s * 5.0)) * 0.04
-		var pos := _sample(cloud, cloud.sizes[i] * cloud.drag) + _lobe(cloud, i % maxi(cloud.lobes, 1)) \
-				+ cloud.offsets[i] * cloud.radius * (1.0 - cloud.lobe_spread * 0.4) + wobble
-		var size := lerpf(cloud.card_size.x, cloud.card_size.y, cloud.sizes[i])
+		var pos := _sample(cloud, cloud.sizes[i] * cloud.drag) + (_lobe(cloud, i % maxi(cloud.lobes, 1)) \
+				+ cloud.offsets[i] * cloud.radius * (1.0 - cloud.lobe_spread * 0.4)) * spread + wobble
+		var size := lerpf(cloud.card_size.x, cloud.card_size.y, cloud.sizes[i]) * lerpf(0.4, 1.0, grow)
 		var core := 1.0 - cloud.offsets[i].length() * 0.5
 		var rot := s + cloud.time * cloud.spin * 0.15 * (s - 0.5)
 		xforms.append(Transform3D(Basis.from_scale(Vector3.ONE * size), pos))
@@ -79,11 +84,12 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 
 
 ## Чем ближе распад, тем призрачнее: клочки бледнеют и рвутся (шейдер), частиц в следе и у камеры меньше.
-## Запас — через UI_HudMood, как у свечения и дуги: своя формула разошлась бы с ними.
-func _apply_decay(entity: Entity, cloud: C_SoulCloud, head: MultiMeshInstance3D) -> void:
+## Запас — через UI_HudMood, как у свечения и дуги: своя формула разошлась бы с ними. Разворачиваясь после
+## выхода, облик собирается из рваного тем же параметром: grow 0 — как на исходе, 1 — по запасу.
+func _apply_decay(entity: Entity, cloud: C_SoulCloud, head: MultiMeshInstance3D, grow: float) -> void:
 	var vitals := UI_HudMood.read_vitals(entity)
-	var d := UI_HudMood.decay(vitals.active()) if vitals != null else 0.0
-	cloud.decay = d
+	cloud.decay = UI_HudMood.decay(vitals.active()) if vitals != null else 0.0
+	var d := maxf(cloud.decay, 1.0 - grow)
 	head.set_instance_shader_parameter(&"decay", d)
 	for path in [cloud.trail_path, cloud.wisps_path]:
 		var particles := entity.get_node_or_null(path) as GPUParticles3D

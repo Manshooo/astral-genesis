@@ -38,6 +38,7 @@ func _ready() -> void:
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
 	world.add_observer(O_BodyForm.new())
+	world.add_observer(O_SoulExit.new())
 
 	await _run(world)
 	_restore_skill_save()
@@ -129,9 +130,22 @@ func _run(world: World) -> void:
 	_check("пересадка состоялась", player.has_component(C_Embodied) and slot.mesh != body_mesh, str(crawler))
 	_check("после пересадки облик по-прежнему погашен", not root.visible, "")
 
+	# Душа уходит с разгону: брошенное тело обязано продолжить этот ход по инерции, а не рухнуть на месте.
+	var push := Vector3(3.0, 0.0, 0.0)
+	(player.get_component(C_Velocity) as C_Velocity).velocity = push
+	var left_at := (player as Node as Node3D).global_position
 	O_ExpelFromBody.expel(player, true)
 	await get_tree().process_frame
 	_tick(1)
+	var fx := _exit_fx(player)
+	var husk := fx._husk if fx else null
+	_check("выход оставил брошенное тело того, из которого вышли",
+		husk != null and husk.scene_file_path == CRAWLER_SCENE, str(husk.scene_file_path if husk else fx))
+	_check("брошенное тело не в мире ECS — второй раз его не захватить",
+		husk != null and not ECS.world.entities.has(husk as Node as Entity), "")
+	_check("брошенное тело ничего не задевает: ни луч захвата, ни игрока",
+		husk != null and _layers_of(husk) == 0, "слои %d" % (_layers_of(husk) if husk else -1))
+	_check("только вышедший сгусток рваный, а не сразу целый", _decay_of(head) > 0.5, "%.2f" % _decay_of(head))
 	_check("после выхода слот снова пуст, а не с мешем прошлого тела", slot.mesh == null, str(slot.mesh))
 	_check("после выхода сгусток снова виден", root.visible, "")
 	_check("после выхода клочья у камеры снова идут", wisps.visible and wisps.emitting, "")
@@ -139,11 +153,71 @@ func _run(world: World) -> void:
 		head.global_position.distance_to((player as Node as Node3D).global_position) < 0.01,
 		"%s против %s" % [head.global_position, (player as Node as Node3D).global_position])
 
+	# Брошенное тело летит по ходу души, а за время эффекта испаряется и убирает себя.
+	await get_tree().create_timer(0.4).timeout
+	var drift := _husk_center(husk) - left_at if is_instance_valid(husk) else Vector3.ZERO
+	_check("брошенное тело ушло по инерции в сторону хода души", drift.dot(push.normalized()) > 0.3,
+		"сдвиг %s при скорости %s" % [drift, push])
+	await get_tree().create_timer(fx.evaporate_seconds * 0.5).timeout
+	var burning := _burning_meshes(husk, fx.burn_material)
+	_check("брошенное тело сгорает, а не просто бледнеет",
+		burning > 0 and burning == husk.find_children("*", "MeshInstance3D", true, false).size(),
+		"%d мешей в материале сгорания" % burning)
+	var mesh := husk.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	var burn := float(mesh.get_instance_shader_parameter(&"burn")) if mesh.get_instance_shader_parameter(&"burn") != null else -1.0
+	_check("сгорание идёт, а не стоит на месте", 0.0 < burn and burn < 1.0, "%.2f" % burn)
+	_tick(int(ceil(cloud.unfold_seconds / TICK)) + 1)
+	_check("сгусток развернулся и снова по запасу", _decay_of(head) == 0.0, "%.2f" % _decay_of(head))
+	await get_tree().create_timer(fx.fall_seconds + fx.evaporate_seconds + fx.linger_seconds).timeout
+	_check("брошенное тело испарилось", not is_instance_valid(husk), "")
+	_check("эффект выхода убрал себя сам", not is_instance_valid(fx), "")
+
 
 ## Распад, отданный облику; −1 — не отдан вовсе (параметр экземпляра не выставлен).
 func _decay_of(node: GeometryInstance3D) -> float:
 	var value: Variant = node.get_instance_shader_parameter(&"decay")
 	return float(value) if value != null else -1.0
+
+
+func _exit_fx(player: Entity) -> SoulExitFx:
+	for node in (player as Node).get_parent().get_children():
+		if node is SoulExitFx:
+			return node as SoulExitFx
+	return null
+
+
+## Сумма слоёв коллизий всех тел оболочки: 0 — ничто в ней ни с чем не сталкивается как цель.
+func _layers_of(husk: Node) -> int:
+	var total := 0
+	for node in [husk] + husk.find_children("*", "CollisionObject3D", true, false):
+		if node is CollisionObject3D:
+			total |= (node as CollisionObject3D).collision_layer
+	return total
+
+
+## Сколько мешей тела носят на всех поверхностях материал с шейдером сгорания.
+func _burning_meshes(husk: Node, burn: ShaderMaterial) -> int:
+	var count := 0
+	for node in husk.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		var all := mesh.mesh != null and mesh.mesh.get_surface_count() > 0
+		for surface in (mesh.mesh.get_surface_count() if mesh.mesh else 0):
+			var active := mesh.get_active_material(surface) as ShaderMaterial
+			all = all and active != null and active.shader == burn.shader
+		if all:
+			count += 1
+	return count
+
+
+## Где сейчас тело: по костям рэгдолла, без них — по корню.
+func _husk_center(husk: Node3D) -> Vector3:
+	var bones := husk.find_children("*", "PhysicalBone3D", true, false)
+	if bones.is_empty():
+		return husk.global_position
+	var sum := Vector3.ZERO
+	for bone in bones:
+		sum += (bone as Node3D).global_position
+	return sum / bones.size()
 
 
 func _tick(frames: int) -> void:

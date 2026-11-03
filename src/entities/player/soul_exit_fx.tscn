@@ -1,0 +1,108 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/entities/player/soul_exit_fx.gd" id="1_fx"]
+[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_trail.tres" id="2_smoke"]
+[ext_resource type="Material" path="res://assets/materials/MAT_body_burn.tres" id="3_burn"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_card"]
+
+[sub_resource type="Curve" id="Curve_scale"]
+_data = [Vector2(0, 0.3), 0.0, 0.0, 0, 0, Vector2(0.25, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.6), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_scale"]
+curve = SubResource("Curve_scale")
+
+[sub_resource type="Gradient" id="Gradient_fade"]
+offsets = PackedFloat32Array(0, 0.1, 0.55, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0.65, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_fade"]
+gradient = SubResource("Gradient_fade")
+
+[sub_resource type="ParticleProcessMaterial" id="Process_burst"]
+emission_shape = 1
+emission_sphere_radius = 0.35
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 0.8
+initial_velocity_max = 1.8
+gravity = Vector3(0, -0.25, 0)
+damping_min = 1.2
+damping_max = 2.0
+angle_min = -180.0
+angle_max = 180.0
+angular_velocity_min = -30.0
+angular_velocity_max = 30.0
+scale_min = 0.5
+scale_max = 1.0
+scale_curve = SubResource("CurveTexture_scale")
+color_ramp = SubResource("GradientTexture_fade")
+turbulence_enabled = true
+turbulence_noise_strength = 0.6
+turbulence_influence_min = 0.03
+turbulence_influence_max = 0.08
+
+[sub_resource type="ParticleProcessMaterial" id="Process_vapor"]
+emission_shape = 3
+emission_box_extents = Vector3(0.3, 0.8, 0.3)
+direction = Vector3(0, 1, 0)
+spread = 60.0
+initial_velocity_min = 0.1
+initial_velocity_max = 0.3
+gravity = Vector3(0, 0, 0)
+damping_min = 0.3
+damping_max = 0.6
+angle_min = -180.0
+angle_max = 180.0
+angular_velocity_min = -20.0
+angular_velocity_max = 20.0
+scale_min = 0.2
+scale_max = 0.45
+scale_curve = SubResource("CurveTexture_scale")
+color_ramp = SubResource("GradientTexture_fade")
+turbulence_enabled = true
+turbulence_noise_strength = 0.4
+turbulence_influence_min = 0.02
+turbulence_influence_max = 0.05
+
+[node name="SoulExitFx" type="Node3D"]
+script = ExtResource("1_fx")
+burn_material = ExtResource("3_burn")
+
+[node name="Burst" type="GPUParticles3D" parent="."]
+unique_name_in_owner = true
+top_level = true
+cast_shadow = 0
+gi_mode = 0
+material_override = ExtResource("2_smoke")
+emitting = false
+amount = 40
+lifetime = 1.8
+one_shot = true
+explosiveness = 0.9
+local_coords = false
+visibility_aabb = AABB(-4, -3, -4, 8, 6, 8)
+process_material = SubResource("Process_burst")
+draw_pass_1 = SubResource("QuadMesh_card")
+
+[node name="Vapor" type="GPUParticles3D" parent="."]
+unique_name_in_owner = true
+top_level = true
+cast_shadow = 0
+gi_mode = 0
+material_override = ExtResource("2_smoke")
+emitting = false
+amount = 90
+lifetime = 1.6
+local_coords = false
+visibility_aabb = AABB(-6, -4, -6, 12, 8, 12)
+process_material = SubResource("Process_vapor")
+draw_pass_1 = SubResource("QuadMesh_card")
+
+[node name="Attractor" type="GPUParticlesAttractorSphere3D" parent="."]
+unique_name_in_owner = true
+top_level = true
+strength = 6.0
+attenuation = 0.5
+radius = 6.0
