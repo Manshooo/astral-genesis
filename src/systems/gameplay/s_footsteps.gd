@@ -1,6 +1,6 @@
 # res://src/systems/gameplay/s_footsteps.gd
 # Группа "gameplay". Озвучивает ходьбу через byProd тем способом, каким собрано событие (C_Footsteps.Playback): разовый звук на шаг или петля с темпом.
-# Скорость — из C_Velocity (фактическая). Не "physics": is_on_floor() — чтение флага move_and_slide(), не запрос к space-state. Вики: [[Звук]] §3.
+# Скорость и «на земле» — из C_Velocity (фактические, пишет S_Movement), запросов к space-state нет. Вики: [[Звук]] §3.
 class_name S_Footsteps
 extends System
 
@@ -25,7 +25,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		var speed := Vector2(vel.velocity.x, vel.velocity.z).length()
 
 		# В воздухе шагов нет: шаг — касание земли.
-		var walking := speed >= MIN_SPEED and body.is_on_floor()
+		var walking := speed >= MIN_SPEED and vel.grounded
 
 		if steps.playback == C_Footsteps.Playback.LOOP:
 			_loop(steps, speed, walking)

@@ -119,8 +119,10 @@ func _run(world: World) -> void:
 	_check("стоя на месте шагов нет", _requests.is_empty(), "шагов: %d" % _requests.size())
 
 	# --- 4. В воздухе молчит ----------------------------------------------
-	_requests.clear()
 	node.global_position = Vector3(node.global_position.x, 6.0, 0.0)
+	# Первые S_Movement.AIR_GRACE секунды без опоры тело ещё на земле (ступенька) — разгоняем его уже в воздухе.
+	await _physics(ceili(S_Movement.AIR_GRACE * 60.0) + 1)
+	_requests.clear()
 	_drive_speed = DRIVE_SPEED
 	await _physics(10)  # успеть пролететь горизонтально, не долетев до пола
 	_check(
