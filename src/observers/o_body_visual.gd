@@ -21,10 +21,11 @@ func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
 	match event:
 		Observer.Event.ADDED:
 			# Прежний вид запоминаем ПЕРЕД подменой; заполненное не трогаем: при пересадке S_BodySnatch переносит сюда облик БФЖ.
-			if visual.restore_mesh == null:
+			if not visual.restore_captured:
 				visual.restore_mesh = geo.mesh
 				visual.restore_material = geo.material_override
 				visual.restore_transform = geo.transform
+				visual.restore_captured = true
 			geo.mesh = visual.mesh
 			geo.material_override = visual.material_override
 			_place(entity, geo, visual)

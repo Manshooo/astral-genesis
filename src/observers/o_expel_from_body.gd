@@ -26,6 +26,8 @@ static func expel(soul: Entity, voluntary: bool) -> void:
 		return  # уже вышли другим путём в этом же кадре
 
 	_settle_lifespan(soul, voluntary)
+	var exit := _exit_of(soul, voluntary)
+	_shed_inertia(soul)
 
 	# Снимаем ВСЕ характеристики, не перечисляя: тем же правилом E_Body.is_wearable, каким надевает S_BodySnatch.
 	for component in E_Body.worn_by(soul):
@@ -39,10 +41,53 @@ static func expel(soul: Entity, voluntary: bool) -> void:
 	if soul.has_component(C_BodyForm):
 		soul.remove_component(C_BodyForm)
 	soul.remove_component(C_Embodied)
-	ECS.world.emit_event(&"expelled_from_body", soul)
+	ECS.world.emit_event(&"expelled_from_body", soul, exit)
 
 	# Контрольная точка на выходе (как при входе, S_BodySnatch._embody): expel зовётся отложенно, вне буфера.
 	RunManager.save_progress()
+
+
+## Что бросила душа — для эффекта выхода (O_SoulExit): сцена тела, его место подошвой на полу и скорость рига.
+## Снимается ДО снятия формы и C_Embodied: после них путь сцены потерян, а foot_offset() ответил бы призрачной сферой.
+static func _exit_of(soul: Entity, voluntary: bool) -> Dictionary:
+	var embodied := soul.get_component(C_Embodied) as C_Embodied
+	var velocity := soul.get_component(C_Velocity) as C_Velocity
+	var placement := Transform3D.IDENTITY
+	var rig := soul as Node as Node3D
+	if rig != null:
+		var sole := (soul as E_Player).foot_offset() if soul is E_Player else Vector3.ZERO
+		placement = Transform3D(rig.global_basis, rig.global_position - sole)
+	return {
+		"body_scene_path": embodied.body_scene_path if embodied else "",
+		"placement": placement,
+		"velocity": velocity.velocity if velocity else Vector3.ZERO,
+		"voluntary": voluntary,
+		"pose": _worn_pose(soul),
+	}
+
+
+## Поза надетого тела в миг выхода — с его скелета, если меш облика к скелету привязан: брошенное тело продолжит
+## из неё, а не из позы покоя. Пока риг носит один меш без скелета — пусто ([[Переработка тел — анимации, вид из тела, рэгдолл]]).
+static func _worn_pose(soul: Entity) -> Dictionary:
+	var slot := RS_EntityVisuals.primary(soul) as MeshInstance3D
+	if slot == null or slot.skeleton.is_empty():
+		return {}
+	var skeleton := slot.get_node_or_null(slot.skeleton) as Skeleton3D
+	if skeleton == null:
+		return {}
+	var pose := {}
+	for bone in skeleton.get_bone_count():
+		pose[skeleton.get_bone_name(bone)] = skeleton.get_bone_pose(bone)
+	return pose
+
+
+## Разгон принадлежал телу: оно и уходит по инерции (O_SoulExit), а у души нет массы — она уносит лишь долю
+## скорости (C_SoulCloud.exit_inertia). Скорость тела для эффекта снята раньше, в _exit_of.
+static func _shed_inertia(soul: Entity) -> void:
+	var velocity := soul.get_component(C_Velocity) as C_Velocity
+	var cloud := soul.get_component(C_SoulCloud) as C_SoulCloud
+	if velocity != null and cloud != null:
+		velocity.velocity *= cloud.exit_inertia
 
 
 ## Куда девается остаток запаса тела (модель «распад как ресурс»): вышел сам — прибавляется к запасу души, выше максимума,

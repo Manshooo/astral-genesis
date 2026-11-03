@@ -85,6 +85,7 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 			visual.restore_mesh = previous.restore_mesh
 			visual.restore_material = previous.restore_material
 			visual.restore_transform = previous.restore_transform
+			visual.restore_captured = previous.restore_captured
 			cmd.remove_component(soul, C_BodyVisual)
 		cmd.add_component(soul, visual)
 

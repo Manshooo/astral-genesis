@@ -11,6 +11,10 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/effect_flight.svg" id="9_flight_icon"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/effect_phasing.svg" id="10_phasing_icon"]
 [ext_resource type="Script" path="res://src/components/gameplay/c_decay_sound.gd" id="11_decaysound"]
+[ext_resource type="Script" path="res://src/components/rendering/c_soul_cloud.gd" id="12_cloud"]
+[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_head.tres" id="13_head"]
+[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_trail.tres" id="14_trail"]
+[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_wisps.tres" id="15_wisps"]
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("3_6qelm")
@@ -49,18 +53,91 @@ script = ExtResource("11_decaysound")
 margin = 0.06
 radius = 0.26
 
-[sub_resource type="SphereMesh" id="SphereMesh_b1rd4"]
-radius = 0.25
-height = 0.5
+[sub_resource type="Resource" id="Resource_cloud"]
+script = ExtResource("12_cloud")
+
+[sub_resource type="QuadMesh" id="QuadMesh_card"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_head"]
+transform_format = 1
+use_custom_data = true
+custom_aabb = AABB(-3, -3, -3, 6, 6, 6)
+mesh = SubResource("QuadMesh_card")
+
+[sub_resource type="Curve" id="Curve_smoke_scale"]
+_data = [Vector2(0, 0.4), 0.0, 0.0, 0, 0, Vector2(0.3, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.7), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_smoke_scale"]
+curve = SubResource("Curve_smoke_scale")
+
+[sub_resource type="Gradient" id="Gradient_smoke_fade"]
+offsets = PackedFloat32Array(0, 0.1, 0.55, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0.65, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_smoke_fade"]
+gradient = SubResource("Gradient_smoke_fade")
+
+[sub_resource type="ParticleProcessMaterial" id="Process_trail"]
+emission_shape = 1
+emission_sphere_radius = 0.3
+direction = Vector3(0, -1, 0)
+spread = 35.0
+initial_velocity_min = 0.05
+initial_velocity_max = 0.2
+gravity = Vector3(0, -0.35, 0)
+damping_min = 0.2
+damping_max = 0.4
+angle_min = -180.0
+angle_max = 180.0
+angular_velocity_min = -15.0
+angular_velocity_max = 15.0
+scale_min = 0.5
+scale_max = 0.95
+scale_curve = SubResource("CurveTexture_smoke_scale")
+color_ramp = SubResource("GradientTexture_smoke_fade")
+turbulence_enabled = true
+turbulence_noise_strength = 0.5
+turbulence_influence_min = 0.02
+turbulence_influence_max = 0.06
+
+[sub_resource type="ParticleProcessMaterial" id="Process_wisps"]
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 0.02
+emission_ring_radius = 0.46
+emission_ring_inner_radius = 0.36
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 0.01
+initial_velocity_max = 0.04
+gravity = Vector3(0, 0, 0)
+angle_min = -180.0
+angle_max = 180.0
+angular_velocity_min = -15.0
+angular_velocity_max = 15.0
+scale_min = 0.12
+scale_max = 0.22
+scale_curve = SubResource("CurveTexture_smoke_scale")
+color_ramp = SubResource("GradientTexture_smoke_fade")
+turbulence_enabled = true
+turbulence_noise_strength = 0.3
+turbulence_influence_min = 0.02
+turbulence_influence_max = 0.05
 
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=254995031]
 collision_layer = 2
 collision_mask = 49
 script = ExtResource("1_yrckd")
-component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing"), SubResource("Resource_glow"), SubResource("Resource_decaysound")])
+component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing"), SubResource("Resource_glow"), SubResource("Resource_decaysound"), SubResource("Resource_cloud")])
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
+extra_cull_margin = 3.0
+gi_mode = 2
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1009209839]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033333153, 0.0049188733)
+cull_mask = 1048573
 fov = 118.35706
 
 [node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=900551378]
@@ -79,7 +156,36 @@ omni_attenuation = 1.5
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
 shape = SubResource("SphereShape3D_ml67e")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
-extra_cull_margin = 3.0
-gi_mode = 2
-mesh = SubResource("SphereMesh_b1rd4")
+[node name="SoulWisps" type="GPUParticles3D" parent="Camera3D"]
+transform = Transform3D(1.15, 0, 0, 0, 0.66, 0, 0, 0, 1, 0, 0, -0.35)
+cast_shadow = 0
+gi_mode = 0
+material_override = ExtResource("15_wisps")
+amount = 48
+lifetime = 1.2
+local_coords = false
+visibility_aabb = AABB(-2, -2, -2, 4, 4, 4)
+process_material = SubResource("Process_wisps")
+draw_pass_1 = SubResource("QuadMesh_card")
+
+[node name="SoulCloud" type="Node3D" parent="."]
+
+[node name="Head" type="MultiMeshInstance3D" parent="SoulCloud"]
+top_level = true
+layers = 2
+cast_shadow = 0
+gi_mode = 0
+material_override = ExtResource("13_head")
+multimesh = SubResource("MultiMesh_head")
+
+[node name="Trail" type="GPUParticles3D" parent="SoulCloud"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0.15)
+cast_shadow = 0
+gi_mode = 0
+material_override = ExtResource("14_trail")
+amount = 70
+lifetime = 2.6
+local_coords = false
+visibility_aabb = AABB(-10, -4, -10, 20, 10, 20)
+process_material = SubResource("Process_trail")
+draw_pass_1 = SubResource("QuadMesh_card")
