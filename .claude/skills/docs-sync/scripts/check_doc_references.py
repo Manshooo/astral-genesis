@@ -14,12 +14,26 @@ src/ или addons/ (кроме addons/gecs — апстрим-сабмодул�
 описывает ещё не реализованный код) — добавить --include-roadmap, чтобы
 включить и его.
 
-Два источника ожидаемого шума, которые НЕ являются устареванием:
-  - «GECS и правила движка.md», разделы про FSM и example_card_game —
-    гипотетические имена (C_Idle, C_State) и компоненты внешнего
-    репозитория-примера (C_Phase, C_Match, …), а не нашего кода;
-  - упоминания ещё не написанных систем в разделах «пробелы»/«планы»
-    (например S_EnemyAI в «Состояние проекта.md»).
+Места, где в обратных кавычках стоят не наши имена (гипотетические C_Idle,
+C_State, компоненты внешнего example_card_game), помечаются в вики
+комментарием в конце самой строки:
+
+    `q.changed([C_X])` — пример <!-- docs-sync: skip-line -->
+
+Строка с таким комментарием пропускается при сверке идентификаторов и путей
+(не ссылок [[wikilinks]]); остальные строки абзаца проверяются как обычно.
+Для длинного куска без своего кода есть блочная пара на отдельных строках:
+
+    <!-- docs-sync: skip -->
+    ...
+    <!-- /docs-sync: skip -->
+
+Обсидиан такие комментарии не показывает. Незакрытый блок скрипт ругает в
+stderr.
+
+Остаточный шум: упоминания ещё не написанных систем в разделах «пробелы»/
+«планы» (например S_EnemyAI в «Состояние проекта.md») маркерами не глушатся —
+это настоящий вопрос «писать или убирать».
 
 Использование:
     python check_doc_references.py [--include-roadmap]
@@ -32,6 +46,9 @@ from pathlib import Path
 
 IDENT_RE = re.compile(r"\b(?:C|S|E|O|A|RS)_[A-Za-z0-9_]+\b")
 BACKTICK_RE = re.compile(r"`([^`\n]+)`")
+SKIP_START_RE = re.compile(r"<!--\s*docs-sync:\s*skip\s*-->")
+SKIP_END_RE = re.compile(r"<!--\s*/docs-sync:\s*skip\s*-->")
+SKIP_LINE_RE = re.compile(r"<!--\s*docs-sync:\s*skip-line\s*-->")
 PATH_LIKE_RE = re.compile(
     r"^[\w./\\-]+\.(?:gd|tscn|tres|glb|svg|png|jpg|jpeg|md|json|cfg)$"
 )
@@ -73,6 +90,24 @@ def collect_code_text(repo_root: Path) -> str:
     return "\n".join(blobs)
 
 
+def skipped_lines(text: str, rel: str) -> set[int]:
+    """Номера строк между маркерами docs-sync: skip (сами маркеры — тоже) и строк с skip-line."""
+    skipped: set[int] = set()
+    open_at = 0
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if SKIP_LINE_RE.search(line):
+            skipped.add(lineno)
+        if SKIP_START_RE.search(line):
+            open_at = open_at or lineno
+        if open_at:
+            skipped.add(lineno)
+        if SKIP_END_RE.search(line):
+            open_at = 0
+    if open_at:
+        print(f"Незакрытый маркер docs-sync: skip — {rel}:{open_at}", file=sys.stderr)
+    return skipped
+
+
 def check_identifiers(
     doc_files: list[Path], code_blob: str, repo_root: Path
 ) -> dict[str, list[tuple[int, str]]]:
@@ -80,7 +115,10 @@ def check_identifiers(
     for doc in doc_files:
         text = doc.read_text(encoding="utf-8", errors="ignore")
         rel = str(doc.relative_to(repo_root))
+        skipped = skipped_lines(text, rel)
         for lineno, line in enumerate(text.splitlines(), 1):
+            if lineno in skipped:
+                continue
             for match in BACKTICK_RE.finditer(line):
                 token = match.group(1)
                 for ident in dict.fromkeys(IDENT_RE.findall(token)):
@@ -98,7 +136,10 @@ def check_paths(
     for doc in doc_files:
         text = doc.read_text(encoding="utf-8", errors="ignore")
         rel = str(doc.relative_to(repo_root))
+        skipped = skipped_lines(text, rel)
         for lineno, line in enumerate(text.splitlines(), 1):
+            if lineno in skipped:
+                continue
             for match in BACKTICK_RE.finditer(line):
                 token = match.group(1).strip()
                 if "/" not in token and "\\" not in token:
@@ -126,6 +167,12 @@ def check_wikilinks(repo_root: Path) -> dict[str, list[tuple[int, str]]]:
     notes = {
         p.stem for p in vault.rglob("*.md") if ".obsidian" not in p.parts
     }
+    # Вложения (![[эскиз.png]]) ищутся по имени файла с расширением.
+    attachments = {
+        p.name
+        for p in vault.rglob("*")
+        if p.is_file() and p.suffix != ".md" and ".obsidian" not in p.parts
+    }
     broken: dict[str, list[tuple[int, str]]] = {}
     for path in sorted(vault.rglob("*.md")):
         if ".obsidian" in path.parts:
@@ -135,9 +182,10 @@ def check_wikilinks(repo_root: Path) -> dict[str, list[tuple[int, str]]]:
         for lineno, line in enumerate(text.splitlines(), 1):
             # Перенос строки внутри [[...]] Obsidian не понимает, поэтому
             # ссылку ищем построчно — «незакрытая» ссылка так и всплывёт.
-            for match in re.finditer(r"\[\[([^\]|#\n]+)", line):
+            # Код в обратных кавычках — не ссылка: `[[x, y, z, side], …]` это массив.
+            for match in re.finditer(r"\[\[([^\]|#\n]+)", BACKTICK_RE.sub("", line)):
                 name = match.group(1).strip()
-                if name and name not in notes:
+                if name and name not in notes and name not in attachments:
                     broken.setdefault(rel, []).append((lineno, name))
     return broken
 

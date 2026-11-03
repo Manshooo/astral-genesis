@@ -37,6 +37,8 @@
 [ext_resource type="Environment" uid="uid://nxask5g2qtp7" path="res://assets/world_environment.tres" id="34_nqy31"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="35_levelenv"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_soul_glow.gd" id="36_soulglow"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_soul_cloud.gd" id="46_soulcloud"]
+[ext_resource type="Script" path="res://src/observers/o_soul_exit.gd" id="47_soulexit"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_decay_shelter.gd" id="37_shelter"]
 [ext_resource type="Script" path="res://src/systems/physics/s_attack.gd" id="38_attack"]
 [ext_resource type="Script" path="res://src/observers/o_enemy_death.gd" id="39_enemydeath"]
@@ -141,6 +143,10 @@ group = &"gameplay"
 script = ExtResource("36_soulglow")
 group = &"gameplay"
 
+[node name="S_SoulCloud" type="Node" parent="World/Systems/gameplay"]
+script = ExtResource("46_soulcloud")
+group = &"gameplay"
+
 [node name="S_DecaySound" type="Node" parent="World/Systems/gameplay"]
 script = ExtResource("45_decaysound")
 group = &"gameplay"
@@ -230,6 +236,9 @@ script = ExtResource("21_bodyform")
 
 [node name="O_SoulTraits" type="Node" parent="World/Systems" unique_id=1109337744]
 script = ExtResource("22_soultraits")
+
+[node name="O_SoulExit" type="Node" parent="World/Systems"]
+script = ExtResource("47_soulexit")
 
 [node name="O_ExpelFromBody" type="Node" parent="World/Systems" unique_id=1419506266]
 script = ExtResource("16_expel")
