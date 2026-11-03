@@ -6,17 +6,21 @@ extends MultiMeshInstance3D
 
 const SoulMover := preload("res://dev/soul_look/soul_mover.gd")
 
-@export var count := 30
-@export var radius := 0.55
+@export var count := 38
+@export var radius := 0.65
 ## Сплюснутость по осям: плоский широкий сгусток стелется, а не висит шаром.
-@export var shape := Vector3(1.3, 0.55, 1.1)
-@export var card_size := Vector2(0.5, 0.9)
+@export var shape := Vector3(1.45, 0.5, 1.25)
+@export var card_size := Vector2(0.75, 1.3)
 ## Сколько комков бродит друг относительно друга; 1 — один ком.
 @export var lobes := 4
 @export var lobe_spread := 0.55
 ## На ходу карточки отстают до этой доли следа — голова тянется, а не едет целиком.
 @export var drag := 0.12
 @export var spin := 0.35
+## Дыхание и бегущая волна — как у S_SoulCloud в игре.
+@export var breath_period := 3.2
+@export var breath_amount := 0.12
+@export var wave_amount := 0.15
 @export var rng_seed := 7
 
 var _offsets: Array[Vector3] = []
@@ -44,11 +48,14 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
+	var breath := 1.0 + breath_amount * sin(_time * TAU / maxf(breath_period, 0.1))
 	for i in count:
 		var s := _seeds[i]
 		var wobble := Vector3(sin(_time * 0.9 + s * 6.0), sin(_time * 1.1 + s * 4.0), cos(_time * 0.8 + s * 5.0)) * 0.04
 		var base := _mover.sample(_sizes[i] * drag)
-		var pos := base + _lobe_center(i % maxi(lobes, 1)) + _offsets[i] * radius * (1.0 - lobe_spread * 0.4) + wobble
+		var o := _offsets[i]
+		var wave := 1.0 + wave_amount * sin(_time * 1.7 - o.x * 3.0 - o.z * 2.0)
+		var pos := base + (_lobe_center(i % maxi(lobes, 1)) + o * radius * (1.0 - lobe_spread * 0.4) * wave) * breath + wobble
 		var size := lerpf(card_size.x, card_size.y, _sizes[i])
 		var core := 1.0 - _offsets[i].length() * 0.5
 		var rot := s + _time * spin * 0.15 * (s - 0.5)

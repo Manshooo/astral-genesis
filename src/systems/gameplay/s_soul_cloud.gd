@@ -48,7 +48,9 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 	cloud.time += delta
 	cloud.unfold = minf(cloud.unfold + delta / maxf(cloud.unfold_seconds, 0.001), 1.0)
 	var grow := smoothstep(0.0, 1.0, cloud.unfold)
-	var spread := lerpf(0.25, 1.0, grow)
+	# Дыхание: сгусток медленно расширяется и сжимается — живое, а не висящее облако.
+	var breath := 1.0 + cloud.breath_amount * sin(cloud.time * TAU / maxf(cloud.breath_period, 0.1))
+	var spread := lerpf(0.25, 1.0, grow) * breath
 	var center := (entity as Node as Node3D).global_position
 	_record(cloud, center, delta)
 	# Голова стоит в центре души, карточки — относительно неё: AABB вокруг узла, а не вокруг начала мира,
@@ -67,8 +69,11 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 	for i in cloud.count:
 		var s := cloud.seeds[i]
 		var wobble := Vector3(sin(cloud.time * 0.9 + s * 6.0), sin(cloud.time * 1.1 + s * 4.0), cos(cloud.time * 0.8 + s * 5.0)) * 0.04
+		# Бегущая волна по пелене: клочки отходят от центра и возвращаются по очереди, как по живой ткани.
+		var o := cloud.offsets[i]
+		var wave := 1.0 + cloud.wave_amount * sin(cloud.time * 1.7 - o.x * 3.0 - o.z * 2.0)
 		var pos := _sample(cloud, cloud.sizes[i] * cloud.drag) + (_lobe(cloud, i % maxi(cloud.lobes, 1)) \
-				+ cloud.offsets[i] * cloud.radius * (1.0 - cloud.lobe_spread * 0.4)) * spread + wobble
+				+ o * cloud.radius * (1.0 - cloud.lobe_spread * 0.4) * wave) * spread + wobble
 		var size := lerpf(cloud.card_size.x, cloud.card_size.y, cloud.sizes[i]) * lerpf(0.4, 1.0, grow)
 		var core := 1.0 - cloud.offsets[i].length() * 0.5
 		var rot := s + cloud.time * cloud.spin * 0.15 * (s - 0.5)

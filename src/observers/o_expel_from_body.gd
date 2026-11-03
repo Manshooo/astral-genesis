@@ -27,6 +27,7 @@ static func expel(soul: Entity, voluntary: bool) -> void:
 
 	_settle_lifespan(soul, voluntary)
 	var exit := _exit_of(soul, voluntary)
+	_shed_inertia(soul)
 
 	# Снимаем ВСЕ характеристики, не перечисляя: тем же правилом E_Body.is_wearable, каким надевает S_BodySnatch.
 	for component in E_Body.worn_by(soul):
@@ -62,6 +63,15 @@ static func _exit_of(soul: Entity, voluntary: bool) -> Dictionary:
 		"velocity": velocity.velocity if velocity else Vector3.ZERO,
 		"voluntary": voluntary,
 	}
+
+
+## Разгон принадлежал телу: оно и уходит по инерции (O_SoulExit), а у души нет массы — она уносит лишь долю
+## скорости (C_SoulCloud.exit_inertia). Скорость тела для эффекта снята раньше, в _exit_of.
+static func _shed_inertia(soul: Entity) -> void:
+	var velocity := soul.get_component(C_Velocity) as C_Velocity
+	var cloud := soul.get_component(C_SoulCloud) as C_SoulCloud
+	if velocity != null and cloud != null:
+		velocity.velocity *= cloud.exit_inertia
 
 
 ## Куда девается остаток запаса тела (модель «распад как ресурс»): вышел сам — прибавляется к запасу души, выше максимума,

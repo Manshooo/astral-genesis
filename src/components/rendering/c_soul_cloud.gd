@@ -16,17 +16,22 @@ const OUTSIDE_LAYER := 2
 ## Клочья по краям кадра; висят под камерой, а не под корнем облика: едут с её наклоном.
 @export var wisps_path: NodePath = ^"Camera3D/SoulWisps"
 
-@export var count := 30
-@export var radius := 0.55
+@export var count := 38
+@export var radius := 0.65
 ## Сплюснутость по осям: широкий сгусток стелется, а не висит шаром.
-@export var shape := Vector3(1.3, 0.55, 1.1)
-@export var card_size := Vector2(0.5, 0.9)
+@export var shape := Vector3(1.45, 0.5, 1.25)
+@export var card_size := Vector2(0.75, 1.3)
 ## Сколько комков бродит друг относительно друга — форма не держится шаром; 1 — один ком.
 @export var lobes := 4
 @export var lobe_spread := 0.55
 ## На ходу карточки отстают до этой доли следа — голова тянется, а не едет целиком.
 @export var drag := 0.12
 @export var spin := 0.35
+## Дыхание сгустка: период и размах расширения — живое, а не висящее облако.
+@export var breath_period := 3.2
+@export_range(0.0, 0.5, 0.01) var breath_amount := 0.12
+## Размах бегущей волны по клочкам.
+@export_range(0.0, 0.5, 0.01) var wave_amount := 0.15
 @export var rng_seed := 7
 ## След, по которому отстают карточки: сколько секунд и сколько точек.
 @export var trail_seconds := 1.1
@@ -36,6 +41,8 @@ const OUTSIDE_LAYER := 2
 @export_range(0.0, 1.0, 0.01) var decay_amount := 0.45
 ## За сколько секунд сгусток разворачивается из сжатого после выхода из тела.
 @export var unfold_seconds := 1.2
+## Доля скорости тела, которую душа уносит при выходе: разгон принадлежал телу, оно и летит по инерции.
+@export_range(0.0, 1.0, 0.01) var exit_inertia := 0.2
 
 ## Рантайм S_SoulCloud. applied: -1 — облик ещё не показывали и не прятали, 0/1 — спрятан/показан.
 var applied := -1

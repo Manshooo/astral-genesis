@@ -94,15 +94,15 @@ gi_mode = 0
 material_override = ExtResource("2_smoke")
 emitting = false
 amount = 90
-lifetime = 1.6
+lifetime = 2.2
 local_coords = false
-visibility_aabb = AABB(-6, -4, -6, 12, 8, 12)
+visibility_aabb = AABB(-10, -5, -10, 20, 10, 20)
 process_material = SubResource("Process_vapor")
 draw_pass_1 = SubResource("QuadMesh_card")
 
 [node name="Attractor" type="GPUParticlesAttractorSphere3D" parent="."]
 unique_name_in_owner = true
 top_level = true
-strength = 6.0
-attenuation = 0.5
-radius = 6.0
+strength = 14.0
+attenuation = 0.2
+radius = 10.0

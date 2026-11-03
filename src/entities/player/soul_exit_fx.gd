@@ -8,7 +8,7 @@ extends Node3D
 @export var fall_seconds := 0.35
 @export var evaporate_seconds := 1.4
 ## Сколько живёт эффект после того, как тело исчезло: частицы долетают до души.
-@export var linger_seconds := 1.4
+@export var linger_seconds := 2.2
 ## Откуда бьёт клуб дыма — над подошвой, на уровне груди.
 @export var burst_height := 1.0
 ## Чем тело сгорает: отсечение по шуму с тлеющей кромкой. Цвет каждой поверхности берётся у её родного материала.
@@ -61,7 +61,10 @@ func _physics_process(_delta: float) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	if is_instance_valid(_soul):
-		_attractor.global_position = _soul.global_position
+		# В объектив, а не в центр души: дым тела втекает игроку в глаза и гаснет у самой камеры (near_fade).
+		var rig: Node = _soul
+		var eye: Camera3D = (rig as E_Player).camera if rig is E_Player else null
+		_attractor.global_position = eye.global_position if eye != null else _soul.global_position
 	var k := clampf((_time - fall_seconds) / evaporate_seconds, 0.0, 1.0)
 	if is_instance_valid(_husk):
 		_vapor.global_position = _husk_center()

@@ -137,6 +137,10 @@ func _run(world: World) -> void:
 	O_ExpelFromBody.expel(player, true)
 	await get_tree().process_frame
 	_tick(1)
+	var soul_speed := (player.get_component(C_Velocity) as C_Velocity).velocity
+	_check("душа уносит из тела лишь долю скорости, тело — всю",
+		soul_speed.is_equal_approx(push * cloud.exit_inertia) and cloud.exit_inertia < 1.0,
+		"%s при скорости тела %s и доле %.2f" % [soul_speed, push, cloud.exit_inertia])
 	var fx := _exit_fx(player)
 	var husk := fx._husk if fx else null
 	_check("выход оставил брошенное тело того, из которого вышли",
