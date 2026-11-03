@@ -18,6 +18,8 @@ const FLY_SPEED := 2.5
 var mode := Mode.SIDE
 var fpv_variant := 1
 var palette := 1
+## Распад для облика, как его отдаёт S_SoulCloud в игре (0 — спокойно, 1 — на исходе).
+var decay := 0.0
 
 var _focus := -1
 var _target := OVERVIEW_TARGET
@@ -122,6 +124,8 @@ func _on_key(key: Key) -> void:
 			set_mode(Mode.FPV if mode == Mode.SIDE else Mode.SIDE)
 		KEY_F:
 			SoulMover.paused = not SoulMover.paused
+		KEY_BRACKETLEFT, KEY_BRACKETRIGHT:
+			set_decay(decay + (0.1 if key == KEY_BRACKETRIGHT else -0.1))
 		KEY_C:
 			set_fpv(fpv_variant, 1 - palette)
 		KEY_ESCAPE:
@@ -176,6 +180,16 @@ func _fly(delta: float) -> void:
 	_trail.global_position = _fpv_camera.global_position + Basis(Vector3.UP, _fpv_yaw) * _trail_offset
 
 
+## Та же раздача, что у S_SoulCloud._apply_decay: параметр шейдера всем клочкам и меньше частиц.
+func set_decay(value: float) -> void:
+	decay = clampf(snappedf(value, 0.1), 0.0, 1.0)
+	var share := C_SoulCloud.new().decay_amount
+	for node in find_children("*", "GeometryInstance3D", true, false):
+		(node as GeometryInstance3D).set_instance_shader_parameter(&"decay", decay)
+		if node is GPUParticles3D:
+			(node as GPUParticles3D).amount_ratio = lerpf(1.0, share, decay)
+
+
 func _apply_fpv() -> void:
 	for v in _fpv_nodes.size():
 		var pair: Array = _fpv_nodes[v]
@@ -195,5 +209,6 @@ func _hud_text() -> String:
 	else:
 		lines.append("ОТ ПЕРВОГО ЛИЦА — %s · %s" % [FPV_NAMES[fpv_variant], PALETTE_NAMES[palette]])
 		lines.append("ЛКМ захват мыши · WASD/QE полёт · 1–3 вариант · 0 без · C палитра · Esc мышь")
-	lines.append("Tab снаружи/первое лицо · F движение %s" % ("стоит" if SoulMover.paused else "идёт"))
+	lines.append("Tab снаружи/первое лицо · F движение %s · [ ] распад %.1f" % [
+			"стоит" if SoulMover.paused else "идёт", decay])
 	return "\n".join(lines)

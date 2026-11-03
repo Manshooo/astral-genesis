@@ -11,6 +11,8 @@ const OUTSIDE_LAYER := 2
 @export var root_path: NodePath = ^"SoulCloud"
 ## Голова — MultiMesh карточек-билбордов; узел top_level, карточки отстают по следу в мире.
 @export var head_path: NodePath = ^"SoulCloud/Head"
+## След — частицы под глазами, стекают к полу.
+@export var trail_path: NodePath = ^"SoulCloud/Trail"
 ## Клочья по краям кадра; висят под камерой, а не под корнем облика: едут с её наклоном.
 @export var wisps_path: NodePath = ^"Camera3D/SoulWisps"
 
@@ -29,9 +31,14 @@ const OUTSIDE_LAYER := 2
 ## След, по которому отстают карточки: сколько секунд и сколько точек.
 @export var trail_seconds := 1.1
 @export_range(4, 128) var samples := 32
+## Доля частиц следа и клочьев на исходе запаса (1 — сколько на спокойном); насколько клочки бледнеют и
+## рвутся — ручки decay_fade и decay_ragged в материалах облика.
+@export_range(0.0, 1.0, 0.01) var decay_amount := 0.45
 
 ## Рантайм S_SoulCloud. applied: -1 — облик ещё не показывали и не прятали, 0/1 — спрятан/показан.
 var applied := -1
+## Распад, отданный облику в последнем такте (0 — спокойно, 1 — на исходе; кривая UI_HudMood.decay).
+var decay := 0.0
 var time := 0.0
 var history := PackedVector3Array()
 var history_acc := 0.0

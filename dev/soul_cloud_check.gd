@@ -72,6 +72,34 @@ func _run(world: World) -> void:
 	_check("сгусток ушёл за душой", head.global_position.distance_to((player as Node as Node3D).global_position) < 0.01,
 		"%s против %s" % [head.global_position, (player as Node as Node3D).global_position])
 
+	# --- 1б. Чем ближе распад, тем призрачнее -----------------------------
+	# Кривая — UI_HudMood.decay, та же, что у дуги и свечения: проверяется направление, а не числа.
+	var life := player.get_component(C_Lifespan) as C_Lifespan
+	var soul_max := life.effective_max(player)
+	var states: Array[Dictionary] = []
+	for share in [1.0, 0.2, 0.02]:
+		life.current = soul_max * share
+		_tick(1)
+		states.append({
+			"head": _decay_of(head),
+			"trail": _decay_of(trail[0]),
+			"amount": trail[0].amount_ratio,
+			"wisps": wisps.amount_ratio,
+		})
+	var calm: Dictionary = states[0]
+	var low: Dictionary = states[1]
+	var faint: Dictionary = states[2]
+	_check("на спокойном запасе облик не призрачен", calm.head == 0.0 and calm.amount == 1.0 and calm.wisps == 1.0,
+		str(calm))
+	_check("у порога сгусток и след призрачнее, и чем ближе, тем сильнее",
+		0.0 < low.head and low.head < faint.head and 0.0 < low.trail and low.trail < faint.trail,
+		"%s → %s" % [low, faint])
+	_check("на исходе частиц меньше, но не ноль",
+		faint.amount < low.amount and low.amount < 1.0 and faint.amount >= cloud.decay_amount
+		and faint.wisps < 1.0 and faint.wisps >= cloud.decay_amount,
+		"%s → %s при доле %.2f" % [low, faint, cloud.decay_amount])
+	life.current = soul_max
+
 	# --- 2. Во плоти облик гаснет весь ------------------------------------
 	var body := _spawn_body(world, BODY_SCENE, Vector3(7.0, 0.0, 0.0))
 	await get_tree().physics_frame
@@ -110,6 +138,12 @@ func _run(world: World) -> void:
 	_check("вышедший сгусток стоит в душе, а не там, где прятался",
 		head.global_position.distance_to((player as Node as Node3D).global_position) < 0.01,
 		"%s против %s" % [head.global_position, (player as Node as Node3D).global_position])
+
+
+## Распад, отданный облику; −1 — не отдан вовсе (параметр экземпляра не выставлен).
+func _decay_of(node: GeometryInstance3D) -> float:
+	var value: Variant = node.get_instance_shader_parameter(&"decay")
+	return float(value) if value != null else -1.0
 
 
 func _tick(frames: int) -> void:
