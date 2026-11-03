@@ -55,8 +55,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		match ai.state:
 			C_EnemyAI.State.CHASING:
 				if distance <= ai.attack_range:
-					if distance > 0.001:
-						node.look_at(node.global_position + offset, Vector3.UP)
+					_face(ai, node, offset, delta)
 					inp.move_direction = Vector3.ZERO
 					_attack(entity, target, ai)
 				else:
@@ -168,7 +167,7 @@ func _search(ai: C_EnemyAI, node: Node3D, inp: C_EnemyInput, delta: float) -> vo
 	inp.move_direction = Vector3.ZERO
 
 
-## Шаг к goal: по точкам пути навмеша, без пути — по прямой; move_direction уже в мировом базисе.
+## Шаг к goal: по точкам пути навмеша, без пути — по прямой.
 func _steer(
 	ai: C_EnemyAI, node: Node3D, inp: C_EnemyInput, goal: Vector3, delta: float
 ) -> void:
@@ -198,10 +197,21 @@ func _steer(
 	if heading.length_squared() < 0.0001:
 		inp.move_direction = Vector3.ZERO
 		return
-	node.look_at(node.global_position + heading, Vector3.UP)
-	inp.move_direction = Vector3.FORWARD
+	_face(ai, node, heading, delta)
+	# Ход — по пути, в базисе самой сущности (S_Walk), а не туда, куда враг уже смотрит.
+	inp.move_direction = (node.global_basis.inverse() * heading.normalized()).normalized()
 	if ai.opens_doors:
 		_open_door_ahead(node, heading)
+
+
+## Доворот рысканием к heading не быстрее turn_speed.
+func _face(ai: C_EnemyAI, node: Node3D, heading: Vector3, delta: float) -> void:
+	if Vector2(heading.x, heading.z).length_squared() < 0.000001:
+		return
+	var want := atan2(-heading.x, -heading.z)
+	var step := deg_to_rad(ai.turn_speed) * delta
+	var turn := clampf(wrapf(want - node.global_rotation.y, -PI, PI), -step, step)
+	node.global_rotation.y += turn
 
 
 ## Навмеш запечён сквозь проёмы — путь упирается в закрытое полотно; S_DoorMotion.open, не interact() (тот про игрока).
