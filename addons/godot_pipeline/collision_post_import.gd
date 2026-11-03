@@ -26,6 +26,12 @@ const KEY_MASS := "godot_mass"
 const KEY_PRIORITY := "godot_collision_priority"
 const KEY_BONE := "godot_bone"
 const KEY_JOINT := "godot_joint_type"
+## Пределы сустава в градусах, в осях кости Blender (Y — вдоль кости, X — ось
+## сгиба). Перевод в оси суставов движка — в _joint_basis.
+const KEY_SWING := "godot_joint_swing"
+const KEY_TWIST := "godot_joint_twist"
+const KEY_LOWER := "godot_joint_lower"
+const KEY_UPPER := "godot_joint_upper"
 
 const PHYSICAL_BONE := "PhysicalBone3D"
 
@@ -145,6 +151,15 @@ func _ensure_simulator(skeleton: Skeleton3D) -> PhysicalBoneSimulator3D:
 			return child as PhysicalBoneSimulator3D
 	var simulator := PhysicalBoneSimulator3D.new()
 	simulator.name = "PhysicalBoneSimulator3D"
+	# Без исключений столкновений соседние тела заклинивают суставы; скрипт
+	# лежит рядом с этим и ставит их на _ready.
+	var exceptions_path := (get_script() as Script).resource_path.get_base_dir() \
+		.path_join("ragdoll_collision_exceptions.gd")
+	if ResourceLoader.exists(exceptions_path):
+		simulator.set_script(load(exceptions_path))
+	else:
+		push_warning("[godot_pipeline] %s is missing: neighbouring ragdoll bones will " % exceptions_path
+			+ "collide and lock their joints. Reinstall the import script from Blender")
 	skeleton.add_child(simulator)
 	return simulator
 
@@ -196,16 +211,28 @@ func _build_physical_bones(scene: Node) -> int:
 		physical.joint_type = JOINT_TYPE.get(String(extras.get(KEY_JOINT, "NONE")),
 			PhysicalBone3D.JOINT_TYPE_NONE)
 		_configure_body(physical, extras)
-		simulator.add_child(physical)
-		# bone_name only resolves to a bone id once the node can see a skeleton
-		# above it, so it has to be assigned after the reparent, not before.
-		physical.bone_name = bone
 		# The simulator sits at identity under the skeleton, so skeleton space
 		# and simulator space are the same thing. The scale is deliberately left
 		# out of the body and handed to the shape instead: a scaled physics body
 		# is exactly what Godot warns about.
 		var full := _transform_relative(node3d, skeleton)
-		physical.transform = Transform3D(full.basis.orthonormalized(), full.origin)
+		var body_xform := Transform3D(full.basis.orthonormalized(), full.origin)
+		# При старте симуляции тело ставится в позу кости, умноженную на
+		# body_offset. С нулевым смещением форма уезжала бы в начало кости — к
+		# суставу, а не на конечность. joint_offset возвращает сустав в начало
+		# кости и разворачивает его оси под соглашения движка. Задаются до
+		# add_child: сеттеры дёргают reset_to_rest_position, а у оторванного от
+		# дерева импорта глобальных трансформов нет.
+		var rest := skeleton.get_bone_global_rest(skeleton.find_bone(bone))
+		physical.body_offset = rest.affine_inverse() * body_xform
+		physical.joint_offset = physical.body_offset.affine_inverse() \
+			* Transform3D(_joint_basis(physical.joint_type), Vector3.ZERO)
+		_configure_joint(physical, extras)
+		simulator.add_child(physical)
+		# bone_name only resolves to a bone id once the node can see a skeleton
+		# above it, so it has to be assigned after the reparent, not before.
+		physical.bone_name = bone
+		physical.transform = body_xform
 
 		if extras.has(KEY_SHAPE):
 			var local := physical.transform.affine_inverse() * full
@@ -217,6 +244,36 @@ func _build_physical_bones(scene: Node) -> int:
 			node.set_meta(CLAIMED, true)
 		count += 1
 	return count
+
+
+## Оси сустава в осях кости. Jolt крутит шарнир вокруг Z сустава, а конус
+## скручивает вокруг X и отклоняет вокруг Y и Z (проверено стендом на 4.7.2).
+## У кости Y идёт вдоль неё, X — ось сгиба, поэтому шарниру Z ставится на X
+## кости, а конусу X — на Y кости.
+func _joint_basis(joint_type: int) -> Basis:
+	match joint_type:
+		PhysicalBone3D.JOINT_TYPE_HINGE:
+			return Basis(Vector3.UP, PI / 2.0)          # Z сустава → X кости
+		PhysicalBone3D.JOINT_TYPE_CONE:
+			return Basis(Vector3.BACK, PI / 2.0)        # X сустава → Y кости
+	return Basis.IDENTITY
+
+
+func _configure_joint(physical: PhysicalBone3D, extras: Dictionary) -> void:
+	match physical.joint_type:
+		PhysicalBone3D.JOINT_TYPE_CONE:
+			if extras.has(KEY_SWING):
+				physical.set("joint_constraints/swing_span", float(extras[KEY_SWING]))
+			if extras.has(KEY_TWIST):
+				physical.set("joint_constraints/twist_span", float(extras[KEY_TWIST]))
+		PhysicalBone3D.JOINT_TYPE_HINGE:
+			if extras.has(KEY_LOWER) and extras.has(KEY_UPPER):
+				# Угол шарнира в Jolt растёт при повороте тела вокруг −Z сустава,
+				# то есть против сгиба вокруг +X кости — пределы меняются местами
+				# и знаком.
+				physical.set("joint_constraints/angular_limit_enabled", true)
+				physical.set("joint_constraints/angular_limit_lower", -float(extras[KEY_UPPER]))
+				physical.set("joint_constraints/angular_limit_upper", -float(extras[KEY_LOWER]))
 
 
 func _build_bodies(scene: Node) -> int:

@@ -118,6 +118,14 @@ def draw_bone(layout, obj, settings):
     box = layout.box()
     box.label(text="Ragdoll Bone", icon='BONE_DATA')
     box.prop(settings, "joint_type")
+    if settings.joint_type == 'CONE':
+        row = box.row(align=True)
+        row.prop(settings, "swing_span")
+        row.prop(settings, "twist_span")
+    elif settings.joint_type == 'HINGE':
+        row = box.row(align=True)
+        row.prop(settings, "hinge_lower")
+        row.prop(settings, "hinge_upper")
 
     armature = physics.armature_of(obj)
     if armature is not None:
@@ -233,6 +241,7 @@ class GP_PT_collisions(Panel):
         row = layout.row(align=True)
         row.operator("godot_pipeline.refit_collision", icon='FULLSCREEN_EXIT')
         row.operator("godot_pipeline.copy_collision", icon='DUPLICATE')
+        layout.operator("godot_pipeline.match_godot_shape", icon='CHECKMARK')
         row = layout.row(align=True)
         row.operator("godot_pipeline.select_collision", icon='RESTRICT_SELECT_OFF')
         row.operator("godot_pipeline.clear_collision", icon='TRASH')
