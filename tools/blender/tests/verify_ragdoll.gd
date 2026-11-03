@@ -59,6 +59,11 @@ func _initialize() -> void:
 	if simulator == null:
 		_finish()
 		return
+	# Без него соседние тела сталкиваются и заклинивают суставы.
+	var sim_script := simulator.get_script() as Script
+	check(sim_script != null and sim_script.resource_path.ends_with("ragdoll_collision_exceptions.gd"),
+		"на симуляторе скрипт исключений столкновений (%s)"
+		% (sim_script.resource_path if sim_script else "нет"))
 
 	var bone: PhysicalBone3D = null
 	for child in simulator.get_children():
@@ -86,6 +91,24 @@ func _initialize() -> void:
 	if shape_node != null:
 		check(shape_node.shape is CapsuleShape3D,
 			"форма — CapsuleShape3D (%s)" % shape_node.shape.get_class())
+
+	# При старте симуляции тело встаёт в позу кости × body_offset. Без смещения
+	# форма уехала бы в начало кости, к суставу; со смещением — туда, где её
+	# поставили в Blender.
+	var rest := skeleton.get_bone_global_rest(skeleton.find_bone(bone.bone_name))
+	check((rest * bone.body_offset).origin.distance_to(bone.transform.origin) < 0.01
+		and bone.body_offset.origin.length() > 0.1,
+		"body_offset возвращает тело на место формы (%v)" % bone.body_offset.origin)
+	var joint_in_bone := bone.body_offset * bone.joint_offset
+	check(joint_in_bone.origin.length() < 0.01,
+		"сустав в начале кости (%v)" % joint_in_bone.origin)
+	# Конус Jolt скручивает вокруг X сустава — он обязан смотреть вдоль кости.
+	check(joint_in_bone.basis.x.distance_to(Vector3.UP) < 0.01,
+		"ось скручивания конуса вдоль кости (%v)" % joint_in_bone.basis.x)
+	check(absf(float(bone.get("joint_constraints/swing_span")) - 60.0) < 0.1
+		and absf(float(bone.get("joint_constraints/twist_span")) - 20.0) < 0.1,
+		"пределы конуса доехали (%s / %s)" % [bone.get("joint_constraints/swing_span"),
+			bone.get("joint_constraints/twist_span")])
 
 	var scale := bone.transform.basis.get_scale()
 	check(absf(scale.x - 1.0) < 0.01 and absf(scale.y - 1.0) < 0.01

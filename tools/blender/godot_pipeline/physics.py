@@ -127,10 +127,17 @@ KEY_MASS = "godot_mass"
 KEY_PRIORITY = "godot_collision_priority"
 KEY_BONE = "godot_bone"
 KEY_JOINT = "godot_joint_type"
+# Пределы сустава в градусах и в осях кости Blender: ось Y идёт вдоль кости,
+# X — ось сгиба (так кости крутит Rigify). Перевод в оси суставов Jolt —
+# забота скрипта импорта, художник о них не знает.
+KEY_SWING = "godot_joint_swing"
+KEY_TWIST = "godot_joint_twist"
+KEY_LOWER = "godot_joint_lower"
+KEY_UPPER = "godot_joint_upper"
 
 ALL_KEYS = (KEY_BODY, KEY_SHAPE, KEY_MARGIN, KEY_VISUAL,
             KEY_LAYER, KEY_MASK, KEY_MASS, KEY_PRIORITY,
-            KEY_BONE, KEY_JOINT)
+            KEY_BONE, KEY_JOINT, KEY_SWING, KEY_TWIST, KEY_LOWER, KEY_UPPER)
 
 PROXY_PREFIX = "CO"
 
@@ -214,6 +221,12 @@ def write_custom_props(obj):
             if bone:
                 obj[KEY_BONE] = bone
             obj[KEY_JOINT] = JOINT_NAME[settings.joint_type]
+            if settings.joint_type == 'CONE':
+                obj[KEY_SWING] = round(math.degrees(settings.swing_span), 3)
+                obj[KEY_TWIST] = round(math.degrees(settings.twist_span), 3)
+            elif settings.joint_type == 'HINGE':
+                obj[KEY_LOWER] = round(math.degrees(settings.hinge_lower), 3)
+                obj[KEY_UPPER] = round(math.degrees(settings.hinge_upper), 3)
 
     if shape:
         obj[KEY_SHAPE] = shape
@@ -270,6 +283,24 @@ class GP_PhysicsSettings(PropertyGroup):
     joint_type: EnumProperty(
         name="Joint", items=JOINT_ITEMS, default='CONE', update=_sync,
         description="How this ragdoll bone is tied to its parent bone")
+    swing_span: FloatProperty(
+        name="Swing", subtype='ANGLE', default=math.radians(45.0),
+        min=0.0, max=math.radians(180.0), update=_sync,
+        description="Cone Twist: how far the bone may tilt away from its rest direction, "
+                    "in any direction")
+    twist_span: FloatProperty(
+        name="Twist", subtype='ANGLE', default=math.radians(30.0),
+        min=0.0, max=math.radians(180.0), update=_sync,
+        description="Cone Twist: how far the bone may turn around its own length")
+    hinge_lower: FloatProperty(
+        name="Bend Min", subtype='ANGLE', default=0.0,
+        min=math.radians(-180.0), max=math.radians(180.0), update=_sync,
+        description="Hinge: the furthest the bone may turn backwards around its X axis. "
+                    "Positive is the bend direction for limbs rolled the way Rigify rolls them")
+    hinge_upper: FloatProperty(
+        name="Bend Max", subtype='ANGLE', default=math.radians(120.0),
+        min=math.radians(-180.0), max=math.radians(180.0), update=_sync,
+        description="Hinge: the furthest the bone may bend around its X axis")
     priority: FloatProperty(
         name="Priority", default=1.0, update=_sync,
         description="CollisionObject3D.collision_priority")
@@ -504,6 +535,101 @@ def refit_proxy(proxy, segments=16) -> bool:
     proxy.location = center
     proxy.rotation_euler = (0.0, 0.0, 0.0)
     proxy.scale = (1.0, 1.0, 1.0)
+    return True
+
+
+# -- what Godot will actually build ------------------------------------------
+#
+# collision_post_import.gd строит примитив из AABB меша болванки × масштаб
+# объекта: у капсулы и цилиндра сечение круглое по большей из сторон X/Y Blender,
+# а ось — всегда локальная Z, у сферы — наибольший размер. Сплющенная или
+# положенная набок капсула в Godot раздувается. Формулы здесь обязаны совпадать
+# с _primitive_shape в скрипте импорта.
+
+def mesh_size(obj):
+    """(размер, центр) меша болванки в осях объекта, масштаб объекта учтён в размере."""
+    verts = [v.co for v in obj.data.vertices]
+    if not verts:
+        return Vector((0.0, 0.0, 0.0)), Vector((0.0, 0.0, 0.0))
+    low = Vector((min(v.x for v in verts), min(v.y for v in verts), min(v.z for v in verts)))
+    high = Vector((max(v.x for v in verts), max(v.y for v in verts), max(v.z for v in verts)))
+    # glTF несёт parent_inverse @ basis одним трансформом узла — его масштаб и видит Godot
+    scale = (obj.matrix_parent_inverse @ obj.matrix_basis).to_scale()
+    size = high - low
+    return Vector((size.x * scale.x, size.y * scale.y, size.z * scale.z)), (low + high) * 0.5
+
+
+def godot_extents(shape, size):
+    """Габарит примитива, который соберёт Godot из болванки размера `size`."""
+    if shape in ('CAPSULE', 'CYLINDER'):
+        radius = max(size.x, size.y) * 0.5
+        height = max(size.z, 2.0 * radius) if shape == 'CAPSULE' else size.z
+        return Vector((2.0 * radius, 2.0 * radius, height))
+    if shape == 'SPHERE':
+        d = max(size)
+        return Vector((d, d, d))
+    return size.copy()
+
+
+def shape_mismatch(obj) -> float:
+    """На сколько метров форма в Godot больше болванки по худшей оси (0 — совпадает)."""
+    shape = obj.godot_physics.shape
+    if shape not in PRIMITIVE_SHAPES or obj.type != 'MESH':
+        return 0.0
+    size, _center = mesh_size(obj)
+    extents = godot_extents(shape, size)
+    return max(g - s for g, s in zip(extents, size))
+
+
+def match_godot_shape(obj, segments=16) -> bool:
+    """Перестроить болванку в ту форму, которую соберёт Godot.
+
+    Капсула и цилиндр разворачиваются осью вдоль самой длинной стороны: объект
+    поворачивается, а не сплющивается, потому что ось у Godot — локальная Z.
+    Центр формы остаётся на месте, масштаб уходит в геометрию.
+    """
+    shape = obj.godot_physics.shape
+    if shape not in PRIMITIVE_SHAPES or obj.type != 'MESH':
+        return False
+    size, center = mesh_size(obj)
+    align = Matrix.Identity(3)
+    if shape in ('CAPSULE', 'CYLINDER'):
+        axis = max(range(3), key=lambda i: size[i])
+        if axis == 0:                       # новая Z — старая X: поворот вокруг Y на +90°
+            align = Matrix.Rotation(math.pi / 2.0, 3, 'Y')
+            size = Vector((size.z, size.y, size.x))
+        elif axis == 1:                     # новая Z — старая Y: поворот вокруг X на −90°
+            align = Matrix.Rotation(-math.pi / 2.0, 3, 'X')
+            size = Vector((size.x, size.z, size.y))
+    extents = godot_extents(shape, size)
+
+    if shape == 'BOX':
+        verts, faces = _box_geometry(extents)
+    elif shape == 'SPHERE':
+        verts, faces = _sphere_geometry(extents.x * 0.5, segments)
+    elif shape == 'CAPSULE':
+        verts, faces = _capsule_geometry(extents.x * 0.5, extents.z, segments)
+    else:
+        verts, faces = _cylinder_geometry(extents.x * 0.5, extents.z, segments)
+
+    # Положение в осях родителя: центр меша туда же, поворот — прежний × align.
+    local = obj.matrix_parent_inverse @ obj.matrix_basis
+    loc, rot, _scale = local.decompose()
+    center_parent = local @ center
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.matrix_basis = Matrix.Translation(center_parent) @ (rot.to_matrix() @ align).to_4x4()
+
+    old = obj.data
+    mesh = bpy.data.meshes.new(old.name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.validate()
+    mesh.update()
+    for material in old.materials:
+        mesh.materials.append(material)
+    obj.data = mesh
+    if old.users == 0:
+        bpy.data.meshes.remove(old)
+        mesh.name = obj.name
     return True
 
 

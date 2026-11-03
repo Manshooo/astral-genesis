@@ -9,7 +9,7 @@
       "subfolder_per_asset": true,
       "file_format": "GLB",
       "material_policy": "EXTERNAL",
-      "apply_modifiers": false,
+      "apply_modifiers": true,
       "export_tangents": false,
       "export_extras": true,
       "export_cameras": false,

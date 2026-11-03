@@ -10,6 +10,7 @@ Blender-половина. Godot-половина — verify_ragdoll.gd рядо�
 """
 
 import inspect
+import math
 import os
 import re
 import sys
@@ -216,6 +217,8 @@ check(physics.bone_of(shape) == "upper_arm",
 shape.godot_physics.body = 'PHYSICAL_BONE'
 shape.godot_physics.shape = 'CAPSULE'
 shape.godot_physics.joint_type = 'CONE'
+shape.godot_physics.swing_span = math.radians(60.0)
+shape.godot_physics.twist_span = math.radians(20.0)
 shape.godot_physics.mass = 3.5
 shape.godot_physics.collision_layer[0] = False
 shape.godot_physics.collision_layer[2] = True
@@ -225,6 +228,20 @@ check(shape[physics.KEY_BODY] == "PhysicalBone3D", "godot_body записан")
 check(shape[physics.KEY_BONE] == "upper_arm",
       "godot_bone записан: %r" % shape.get(physics.KEY_BONE))
 check(shape[physics.KEY_JOINT] == "CONE", "godot_joint_type записан")
+check(abs(shape.get(physics.KEY_SWING, 0) - 60.0) < 1e-3 and abs(shape.get(physics.KEY_TWIST, 0) - 20.0) < 1e-3,
+      "пределы конуса записаны в градусах (%s / %s)" % (shape.get(physics.KEY_SWING), shape.get(physics.KEY_TWIST)))
+check(physics.KEY_LOWER not in shape, "у конуса нет пределов шарнира")
+
+print("--- шарнир пишет свои пределы, конус — свои ---")
+shape.godot_physics.joint_type = 'HINGE'
+shape.godot_physics.hinge_lower = math.radians(-10.0)
+shape.godot_physics.hinge_upper = math.radians(140.0)
+physics.write_custom_props(shape)
+check(abs(shape.get(physics.KEY_LOWER, 0) + 10.0) < 1e-3 and abs(shape.get(physics.KEY_UPPER, 0) - 140.0) < 1e-3,
+      "пределы шарнира записаны (%s..%s)" % (shape.get(physics.KEY_LOWER), shape.get(physics.KEY_UPPER)))
+check(physics.KEY_SWING not in shape, "у шарнира нет пределов конуса")
+shape.godot_physics.joint_type = 'CONE'
+physics.write_custom_props(shape)
 check(abs(shape[physics.KEY_MASS] - 3.5) < 1e-6, "масса записана для PhysicalBone3D")
 check(shape[physics.KEY_LAYER] == 4, "слой записан битом 3 (получено %s)" % shape[physics.KEY_LAYER])
 # Болванка на кости — не визуал: визуал это скиненный меш в другом месте, и
@@ -744,6 +761,38 @@ check("T_cs_albedo" in colorspace_messages(), "albedo в Non-Color ловитс�
 albedo.colorspace_settings.name = "sRGB"
 orm.colorspace_settings.name = "sRGB"
 check("T_cs_orm" in colorspace_messages(), "ORM в sRGB ловится")
+
+
+# -- 13. Match Godot Shape: болванка = то, что соберёт Godot -------------------
+
+print("\n=== 13. Match Godot Shape ===")
+from mathutils import Matrix, Vector                            # noqa: E402
+
+verts, faces = physics._capsule_geometry(0.1, 0.3, 16)
+mesh = bpy.data.meshes.new("CO_flat_Capsule")
+mesh.from_pydata(verts, [], faces)
+# так болванку «кладут набок»: растягивают вдоль X в режиме редактирования
+mesh.transform(Matrix.Diagonal((3.0, 1.0, 0.8, 1.0)))
+flat = bpy.data.objects.new("CO_flat_Capsule", mesh)
+bpy.context.scene.collection.objects.link(flat)
+flat.location = (1.0, 2.0, 3.0)
+flat.godot_physics.is_proxy = True
+flat.godot_physics.shape = 'CAPSULE'
+bpy.context.view_layer.update()                  # matrix_world нового объекта ещё не посчитан
+size0, center0 = physics.mesh_size(flat)
+world_center0 = flat.matrix_world @ center0
+grow = physics.shape_mismatch(flat)
+check(grow > 0.3, "сплющенная капсула раздулась бы в Godot на %.2f м" % grow)
+check(physics.match_godot_shape(flat), "Match Godot Shape перестроил болванку")
+bpy.context.view_layer.update()
+check(physics.shape_mismatch(flat) < 1e-4, "после подгонки Godot строит ровно её (%.4f)" % physics.shape_mismatch(flat))
+axis = flat.matrix_world.to_3x3().col[2].normalized()
+check(abs(abs(axis.x) - 1.0) < 1e-4, "ось капсулы легла вдоль длинной стороны, X (%s)" % (tuple(round(a, 3) for a in axis),))
+size1, center1 = physics.mesh_size(flat)
+check(abs(size1.z - 0.6) < 1e-3 and abs(size1.x - 0.24) < 1e-3 and abs(size1.y - 0.24) < 1e-3,
+      "высота = длинная сторона 0.6, радиус — по большей поперечной (%s)" % (tuple(round(v, 3) for v in size1),))
+check((flat.matrix_world @ center1 - world_center0).length < 1e-4, "центр формы не сдвинулся")
+bpy.data.objects.remove(flat)
 
 
 print("")

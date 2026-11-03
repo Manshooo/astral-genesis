@@ -349,6 +349,15 @@ def _check_physics(issues, asset, objects, profile):
         if settings.body == 'PHYSICAL_BONE':
             _check_ragdoll_bone(issues, asset, obj, settings, profile)
 
+        # Godot строит примитив по габариту болванки: сплющенная или положенная
+        # набок капсула раздувается в шар, и в игре коллизия больше видимой.
+        grow = physics.shape_mismatch(obj)
+        if grow > 0.01:
+            issues.append(Issue(WARNING, asset,
+                                "%r: Godot builds the %s from its bounds and it comes out up to "
+                                "%.0f cm larger than shown here. Use Collisions > Match Godot Shape"
+                                % (obj.name, physics.SHAPE_NODE[settings.shape], grow * 100.0)))
+
         if settings.body != 'NONE':
             scale = obj.scale
             if max(scale) - min(scale) > 1e-4:

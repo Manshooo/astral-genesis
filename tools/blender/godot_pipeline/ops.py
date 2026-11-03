@@ -473,6 +473,34 @@ class GP_OT_refit_collision(Operator):
         return {'FINISHED'}
 
 
+class GP_OT_match_godot_shape(Operator):
+    bl_idname = "godot_pipeline.match_godot_shape"
+    bl_label = "Match Godot Shape"
+    bl_description = ("Rebuild the selected collision proxies into exactly the primitive Godot "
+                      "will build from them: capsules and cylinders turn to lie along their "
+                      "longest side, since Godot always stands them along local Z with a round "
+                      "cross-section")
+    bl_options = {'REGISTER', 'UNDO'}
+
+    segments: IntProperty(name="Segments", default=16, min=6, max=64)
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.selected_objects)
+
+    def execute(self, context):
+        proxies = physics.iter_proxies(context.selected_objects)
+        for obj in context.selected_objects:
+            proxies += [c for c in obj.children
+                        if physics.is_proxy(c) and c not in proxies]
+        done = sum(1 for proxy in proxies if physics.match_godot_shape(proxy, self.segments))
+        if not done:
+            self.report({'WARNING'}, "No primitive collision proxies in the selection")
+            return {'CANCELLED'}
+        self.report({'INFO'}, "%d shape(s) now match Godot" % done)
+        return {'FINISHED'}
+
+
 class GP_OT_clear_collision(Operator):
     bl_idname = "godot_pipeline.clear_collision"
     bl_label = "Clear Collision"
@@ -740,6 +768,13 @@ class GP_OT_install_import_script(Operator):
             body = handle.read()
         with open(dest, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(body)
+        # Скрипт рэгдолла, который импорт вешает на симулятор, ищется рядом с
+        # самим скриптом импорта.
+        for extra in ("ragdoll_collision_exceptions.gd",):
+            with open(os.path.join(os.path.dirname(source), extra), "r", encoding="utf-8") as handle:
+                text = handle.read()
+            with open(os.path.join(dest_dir, extra), "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(text)
 
         res_path = paths.rel_to_res(root, dest)
         for profile in prefs.profiles:
@@ -870,6 +905,7 @@ CLASSES = (
     GP_OT_split_to_collections,
     GP_OT_add_collision,
     GP_OT_refit_collision,
+    GP_OT_match_godot_shape,
     GP_OT_clear_collision,
     GP_OT_copy_collision,
     GP_OT_select_collision,
