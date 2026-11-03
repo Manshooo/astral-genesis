@@ -4,8 +4,8 @@
 class_name PlayerPlacement
 extends RefCounted
 
-## Высота над полом тайла для игрока: в полу капсула не должна родиться.
-const TILE_ARRIVAL_HEIGHT := 0.5
+## Зазор между подошвой и полом при постановке, м: капсула не должна родиться в полу.
+const FLOOR_CLEARANCE := 0.05
 ## Отступ вглубь комнаты от двери, м: коллайдер игрока (радиус ~0.55, проём ~2.8) не должен оказаться в стене.
 const ARRIVAL_OFFSET := 1.5
 
@@ -18,13 +18,15 @@ static func in_room(player: Node3D, room: LayerStreamer.SpawnedRoom, came_from: 
 	var exit_entity := return_exit(room, came_from)
 	if exit_entity:
 		# Меняем ТОЛЬКО origin: basis (рыскание) остаётся игроков.
-		player.global_position = arrival_point(exit_entity, room.face_of(exit_entity).w, room_node, spawn_point)
+		player.global_position = arrival_point(exit_entity, room.face_of(exit_entity).w, room_node, spawn_point) \
+			+ lift(player)
 		return
 
 	if spawn_point:
 		player.global_transform = spawn_point.global_transform
 	else:
 		player.global_transform = room_node.global_transform
+	player.global_position += lift(player)
 
 
 ## Загрузка сейва в коридоре: у ветки нет SpawnPoint и двери «обратно» — игрок на её первый тайл.
@@ -32,7 +34,15 @@ static func in_corridor(player: Node3D, tiles: Array) -> void:
 	if tiles.is_empty():
 		return
 	var tile := tiles[0] as Node3D
-	player.global_position = tile.global_position + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
+	player.global_position = tile.global_position + lift(player)
+
+
+## От точки пола до origin игрока: origin рига — центр коллайдера, и габарит надетого тела (капсула hound 2.5 м)
+## иначе ушёл бы под пол — Jolt роняет такую капсулу сквозь него.
+static func lift(player: Node3D) -> Vector3:
+	var rig := player as Node as E_Player
+	var feet := rig.foot_offset() if rig else Vector3.ZERO
+	return feet + Vector3(0.0, FLOOR_CLEARANCE, 0.0)
 
 
 ## На тайл коридора за дверью door — для комнат без проёма за дверью (RS_LevelNode.door_teleports).
@@ -43,9 +53,7 @@ static func in_front_of(
 	var cell: Vector3i = plan.cells.get(room.node_id, Vector3i.ZERO)
 	if face.w != GridTopology.NO_SIDE:
 		cell = plan.topology.neighbour(GridTopology.face_cell(face), face.w)
-	player.global_position = (
-		plan.embedding.cell_origin(cell) + Vector3(0.0, TILE_ARRIVAL_HEIGHT, 0.0)
-	)
+	player.global_position = plan.embedding.cell_origin(cell) + lift(player)
 
 
 ## Безопасная точка перед дверью: отступаем перпендикулярно ЕЁ СТЕНЕ вглубь комнаты (origin двери — в плоскости стены на высоте полотна), высота от SpawnPoint. Направление — по стороне грани [param side]
