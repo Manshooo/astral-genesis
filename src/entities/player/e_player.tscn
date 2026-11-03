@@ -79,7 +79,6 @@ colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0.65, 1, 1, 1, 0)
 gradient = SubResource("Gradient_smoke_fade")
 
 [sub_resource type="ParticleProcessMaterial" id="Process_trail"]
-attractor_interaction_enabled = false
 emission_shape = 1
 emission_sphere_radius = 0.3
 direction = Vector3(0, -1, 0)
@@ -103,7 +102,6 @@ turbulence_influence_min = 0.02
 turbulence_influence_max = 0.06
 
 [sub_resource type="ParticleProcessMaterial" id="Process_wisps"]
-attractor_interaction_enabled = false
 emission_shape = 6
 emission_ring_axis = Vector3(0, 0, 1)
 emission_ring_height = 0.02

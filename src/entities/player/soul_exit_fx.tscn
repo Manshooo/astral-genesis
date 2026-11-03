@@ -73,6 +73,7 @@ burn_material = ExtResource("3_burn")
 [node name="Burst" type="GPUParticles3D" parent="."]
 unique_name_in_owner = true
 top_level = true
+layers = 4
 cast_shadow = 0
 gi_mode = 0
 material_override = ExtResource("2_smoke")
@@ -89,6 +90,7 @@ draw_pass_1 = SubResource("QuadMesh_card")
 [node name="Vapor" type="GPUParticles3D" parent="."]
 unique_name_in_owner = true
 top_level = true
+layers = 4
 cast_shadow = 0
 gi_mode = 0
 material_override = ExtResource("2_smoke")
@@ -103,6 +105,7 @@ draw_pass_1 = SubResource("QuadMesh_card")
 [node name="Attractor" type="GPUParticlesAttractorSphere3D" parent="."]
 unique_name_in_owner = true
 top_level = true
+cull_mask = 4
 strength = 14.0
 attenuation = 0.2
 radius = 10.0

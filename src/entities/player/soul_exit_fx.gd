@@ -25,6 +25,7 @@ var _time := 0.0
 
 @onready var _burst := %Burst as GPUParticles3D
 @onready var _vapor := %Vapor as GPUParticles3D
+# Аттрактор тянет только слой soul_exit (cull_mask в сцене): без маски к душе летели бы все частицы рядом.
 @onready var _attractor := %Attractor as GPUParticlesAttractorSphere3D
 
 
