@@ -490,8 +490,8 @@ func _check_template_covers_enemies() -> void:
 			if capsule != null and (capsule.radius > profile.agent_radius or capsule.height > profile.agent_height):
 				uncovered.append("%s (капсула %.2f×%.2f, агент %.2f×%.2f)" % [
 					file, capsule.radius, capsule.height, profile.agent_radius, profile.agent_height])
-		# Подвижное (полотна дверей) враг убирает с пути сам — навмеш идёт сквозь.
-		var solid := (enemy as Node as CharacterBody3D).collision_mask & ~PLAYER_LAYER & ~MOVING_LAYER
+		# Подвижное (полотна дверей) враг убирает с пути сам — навмеш идёт сквозь; другие враги и игрок (solid_actors) — не геометрия.
+		var solid := (enemy as Node as CharacterBody3D).collision_mask & ~PLAYER_LAYER & ~MOVING_LAYER & ~C_Phasing.SOLID_ACTOR_BIT
 		if solid != profile.geometry_collision_mask:
 			mask_wrong.append(file)
 		(enemy as Node).free()
@@ -499,7 +499,7 @@ func _check_template_covers_enemies() -> void:
 	_check("у каждого врага шаблон навмеша из LayerNavigation.PROFILES", unknown.is_empty(), ", ".join(unknown))
 	_check("шаблон навмеша врага покрывает его капсулу", uncovered.is_empty(), "; ".join(uncovered))
 	_check(
-		"маска геометрии навмеша — это то, во что враг упирается, кроме игрока и полотен дверей",
+		"маска геометрии навмеша — это то, во что враг упирается, кроме игрока, других врагов и полотен дверей",
 		mask_wrong.is_empty(),
 		"расходятся: %s" % ", ".join(mask_wrong)
 	)
