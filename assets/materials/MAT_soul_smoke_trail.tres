@@ -1,0 +1,28 @@
+[gd_resource type="ShaderMaterial" load_steps=6 format=3]
+
+[ext_resource type="VisualShader" path="res://assets/shared/shaders/soul_smoke.tres" id="1_shader"]
+[ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_04.png" id="2_a"]
+[ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_05.png" id="3_b"]
+[ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_08.png" id="4_c"]
+[ext_resource type="Texture2D" path="res://assets/shared/shaders/soul_noise.tres" id="5_noise"]
+
+[resource]
+shader = ExtResource("1_shader")
+shader_parameter/particles = true
+shader_parameter/smoke_color = Color(0.11, 0.1, 0.12, 1)
+shader_parameter/glow_color = Color(0.45, 0.28, 0.65, 1)
+shader_parameter/glow_energy = 0.15
+shader_parameter/rim_glow = 1.0
+shader_parameter/backlight = 0.1
+shader_parameter/density = 1.0
+shader_parameter/noise_scale = 0.8
+shader_parameter/flow_speed = 0.08
+shader_parameter/normal_bend = 0.75
+shader_parameter/proximity_fade = 0.3
+shader_parameter/near_fade = 0.25
+shader_parameter/noise_erode = 0.5
+shader_parameter/card_dissolve = 0.6
+shader_parameter/shape_a = ExtResource("2_a")
+shader_parameter/shape_b = ExtResource("3_b")
+shader_parameter/shape_c = ExtResource("4_c")
+shader_parameter/noise_tex = ExtResource("5_noise")

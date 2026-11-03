@@ -4,12 +4,15 @@
 [ext_resource type="Script" path="res://dev/soul_look/soul_mover.gd" id="2_mover"]
 [ext_resource type="Script" path="res://dev/soul_look/soul_cards.gd" id="3_cards"]
 [ext_resource type="Script" path="res://dev/soul_look/soul_fpv_cards.gd" id="5_fpv"]
-[ext_resource type="VisualShader" path="res://dev/soul_look/soul_smoke.tres" id="6_smoke"]
+[ext_resource type="VisualShader" path="res://assets/shared/shaders/soul_smoke.tres" id="6_smoke"]
 [ext_resource type="VisualShader" path="res://dev/soul_look/soul_wisps_screen.tres" id="8_screen"]
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_walled_2x2x1/SM_room_P_walled_2x2x1.glb" id="9_room"]
 [ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_04.png" id="10_smoke_a"]
 [ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_05.png" id="11_smoke_b"]
 [ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_08.png" id="12_smoke_c"]
+[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_head.tres" id="13_head"]
+[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_trail.tres" id="14_trail"]
+[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_wisps.tres" id="15_wisps"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -33,57 +36,6 @@ seamless = true
 noise = SubResource("noise2d")
 
 [sub_resource type="QuadMesh" id="card_quad"]
-
-[sub_resource type="ShaderMaterial" id="mat_cards_dark"]
-render_priority = 1
-shader = ExtResource("6_smoke")
-shader_parameter/smoke_color = Color(0.11, 0.1, 0.12, 1)
-shader_parameter/glow_color = Color(0.45, 0.28, 0.65, 1)
-shader_parameter/glow_energy = 0.15
-shader_parameter/rim_glow = 0.5
-shader_parameter/core_color = Color(0.8, 0.55, 1, 1)
-shader_parameter/core_energy = 10.0
-shader_parameter/core_radius = 0.18
-shader_parameter/backlight = 0.1
-shader_parameter/density = 1.3
-shader_parameter/noise_scale = 0.8
-shader_parameter/flow_speed = 0.08
-shader_parameter/normal_bend = 0.75
-shader_parameter/proximity_fade = 0.3
-shader_parameter/near_fade = 0.25
-shader_parameter/shape_a = ExtResource("10_smoke_a")
-shader_parameter/shape_b = ExtResource("11_smoke_b")
-shader_parameter/shape_c = ExtResource("12_smoke_c")
-shader_parameter/noise_erode = 0.5
-shader_parameter/card_dissolve = 0.7
-shader_parameter/blob_radius = 1.2
-shader_parameter/blob_dissolve = 0.7
-shader_parameter/noise_tex = SubResource("noise_tex")
-
-[sub_resource type="ShaderMaterial" id="mat_particles_dark"]
-render_priority = 0
-shader = ExtResource("6_smoke")
-shader_parameter/smoke_color = Color(0.11, 0.1, 0.12, 1)
-shader_parameter/glow_color = Color(0.45, 0.28, 0.65, 1)
-shader_parameter/glow_energy = 0.15
-shader_parameter/rim_glow = 1.0
-shader_parameter/core_color = Color(0.8, 0.55, 1, 1)
-shader_parameter/core_energy = 10.0
-shader_parameter/core_radius = 0.18
-shader_parameter/backlight = 0.1
-shader_parameter/density = 1.0
-shader_parameter/noise_scale = 0.8
-shader_parameter/flow_speed = 0.08
-shader_parameter/normal_bend = 0.75
-shader_parameter/proximity_fade = 0.3
-shader_parameter/near_fade = 0.25
-shader_parameter/particles = true
-shader_parameter/shape_a = ExtResource("10_smoke_a")
-shader_parameter/shape_b = ExtResource("11_smoke_b")
-shader_parameter/shape_c = ExtResource("12_smoke_c")
-shader_parameter/noise_erode = 0.5
-shader_parameter/card_dissolve = 0.6
-shader_parameter/noise_tex = SubResource("noise_tex")
 
 [sub_resource type="ShaderMaterial" id="mat_fpv_cold"]
 render_priority = 0
@@ -145,31 +97,6 @@ shader_parameter/core_energy = 0.0
 shader_parameter/core_radius = 0.35
 shader_parameter/backlight = 0.5
 shader_parameter/density = 0.32
-shader_parameter/noise_scale = 0.8
-shader_parameter/flow_speed = 0.06
-shader_parameter/normal_bend = 0.5
-shader_parameter/proximity_fade = 0.05
-shader_parameter/near_fade = 0.02
-shader_parameter/particles = true
-shader_parameter/shape_a = ExtResource("10_smoke_a")
-shader_parameter/shape_b = ExtResource("11_smoke_b")
-shader_parameter/shape_c = ExtResource("12_smoke_c")
-shader_parameter/noise_erode = 0.5
-shader_parameter/card_dissolve = 0.6
-shader_parameter/noise_tex = SubResource("noise_tex")
-
-[sub_resource type="ShaderMaterial" id="mat_fpv_particles_dark"]
-render_priority = 0
-shader = ExtResource("6_smoke")
-shader_parameter/smoke_color = Color(0.06, 0.055, 0.07, 1)
-shader_parameter/glow_color = Color(0.35, 0.2, 0.5, 1)
-shader_parameter/glow_energy = 0.4
-shader_parameter/rim_glow = 1.0
-shader_parameter/core_color = Color(0.8, 0.55, 1, 1)
-shader_parameter/core_energy = 0.0
-shader_parameter/core_radius = 0.35
-shader_parameter/backlight = 0.1
-shader_parameter/density = 0.8
 shader_parameter/noise_scale = 0.8
 shader_parameter/flow_speed = 0.06
 shader_parameter/normal_bend = 0.5
@@ -348,7 +275,7 @@ light_energy = 0.6
 omni_range = 2.5
 
 [node name="Trail" type="GPUParticles3D" parent="Stands/Сгусток/Blob"]
-material_override = SubResource("mat_particles_dark")
+material_override = ExtResource("14_trail")
 amount = 90
 lifetime = 1.8
 local_coords = false
@@ -358,7 +285,7 @@ draw_pass_1 = SubResource("card_quad")
 
 [node name="Cards" type="MultiMeshInstance3D" parent="Stands/Сгусток"]
 top_level = true
-material_override = SubResource("mat_cards_dark")
+material_override = ExtResource("13_head")
 multimesh = SubResource("mm_billboard_dark")
 script = ExtResource("3_cards")
 
@@ -404,7 +331,7 @@ draw_pass_1 = SubResource("card_quad")
 unique_name_in_owner = true
 visible = false
 transform = Transform3D(1.15, 0, 0, 0, 0.66, 0, 0, 0, 1, 0, 0, -0.35)
-material_override = SubResource("mat_fpv_particles_dark")
+material_override = ExtResource("15_wisps")
 emitting = false
 amount = 48
 lifetime = 1.2
@@ -434,7 +361,7 @@ unique_name_in_owner = true
 visible = false
 top_level = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0.1)
-material_override = SubResource("mat_particles_dark")
+material_override = ExtResource("14_trail")
 emitting = false
 amount = 70
 lifetime = 2.6

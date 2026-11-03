@@ -15,7 +15,11 @@ extends Component
 ## вызова наблюдателей задаёт очередь команд, а E_Player.foot_offset() дал бы габарит, который риг ещё носит. ZERO — габарита нет.
 @export var foot_offset: Vector3
 
-## Что вернуть при развоплощении, включая трансформ; заполняет O_BodyVisual (вид БФЖ — в e_player.tscn).
+## Что вернуть при развоплощении, включая трансформ; заполняет O_BodyVisual. У души своего меша нет (её облик —
+## C_SoulCloud), поэтому restore_mesh законно null.
 @export var restore_mesh: Mesh
 @export var restore_material: Material
 @export var restore_transform: Transform3D
+## restore_* уже сняты. Отдельный флаг: пустой restore_mesh не отличить от «ещё не снимали», и пересадка
+## тело→тело запомнила бы меш прошлого тела вместо пустого слота души.
+@export var restore_captured: bool = false
