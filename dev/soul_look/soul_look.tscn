@@ -1,0 +1,477 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/soul_look/soul_look.gd" id="1_look"]
+[ext_resource type="Script" path="res://dev/soul_look/soul_mover.gd" id="2_mover"]
+[ext_resource type="Script" path="res://dev/soul_look/soul_cards.gd" id="3_cards"]
+[ext_resource type="Script" path="res://dev/soul_look/soul_fpv_cards.gd" id="5_fpv"]
+[ext_resource type="VisualShader" path="res://dev/soul_look/soul_smoke.tres" id="6_smoke"]
+[ext_resource type="VisualShader" path="res://dev/soul_look/soul_wisps_screen.tres" id="8_screen"]
+[ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_walled_2x2x1/SM_room_P_walled_2x2x1.glb" id="9_room"]
+[ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_04.png" id="10_smoke_a"]
+[ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_05.png" id="11_smoke_b"]
+[ext_resource type="Texture2D" path="res://addons/kenney_particles/PNG (Transparent)/smoke_08.png" id="12_smoke_c"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+ambient_light_source = 2
+ambient_light_color = Color(0.45, 0.52, 0.66, 1)
+ambient_light_energy = 0.11
+tonemap_mode = 2
+tonemap_white = 7.0
+ssao_enabled = true
+glow_enabled = true
+
+[sub_resource type="FastNoiseLite" id="noise2d"]
+noise_type = 1
+frequency = 0.012
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="noise_tex"]
+width = 256
+height = 256
+seamless = true
+noise = SubResource("noise2d")
+
+[sub_resource type="QuadMesh" id="card_quad"]
+
+[sub_resource type="ShaderMaterial" id="mat_cards_dark"]
+render_priority = 1
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.11, 0.1, 0.12, 1)
+shader_parameter/glow_color = Color(0.45, 0.28, 0.65, 1)
+shader_parameter/glow_energy = 0.15
+shader_parameter/rim_glow = 0.5
+shader_parameter/core_color = Color(0.8, 0.55, 1, 1)
+shader_parameter/core_energy = 10.0
+shader_parameter/core_radius = 0.18
+shader_parameter/backlight = 0.1
+shader_parameter/density = 1.3
+shader_parameter/noise_scale = 0.8
+shader_parameter/flow_speed = 0.08
+shader_parameter/normal_bend = 0.75
+shader_parameter/proximity_fade = 0.3
+shader_parameter/near_fade = 0.25
+shader_parameter/shape_a = ExtResource("10_smoke_a")
+shader_parameter/shape_b = ExtResource("11_smoke_b")
+shader_parameter/shape_c = ExtResource("12_smoke_c")
+shader_parameter/noise_erode = 0.5
+shader_parameter/card_dissolve = 0.7
+shader_parameter/blob_radius = 1.2
+shader_parameter/blob_dissolve = 0.7
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="ShaderMaterial" id="mat_particles_dark"]
+render_priority = 0
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.11, 0.1, 0.12, 1)
+shader_parameter/glow_color = Color(0.45, 0.28, 0.65, 1)
+shader_parameter/glow_energy = 0.15
+shader_parameter/rim_glow = 1.0
+shader_parameter/core_color = Color(0.8, 0.55, 1, 1)
+shader_parameter/core_energy = 10.0
+shader_parameter/core_radius = 0.18
+shader_parameter/backlight = 0.1
+shader_parameter/density = 1.0
+shader_parameter/noise_scale = 0.8
+shader_parameter/flow_speed = 0.08
+shader_parameter/normal_bend = 0.75
+shader_parameter/proximity_fade = 0.3
+shader_parameter/near_fade = 0.25
+shader_parameter/particles = true
+shader_parameter/shape_a = ExtResource("10_smoke_a")
+shader_parameter/shape_b = ExtResource("11_smoke_b")
+shader_parameter/shape_c = ExtResource("12_smoke_c")
+shader_parameter/noise_erode = 0.5
+shader_parameter/card_dissolve = 0.6
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="ShaderMaterial" id="mat_fpv_cold"]
+render_priority = 0
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.75, 0.85, 1, 1)
+shader_parameter/glow_color = Color(0.6, 0.78, 1, 1)
+shader_parameter/glow_energy = 0.7
+shader_parameter/rim_glow = 0.3
+shader_parameter/core_color = Color(0.9, 0.95, 1, 1)
+shader_parameter/core_energy = 0.0
+shader_parameter/core_radius = 0.35
+shader_parameter/backlight = 0.5
+shader_parameter/density = 0.32
+shader_parameter/noise_scale = 0.8
+shader_parameter/flow_speed = 0.06
+shader_parameter/normal_bend = 0.5
+shader_parameter/proximity_fade = 0.05
+shader_parameter/near_fade = 0.02
+shader_parameter/shape_a = ExtResource("10_smoke_a")
+shader_parameter/shape_b = ExtResource("11_smoke_b")
+shader_parameter/shape_c = ExtResource("12_smoke_c")
+shader_parameter/noise_erode = 0.5
+shader_parameter/card_dissolve = 0.6
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="ShaderMaterial" id="mat_fpv_dark"]
+render_priority = 0
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.06, 0.055, 0.07, 1)
+shader_parameter/glow_color = Color(0.35, 0.2, 0.5, 1)
+shader_parameter/glow_energy = 0.4
+shader_parameter/rim_glow = 1.0
+shader_parameter/core_color = Color(0.8, 0.55, 1, 1)
+shader_parameter/core_energy = 0.0
+shader_parameter/core_radius = 0.35
+shader_parameter/backlight = 0.1
+shader_parameter/density = 0.8
+shader_parameter/noise_scale = 0.8
+shader_parameter/flow_speed = 0.06
+shader_parameter/normal_bend = 0.5
+shader_parameter/proximity_fade = 0.05
+shader_parameter/near_fade = 0.02
+shader_parameter/shape_a = ExtResource("10_smoke_a")
+shader_parameter/shape_b = ExtResource("11_smoke_b")
+shader_parameter/shape_c = ExtResource("12_smoke_c")
+shader_parameter/noise_erode = 0.5
+shader_parameter/card_dissolve = 0.6
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="ShaderMaterial" id="mat_fpv_particles_cold"]
+render_priority = 0
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.75, 0.85, 1, 1)
+shader_parameter/glow_color = Color(0.6, 0.78, 1, 1)
+shader_parameter/glow_energy = 0.7
+shader_parameter/rim_glow = 0.3
+shader_parameter/core_color = Color(0.9, 0.95, 1, 1)
+shader_parameter/core_energy = 0.0
+shader_parameter/core_radius = 0.35
+shader_parameter/backlight = 0.5
+shader_parameter/density = 0.32
+shader_parameter/noise_scale = 0.8
+shader_parameter/flow_speed = 0.06
+shader_parameter/normal_bend = 0.5
+shader_parameter/proximity_fade = 0.05
+shader_parameter/near_fade = 0.02
+shader_parameter/particles = true
+shader_parameter/shape_a = ExtResource("10_smoke_a")
+shader_parameter/shape_b = ExtResource("11_smoke_b")
+shader_parameter/shape_c = ExtResource("12_smoke_c")
+shader_parameter/noise_erode = 0.5
+shader_parameter/card_dissolve = 0.6
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="ShaderMaterial" id="mat_fpv_particles_dark"]
+render_priority = 0
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.06, 0.055, 0.07, 1)
+shader_parameter/glow_color = Color(0.35, 0.2, 0.5, 1)
+shader_parameter/glow_energy = 0.4
+shader_parameter/rim_glow = 1.0
+shader_parameter/core_color = Color(0.8, 0.55, 1, 1)
+shader_parameter/core_energy = 0.0
+shader_parameter/core_radius = 0.35
+shader_parameter/backlight = 0.1
+shader_parameter/density = 0.8
+shader_parameter/noise_scale = 0.8
+shader_parameter/flow_speed = 0.06
+shader_parameter/normal_bend = 0.5
+shader_parameter/proximity_fade = 0.05
+shader_parameter/near_fade = 0.02
+shader_parameter/particles = true
+shader_parameter/shape_a = ExtResource("10_smoke_a")
+shader_parameter/shape_b = ExtResource("11_smoke_b")
+shader_parameter/shape_c = ExtResource("12_smoke_c")
+shader_parameter/noise_erode = 0.5
+shader_parameter/card_dissolve = 0.6
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="ShaderMaterial" id="mat_screen_cold"]
+shader = ExtResource("8_screen")
+shader_parameter/smoke_color = Color(0.78, 0.88, 1, 1)
+shader_parameter/smoke_alpha = 0.35
+shader_parameter/glow_color = Color(0.8, 0.9, 1, 1)
+shader_parameter/glow_amount = 0.4
+shader_parameter/inner = 0.75
+shader_parameter/outer = 1.35
+shader_parameter/bottom_bias = 0.25
+shader_parameter/noise_scale = 0.9
+shader_parameter/flow_speed = 0.05
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="ShaderMaterial" id="mat_screen_dark"]
+shader = ExtResource("8_screen")
+shader_parameter/smoke_color = Color(0.02, 0.02, 0.03, 1)
+shader_parameter/smoke_alpha = 0.75
+shader_parameter/glow_color = Color(0.5, 0.3, 0.7, 1)
+shader_parameter/glow_amount = 0.15
+shader_parameter/inner = 0.7
+shader_parameter/outer = 1.3
+shader_parameter/bottom_bias = 0.25
+shader_parameter/noise_scale = 0.9
+shader_parameter/flow_speed = 0.05
+shader_parameter/noise_tex = SubResource("noise_tex")
+
+[sub_resource type="Curve" id="curve_trail_scale"]
+_data = [Vector2(0, 0.4), 0.0, 0.0, 0, 0, Vector2(0.3, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.7), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="curve_trail_scale_tex"]
+curve = SubResource("curve_trail_scale")
+
+[sub_resource type="Gradient" id="fade_in_out"]
+offsets = PackedFloat32Array(0, 0.1, 0.55, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0.65, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="fade_in_out_tex"]
+gradient = SubResource("fade_in_out")
+
+[sub_resource type="ParticleProcessMaterial" id="process_trail_wide"]
+emission_shape = 1
+emission_sphere_radius = 0.45
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 0.05
+initial_velocity_max = 0.2
+gravity = Vector3(0, 0.05, 0)
+damping_min = 0.5
+damping_max = 1.0
+angle_min = -180.0
+angle_max = 180.0
+angular_velocity_min = -20.0
+angular_velocity_max = 20.0
+scale_min = 0.45
+scale_max = 0.85
+scale_curve = SubResource("curve_trail_scale_tex")
+color_ramp = SubResource("fade_in_out_tex")
+turbulence_enabled = true
+turbulence_noise_strength = 0.6
+turbulence_influence_min = 0.03
+turbulence_influence_max = 0.08
+
+[sub_resource type="ParticleProcessMaterial" id="process_player_trail"]
+emission_shape = 1
+emission_sphere_radius = 0.3
+direction = Vector3(0, -1, 0)
+spread = 35.0
+initial_velocity_min = 0.05
+initial_velocity_max = 0.2
+gravity = Vector3(0, -0.35, 0)
+damping_min = 0.2
+damping_max = 0.4
+angle_min = -180.0
+angle_max = 180.0
+angular_velocity_min = -15.0
+angular_velocity_max = 15.0
+scale_min = 0.5
+scale_max = 0.95
+scale_curve = SubResource("curve_trail_scale_tex")
+color_ramp = SubResource("fade_in_out_tex")
+turbulence_enabled = true
+turbulence_noise_strength = 0.5
+turbulence_influence_min = 0.02
+turbulence_influence_max = 0.06
+
+[sub_resource type="ParticleProcessMaterial" id="process_fpv"]
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 0.02
+emission_ring_radius = 0.46
+emission_ring_inner_radius = 0.36
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 0.01
+initial_velocity_max = 0.04
+gravity = Vector3(0, 0, 0)
+angle_min = -180.0
+angle_max = 180.0
+angular_velocity_min = -15.0
+angular_velocity_max = 15.0
+scale_min = 0.12
+scale_max = 0.22
+scale_curve = SubResource("curve_trail_scale_tex")
+color_ramp = SubResource("fade_in_out_tex")
+turbulence_enabled = true
+turbulence_noise_strength = 0.3
+turbulence_influence_min = 0.02
+turbulence_influence_max = 0.05
+
+[sub_resource type="MultiMesh" id="mm_billboard_dark"]
+transform_format = 1
+use_custom_data = true
+custom_aabb = AABB(-20, -5, -20, 40, 15, 40)
+mesh = SubResource("card_quad")
+
+[sub_resource type="MultiMesh" id="mm_fpv_cold"]
+transform_format = 1
+use_custom_data = true
+custom_aabb = AABB(-20, -5, -20, 40, 15, 40)
+mesh = SubResource("card_quad")
+
+[sub_resource type="MultiMesh" id="mm_fpv_dark"]
+transform_format = 1
+use_custom_data = true
+custom_aabb = AABB(-20, -5, -20, 40, 15, 40)
+mesh = SubResource("card_quad")
+
+[node name="SoulLook" type="Node3D"]
+script = ExtResource("1_look")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Room" parent="." instance=ExtResource("9_room")]
+
+[node name="CeilingLightA" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 6.5, 0)
+light_color = Color(0.9, 0.85, 0.75, 1)
+light_energy = 0.6
+shadow_enabled = true
+omni_range = 12.0
+
+[node name="CeilingLightB" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 6.5, 0)
+light_color = Color(0.9, 0.85, 0.75, 1)
+light_energy = 0.6
+shadow_enabled = true
+omni_range = 12.0
+
+[node name="Stands" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="Сгусток" type="Node3D" parent="Stands"]
+script = ExtResource("2_mover")
+phase_offset = 2.0
+
+[node name="Blob" type="Node3D" parent="Stands/Сгусток"]
+
+[node name="CoreLight" type="OmniLight3D" parent="Stands/Сгусток/Blob"]
+light_color = Color(0.75, 0.5, 1, 1)
+light_energy = 0.6
+omni_range = 2.5
+
+[node name="Trail" type="GPUParticles3D" parent="Stands/Сгусток/Blob"]
+material_override = SubResource("mat_particles_dark")
+amount = 90
+lifetime = 1.8
+local_coords = false
+visibility_aabb = AABB(-4, -2, -4, 8, 6, 8)
+process_material = SubResource("process_trail_wide")
+draw_pass_1 = SubResource("card_quad")
+
+[node name="Cards" type="MultiMeshInstance3D" parent="Stands/Сгусток"]
+top_level = true
+material_override = SubResource("mat_cards_dark")
+multimesh = SubResource("mm_billboard_dark")
+script = ExtResource("3_cards")
+
+[node name="Label3D" type="Label3D" parent="Stands/Сгусток"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+pixel_size = 0.004
+visibility_range_end = 6.0
+visibility_range_end_margin = 1.0
+visibility_range_fade_mode = 1
+billboard = 1
+modulate = Color(0.8, 0.8, 0.8, 0.8)
+text = "Облик БФЖ
+карточки + шлейф частицами, тёмный дым с ядром"
+font_size = 40
+
+[node name="SideCamera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 9)
+current = true
+fov = 60.0
+
+[node name="FpvCamera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 6.5)
+keep_aspect = 0
+fov = 103.0
+near = 0.03
+
+[node name="FpvParticlesCold" type="GPUParticles3D" parent="FpvCamera"]
+unique_name_in_owner = true
+visible = false
+transform = Transform3D(1.15, 0, 0, 0, 0.66, 0, 0, 0, 1, 0, 0, -0.35)
+material_override = SubResource("mat_fpv_particles_cold")
+emitting = false
+amount = 48
+lifetime = 1.2
+local_coords = false
+visibility_aabb = AABB(-2, -2, -2, 4, 4, 4)
+process_material = SubResource("process_fpv")
+draw_pass_1 = SubResource("card_quad")
+
+[node name="FpvParticlesDark" type="GPUParticles3D" parent="FpvCamera"]
+unique_name_in_owner = true
+visible = false
+transform = Transform3D(1.15, 0, 0, 0, 0.66, 0, 0, 0, 1, 0, 0, -0.35)
+material_override = SubResource("mat_fpv_particles_dark")
+emitting = false
+amount = 48
+lifetime = 1.2
+local_coords = false
+visibility_aabb = AABB(-2, -2, -2, 4, 4, 4)
+process_material = SubResource("process_fpv")
+draw_pass_1 = SubResource("card_quad")
+
+[node name="FpvCardsCold" type="MultiMeshInstance3D" parent="FpvCamera"]
+unique_name_in_owner = true
+visible = false
+top_level = true
+material_override = SubResource("mat_fpv_cold")
+multimesh = SubResource("mm_fpv_cold")
+script = ExtResource("5_fpv")
+
+[node name="FpvCardsDark" type="MultiMeshInstance3D" parent="FpvCamera"]
+unique_name_in_owner = true
+visible = false
+top_level = true
+material_override = SubResource("mat_fpv_dark")
+multimesh = SubResource("mm_fpv_dark")
+script = ExtResource("5_fpv")
+
+[node name="FpvTrail" type="GPUParticles3D" parent="FpvCamera"]
+unique_name_in_owner = true
+visible = false
+top_level = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0.1)
+material_override = SubResource("mat_particles_dark")
+emitting = false
+amount = 70
+lifetime = 2.6
+local_coords = false
+visibility_aabb = AABB(-6, -3, -6, 12, 8, 12)
+process_material = SubResource("process_player_trail")
+draw_pass_1 = SubResource("card_quad")
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+
+[node name="FpvScreenCold" type="ColorRect" parent="Overlay"]
+unique_name_in_owner = true
+visible = false
+material = SubResource("mat_screen_cold")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FpvScreenDark" type="ColorRect" parent="Overlay"]
+unique_name_in_owner = true
+visible = false
+material = SubResource("mat_screen_dark")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Hud" type="Label" parent="Overlay"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 900.0
+offset_bottom = 90.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
