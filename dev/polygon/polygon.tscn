@@ -1,0 +1,70 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://dc2nnwj2qeosf" path="res://src/world/world.tscn" id="1_world"]
+[ext_resource type="Script" path="res://dev/polygon/polygon.gd" id="2_polygon"]
+[ext_resource type="PackedScene" path="res://dev/polygon/stations/hound/hound_station.tscn" id="3_hound"]
+[ext_resource type="Environment" path="res://dev/polygon/polygon_environment.tres" id="4_env"]
+[ext_resource type="Texture2D" path="res://addons/kenney_textures/PNG/Dark/texture_04.png" id="5_grid"]
+[ext_resource type="Texture2D" path="res://addons/kenney_textures/PNG/Light/texture_07.png" id="6_wall"]
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_texture = ExtResource("5_grid")
+uv1_scale = Vector3(0.125, 0.125, 0.125)
+uv1_triplanar = true
+uv1_world_triplanar = true
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_texture = ExtResource("6_wall")
+uv1_scale = Vector3(0.25, 0.25, 0.25)
+uv1_triplanar = true
+uv1_world_triplanar = true
+
+[node name="Polygon" instance=ExtResource("1_world")]
+script = ExtResource("2_polygon")
+
+[node name="Stations" type="Node3D" parent="World/Entities"]
+unique_name_in_owner = true
+
+[node name="Hound" parent="World/Entities/Stations" instance=ExtResource("3_hound")]
+
+[node name="WorldEnvironment" parent="."]
+environment = ExtResource("4_env")
+apply_depth_lighting = false
+
+[node name="Arena" type="Node3D" parent="."]
+
+[node name="Floor" type="CSGBox3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(60, 1, 60)
+material = SubResource("Material_floor")
+
+[node name="WallNorth" type="CSGBox3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -30.5)
+use_collision = true
+size = Vector3(62, 3, 1)
+material = SubResource("Material_wall")
+
+[node name="WallSouth" type="CSGBox3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 30.5)
+use_collision = true
+size = Vector3(62, 3, 1)
+material = SubResource("Material_wall")
+
+[node name="WallWest" type="CSGBox3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30.5, 1.5, 0)
+use_collision = true
+size = Vector3(1, 3, 60)
+material = SubResource("Material_wall")
+
+[node name="WallEast" type="CSGBox3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.5, 1.5, 0)
+use_collision = true
+size = Vector3(1, 3, 60)
+material = SubResource("Material_wall")
+
+[node name="Sun" type="DirectionalLight3D" parent="Arena"]
+transform = Transform3D(0.866025, -0.383022, 0.321394, 0, 0.642788, 0.766044, -0.5, -0.663414, 0.55667, 0, 12, 0)
+light_energy = 1.4
+shadow_enabled = true
+directional_shadow_max_distance = 60.0

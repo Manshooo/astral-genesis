@@ -1,0 +1,188 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/polygon/stations/hound/state_screen.gd" id="1_screen"]
+[ext_resource type="Script" path="res://dev/polygon/orbit_camera.gd" id="2_orbit"]
+
+[node name="StateScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_screen")
+
+[node name="OrbitCamera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+fov = 50.0
+script = ExtResource("2_orbit")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -392.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "Машина состояний"
+
+[node name="Status" type="Label" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+text = "состояние"
+autowrap_mode = 3
+
+[node name="SpeedRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Caption" type="Label" parent="Panel/Margin/VBox/SpeedRow"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "Скорость"
+
+[node name="Speed" type="HSlider" parent="Panel/Margin/VBox/SpeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+focus_mode = 0
+max_value = 12.0
+step = 0.1
+
+[node name="SpeedLabel" type="Label" parent="Panel/Margin/VBox/SpeedRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "0.0 м/с"
+
+[node name="Presets" type="HBoxContainer" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PresetButton" type="Button" parent="Panel/Margin/VBox/Presets"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "скорость"
+
+[node name="Actions" type="GridContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+columns = 2
+
+[node name="Jump" type="Button" parent="Panel/Margin/VBox/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Прыжок"
+
+[node name="Bite" type="Button" parent="Panel/Margin/VBox/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Укус"
+
+[node name="Hit" type="Button" parent="Panel/Margin/VBox/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Попадание"
+
+[node name="Death" type="Button" parent="Panel/Margin/VBox/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Гибель"
+
+[node name="Fidget" type="Button" parent="Panel/Margin/VBox/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Безделье (случайно)"
+
+[node name="Respawn" type="Button" parent="Panel/Margin/VBox/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Вернуть манекен"
+
+[node name="FidgetCaption" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "Безделье по выбору (стоя)"
+
+[node name="Fidgets" type="HBoxContainer" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="FidgetButton" type="Button" parent="Panel/Margin/VBox/Fidgets"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "безделье"
+
+[node name="SourceRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Caption" type="Label" parent="Panel/Margin/VBox/SourceRow"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "Клипы"
+
+[node name="SourcePick" type="OptionButton" parent="Panel/Margin/VBox/SourceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+
+[node name="TimeCaption" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "Темп времени"
+
+[node name="TimeScales" type="HBoxContainer" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TimeButton" type="Button" parent="Panel/Margin/VBox/TimeScales"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "×1"
+
+[node name="Follow" type="CheckBox" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Камера за манекеном"
+
+[node name="Hint" type="Label" parent="Panel/Margin/VBox"]
+modulate = Color(1, 1, 1, 0.6)
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+text = "Мышь по миру: ЛКМ/ПКМ — вращать, колесо — ближе, СКМ — сдвиг. Esc — закрыть"
+autowrap_mode = 3

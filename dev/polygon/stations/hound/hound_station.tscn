@@ -1,0 +1,191 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/polygon/stations/hound/hound_station.gd" id="1_station"]
+[ext_resource type="Script" path="res://dev/polygon/stations/hound/clip_stand.gd" id="2_stand"]
+[ext_resource type="Script" path="res://dev/polygon/stations/hound/treadmill.gd" id="3_treadmill"]
+[ext_resource type="Script" path="res://dev/polygon/stations/hound/body_mat.gd" id="4_mat"]
+[ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="5_body"]
+[ext_resource type="PackedScene" path="res://src/entities/enemy/e_enemy_hound.tscn" id="6_enemy"]
+[ext_resource type="Script" uid="uid://ebxavm5qyxcf" path="res://src/entities/interactable/e_interactable_object.gd" id="7_console"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="8_component"]
+[ext_resource type="Script" uid="uid://ccafy2i1kdi4a" path="res://src/components/gameplay/c_interactable.gd" id="9_interactable"]
+
+[sub_resource type="StandardMaterial3D" id="Material_pedestal"]
+albedo_color = Color(0.42, 0.44, 0.48, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_console"]
+albedo_color = Color(0.85, 0.55, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_ring"]
+shading_mode = 0
+albedo_color = Color(0.95, 0.75, 0.3, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_mat"]
+albedo_color = Color(0.25, 0.35, 0.45, 1)
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+material = SubResource("Material_ring")
+inner_radius = 4.85
+outer_radius = 5.15
+rings = 96
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_console"]
+size = Vector3(1, 1.4, 0.7)
+
+[sub_resource type="Resource" id="Resource_stand_prompt"]
+script = ExtResource("9_interactable")
+prompt_text = "Стенд клипов"
+
+[sub_resource type="Resource" id="Resource_treadmill_prompt"]
+script = ExtResource("9_interactable")
+prompt_text = "Машина состояний"
+
+[sub_resource type="Resource" id="Resource_mat_prompt"]
+script = ExtResource("9_interactable")
+prompt_text = "Положить тело"
+
+[node name="HoundStation" type="Node3D"]
+script = ExtResource("1_station")
+
+[node name="Spawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 11)
+
+[node name="ClipStand" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -3)
+script = ExtResource("2_stand")
+body_scene = ExtResource("5_body")
+
+[node name="Pedestal" type="CSGCylinder3D" parent="ClipStand"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+use_collision = true
+radius = 1.8
+height = 0.2
+sides = 48
+material = SubResource("Material_pedestal")
+
+[node name="Slot" type="Node3D" parent="ClipStand"]
+unique_name_in_owner = true
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0.2, 0)
+
+[node name="Focus" type="Marker3D" parent="ClipStand"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+
+[node name="StandPlayer" type="AnimationPlayer" parent="ClipStand"]
+unique_name_in_owner = true
+callback_mode_process = 2
+metadata/polygon_own_clips = true
+
+[node name="Sign" type="Label3D" parent="ClipStand"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+billboard = 1
+pixel_size = 0.006
+text = "Стенд клипов
+клип сам по себе"
+font_size = 64
+outline_size = 12
+
+[node name="StandConsole" type="Node3D" parent="ClipStand"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.2)
+script = ExtResource("7_console")
+component_resources = Array[ExtResource("8_component")]([SubResource("Resource_stand_prompt")])
+
+[node name="Box" type="CSGBox3D" parent="ClipStand/StandConsole"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+use_collision = true
+size = Vector3(0.8, 1.1, 0.5)
+material = SubResource("Material_console")
+
+[node name="InteractBody" type="StaticBody3D" parent="ClipStand/StandConsole"]
+collision_layer = 8
+collision_mask = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ClipStand/StandConsole/InteractBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("BoxShape3D_console")
+
+[node name="Treadmill" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -5)
+script = ExtResource("3_treadmill")
+puppet_scene = ExtResource("6_enemy")
+
+[node name="Ring" type="MeshInstance3D" parent="Treadmill"]
+transform = Transform3D(1, 0, 0, 0, 0.02, 0, 0, 0, 1, 0, 0.01, 0)
+cast_shadow = 0
+mesh = SubResource("TorusMesh_ring")
+
+[node name="Sign" type="Label3D" parent="Treadmill"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+billboard = 1
+pixel_size = 0.006
+text = "Машина состояний
+манекен на дорожке"
+font_size = 64
+outline_size = 12
+
+[node name="TreadmillConsole" type="Node3D" parent="Treadmill"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 7.2)
+script = ExtResource("7_console")
+component_resources = Array[ExtResource("8_component")]([SubResource("Resource_treadmill_prompt")])
+
+[node name="Box" type="CSGBox3D" parent="Treadmill/TreadmillConsole"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+use_collision = true
+size = Vector3(0.8, 1.1, 0.5)
+material = SubResource("Material_console")
+
+[node name="InteractBody" type="StaticBody3D" parent="Treadmill/TreadmillConsole"]
+collision_layer = 8
+collision_mask = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Treadmill/TreadmillConsole/InteractBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("BoxShape3D_console")
+
+[node name="BodyMat" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+script = ExtResource("4_mat")
+body_scene = ExtResource("5_body")
+
+[node name="Mat" type="CSGBox3D" parent="BodyMat"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+size = Vector3(3, 0.05, 4)
+material = SubResource("Material_mat")
+
+[node name="BodyPoint" type="Marker3D" parent="BodyMat"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+
+[node name="Sign" type="Label3D" parent="BodyMat"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4, -1.5)
+billboard = 1
+pixel_size = 0.006
+text = "От первого лица
+вселиться в тело"
+font_size = 64
+outline_size = 12
+
+[node name="MatConsole" type="Node3D" parent="BodyMat"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 0, 1)
+script = ExtResource("7_console")
+component_resources = Array[ExtResource("8_component")]([SubResource("Resource_mat_prompt")])
+
+[node name="Box" type="CSGBox3D" parent="BodyMat/MatConsole"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+use_collision = true
+size = Vector3(0.8, 1.1, 0.5)
+material = SubResource("Material_console")
+
+[node name="InteractBody" type="StaticBody3D" parent="BodyMat/MatConsole"]
+collision_layer = 8
+collision_mask = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BodyMat/MatConsole/InteractBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("BoxShape3D_console")

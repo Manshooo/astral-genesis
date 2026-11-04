@@ -1,0 +1,173 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/polygon/stations/hound/clip_screen.gd" id="1_screen"]
+[ext_resource type="Script" path="res://dev/polygon/orbit_camera.gd" id="2_orbit"]
+
+[node name="ClipScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_screen")
+
+[node name="OrbitCamera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+fov = 50.0
+script = ExtResource("2_orbit")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -392.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "Стенд клипов"
+
+[node name="ModelRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Caption" type="Label" parent="Panel/Margin/VBox/ModelRow"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "Облик"
+
+[node name="ModelPick" type="OptionButton" parent="Panel/Margin/VBox/ModelRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+selected = 0
+item_count = 2
+popup/item_0/text = "Тело"
+popup/item_0/id = 0
+popup/item_1/text = "Руки-муляж"
+popup/item_1/id = 1
+
+[node name="SourceRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Caption" type="Label" parent="Panel/Margin/VBox/SourceRow"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "Клипы"
+
+[node name="SourcePick" type="OptionButton" parent="Panel/Margin/VBox/SourceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+
+[node name="AbButton" type="Button" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "A/B"
+
+[node name="Clips" type="ItemList" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 0
+
+[node name="TimeSlider" type="HSlider" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+max_value = 1.0
+step = 0.001
+
+[node name="TimeLabel" type="Label" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 / 0 с"
+
+[node name="Transport" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Back" type="Button" parent="Panel/Margin/VBox/Transport"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "◀ кадр"
+
+[node name="Play" type="Button" parent="Panel/Margin/VBox/Transport"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Пауза"
+
+[node name="Forward" type="Button" parent="Panel/Margin/VBox/Transport"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "кадр ▶"
+
+[node name="Loop" type="CheckBox" parent="Panel/Margin/VBox/Transport"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+text = "Петля"
+
+[node name="SpeedRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Caption" type="Label" parent="Panel/Margin/VBox/SpeedRow"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "Скорость"
+
+[node name="Speed" type="HSlider" parent="Panel/Margin/VBox/SpeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+focus_mode = 0
+min_value = 0.05
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="SpeedLabel" type="Label" parent="Panel/Margin/VBox/SpeedRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+text = "×1.00"
+
+[node name="Springs" type="CheckBox" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+text = "Пружины хвоста и ушей"
+
+[node name="Hint" type="Label" parent="Panel/Margin/VBox"]
+modulate = Color(1, 1, 1, 0.6)
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+text = "Мышь по миру: ЛКМ/ПКМ — вращать, колесо — ближе, СКМ — сдвиг. Пробел — пауза, ←/→ — кадр, ↑/↓ — клип, Tab — A/B, Esc — закрыть"
+autowrap_mode = 3
