@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/polygon/stations/camera/third_person_rig.gd" id="1_rig"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_lens"]
+radius = 0.2
+
+[node name="ThirdPersonRig" type="Node3D"]
+top_level = true
+script = ExtResource("1_rig")
+
+[node name="Shoulder" type="SpringArm3D" parent="."]
+collision_mask = 0
+shape = SubResource("SphereShape3D_lens")
+spring_length = 0.8
+
+[node name="Arm" type="SpringArm3D" parent="Shoulder"]
+collision_mask = 0
+shape = SubResource("SphereShape3D_lens")
+spring_length = 3.0
+
+[node name="Camera3D" type="Camera3D" parent="Shoulder/Arm"]
+keep_aspect = 0
+cull_mask = 1048575
+fov = 80.0
+near = 0.05

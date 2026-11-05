@@ -37,6 +37,8 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	# Темп времени — настройка движка, а не сцены: без сброса меню после выхода жило бы в замедлении.
 	Engine.time_scale = 1.0
+	# Интерполяцию физики переключает станция камеры, а живёт она на дереве — после полигона вернуть проектную.
+	get_tree().physics_interpolation = ProjectSettings.get_setting("physics/common/physics_interpolation", false)
 	clips.unwatch()
 
 
@@ -49,15 +51,24 @@ func stations() -> Array[Node3D]:
 	return out
 
 
-## Ставит игрока на маркер Spawn станции [param index], лицом туда, куда смотрит маркер.
+## Ставит игрока на маркер Spawn станции [param index], лицом туда, куда смотрит маркер. Станция может ответить на
+## приход и уход (`arrive()`, `depart()`): так станция камеры забирает кадр только у себя.
 func go_to(index: int) -> String:
-	var station := stations()[index]
+	var all := stations()
+	var station := all[index]
 	var spawn := station.get_node("Spawn") as Node3D
 	var player := E_Player.find() as Node as Node3D
 	if player == null:
 		return "игрока нет"
 	player.global_position = spawn.global_position + PlayerPlacement.lift(player)
 	player.global_rotation = Vector3(0.0, spawn.global_rotation.y, 0.0)
+	# Перенос — телепорт: с интерполяцией физики риг иначе проехал бы через полигон за один тик.
+	player.reset_physics_interpolation()
+	for other in all:
+		if other != station and other.has_method(&"depart"):
+			other.depart()
+	if station.has_method(&"arrive"):
+		station.arrive()
 	return station.title
 
 
@@ -75,6 +86,10 @@ func debug_entries() -> Array[Dictionary]:
 	for value in TIME_SCALES:
 		var mark := "● " if is_equal_approx(Engine.time_scale, value) else ""
 		entries.append({"title": "%sТемп времени ×%s" % [mark, value], "call": set_time_scale.bind(value)})
+	# Пульт станции — её записи (станция камеры: режимы камеры); меню их только рисует.
+	for station in all:
+		if station.has_method(&"debug_entries"):
+			entries.append_array(station.debug_entries())
 	for official in clips.officials:
 		var versions := clips.variants_of(official)
 		if versions.is_empty():

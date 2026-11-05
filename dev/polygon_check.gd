@@ -3,7 +3,8 @@ extends "res://dev/check_harness.gd"
 ## время клипа сам и показывает версию вместо основной; общая подмена клипов доходит до манекена и новых деревьев, но не
 ## до стенда; манекен на дорожке проходит клипы хода, удар, попадание, прыжок и гибель тем путём, каким их узнаёт
 ## S_BodyAnimation; тело на мате захватывается с первого раза и кладётся заново; экраны станции берут ввод и камеру и
-## отдают их; раздел «Полигон» меню отладки есть только в полигоне. Ломается это тихо — стенд показывает не тот клип,
+## отдают их; раздел «Полигон» меню отладки есть только в полигоне; на станции камеры плечо не уходит за стену, а сквозь
+## решётку проходит ровно тогда, когда её проходит форма, и облик гаснет копией материала. Ломается это тихо — стенд показывает не тот клип,
 ## манекен бежит не тем клипом, подмена не доезжает. Запускать: godot --headless dev/polygon_check.tscn
 
 const POLYGON := "res://dev/polygon/polygon.tscn"
@@ -37,6 +38,7 @@ func _ready() -> void:
 	await _check_mat()
 	await _check_screens()
 	await _check_menu()
+	await _check_camera_station()
 	await _check_exit()
 	_restore_skill_save()
 	_finish()
@@ -340,13 +342,120 @@ func _check_menu() -> void:
 			player.global_position.z - spawn.global_position.z).length() < 0.5, "")
 
 
-# --- 8. Уход со сцены --------------------------------------------------------------
+# --- 8. Станция камеры от третьего лица --------------------------------------------
+func _check_camera_station() -> void:
+	var station := _polygon.get_node("World/Entities/Stations/Camera") as Node3D
+	var rig: Node3D = station.rig
+	var player := E_Player.find() as E_Player
+	var all: Array[Node3D] = _polygon.stations()
+	var interpolation_before := get_tree().physics_interpolation
+	_polygon.go_to(all.find(station))
+	await _frames(2)
+	_check("перенос на станцию камеры отдаёт кадр камере от третьего лица и включает интерполяцию физики",
+		rig.active and rig.camera.current and get_tree().physics_interpolation, "")
+	var cloud := player.get_component(C_SoulCloud) as C_SoulCloud
+	var wisps := player.get_node(cloud.wisps_path) as Node3D
+	_check("клочья души у камеры игрока спрятаны", not wisps.visible, "")
+
+	# Длинное плечо, чтобы стена и решётка оказались ближе него.
+	rig.min_arm = 6.0
+	var west := PI * 0.5  # лицом на запад — камера за спиной, на востоке
+	await _stand(player, station, Vector3(0.0, 0.0, 0.0), west)
+	var wall_x := 2.9  # внутреннее лицо восточной стены прямого коридора (6 м шириной, стена 0.1)
+	var camera_x := station.to_local(rig.camera.global_position).x
+	_check("у стены коридора плечо короче и камера не за стеной",
+		rig.arm.get_hit_length() < 5.0 and camera_x < wall_x, "плечо %.2f м, камера x %.2f" % [rig.arm.get_hit_length(), camera_x])
+	var pivot_height := rig.global_position.y - station.global_position.y
+	_check("опора камеры маленькой души не у пола", pivot_height >= rig.min_pivot - 0.01, "%.2f м над полом" % pivot_height)
+	var eye_dir := -player.camera.global_basis.z
+	var to_aim: Vector3 = rig.aim - player.camera.global_position
+	_check("луч из глаз смотрит в точку под прицелом камеры",
+		rig.aim != Vector3.INF and eye_dir.angle_to(to_aim) < deg_to_rad(1.0), "угол %.1f°" % rad_to_deg(eye_dir.angle_to(to_aim)))
+
+	var grate_gap := 14.0 - 12.6
+	await _stand(player, station, Vector3(12.6, 0.0, -8.0), west)
+	_check("душа с фазированием: маска плеча без permeable, камера проходит решётку",
+		rig.arm.collision_mask & C_Phasing.PERMEABLE_BIT == 0 and rig.arm.get_hit_length() > grate_gap + 1.0,
+		"маска %d, плечо %.2f м" % [rig.arm.collision_mask, rig.arm.get_hit_length()])
+
+	var body: E_Body = station.bodies.laid_bodies[0]
+	body.add_component(C_SnatchTargeted.new())
+	(player.get_component(C_BodySnatch) as C_BodySnatch).capture_requested = true
+	await _frames(3)
+	_check("на станции камеры захват hound удаётся", E_Player.is_embodied(), "")
+	await _stand(player, station, Vector3(12.6, 0.0, -8.0), west)
+	_check("во плоти маска плеча с permeable, камера упирается в решётку",
+		rig.arm.collision_mask & C_Phasing.PERMEABLE_BIT != 0 and rig.arm.get_hit_length() < grate_gap,
+		"маска %d, плечо %.2f м" % [rig.arm.collision_mask, rig.arm.get_hit_length()])
+	_check_worn_fade(player)
+
+	_check_others_fade(station.dummy)
+	var bars := (station.get_node("%Grate") as Node).find_children("*", "CSGBox3D", false, false)
+	var bar := bars[0] as CSGBox3D
+	var bar_fade := bar.material_override as BaseMaterial3D
+	_check("решётка гаснет вблизи дизером, свой материал брусков не тронут",
+		bar_fade != null and bar_fade.distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
+			and (bar.material as BaseMaterial3D).distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_DISABLED, "")
+	O_ExpelFromBody.expel(player, false)
+	await _frames(2)
+	_polygon.go_to(0)
+	await _frames(2)
+	_check("перенос на другую станцию возвращает кадр камере игрока, клочья и прежнюю интерполяцию",
+		not rig.active and player.camera.current and wisps.visible
+			and get_tree().physics_interpolation == interpolation_before, "")
+
+
+## Облик целиком в кадре: голова и руки уже не «только тенью», материалы — копии с дизером, общий не тронут.
+func _check_worn_fade(player: E_Player) -> void:
+	var worn := player.get_node(NodePath(O_BodyVisual.WORN_NODE))
+	var meshes := worn.find_children("*", "MeshInstance3D", true, false)
+	var shadow_only := meshes.filter(func(mesh: MeshInstance3D) -> bool:
+		return mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY)
+	_check("от третьего лица голова и руки облика в кадре", not meshes.is_empty() and shadow_only.is_empty(),
+		"только тенью: %s" % [shadow_only.map(func(mesh: Node) -> String: return mesh.name)])
+	var faded := _faded_meshes(meshes, BaseMaterial3D.DISTANCE_FADE_OBJECT_DITHER)
+	_check("надетый облик гаснет вблизи дизером, общий материал не тронут",
+		not faded.is_empty() and _shared_untouched(faded[0]), "")
+
+
+## Чужой объект станции — манекен — гаснет вблизи своей копией материала.
+func _check_others_fade(dummy: Node) -> void:
+	var faded := _faded_meshes(dummy.find_children("*", "MeshInstance3D", true, false), BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER)
+	_check("манекен-враг гаснет вблизи дизером, общий материал не тронут",
+		not faded.is_empty() and _shared_untouched(faded[0]), "")
+
+
+func _faded_meshes(meshes: Array, mode: BaseMaterial3D.DistanceFadeMode) -> Array:
+	return meshes.filter(func(mesh: MeshInstance3D) -> bool:
+		var material := mesh.get_active_material(0) as BaseMaterial3D if mesh.mesh != null else null
+		return material != null and material.distance_fade_mode == mode)
+
+
+func _shared_untouched(mesh: MeshInstance3D) -> bool:
+	var shared := mesh.mesh.surface_get_material(0) as BaseMaterial3D
+	return shared == null or shared.distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_DISABLED
+
+
+## Ставит игрока в точку станции [param at] (подошвой на пол) лицом по [param yaw] и даёт плечам отработать.
+func _stand(player: E_Player, station: Node3D, at: Vector3, yaw: float) -> void:
+	var rig := player as Node as Node3D
+	rig.global_position = station.to_global(at) + PlayerPlacement.lift(rig)
+	rig.global_rotation = Vector3(0.0, yaw, 0.0)
+	rig.reset_physics_interpolation()
+	(player.get_component(C_FPSCamera) as C_FPSCamera).pitch = 0.0
+	player.camera.rotation.x = 0.0
+	await _frames(4)
+
+
+# --- 9. Уход со сцены --------------------------------------------------------------
 func _check_exit() -> void:
 	_polygon.set_time_scale(0.25)
 	var clips: RefCounted = _polygon.clips
 	_polygon.queue_free()
 	await get_tree().process_frame
 	_check("уход с полигона возвращает темп времени", Engine.time_scale == 1.0, str(Engine.time_scale))
+	_check("и интерполяцию физики", get_tree().physics_interpolation
+		== ProjectSettings.get_setting("physics/common/physics_interpolation", false), "")
 	_check("и перестаёт подменять клипы в новых сценах", not get_tree().node_added.get_connections().any(
 		func(c: Dictionary) -> bool: return (c.callable as Callable).get_object() == clips), "")
 
