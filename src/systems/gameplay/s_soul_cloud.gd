@@ -51,7 +51,9 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 	# Дыхание: сгусток медленно расширяется и сжимается — живое, а не висящее облако.
 	var breath := 1.0 + cloud.breath_amount * sin(cloud.time * TAU / maxf(cloud.breath_period, 0.1))
 	var spread := lerpf(0.25, 1.0, grow) * breath
-	var center := (entity as Node as Node3D).global_position
+	# Интерполированный, а не global_position: риг двигается в физкадре, и голова, поставленная по его тактам, на
+	# виде снаружи скачет. Голова сама не интерполируется (physics_interpolation_mode в сцене) — её ставим мы.
+	var center := (entity as Node as Node3D).get_global_transform_interpolated().origin
 	_record(cloud, center, delta)
 	# Голова стоит в центре души, карточки — относительно неё: AABB вокруг узла, а не вокруг начала мира,
 	# где уровень может и не лежать.
