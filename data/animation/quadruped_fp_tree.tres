@@ -1,4 +1,4 @@
-[gd_resource type="AnimationNodeBlendTree" format=3]
+[gd_resource type="AnimationNodeBlendTree" format=3 uid="uid://bw8ujtff8e212"]
 
 [sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_758vt"]
 fadein_time = 0.06

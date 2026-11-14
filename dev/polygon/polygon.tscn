@@ -40,7 +40,7 @@ apply_depth_lighting = false
 [node name="Arena" type="Node3D" parent="." index="2" unique_id=1618813372]
 
 [node name="Floor" type="CSGBox3D" parent="Arena" index="0" unique_id=1836558919]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.006971121, -0.49179292, -0.007678032)
 use_collision = true
 size = Vector3(60, 1, 60)
 material = SubResource("Material_floor")
