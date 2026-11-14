@@ -77,13 +77,7 @@ component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health
 [node name="Visual" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 
-[node name="hound_body" parent="Visual/hound_skel/Skeleton3D"]
-material_override = ExtResource("11_tone")
-
-[node name="hound_head" parent="Visual/hound_skel/Skeleton3D"]
-material_override = ExtResource("11_tone")
-
-[node name="hound_arms" parent="Visual/hound_skel/Skeleton3D"]
+[node name="hound" parent="Visual/hound_skel/Skeleton3D"]
 material_override = ExtResource("11_tone")
 
 [node name="CollisionShape3D" parent="."]

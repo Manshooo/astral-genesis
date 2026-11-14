@@ -4,13 +4,10 @@
 
 [node name="SK_hound" instance=ExtResource("1_glb")]
 
-[node name="hound_arms" parent="hound_skel/Skeleton3D"]
+[node name="hound" parent="hound_skel/Skeleton3D"]
 extra_cull_margin = 2.5
 
-[node name="hound_body" parent="hound_skel/Skeleton3D"]
-extra_cull_margin = 2.5
-
-[node name="hound_head" parent="hound_skel/Skeleton3D"]
+[node name="hound_eyes" parent="hound_skel/Skeleton3D"]
 extra_cull_margin = 2.5
 
 [node name="Springs" type="SpringBoneSimulator3D" parent="hound_skel/Skeleton3D"]
