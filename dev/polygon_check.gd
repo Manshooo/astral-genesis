@@ -354,6 +354,7 @@ func _check_camera_station() -> void:
 	var cloud := player.get_component(C_SoulCloud) as C_SoulCloud
 	var wisps := player.get_node(cloud.wisps_path) as Node3D
 	_check("клочья души у камеры в глазах спрятаны", not wisps.visible, "")
+	await _check_body_turn(player, station, view)
 
 	# Длинное плечо, чтобы стена и решётка оказались ближе него.
 	var min_arm := view.min_arm
@@ -413,6 +414,43 @@ func _check_camera_station() -> void:
 	view.min_arm = min_arm
 
 
+## Шаг 3: мышь крутит камеру, а не тело; «вперёд» — куда смотрит камера; тело разворачивается по направлению
+## передвижения, а на захвате — сразу к прицелу. Душа на арене у маркера станции, вокруг пусто.
+func _check_body_turn(player: E_Player, station: Node3D, view: C_ThirdPersonCamera) -> void:
+	var rig := player as Node as Node3D
+	await _stand(player, station, Vector3(0.0, 0.0, 9.0), 0.0)
+	var motion := InputEventMouseMotion.new()
+	motion.relative = Vector2(300.0, 0.0)
+	Input.parse_input_event(motion)
+	await _frames(2)
+	_check("мышь крутит камеру, а тело стоит", absf(wrapf(view.yaw, -PI, PI)) > 0.1 and absf(rig.global_rotation.y) < 0.01,
+		"камера %.2f, тело %.2f" % [view.yaw, rig.global_rotation.y])
+
+	var west := PI * 0.5
+	view.yaw = west
+	view.pitch = 0.0
+	Input.action_press("move_forward")
+	await _frames(20)
+	var velocity := (player.get_component(C_Velocity) as C_Velocity).velocity
+	var body_yaw := rig.global_rotation.y
+	Input.action_release("move_forward")
+	_check("«вперёд» идёт туда, куда смотрит камера, а не тело",
+		velocity.length() > 0.5 and velocity.normalized().dot(Vector3.LEFT) > 0.95, "скорость %s" % velocity)
+	_check("тело развернулось по направлению передвижения", absf(wrapf(body_yaw - west, -PI, PI)) < deg_to_rad(10.0),
+		"тело %.1f°, ждали %.1f°" % [rad_to_deg(body_yaw), rad_to_deg(west)])
+
+	# Душа летит по инерции и развернула бы тело обратно к скорости — останавливаем её.
+	(player.get_component(C_Velocity) as C_Velocity).velocity = Vector3.ZERO
+	view.yaw = PI  # камера на юг, тело — на запад
+	await _frames(3)
+	(player.get_component(C_BodySnatch) as C_BodySnatch).capture_requested = true
+	await _frames(2)
+	var aim_yaw := S_BodyTurn.yaw_of(view.aim_point - rig.global_position)
+	_check("на захвате тело сразу встаёт к прицелу",
+		absf(wrapf(rig.global_rotation.y - aim_yaw, -PI, PI)) < deg_to_rad(5.0) and absf(wrapf(aim_yaw - PI, -PI, PI)) < deg_to_rad(20.0),
+		"тело %.1f°, прицел %.1f°" % [rad_to_deg(rig.global_rotation.y), rad_to_deg(aim_yaw)])
+
+
 ## Облик целиком в кадре: голова и руки уже не «только тенью», материалы — копии с дизером, общий не тронут.
 func _check_worn_fade(player: E_Player) -> void:
 	var worn := player.get_node(NodePath(O_BodyVisual.WORN_NODE))
@@ -444,14 +482,13 @@ func _shared_untouched(mesh: MeshInstance3D) -> bool:
 	return shared == null or shared.distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_DISABLED
 
 
-## Ставит игрока в точку станции [param at] (подошвой на пол) лицом по [param yaw] и даёт плечам отработать.
+## Ставит игрока в точку станции [param at] (подошвой на пол), тело и взгляд — по [param yaw], и даёт плечам отработать.
 func _stand(player: E_Player, station: Node3D, at: Vector3, yaw: float) -> void:
 	var rig := player as Node as Node3D
 	rig.global_position = station.to_global(at) + PlayerPlacement.lift(rig)
 	rig.global_rotation = Vector3(0.0, yaw, 0.0)
 	rig.reset_physics_interpolation()
-	(player.get_component(C_FPSCamera) as C_FPSCamera).pitch = 0.0
-	player.camera.rotation.x = 0.0
+	PlayerPlacement.face_camera(rig)
 	await _frames(4)
 
 

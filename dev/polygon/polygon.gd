@@ -64,6 +64,7 @@ func go_to(index: int) -> String:
 	player.global_rotation = Vector3(0.0, spawn.global_rotation.y, 0.0)
 	# Перенос — телепорт: с интерполяцией физики риг иначе проехал бы через полигон за один тик.
 	player.reset_physics_interpolation()
+	PlayerPlacement.face_camera(player)
 	for other in all:
 		if other != station and other.has_method(&"depart"):
 			other.depart()

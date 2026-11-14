@@ -30,6 +30,19 @@ static func in_room(player: Node3D, room: LayerStreamer.SpawnedRoom, came_from: 
 		player.global_transform = room_node.global_transform
 	player.global_position += lift(player)
 	player.reset_physics_interpolation()
+	face_camera(player)
+
+
+## Авторский поворот рига отдаётся и камере: взгляд живёт в C_ThirdPersonCamera, и без этого игрок вошёл бы, глядя
+## туда же, куда смотрел до перехода, а не туда, куда смотрит SpawnPoint.
+static func face_camera(player: Node3D) -> void:
+	var entity := player as Node as Entity
+	if entity == null:
+		return
+	var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+	if view != null:
+		view.yaw = player.global_rotation.y
+		view.pitch = 0.0
 
 
 ## Загрузка сейва в коридоре: у ветки нет SpawnPoint и двери «обратно» — игрок на её первый тайл.

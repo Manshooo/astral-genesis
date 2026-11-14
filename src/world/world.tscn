@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cdu5tlyk72uu4" path="res://addons/gecs/ecs/world.gd" id="1_6xmxd"]
 [ext_resource type="Script" uid="uid://dnjtb1bxfp3vs" path="res://src/world/main.gd" id="1_mmdvd"]
 [ext_resource type="Script" uid="uid://b3vi2ingux88g" path="res://addons/gecs/lib/system_group.gd" id="4_mmdvd"]
-[ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/gameplay/s_fps_look.gd" id="5_hg6dy"]
+[ext_resource type="Script" uid="uid://bv6sj6f2gs4kb" path="res://src/systems/gameplay/s_camera_look.gd" id="5_hg6dy"]
 [ext_resource type="Script" uid="uid://bjjj61ge8yfi" path="res://src/systems/input/s_player_input.gd" id="5_l0av5"]
 [ext_resource type="Script" uid="uid://idnwtudukdc5" path="res://src/systems/input/s_interact_input.gd" id="6_0wvc1"]
 [ext_resource type="Script" uid="uid://csppnw7lps0iy" path="res://src/systems/physics/s_enemy_ai.gd" id="7_enemyai"]
@@ -52,6 +52,7 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_first_person_motion.gd" id="47_fpmotion"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_third_person_camera.gd" id="48_tpcamera"]
 [ext_resource type="Script" path="res://src/systems/physics/s_camera_aim.gd" id="49_cameraaim"]
+[ext_resource type="Script" path="res://src/systems/physics/s_body_turn.gd" id="50_bodyturn"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -87,7 +88,7 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 script = ExtResource("4_mmdvd")
 metadata/_custom_type_script = "uid://b3vi2ingux88g"
 
-[node name="S_FPSLook" type="Node" parent="World/Systems/gameplay" unique_id=623113337]
+[node name="S_CameraLook" type="Node" parent="World/Systems/gameplay" unique_id=623113337]
 script = ExtResource("5_hg6dy")
 group = &"gameplay"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
@@ -214,6 +215,10 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 
 [node name="S_CameraAim" type="Node" parent="World/Systems/physics"]
 script = ExtResource("49_cameraaim")
+group = &"physics"
+
+[node name="S_BodyTurn" type="Node" parent="World/Systems/physics"]
+script = ExtResource("50_bodyturn")
 group = &"physics"
 
 [node name="S_SnatchTargetDetector" type="Node" parent="World/Systems/physics" unique_id=1408522431]

@@ -2,7 +2,7 @@
 # Группа "gameplay": ставит камеру туда, где голова облика (стоя, на рыси, в беге, в укусе — по C_FirstPersonMotion
 # тела), качает её в такт клипу хода и клюёт ею при укусе. Камера сдвигается узлом — лучи атаки и захвата идут из
 # головы; у стены её держит EyeReach (SpringArm3D кастует сам в своём физкадре — запроса в space-state отсюда нет,
-# Jolt на потоке). Качка — h_offset/v_offset, только картинка. Тангаж пишется каждый кадр: S_FPSLook пишет его лишь
+# Jolt на потоке). Качка — h_offset/v_offset, только картинка. Тангаж пишется каждый кадр: S_CameraLook пишет его лишь
 # при движении мыши. Вики: [[Захват тела]].
 class_name S_FirstPersonMotion
 extends System
@@ -18,7 +18,7 @@ func query() -> QueryBuilder:
 
 
 func deps() -> Dictionary[int, Array]:
-	return {Runs.After: [S_FPSLook, S_BodyAnimation]}
+	return {Runs.After: [S_CameraLook, S_BodyAnimation]}
 
 
 func process(entities: Array[Entity], _components: Array, delta: float) -> void:
@@ -46,7 +46,9 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		camera.position = look.eye_position + _reach(player, motion, look.eye_position, head)
 		camera.h_offset = sway.x * strength
 		camera.v_offset = sway.y * strength
-		camera.rotation.x = look.pitch - (deg_to_rad(motion.bite_dip) * bite * strength if motion else 0.0)
+		var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+		var pitch := view.pitch if view != null else 0.0
+		camera.rotation.x = pitch - (deg_to_rad(motion.bite_dip) * bite * strength if motion else 0.0)
 		camera.rotation.z = sway.z * strength
 
 

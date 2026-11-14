@@ -126,8 +126,8 @@ func _check_worn(world: World) -> void:
 			func(geo: GeometryInstance3D) -> bool:
 				return geo.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		).map(func(geo: Node) -> String: return String(geo.name))
-		shadows.sort()
-		_check("голова и руки облика — только тенью, тело видно", shadows == ["hound_arms", "hound_head"], str(shadows))
+		# От третьего лица облик виден целиком, и арт выгружает его единым мешем (решение 05.11, «Вид от третьего лица»).
+		_check("облик виден целиком: ни одной геометрии «только тенью»", shadows.is_empty(), str(shadows))
 		_check("рэгдолл с надетого облика снят", worn.find_children("*", "PhysicalBone3D", true, false).is_empty(), "")
 		var feet := RS_EntityVisuals.transform_relative_to(worn, player).origin.y
 		_check("облик сел подошвами на пол", is_equal_approx(feet, -player.foot_offset().y),
@@ -162,11 +162,16 @@ func _check_worn(world: World) -> void:
 	await _animate(1)
 	var look := player.get_component(C_FPSCamera) as C_FPSCamera
 	_check("после выхода камера без качки", player.camera.h_offset == 0.0 and player.camera.v_offset == 0.0
-		and player.camera.rotation.z == 0.0 and is_equal_approx(player.camera.rotation.x, look.pitch)
+		and player.camera.rotation.z == 0.0 and is_equal_approx(player.camera.rotation.x, _pitch(player))
 		and player.camera.position == look.eye_position, str(player.camera.position))
 	world.remove_entity(player)
 	player.queue_free()
 	await get_tree().process_frame
+
+
+## Тангаж взгляда — у камеры от третьего лица (C_ThirdPersonCamera), камера в глазах повторяет его.
+func _pitch(player: E_Player) -> float:
+	return (player.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera).pitch
 
 
 ## Камера в hound стоит там, где голова облика: стоя чуть впереди маркера Eyes, в беге — на метр ниже и впереди,
@@ -228,11 +233,11 @@ func _check_camera_motion(player: E_Player) -> void:
 	attack.cooldown_left = attack.interval
 	await _animate(int(motion.bite_time * motion.bite_peak * 60.0))
 	_check("укус выносит камеру вперёд и клюёт вниз",
-		camera.position.z < stand.z - 0.2 and camera.rotation.x < look.pitch - 0.03,
-		"z %.3f при %.3f, тангаж %.3f при %.3f" % [camera.position.z, stand.z, camera.rotation.x, look.pitch])
+		camera.position.z < stand.z - 0.2 and camera.rotation.x < _pitch(player) - 0.03,
+		"z %.3f при %.3f, тангаж %.3f при %.3f" % [camera.position.z, stand.z, camera.rotation.x, _pitch(player)])
 	await _animate(40)
 	_check("укус отыграл — камера вернулась",
-		is_equal_approx(camera.rotation.x, look.pitch) and camera.position.distance_to(stand) < 0.01, str(camera.position))
+		is_equal_approx(camera.rotation.x, _pitch(player)) and camera.position.distance_to(stand) < 0.01, str(camera.position))
 	SettingsManager.settings.camera_motion = players_motion
 
 

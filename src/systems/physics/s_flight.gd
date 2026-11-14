@@ -26,11 +26,15 @@ func process(entities: Array[Entity], components: Array, delta: float) -> void:
 
 		var target := Vector3.ZERO
 		if inp.move_direction != Vector3.ZERO:
-			# По взгляду игрока — рыскание рига и тангаж, а не базис камеры в глазах: её наводят в точку под
+			# По взгляду игрока — рыскание и тангаж камеры, а не базис камеры в глазах: её наводят в точку под
 			# прицелом, и у близкой стены или решётки «вперёд» уходило бы круто вверх или вниз.
-			var look := player.get_component(C_FPSCamera) as C_FPSCamera
-			var pitch := look.pitch if look != null else 0.0
-			var basis := Basis.from_euler(Vector3(pitch, (player as Node as Node3D).global_rotation.y, 0.0))
+			var view := player.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+			var yaw := (player as Node as Node3D).global_rotation.y
+			var pitch := 0.0
+			if view != null and view.yaw != INF:
+				yaw = view.yaw
+				pitch = view.pitch
+			var basis := Basis.from_euler(Vector3(pitch, yaw, 0.0))
 			target = (basis * inp.move_direction).normalized() * flight.speed
 
 		# Разгон и затухание — разные числа: набирать ход охотнее, чем останавливаться.

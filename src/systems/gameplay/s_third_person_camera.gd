@@ -16,7 +16,7 @@ func query() -> QueryBuilder:
 
 ## После взгляда (рыскание и тангаж этого кадра) и после качки первого лица: наведение глаз ниже её перекрывает.
 func deps() -> Dictionary[int, Array]:
-	return {Runs.After: [S_FPSLook, S_FirstPersonMotion]}
+	return {Runs.After: [S_CameraLook, S_FirstPersonMotion]}
 
 
 func process(entities: Array[Entity], _components: Array, delta: float) -> void:
@@ -44,8 +44,9 @@ static func place(player: E_Player, view: C_ThirdPersonCamera, look: C_FPSCamera
 		eyes = look.eye_position.y  # база глаз без качки S_FirstPersonMotion
 	var lift := maxf(eyes + view.pivot_lift * size.x, view.min_pivot - player.foot_offset().y)
 	player.camera_rig.global_position = rig.get_global_transform_interpolated().origin + Vector3.UP * lift
-	# Рыскание — с самого рига, не с интерполированного: его пишет мышь в кадре отрисовки, а не физика.
-	player.camera_rig.global_rotation = Vector3(look.pitch, rig.global_rotation.y, 0.0)
+	if view.yaw == INF:
+		view.yaw = rig.global_rotation.y  # в первый кадр камера смотрит туда же, куда тело
+	player.camera_rig.global_rotation = Vector3(view.pitch, view.yaw, 0.0)
 
 	var mask := (player as Node as CollisionObject3D).collision_mask & GEOMETRY_MASK
 	player.shoulder.collision_mask = mask
