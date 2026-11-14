@@ -333,21 +333,24 @@ func _check_player_fov() -> void:
 	var before := SettingsManager.settings
 	var player := (load("res://src/entities/player/e_player.tscn") as PackedScene).instantiate() as E_Player
 	add_child(player)
-	var start_ok := is_equal_approx(player.camera.fov, before.fov)
+	# Кадр рисует камера от третьего лица; сейв разработчика мог остаться со шкалы первого лица — сверяем с прижатым.
+	var camera := player.view_camera
+	var start_ok := is_equal_approx(camera.fov, clampf(before.fov, RS_Settings.FOV_MIN, RS_Settings.FOV_MAX))
 	var narrow := before.copy()
-	narrow.fov = 95.0 if not is_equal_approx(before.fov, 95.0) else 105.0
+	var inside := lerpf(RS_Settings.FOV_MIN, RS_Settings.FOV_MAX, 0.25)
+	narrow.fov = inside if not is_equal_approx(before.fov, inside) else inside + 5.0
 	SettingsManager.settings = narrow
 	_check("поле зрения из настроек доходит до камеры игрока, по горизонтали",
-		start_ok and is_equal_approx(player.camera.fov, narrow.fov)
-			and player.camera.keep_aspect == Camera3D.KEEP_WIDTH,
+		start_ok and is_equal_approx(camera.fov, narrow.fov)
+			and camera.keep_aspect == Camera3D.KEEP_WIDTH,
 		"на старте %.1f при %.1f, после смены %.1f при %.1f" % [
-			player.camera.fov if start_ok else -1.0, before.fov, player.camera.fov, narrow.fov])
-	# Сейв со старой шкалы 60–120: камера держит границы сама.
+			camera.fov if start_ok else -1.0, before.fov, camera.fov, narrow.fov])
+	# Сейв со старой шкалы (первое лицо, до 110): камера держит границы сама.
 	var wide := before.copy()
 	wide.fov = 120.0
 	SettingsManager.settings = wide
 	_check("поле зрения из старого сейва прижимается к границам",
-		is_equal_approx(player.camera.fov, RS_Settings.FOV_MAX), "%.1f" % player.camera.fov)
+		is_equal_approx(camera.fov, RS_Settings.FOV_MAX), "%.1f" % camera.fov)
 	SettingsManager.settings = before
 	player.free()
 

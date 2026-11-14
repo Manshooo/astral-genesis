@@ -109,6 +109,8 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 		if lift == Vector3.ZERO and player:
 			lift = player.foot_offset()
 		soul_node.global_position = body_node.global_position + lift
+		# Вселение — телепорт: без сброса интерполяции облик и камера проехали бы к телу за тик.
+		soul_node.reset_physics_interpolation()
 
 	# 4. Поглотить тело насовсем: помечаем в сейве сразу — комплекс из сида, без пометки возродился бы дубликатом.
 	var origin := body.get_component(C_BodyOrigin) as C_BodyOrigin

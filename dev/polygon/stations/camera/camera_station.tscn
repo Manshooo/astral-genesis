@@ -1,7 +1,6 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://dev/polygon/stations/camera/camera_station.gd" id="1_station"]
-[ext_resource type="PackedScene" path="res://dev/polygon/stations/camera/third_person_rig.tscn" id="2_rig"]
 [ext_resource type="Script" path="res://dev/polygon/stations/camera/body_row.gd" id="3_row"]
 [ext_resource type="PackedScene" path="res://src/levels/procedural/corridors/corridor_straight.tscn" id="4_straight"]
 [ext_resource type="PackedScene" path="res://src/levels/procedural/corridors/corridor_corner.tscn" id="5_corner"]
@@ -49,9 +48,6 @@ dummy_scene = ExtResource("13_enemy")
 
 [node name="Spawn" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 9)
-
-[node name="ThirdPersonRig" parent="." instance=ExtResource("2_rig")]
-unique_name_in_owner = true
 
 [node name="Course" type="Node3D" parent="."]
 

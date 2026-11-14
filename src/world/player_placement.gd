@@ -1,6 +1,7 @@
 # res://src/world/player_placement.gd
 # Куда поставить игрока после перехода: к двери, ведущей обратно, на тайл коридора, в SpawnPoint. Чистая геометрия над заспавненным слоем — не в RunManager и не в LayerStreamer. Поворот игрока НЕ трогаем (кроме входа
 # через SpawnPoint): доворот при взаимодействии под углом дезориентирует; тангаж на камере (S_FPSLook).
+# Каждая постановка — телепорт: сбрасываем интерполяцию физики, иначе риг и камера за ним проехали бы через комплекс за тик.
 class_name PlayerPlacement
 extends RefCounted
 
@@ -20,6 +21,7 @@ static func in_room(player: Node3D, room: LayerStreamer.SpawnedRoom, came_from: 
 		# Меняем ТОЛЬКО origin: basis (рыскание) остаётся игроков.
 		player.global_position = arrival_point(exit_entity, room.face_of(exit_entity).w, room_node, spawn_point) \
 			+ lift(player)
+		player.reset_physics_interpolation()
 		return
 
 	if spawn_point:
@@ -27,6 +29,7 @@ static func in_room(player: Node3D, room: LayerStreamer.SpawnedRoom, came_from: 
 	else:
 		player.global_transform = room_node.global_transform
 	player.global_position += lift(player)
+	player.reset_physics_interpolation()
 
 
 ## Загрузка сейва в коридоре: у ветки нет SpawnPoint и двери «обратно» — игрок на её первый тайл.
@@ -35,6 +38,7 @@ static func in_corridor(player: Node3D, tiles: Array) -> void:
 		return
 	var tile := tiles[0] as Node3D
 	player.global_position = tile.global_position + lift(player)
+	player.reset_physics_interpolation()
 
 
 ## От точки пола до origin игрока: origin рига — центр коллайдера, и габарит надетого тела (капсула hound 2.5 м)
@@ -54,6 +58,7 @@ static func in_front_of(
 	if face.w != GridTopology.NO_SIDE:
 		cell = plan.topology.neighbour(GridTopology.face_cell(face), face.w)
 	player.global_position = plan.embedding.cell_origin(cell) + lift(player)
+	player.reset_physics_interpolation()
 
 
 ## Безопасная точка перед дверью: отступаем перпендикулярно ЕЁ СТЕНЕ вглубь комнаты (origin двери — в плоскости стены на высоте полотна), высота от SpawnPoint. Направление — по стороне грани [param side]

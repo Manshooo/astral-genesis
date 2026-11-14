@@ -50,6 +50,8 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_decay_sound.gd" id="45_decaysound"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_body_animation.gd" id="46_bodyanim"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_first_person_motion.gd" id="47_fpmotion"]
+[ext_resource type="Script" path="res://src/systems/gameplay/s_third_person_camera.gd" id="48_tpcamera"]
+[ext_resource type="Script" path="res://src/systems/physics/s_camera_aim.gd" id="49_cameraaim"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -159,6 +161,10 @@ group = &"gameplay"
 script = ExtResource("47_fpmotion")
 group = &"gameplay"
 
+[node name="S_ThirdPersonCamera" type="Node" parent="World/Systems/gameplay"]
+script = ExtResource("48_tpcamera")
+group = &"gameplay"
+
 [node name="physics" type="Node" parent="World/Systems" unique_id=483502012]
 script = ExtResource("4_mmdvd")
 metadata/_custom_type_script = "uid://b3vi2ingux88g"
@@ -205,6 +211,10 @@ metadata/_custom_type_script = "uid://dyrahdwwpjpri"
 script = ExtResource("9_eo0a0")
 group = &"physics"
 metadata/_custom_type_script = "uid://dyrahdwwpjpri"
+
+[node name="S_CameraAim" type="Node" parent="World/Systems/physics"]
+script = ExtResource("49_cameraaim")
+group = &"physics"
 
 [node name="S_SnatchTargetDetector" type="Node" parent="World/Systems/physics" unique_id=1408522431]
 script = ExtResource("19_snatchdet")

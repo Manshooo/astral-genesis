@@ -311,7 +311,7 @@ func _check_screens() -> void:
 		UIManager.close_top()
 		await _frames(2)
 		_check("%s: закрытие возвращает кадр и ввод игроку" % opener,
-			player.camera.current and not player.has_component(C_UIBlocked), "")
+			player.view_camera.current and not player.has_component(C_UIBlocked), "")
 
 
 # --- 7. Раздел «Полигон» меню отладки ----------------------------------------------
@@ -345,38 +345,50 @@ func _check_menu() -> void:
 # --- 8. Станция камеры от третьего лица --------------------------------------------
 func _check_camera_station() -> void:
 	var station := _polygon.get_node("World/Entities/Stations/Camera") as Node3D
-	var rig: Node3D = station.rig
 	var player := E_Player.find() as E_Player
-	var all: Array[Node3D] = _polygon.stations()
-	var interpolation_before := get_tree().physics_interpolation
-	_polygon.go_to(all.find(station))
+	var view := player.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+	_polygon.go_to(_polygon.stations().find(station))
 	await _frames(2)
-	_check("перенос на станцию камеры отдаёт кадр камере от третьего лица и включает интерполяцию физики",
-		rig.active and rig.camera.current and get_tree().physics_interpolation, "")
+	_check("кадр ведёт камера от третьего лица, а не камера в глазах", player.view_camera.current, "")
+	_check("интерполяция физики включена", get_tree().physics_interpolation, "")
 	var cloud := player.get_component(C_SoulCloud) as C_SoulCloud
 	var wisps := player.get_node(cloud.wisps_path) as Node3D
-	_check("клочья души у камеры игрока спрятаны", not wisps.visible, "")
+	_check("клочья души у камеры в глазах спрятаны", not wisps.visible, "")
 
 	# Длинное плечо, чтобы стена и решётка оказались ближе него.
-	rig.min_arm = 6.0
+	var min_arm := view.min_arm
+	view.min_arm = 6.0
 	var west := PI * 0.5  # лицом на запад — камера за спиной, на востоке
 	await _stand(player, station, Vector3(0.0, 0.0, 0.0), west)
 	var wall_x := 2.9  # внутреннее лицо восточной стены прямого коридора (6 м шириной, стена 0.1)
-	var camera_x := station.to_local(rig.camera.global_position).x
+	var camera_x := station.to_local(player.view_camera.global_position).x
 	_check("у стены коридора плечо короче и камера не за стеной",
-		rig.arm.get_hit_length() < 5.0 and camera_x < wall_x, "плечо %.2f м, камера x %.2f" % [rig.arm.get_hit_length(), camera_x])
-	var pivot_height := rig.global_position.y - station.global_position.y
-	_check("опора камеры маленькой души не у пола", pivot_height >= rig.min_pivot - 0.01, "%.2f м над полом" % pivot_height)
+		player.arm.get_hit_length() < 5.0 and camera_x < wall_x,
+		"плечо %.2f м, камера x %.2f" % [player.arm.get_hit_length(), camera_x])
+	var pivot_height := player.camera_rig.global_position.y - station.global_position.y
+	_check("опора камеры маленькой души не у пола", pivot_height >= view.min_pivot - 0.01, "%.2f м над полом" % pivot_height)
 	var eye_dir := -player.camera.global_basis.z
-	var to_aim: Vector3 = rig.aim - player.camera.global_position
+	var to_aim := view.aim_point - player.camera.global_position
 	_check("луч из глаз смотрит в точку под прицелом камеры",
-		rig.aim != Vector3.INF and eye_dir.angle_to(to_aim) < deg_to_rad(1.0), "угол %.1f°" % rad_to_deg(eye_dir.angle_to(to_aim)))
+		view.aim_point != Vector3.INF and eye_dir.angle_to(to_aim) < deg_to_rad(1.0),
+		"угол %.1f°" % rad_to_deg(eye_dir.angle_to(to_aim)))
 
 	var grate_gap := 14.0 - 12.6
 	await _stand(player, station, Vector3(12.6, 0.0, -8.0), west)
 	_check("душа с фазированием: маска плеча без permeable, камера проходит решётку",
-		rig.arm.collision_mask & C_Phasing.PERMEABLE_BIT == 0 and rig.arm.get_hit_length() > grate_gap + 1.0,
-		"маска %d, плечо %.2f м" % [rig.arm.collision_mask, rig.arm.get_hit_length()])
+		player.arm.collision_mask & C_Phasing.PERMEABLE_BIT == 0 and player.arm.get_hit_length() > grate_gap + 1.0,
+		"маска %d, плечо %.2f м" % [player.arm.collision_mask, player.arm.get_hit_length()])
+
+	# Лицом к решётке в шаге от неё: точка под прицелом — на решётке, выше и рядом с глазами души. Живой прогон
+	# 05.11: полёт шёл по камере в глазах, наведённой в эту точку, и «вперёд» уходило вертикально.
+	await _stand(player, station, Vector3(13.4, 0.0, -8.0), -west)
+	Input.action_press("move_forward")
+	await _frames(6)
+	var flight := (player.get_component(C_Velocity) as C_Velocity).velocity
+	Input.action_release("move_forward")
+	_check("у решётки полёт вперёд идёт горизонтально, а не вверх или вниз",
+		Vector2(flight.x, flight.z).length() > 0.5 and absf(flight.y) < 0.1 * Vector2(flight.x, flight.z).length(),
+		"скорость %s" % flight)
 
 	var body: E_Body = station.bodies.laid_bodies[0]
 	body.add_component(C_SnatchTargeted.new())
@@ -385,8 +397,8 @@ func _check_camera_station() -> void:
 	_check("на станции камеры захват hound удаётся", E_Player.is_embodied(), "")
 	await _stand(player, station, Vector3(12.6, 0.0, -8.0), west)
 	_check("во плоти маска плеча с permeable, камера упирается в решётку",
-		rig.arm.collision_mask & C_Phasing.PERMEABLE_BIT != 0 and rig.arm.get_hit_length() < grate_gap,
-		"маска %d, плечо %.2f м" % [rig.arm.collision_mask, rig.arm.get_hit_length()])
+		player.arm.collision_mask & C_Phasing.PERMEABLE_BIT != 0 and player.arm.get_hit_length() < grate_gap,
+		"маска %d, плечо %.2f м" % [player.arm.collision_mask, player.arm.get_hit_length()])
 	_check_worn_fade(player)
 
 	_check_others_fade(station.dummy)
@@ -398,11 +410,7 @@ func _check_camera_station() -> void:
 			and (bar.material as BaseMaterial3D).distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_DISABLED, "")
 	O_ExpelFromBody.expel(player, false)
 	await _frames(2)
-	_polygon.go_to(0)
-	await _frames(2)
-	_check("перенос на другую станцию возвращает кадр камере игрока, клочья и прежнюю интерполяцию",
-		not rig.active and player.camera.current and wisps.visible
-			and get_tree().physics_interpolation == interpolation_before, "")
+	view.min_arm = min_arm
 
 
 ## Облик целиком в кадре: голова и руки уже не «только тенью», материалы — копии с дизером, общий не тронут.

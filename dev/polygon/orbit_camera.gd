@@ -26,6 +26,8 @@ func look_at_target(focus: Node3D, from_distance: float, height := 0.0) -> void:
 	target = focus
 	distance = from_distance
 	offset = Vector3(0.0, height, 0.0)
+	# Облёт ставится в кадре отрисовки — интерполяция физики тянула бы его на тик позади.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	make_current()
 	_place()
 
@@ -35,8 +37,8 @@ func _exit_tree() -> void:
 	if not current:
 		return
 	var player := E_Player.find() as E_Player
-	if player != null and player.camera != null:
-		player.camera.make_current()
+	if player != null and player.view_camera != null:
+		player.view_camera.make_current()
 
 
 func _process(_delta: float) -> void:

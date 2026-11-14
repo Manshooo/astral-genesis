@@ -15,6 +15,11 @@
 [ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_head.tres" id="13_head"]
 [ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_trail.tres" id="14_trail"]
 [ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_wisps.tres" id="15_wisps"]
+[ext_resource type="Script" path="res://src/components/gameplay/c_third_person_camera.gd" id="16_tpcam"]
+[ext_resource type="PackedScene" path="res://src/entities/player/camera_rig.tscn" id="17_rig"]
+
+[sub_resource type="Resource" id="Resource_tpcam"]
+script = ExtResource("16_tpcam")
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("3_6qelm")
@@ -132,7 +137,7 @@ turbulence_influence_max = 0.05
 collision_layer = 2
 collision_mask = 49
 script = ExtResource("1_yrckd")
-component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing"), SubResource("Resource_glow"), SubResource("Resource_decaysound"), SubResource("Resource_cloud")])
+component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing"), SubResource("Resource_glow"), SubResource("Resource_decaysound"), SubResource("Resource_cloud"), SubResource("Resource_tpcam")])
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
 extra_cull_margin = 3.0
@@ -201,3 +206,5 @@ active = false
 collision_mask = 17
 shape = SubResource("SphereShape3D_eyereach")
 spring_length = 0.0
+
+[node name="CameraRig" parent="." instance=ExtResource("17_rig")]

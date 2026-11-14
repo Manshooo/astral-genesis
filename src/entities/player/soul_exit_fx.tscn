@@ -67,6 +67,7 @@ turbulence_influence_min = 0.02
 turbulence_influence_max = 0.05
 
 [node name="SoulExitFx" type="Node3D"]
+physics_interpolation_mode = 2
 script = ExtResource("1_fx")
 burn_material = ExtResource("3_burn")
 

@@ -9,6 +9,11 @@ func query() -> QueryBuilder:
 	return q.with_all([C_SoulCloud])
 
 
+## Карточки сортируются от камеры — от той, что уже стоит в этом кадре.
+func deps() -> Dictionary[int, Array]:
+	return {Runs.After: [S_ThirdPersonCamera]}
+
+
 func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 	for entity in entities:
 		var cloud := entity.get_component(C_SoulCloud) as C_SoulCloud
