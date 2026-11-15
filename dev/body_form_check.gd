@@ -82,7 +82,7 @@ func _run(world: World) -> void:
 	await get_tree().process_frame
 
 	var collision := player.get_node_or_null("CollisionShape3D") as CollisionShape3D
-	var camera := player.get_node_or_null("Camera3D") as Camera3D
+	var camera := player.get_node_or_null("Eyes") as Node3D  # глаза формы: маркер, по нему встаёт камера
 	var ghost_shape := collision.shape
 	var ghost_camera := camera.transform
 	var ghost_lift := player.foot_offset().y

@@ -11,7 +11,7 @@ const GEOMETRY_MASK := 1 | 1 << 4 | 1 << 5
 
 
 func query() -> QueryBuilder:
-	return q.with_all([C_ThirdPersonCamera, C_FPSCamera])
+	return q.with_all([C_ThirdPersonCamera, C_Eyes])
 
 
 ## После взгляда: рыскание и тангаж этого кадра.
@@ -25,20 +25,19 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		if player == null or player.camera_rig == null:
 			continue
 		var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
-		var look := entity.get_component(C_FPSCamera) as C_FPSCamera
+		var look := entity.get_component(C_Eyes) as C_Eyes
 		place(player, view, look, delta)
-		_hide_first_person(player)
-		# Экран со своей камерой (облёт полигона) кадр забирает, а закрываясь, может отдать его камере глаз.
+		# Экран со своей камерой (облёт полигона) кадр забирает, а закрывшись, оставляет движку выбирать.
 		var current := player.get_viewport().get_camera_3d()
-		if current == null or current == player.camera:
+		if current == null:
 			player.view_camera.make_current()
 
 
 ## Опора, плечи и сторона; [param delta] ноль — сразу на место, без доезда сдвига (вход в мир, перенос).
-static func place(player: E_Player, view: C_ThirdPersonCamera, look: C_FPSCamera, delta: float) -> void:
+static func place(player: E_Player, view: C_ThirdPersonCamera, look: C_Eyes, delta: float) -> void:
 	var rig := player as Node as Node3D
 	var size := player.form_size()
-	var eyes := player.camera.position.y
+	var eyes := player.eyes.position.y
 	if look.eye_position != Vector3.INF:
 		eyes = look.eye_position.y  # база глаз формы (O_BodyForm)
 	var lift := maxf(eyes + view.pivot_lift * size.x, view.min_pivot - player.foot_offset().y)
@@ -60,14 +59,3 @@ static func place(player: E_Player, view: C_ThirdPersonCamera, look: C_FPSCamera
 	var turn := PI * 0.5 if view.offset >= 0.0 else -PI * 0.5
 	player.shoulder.rotation.y = turn
 	player.arm.rotation.y = -turn
-
-
-## Клочья души висят на камере в глазах и снаружи торчали бы из облика. Уходят вместе с обликом души первого лица
-## (шаг 6 карточки). S_SoulCloud включает клочья только при смене «во плоти / вне тела» — гасим каждый кадр.
-func _hide_first_person(player: E_Player) -> void:
-	var cloud := player.get_component(C_SoulCloud) as C_SoulCloud
-	if cloud == null:
-		return
-	var wisps := player.get_node_or_null(cloud.wisps_path) as Node3D
-	if wisps != null:
-		wisps.visible = false

@@ -94,7 +94,7 @@ func _embody(soul: Entity, body: Entity, form: C_BodyForm) -> void:
 		var worn_form := soul.get_component(C_BodyForm) as C_BodyForm
 		if worn_form:
 			form.restore_shape = worn_form.restore_shape
-			form.restore_camera = worn_form.restore_camera
+			form.restore_eyes = worn_form.restore_eyes
 			cmd.remove_component(soul, C_BodyForm)
 		cmd.add_component(soul, form)
 

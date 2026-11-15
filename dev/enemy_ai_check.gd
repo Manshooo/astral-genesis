@@ -274,7 +274,7 @@ func _check_layers(world: World, player: E_Player, enemy: E_Enemy) -> void:
 
 	# Враг на слое enemies попадает под луч захвата — и обязан не заслонять тело
 	# у себя за спиной: ради этого он раньше и жил на чужом слое.
-	var cam := player.camera
+	var cam := player.eyes
 	var forward := -cam.global_transform.basis.z
 	var enemy_node := enemy as Node as Node3D
 	var enemy_home := enemy_node.global_position

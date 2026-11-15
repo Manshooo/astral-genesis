@@ -4,8 +4,8 @@
 class_name C_SoulGlow
 extends Component
 
-## Лампа свечения относительно сущности игрока (под камерой — едет на уровне глаз тела).
-@export var light_path: NodePath = ^"Camera3D/SoulGlow"
+## Лампа свечения относительно сущности игрока — на самом риге: на камере за плечом она светила бы из-за спины.
+@export var light_path: NodePath = ^"SoulGlow"
 ## Энергия при спокойном запасе.
 @export_range(0.0, 4.0, 0.01) var energy_full: float = 0.6
 ## Энергия на пустом запасе; не ноль — иначе в провале не найти выхода.

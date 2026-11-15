@@ -125,7 +125,7 @@ func _can_see(
 ## Враг смотрит в глаза тела, а не в камеру игрока: она за плечом и «видела» бы врага из-за угла.
 func _eye_of(target: Entity, target_node: Node3D) -> Vector3:
 	var player := target as E_Player
-	if player != null and player.camera != null:
+	if player != null and player.eyes != null:
 		return player.eye_point()
 	return target_node.global_position + Vector3.UP * FALLBACK_TARGET_EYE
 

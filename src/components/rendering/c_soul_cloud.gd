@@ -1,11 +1,8 @@
 # res://src/components/rendering/c_soul_cloud.gd
-# Облик души вне тела — сгусток тёмного дыма с ядром: голова из карточек, след, стекающий вниз, клочья у камеры.
+# Облик души вне тела — сгусток тёмного дыма с ядром: голова из карточек и след, стекающий вниз.
 # Узлы и числа — данные сцены игрока, ведёт S_SoulCloud; во плоти облик гаснет весь. Вики: [[Захват тела]].
 class_name C_SoulCloud
 extends Component
-
-## Слой отрисовки головы: камера игрока его не рисует — изнутри сгустка была бы стена дыма. Вики: [[Конвенции проекта]] §2.
-const OUTSIDE_LAYER := 2
 
 ## Корень облика (голова и след); гаснет во плоти.
 @export var root_path: NodePath = ^"SoulCloud"
@@ -13,8 +10,6 @@ const OUTSIDE_LAYER := 2
 @export var head_path: NodePath = ^"SoulCloud/Head"
 ## След — частицы под глазами, стекают к полу.
 @export var trail_path: NodePath = ^"SoulCloud/Trail"
-## Клочья по краям кадра; висят под камерой, а не под корнем облика: едут с её наклоном.
-@export var wisps_path: NodePath = ^"Camera3D/SoulWisps"
 
 @export var count := 38
 @export var radius := 0.65

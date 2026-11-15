@@ -13,7 +13,7 @@ extends Component
 
 ## Что вернуть при развоплощении: заполняет O_BodyForm (призрачная форма живёт в e_player.tscn).
 @export var restore_shape: Shape3D
-@export var restore_camera: Transform3D
+@export var restore_eyes: Transform3D
 
 
 ## Насколько origin рига окажется ВЫШЕ подошвы в этой форме. Нужна ДО применения формы (захват ставит

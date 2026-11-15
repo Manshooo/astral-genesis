@@ -28,15 +28,10 @@ func _show(entity: Entity, cloud: C_SoulCloud, shown: bool) -> void:
 	# Вышла из тела — сгусток разворачивается из сжатого; появилась с самого начала (applied = −1) — сразу целиком.
 	cloud.unfold = 0.0 if shown and cloud.applied == 0 else 1.0
 	cloud.applied = int(shown)
-	for path in [cloud.root_path, cloud.wisps_path]:
-		var node := entity.get_node_or_null(path) as Node3D
-		if node == null:
-			continue
-		node.visible = shown
-		var particles: Array = node.find_children("*", "GPUParticles3D", true, false)
-		if node is GPUParticles3D:
-			particles.append(node)
-		for p: GPUParticles3D in particles:
+	var root := entity.get_node_or_null(cloud.root_path) as Node3D
+	if root != null:
+		root.visible = shown
+		for p: GPUParticles3D in root.find_children("*", "GPUParticles3D", true, false):
 			p.emitting = shown
 	if shown:
 		# Душа вышла не там, где пряталась: старый след стянул бы голову из прошлого места.
@@ -70,6 +65,7 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 	var camera := entity.get_viewport().get_camera_3d()
 	if camera != null:
 		eye = camera.global_position
+		_fade_near(entity, cloud, head, eye.distance_to(center))
 	var xforms: Array[Transform3D] = []
 	var customs: Array[Color] = []
 	var order: Array[int] = []
@@ -95,7 +91,7 @@ func _animate(entity: Entity, cloud: C_SoulCloud, delta: float) -> void:
 		head.multimesh.set_instance_custom_data(k, customs[order[k]])
 
 
-## Чем ближе распад, тем призрачнее: клочки бледнеют и рвутся (шейдер), частиц в следе и у камеры меньше.
+## Чем ближе распад, тем призрачнее: клочки бледнеют и рвутся (шейдер), частиц в следе меньше.
 ## Запас — через UI_HudMood, как у свечения и дуги: своя формула разошлась бы с ними. Разворачиваясь после
 ## выхода, облик собирается из рваного тем же параметром: grow 0 — как на исходе, 1 — по запасу.
 func _apply_decay(entity: Entity, cloud: C_SoulCloud, head: MultiMeshInstance3D, grow: float) -> void:
@@ -103,12 +99,23 @@ func _apply_decay(entity: Entity, cloud: C_SoulCloud, head: MultiMeshInstance3D,
 	cloud.decay = UI_HudMood.decay(vitals.active()) if vitals != null else 0.0
 	var d := maxf(cloud.decay, 1.0 - grow)
 	head.set_instance_shader_parameter(&"decay", d)
-	for path in [cloud.trail_path, cloud.wisps_path]:
-		var particles := entity.get_node_or_null(path) as GPUParticles3D
-		if particles == null:
-			continue
-		particles.set_instance_shader_parameter(&"decay", d)
-		particles.amount_ratio = lerpf(1.0, cloud.decay_amount, d)
+	var trail := entity.get_node_or_null(cloud.trail_path) as GPUParticles3D
+	if trail != null:
+		trail.set_instance_shader_parameter(&"decay", d)
+		trail.amount_ratio = lerpf(1.0, cloud.decay_amount, d)
+
+
+## Камера вплотную к сгустку — он гаснет, как надетый облик тела (числа own_fade_* у C_ThirdPersonCamera). Не дизером, а
+## прозрачностью экземпляра: карточки и след и так рисуются прозрачными, а шейдер дыма своего затухания по расстоянию не знает.
+func _fade_near(entity: Entity, cloud: C_SoulCloud, head: MultiMeshInstance3D, distance: float) -> void:
+	var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+	var fade := 0.0
+	if view != null and view.own_fade != BaseMaterial3D.DISTANCE_FADE_DISABLED:
+		fade = 1.0 - smoothstep(view.own_fade_near, view.own_fade_far, distance)
+	head.transparency = fade
+	var trail := entity.get_node_or_null(cloud.trail_path) as GeometryInstance3D
+	if trail != null:
+		trail.transparency = fade
 
 
 func _seed_cards(cloud: C_SoulCloud, head: MultiMeshInstance3D) -> void:

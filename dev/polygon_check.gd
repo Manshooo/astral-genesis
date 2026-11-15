@@ -335,9 +335,6 @@ func _check_camera_station() -> void:
 	await _frames(2)
 	_check("кадр ведёт камера от третьего лица, а не камера в глазах", player.view_camera.current, "")
 	_check("интерполяция физики включена", get_tree().physics_interpolation, "")
-	var cloud := player.get_component(C_SoulCloud) as C_SoulCloud
-	var wisps := player.get_node(cloud.wisps_path) as Node3D
-	_check("клочья души у камеры в глазах спрятаны", not wisps.visible, "")
 	await _check_body_turn(player, station, view)
 
 	# Длинное плечо, чтобы стена и решётка оказались ближе него.

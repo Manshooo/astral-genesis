@@ -99,10 +99,8 @@ func _apply_pose(pose: Dictionary) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	if is_instance_valid(_soul):
-		# В объектив, а не в центр души: дым тела втекает игроку в глаза и гаснет у самой камеры (near_fade).
-		var rig: Node = _soul
-		var eye: Camera3D = (rig as E_Player).camera if rig is E_Player else null
-		_attractor.global_position = eye.global_position if eye != null else _soul.global_position
+		# Дым тела втекает в саму душу: камера за плечом, и тянуть его в объектив значило бы гнать мимо сгустка.
+		_attractor.global_position = _soul.global_position
 	var t := _time
 	var k := clampf((t - fall_seconds) / evaporate_seconds, 0.0, 1.0)
 	if is_instance_valid(_husk):

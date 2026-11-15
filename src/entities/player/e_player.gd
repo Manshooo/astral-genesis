@@ -3,8 +3,8 @@
 class_name E_Player
 extends Entity
 
-## Камера в глазах формы: кадр она не рисует, по ней стоят глаза (eye_point). Уходит в шаге 5 карточки.
-@onready var camera: Camera3D = $Camera3D
+## Глаза надетой формы (их ставит O_BodyForm): отсюда второй луч прицела, сюда смотрит враг.
+@onready var eyes: Node3D = $Eyes
 ## Риг камеры от третьего лица (top_level): опора, плечо вбок, плечо назад. Ставит S_ThirdPersonCamera.
 @onready var camera_rig: Node3D = $CameraRig
 @onready var shoulder: SpringArm3D = $CameraRig/Shoulder
@@ -48,7 +48,7 @@ func _apply_fov(settings: RS_Settings) -> void:
 
 ## Где глаза надетой формы в мире: отсюда идёт второй луч прицела (AimRay) и сюда смотрит враг.
 func eye_point() -> Vector3:
-	return camera.global_position
+	return eyes.global_position
 
 
 ## Высота и радиус формы рига — по его коллайдеру, а не числом: от них считаются опора и плечи камеры.
