@@ -265,13 +265,6 @@ def _check_rig(issues, asset, collection, objects, profile):
                                     word for word, bad in (("rotation", turned), ("scale", scaled))
                                     if bad))))
 
-    meshes = [obj.name for obj in parts if obj.type == 'MESH']
-    for suffix, part in ((rigs.HEAD_SUFFIX, "head"), (rigs.ARMS_SUFFIX, "arms")):
-        if not any(name.endswith(suffix) for name in meshes):
-            issues.append(Issue(WARNING, asset,
-                                "no separate %s object (a mesh named *%s); worn by the player, "
-                                "the %s must draw as shadow only" % (part, suffix, part)))
-
     for mat in exporter.materials_of(objects):
         if not mat.name.startswith("MAT_"):
             issues.append(Issue(WARNING, asset,

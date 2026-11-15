@@ -1,4 +1,4 @@
-[gd_resource type="AnimationNodeBlendTree" format=3]
+[gd_resource type="AnimationNodeBlendTree" format=3 uid="uid://coidmtilctowl"]
 
 [sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_86dck"]
 fadein_time = 0.08

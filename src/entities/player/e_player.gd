@@ -3,8 +3,14 @@
 class_name E_Player
 extends Entity
 
-@onready var camera: Camera3D = $Camera3D
-@onready var interact_ray: RayCast3D = $Camera3D/InteractRay
+## Глаза надетой формы (их ставит O_BodyForm): отсюда второй луч прицела, сюда смотрит враг.
+@onready var eyes: Node3D = $Eyes
+## Риг камеры от третьего лица (top_level): опора, плечо вбок, плечо назад. Ставит S_ThirdPersonCamera.
+@onready var camera_rig: Node3D = $CameraRig
+@onready var shoulder: SpringArm3D = $CameraRig/Shoulder
+@onready var arm: SpringArm3D = $CameraRig/Shoulder/Arm
+## Камера, которая рисует кадр.
+@onready var view_camera: Camera3D = $CameraRig/Shoulder/Arm/View
 
 
 ## Игрок мира или null (нет мира или не заспавнен). ЕДИНСТВЕННОЕ место, где «игрок» выводится из C_PlayerInput.
@@ -21,10 +27,13 @@ static func is_embodied() -> bool:
 	return player != null and player.has_component(C_Embodied)
 
 
-## Поле зрения — из настроек, по горизонтали (60–120, KEEP_WIDTH): на вертикальной шкале 103° было бы рыбьим глазом.
+## Поле зрения — из настроек, по горизонтали (KEEP_WIDTH): на вертикальной шкале широкий угол был бы рыбьим глазом.
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
+	# Плечи не должны упираться в собственный коллайдер рига.
+	for spring in [shoulder, arm]:
+		(spring as SpringArm3D).add_excluded_object((self as Node as CollisionObject3D).get_rid())
 	SettingsManager.settings_changed.connect(_apply_fov)
 	_apply_fov(SettingsManager.settings)
 
@@ -32,8 +41,33 @@ func _ready() -> void:
 func _apply_fov(settings: RS_Settings) -> void:
 	if settings == null:
 		return
-	camera.keep_aspect = Camera3D.KEEP_WIDTH
-	camera.fov = clampf(settings.fov, RS_Settings.FOV_MIN, RS_Settings.FOV_MAX)
+	view_camera.keep_aspect = Camera3D.KEEP_WIDTH
+	# Сейв первого лица хранит 103°: шкала с тех пор уже, значение прижимается к ней.
+	view_camera.fov = clampf(settings.fov, RS_Settings.FOV_MIN, RS_Settings.FOV_MAX)
+
+
+## Где глаза надетой формы в мире: отсюда идёт второй луч прицела (AimRay) и сюда смотрит враг.
+func eye_point() -> Vector3:
+	return eyes.global_position
+
+
+## Высота и радиус формы рига — по его коллайдеру, а не числом: от них считаются опора и плечи камеры.
+func form_size() -> Vector2:
+	var holder := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	var shape := holder.shape if holder != null else null
+	if shape == null:
+		return Vector2.ZERO
+	var radius := 0.0
+	if shape is SphereShape3D:
+		radius = (shape as SphereShape3D).radius
+	elif shape is CapsuleShape3D:
+		radius = (shape as CapsuleShape3D).radius
+	elif shape is CylinderShape3D:
+		radius = (shape as CylinderShape3D).radius
+	elif shape is BoxShape3D:
+		var box := (shape as BoxShape3D).size
+		radius = maxf(box.x, box.z) * 0.5
+	return Vector2(maxf(shape_half_height(shape) * 2.0, 0.0), radius)
 
 
 ## Компоненты-идентичность БФЖ, независимые от тела; C_StatModifiers — слой модификаторов принадлежит душе.

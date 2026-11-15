@@ -24,12 +24,15 @@ func _ready() -> void:
 	await loading.dismiss()
 
 
-func _add_debug_overlay() -> void:
+## Оверлей или null — читов в этой сборке нет.
+func _add_debug_overlay() -> Node:
 	if not OS.has_feature("debug"):
-		return
+		return null
 	if not ResourceLoader.exists(DEBUG_OVERLAY_PATH):
-		return
-	add_child(load(DEBUG_OVERLAY_PATH).instantiate())
+		return null
+	var overlay: Node = load(DEBUG_OVERLAY_PATH).instantiate()
+	add_child(overlay)
+	return overlay
 
 func _process(delta: float) -> void:
 	ECS.process(delta, "input")

@@ -1,6 +1,6 @@
 extends "res://dev/check_harness.gd"
 ## Облик души (C_SoulCloud, S_SoulCloud) на настоящем e_player.tscn: вне тела
-## сгусток, след и клочья у камеры видны и идут за душой; во плоти гаснут все;
+## сгусток и след видны и идут за душой, вплотную к камере сгусток гаснет; во плоти гаснут все;
 ## пересадка тело→тело и выход возвращают пустой слот меша, а не меш прошлого тела.
 ##
 ## Ломается это тихо: облик, не погасший во плоти, висит дымом поверх тела, а
@@ -53,14 +53,12 @@ func _run(world: World) -> void:
 	var cloud := player.get_component(C_SoulCloud) as C_SoulCloud
 	var root := player.get_node(cloud.root_path) as Node3D
 	var head := player.get_node(cloud.head_path) as MultiMeshInstance3D
-	var wisps := player.get_node(cloud.wisps_path) as GPUParticles3D
 	var trail := _particles_under(root)
 	var slot := RS_EntityVisuals.primary(player) as MeshInstance3D
 
 	# --- 1. Вне тела облик виден и идёт за душой -------------------------
 	_tick(10)
 	_check("вне тела сгусток виден", root.visible, "")
-	_check("вне тела клочья у камеры видны и идут", wisps.visible and wisps.emitting, "")
 	_check("вне тела след идёт", not trail.is_empty() and trail.all(func(p: GPUParticles3D) -> bool: return p.emitting),
 		"%d частиц под обликом" % trail.size())
 	_check("у сгустка столько карточек, сколько задано", head.multimesh.instance_count == cloud.count,
@@ -72,6 +70,20 @@ func _run(world: World) -> void:
 	_tick(120)
 	_check("сгусток ушёл за душой", head.global_position.distance_to((player as Node as Node3D).global_position) < 0.01,
 		"%s против %s" % [head.global_position, (player as Node as Node3D).global_position])
+
+	# --- 1а. Камера вплотную — сгусток гаснет ---------------------------
+	var near_camera := Camera3D.new()
+	add_child(near_camera)
+	near_camera.make_current()
+	var center := (player as Node as Node3D).global_position
+	near_camera.global_position = center + Vector3(0.0, 0.0, 0.2)
+	_tick(1)
+	var close := head.transparency
+	near_camera.global_position = center + Vector3(0.0, 0.0, 5.0)
+	_tick(1)
+	_check("камера вплотную — сгусток гаснет, издали — плотный", close > 0.9 and head.transparency == 0.0,
+		"вплотную %.2f, издали %.2f" % [close, head.transparency])
+	near_camera.queue_free()
 
 	# --- 1б. Чем ближе распад, тем призрачнее -----------------------------
 	# Кривая — UI_HudMood.decay, та же, что у дуги и свечения: проверяется направление, а не числа.
@@ -85,19 +97,17 @@ func _run(world: World) -> void:
 			"head": _decay_of(head),
 			"trail": _decay_of(trail[0]),
 			"amount": trail[0].amount_ratio,
-			"wisps": wisps.amount_ratio,
 		})
 	var calm: Dictionary = states[0]
 	var low: Dictionary = states[1]
 	var faint: Dictionary = states[2]
-	_check("на спокойном запасе облик не призрачен", calm.head == 0.0 and calm.amount == 1.0 and calm.wisps == 1.0,
+	_check("на спокойном запасе облик не призрачен", calm.head == 0.0 and calm.amount == 1.0,
 		str(calm))
 	_check("у порога сгусток и след призрачнее, и чем ближе, тем сильнее",
 		0.0 < low.head and low.head < faint.head and 0.0 < low.trail and low.trail < faint.trail,
 		"%s → %s" % [low, faint])
 	_check("на исходе частиц меньше, но не ноль",
-		faint.amount < low.amount and low.amount < 1.0 and faint.amount >= cloud.decay_amount
-		and faint.wisps < 1.0 and faint.wisps >= cloud.decay_amount,
+		faint.amount < low.amount and low.amount < 1.0 and faint.amount >= cloud.decay_amount,
 		"%s → %s при доле %.2f" % [low, faint, cloud.decay_amount])
 	life.current = soul_max
 
@@ -115,7 +125,6 @@ func _run(world: World) -> void:
 
 	_check("захват состоялся", player.has_component(C_Embodied), str(body))
 	_check("во плоти сгусток погас", not root.visible, "")
-	_check("во плоти клочья у камеры погасли", not wisps.visible and not wisps.emitting, "")
 	_check("во плоти след не идёт", trail.all(func(p: GPUParticles3D) -> bool: return not p.emitting), "")
 	_check("меш тела надет на слот", slot.mesh == body_mesh, "%s вместо %s" % [slot.mesh, body_mesh])
 
@@ -152,7 +161,6 @@ func _run(world: World) -> void:
 	_check("только вышедший сгусток рваный, а не сразу целый", _decay_of(head) > 0.5, "%.2f" % _decay_of(head))
 	_check("после выхода слот снова пуст, а не с мешем прошлого тела", slot.mesh == null, str(slot.mesh))
 	_check("после выхода сгусток снова виден", root.visible, "")
-	_check("после выхода клочья у камеры снова идут", wisps.visible and wisps.emitting, "")
 	_check("вышедший сгусток стоит в душе, а не там, где прятался",
 		head.global_position.distance_to((player as Node as Node3D).global_position) < 0.01,
 		"%s против %s" % [head.global_position, (player as Node as Node3D).global_position])

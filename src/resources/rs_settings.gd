@@ -8,19 +8,12 @@ extends Resource
 @export var mouse_sensitivity: float = 0.0015  ## Умножается на 1000
 
 @export_group("Camera")
-## Поле зрения по горизонтали, градусов (камеру ставит E_Player); границы держат ползунок и камера — сейв мог быть со шкалой 60–120.
-@export_range(90.0, 110.0, 1.0) var fov: float = 103.0
+## Поле зрения по горизонтали, градусов (камеру ставит E_Player); границы держат ползунок и камера — сейв мог быть со
+## шкалой первого лица (90–110, умолчание 103).
+@export_range(60.0, 90.0, 1.0) var fov: float = 75.0
 
-const FOV_MIN := 90.0
-const FOV_MAX := 110.0
-
-## Сила покачивания камеры в теле — качка шага и бега, клевок укуса (S_FirstPersonMotion); для тех, кого укачивает.
-## Где голова облика, не трогает: это не качка, а место глаз.
-@export_range(0.0, 1.0) var camera_motion: float = CAMERA_MOTION_WEAK
-
-const CAMERA_MOTION_OFF := 0.0
-const CAMERA_MOTION_WEAK := 0.5
-const CAMERA_MOTION_FULL := 1.0
+const FOV_MIN := 60.0
+const FOV_MAX := 90.0
 
 @export_group("Interaction")
 @export var interact_range: float = 3.0        ## Дальность луча взаимодействия

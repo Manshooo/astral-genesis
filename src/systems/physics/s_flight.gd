@@ -1,5 +1,5 @@
 # res://src/systems/physics/s_flight.gd
-# Группа "physics". Свободный полёт — возможность бестелесного БФЖ. Гравитацию выключает сам C_Flight (S_Gravity: with_none). Отличий от S_Walk два: направление в базисе КАМЕРЫ
+# Группа "physics". Свободный полёт — возможность бестелесного БФЖ. Гравитацию выключает сам C_Flight (S_Gravity: with_none). Отличий от S_Walk два: направление по ВЗГЛЯДУ
 # (смотришь вниз — летишь вниз) и скорость подтягивается к желаемой, гаснет при отпущенных клавишах. Защёлку jump_pressed гасит S_Jump — здесь не трогать.
 class_name S_Flight
 extends System
@@ -20,14 +20,21 @@ func process(entities: Array[Entity], components: Array, delta: float) -> void:
 		var inp := input_comps[i] as C_PlayerInput
 		var vel := velocity_comps[i] as C_Velocity
 		var flight := flight_comps[i] as C_Flight
-		# Полёт по взгляду — нужна камера; «по корпусу» без неё была бы другая механика.
 		var player := entities[i] as E_Player
-		if player == null or player.camera == null:
+		if player == null:
 			continue
 
 		var target := Vector3.ZERO
 		if inp.move_direction != Vector3.ZERO:
-			var basis := player.camera.global_transform.basis
+			# По взгляду игрока — рыскание и тангаж камеры, а не направление от глаз к точке прицела: у близкой
+			# стены или решётки «вперёд» уходило бы круто вверх или вниз.
+			var view := player.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+			var yaw := (player as Node as Node3D).global_rotation.y
+			var pitch := 0.0
+			if view != null and view.yaw != INF:
+				yaw = view.yaw
+				pitch = view.pitch
+			var basis := Basis.from_euler(Vector3(pitch, yaw, 0.0))
 			target = (basis * inp.move_direction).normalized() * flight.speed
 
 		# Разгон и затухание — разные числа: набирать ход охотнее, чем останавливаться.

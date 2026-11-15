@@ -1,5 +1,5 @@
 # res://src/systems/physics/s_attack.gd
-# Группа "physics": луч от камеры (Jolt на своём потоке). Ближний удар тела по «attack» (защёлка C_PlayerInput.attack_pressed): ближайшая живая цель под крестиком в пределах
+# Группа "physics": луч от глаз к точке под прицелом (Jolt на своём потоке). Ближний удар тела по «attack» (защёлка C_PlayerInput.attack_pressed): ближайшая живая цель под крестиком в пределах
 # C_Attack.reach, урон через воронку S_Health. Способность — компонент и своя система. Вторая выборка — те, у кого удара НЕТ: защёлку гасит тот, кто её съел (см. S_Jump);
 # «нечем» сообщаем только игроку ВО ПЛОТИ (призрак бить не умеет по замыслу).
 class_name S_Attack
@@ -31,9 +31,9 @@ func sub_systems() -> Array[Array]:
 	]
 
 
-## ПОСЛЕ перемещения: луч идёт от камеры, целиться надо из точки после тика.
+## ПОСЛЕ перемещения и точки под прицелом: луч идёт от глаз к ней, целиться надо из точки после тика.
 func deps() -> Dictionary[int, Array]:
-	return {Runs.After: [S_Movement]}
+	return {Runs.After: [S_Movement, S_CameraAim]}
 
 
 func _attack(entities: Array[Entity], _components: Array, delta: float) -> void:
@@ -54,9 +54,9 @@ func _attack(entities: Array[Entity], _components: Array, delta: float) -> void:
 		attack.cooldown_left = attack.interval
 
 		var player := entity as E_Player
-		if player == null or player.camera == null:
+		if player == null or player.view_camera == null:
 			continue
-		var target := find_target(entity, player.camera, attack.reach)
+		var target := find_target(player, attack.reach)
 		if target == null:
 			continue
 
@@ -102,18 +102,12 @@ static func target_class(target: Entity) -> int:
 	return enemy.threat_class() if enemy else 0
 
 
-## Луч из камеры вперёд (−Z) на reach м: ближайшая живая цель или null. Цель — сущность с прочностью без C_BodySnatchable (в трупы вселяются, их не бьют);
-## прочее на слое enemies (рэгдоллы, свои кости) луч проходит насквозь, стена обрывает.
-static func find_target(attacker: Entity, cam: Camera3D, reach: float) -> Entity:
-	var from := cam.global_position
-	var to := from - cam.global_transform.basis.z * reach
-	var space := cam.get_world_3d().direct_space_state
-	var params := PhysicsRayQueryParameters3D.create(from, to, RAY_MASK)
-	var skip: Array[RID] = []
-	var attacker_body := attacker as Node as CollisionObject3D
-	if attacker_body != null:
-		skip.append(attacker_body.get_rid())
-	params.exclude = skip
+## Луч от глаз к точке под прицелом (AimRay) на reach м: ближайшая живая цель или null. Цель — сущность с прочностью без
+## C_BodySnatchable (в трупы вселяются, их не бьют); прочее на слое enemies (рэгдоллы, свои кости) луч проходит насквозь, стена обрывает.
+static func find_target(attacker: E_Player, reach: float) -> Entity:
+	var space := attacker.view_camera.get_world_3d().direct_space_state
+	var params := AimRay.query(attacker, reach, RAY_MASK)
+	var skip: Array[RID] = params.exclude
 	for _i in MAX_PIERCED:
 		var hit := space.intersect_ray(params)
 		if hit.is_empty():

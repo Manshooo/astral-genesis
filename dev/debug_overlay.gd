@@ -221,10 +221,33 @@ func _open_menu() -> void:
 	var titles: Array[String] = []
 	for grant in _grants:
 		titles.append(grant["title"])
-	_menu.setup(unique_rooms(), titles, "Скопировать сид забега %d" % run_seed())
+	var polygon := _polygon_entries()
+	var polygon_titles: Array[String] = []
+	for entry in polygon:
+		polygon_titles.append(entry["title"])
+	_menu.setup(unique_rooms(), titles, "Скопировать сид забега %d" % run_seed(), polygon_titles)
 	_menu.travel_requested.connect(_on_menu_travel)
 	_menu.grant_requested.connect(_on_menu_grant)
 	_menu.seed_copy_requested.connect(_copy_run_seed)
+	_menu.polygon_requested.connect(_on_polygon_entry.bind(polygon))
+
+
+## Раздел «Полигон» — только когда оверлей стоит в полигоне (dev/polygon/polygon.gd): записи даёт сам полигон —
+## { "title", "call" → строка для оверлея, "close" — закрыть ли меню до вызова }.
+func _polygon_entries() -> Array[Dictionary]:
+	var host := get_parent()
+	if host == null or not host.has_method(&"debug_entries"):
+		return []
+	return host.debug_entries()
+
+
+func _on_polygon_entry(index: int, entries: Array[Dictionary]) -> void:
+	var entry := entries[index]
+	if entry.get("close", false):
+		UIManager.close_top()
+	var said: String = entry["call"].call()
+	if said != "":
+		_say(said)
 
 
 ## Десять знаков с экрана переписывают с ошибкой, а ошибка в сиде молча даёт
@@ -263,8 +286,13 @@ func _toggle_portal_transition() -> void:
 
 
 func _toggle_immortal() -> void:
-	_immortal = not _immortal
+	set_immortal(not _immortal)
 	_say("бессмертие %s" % ("вкл" if _immortal else "выкл"))
+
+
+## Полигон включает бессмертие сам (dev/polygon/polygon.gd): распад мешал бы смотреть механику.
+func set_immortal(on: bool) -> void:
+	_immortal = on
 
 
 func _reset_skills() -> void:

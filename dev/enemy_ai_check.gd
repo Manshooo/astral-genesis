@@ -274,7 +274,7 @@ func _check_layers(world: World, player: E_Player, enemy: E_Enemy) -> void:
 
 	# Враг на слое enemies попадает под луч захвата — и обязан не заслонять тело
 	# у себя за спиной: ради этого он раньше и жил на чужом слое.
-	var cam := player.camera
+	var cam := player.eyes
 	var forward := -cam.global_transform.basis.z
 	var enemy_node := enemy as Node as Node3D
 	var enemy_home := enemy_node.global_position
@@ -284,8 +284,10 @@ func _check_layers(world: World, player: E_Player, enemy: E_Enemy) -> void:
 	world.add_entity(shielded)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
+	# Луч захвата идёт от глаз к точке под прицелом (AimRay); точку ставим на ту же прямую, вдоль которой стоят враг и тело.
+	(player.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera).aim_point = cam.global_position + forward * 10.0
 	var detector := S_SnatchTargetDetector.new()
-	var seen: Entity = detector._raycast_body(cam, 5.0)
+	var seen: Entity = detector._raycast_body(player, 5.0)
 	detector.free()
 	_check(
 		"тело за спиной врага остаётся в прицеле захвата — луч проходит врага насквозь",

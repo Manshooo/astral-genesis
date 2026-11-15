@@ -1,0 +1,19 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/characters/SK_scientist/textures/T_scientist_albedo_v3.png" id="1_alb"]
+[ext_resource type="Texture2D" path="res://assets/characters/SK_scientist/textures/T_scientist_orm.png" id="2_orm"]
+[ext_resource type="Texture2D" path="res://assets/characters/SK_scientist/textures/T_scientist_n.png" id="3_n"]
+
+[resource]
+resource_name = "MAT_scientist_v3"
+albedo_texture = ExtResource("1_alb")
+metallic = 1.0
+metallic_texture = ExtResource("2_orm")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_orm")
+roughness_texture_channel = 1
+ao_enabled = true
+ao_texture = ExtResource("2_orm")
+ao_texture_channel = 0
+normal_enabled = true
+normal_texture = ExtResource("3_n")

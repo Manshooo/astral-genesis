@@ -33,7 +33,7 @@ static func animation_tree(entity: Node) -> AnimationTree:
 	return found[0] if not found.is_empty() else null
 
 
-## Все AnimationTree сущности: у рига во плоти их два — облик (BodyAnimation) и руки-муляж на камере.
+## Все AnimationTree сущности. Сейчас у каждой одно — облик (BodyAnimation); список терпит и несколько.
 static func animation_trees(entity: Node) -> Array[AnimationTree]:
 	var found: Array[AnimationTree] = []
 	if entity == null:
@@ -43,17 +43,41 @@ static func animation_trees(entity: Node) -> Array[AnimationTree]:
 	return found
 
 
-## Суффиксы мешей облика, которые носитель-игрок не видит, но тень от них есть (контракт рига, [[Пайплайн персонажей]]).
-const FIRST_PERSON_HIDDEN := ["_head", "_arms"]
+## Чужие тела и враги гаснут вблизи камеры попиксельно: ближе x их не видно, дальше y плотные. Камера от третьего
+## лица их не обходит, а проходит насквозь (решение 05.11).
+const ACTOR_FADE := Vector2(0.4, 1.4)
 
 
-## Голова и руки облика — «только тенью»: камера рига стоит у глаз и упиралась бы в них.
-static func hide_from_wearer(appearance: Node) -> void:
-	for node in appearance.find_children("*", "GeometryInstance3D", true, false):
-		var geo := node as GeometryInstance3D
-		for suffix in FIRST_PERSON_HIDDEN:
-			if String(geo.name).ends_with(suffix):
-				geo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+## Тело или враг — копии материалов с пиксельным растворением вблизи камеры. Не общими материалами: меши ходока и
+## ползуна лежат в бинарных .res со встроенным материалом.
+static func fade_actor(entity: Node) -> void:
+	fade_near_camera(entity, BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER, ACTOR_FADE.x, ACTOR_FADE.y)
+
+
+## Всей геометрии [param appearance] — копии материалов, которые гаснут дизером по расстоянию до камеры: ближе
+## [param near] не видно, дальше [param far] плотно. Общие материалы не трогаются — облик тела делит их с врагами.
+## Материал не BaseMaterial3D остаётся как есть. Вики: [[Камера от третьего лица]].
+static func fade_near_camera(appearance: Node, mode: BaseMaterial3D.DistanceFadeMode, near: float, far: float) -> void:
+	for node in appearance.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		if mesh.material_override != null:
+			mesh.material_override = _faded(mesh.material_override, mode, near, far)
+			continue
+		for i in mesh.get_surface_override_material_count():
+			var active := mesh.get_active_material(i)
+			if active != null:
+				mesh.set_surface_override_material(i, _faded(active, mode, near, far))
+
+
+static func _faded(material: Material, mode: BaseMaterial3D.DistanceFadeMode, near: float, far: float) -> Material:
+	var base := material as BaseMaterial3D
+	if base == null:
+		return material
+	var copy := base.duplicate() as BaseMaterial3D
+	copy.distance_fade_mode = mode
+	copy.distance_fade_min_distance = near
+	copy.distance_fade_max_distance = far
+	return copy
 
 
 ## Снимает рэгдолл с облика, который никогда не падает (враг — его гибель отдаёт труп, риг): кости рэгдолла лежат

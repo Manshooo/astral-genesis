@@ -88,6 +88,7 @@ process_material = SubResource("ParticleProcessMaterial_jn0qy")
 draw_pass_1 = SubResource("Mesh_bubble")
 
 [node name="Specimen" parent="Flask" unique_id=1498843046 instance=ExtResource("10_specimen")]
+physics_interpolation_mode = 2
 transform = Transform3D(-0.6260561, 0, 0.7797779, 0, 1, 0, -0.7797779, 0, -0.6260561, 0, 1.2767081, 0)
 
 [node name="InteractBody" type="StaticBody3D" parent="." unique_id=1381715465]

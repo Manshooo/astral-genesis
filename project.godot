@@ -13,7 +13,7 @@ config_version=5
 config/name="Astral Genesis"
 config/description="Пост-апокалиптический roguelike-dungeon-crawler."
 config/version="0.7.0"
-config/tags=PackedStringArray("dungeon_crawler", "first_person", "roguelike")
+config/tags=PackedStringArray("dungeon_crawler", "roguelike", "third_person")
 run/main_scene="uid://cnoq0anpv63fs"
 config/use_custom_user_dir=true
 config/features=PackedStringArray("4.7", "Forward Plus")
@@ -185,6 +185,7 @@ limits/unix/connect_timeout_seconds=10
 2d/run_on_separate_thread=true
 3d/run_on_separate_thread=true
 3d/physics_engine="Jolt Physics"
+common/physics_interpolation=true
 
 [rendering]
 

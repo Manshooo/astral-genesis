@@ -50,7 +50,23 @@ const PAGES_HEIGHT := 720.0 - 150.0 - 100.0
 
 func _ready() -> void:
 	_run()
+	_check_old_settings_file()
 	_finish()
+
+
+## Сейв настроек с полем, которого в RS_Settings больше нет («Покачивание камеры», снято вместе с первым лицом),
+## читается, а не отбрасывается: иначе игрок с прошлой версии терял бы все настройки. Файл временный, не сейв игрока.
+func _check_old_settings_file() -> void:
+	var path := "user://settings_menu_check_old.tres"
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_string('[gd_resource type="Resource" script_class="RS_Settings" load_steps=2 format=3]\n\n'
+		+ '[ext_resource type="Script" path="%s" id="1"]\n\n' % (RS_Settings as Script).resource_path
+		+ '[resource]\nscript = ExtResource("1")\nfov = 70.0\ncamera_motion = 0.5\n')
+	file.close()
+	var loaded := UserResourceFile.read(path, RS_Settings, "settings_menu_check") as RS_Settings
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	_check("старый сейв настроек со снятым полем читается и держит остальные значения",
+		loaded != null and is_equal_approx(loaded.fov, 70.0), str(loaded.fov if loaded else null))
 
 
 func _run() -> void:
@@ -333,21 +349,24 @@ func _check_player_fov() -> void:
 	var before := SettingsManager.settings
 	var player := (load("res://src/entities/player/e_player.tscn") as PackedScene).instantiate() as E_Player
 	add_child(player)
-	var start_ok := is_equal_approx(player.camera.fov, before.fov)
+	# Кадр рисует камера от третьего лица; сейв разработчика мог остаться со шкалы первого лица — сверяем с прижатым.
+	var camera := player.view_camera
+	var start_ok := is_equal_approx(camera.fov, clampf(before.fov, RS_Settings.FOV_MIN, RS_Settings.FOV_MAX))
 	var narrow := before.copy()
-	narrow.fov = 95.0 if not is_equal_approx(before.fov, 95.0) else 105.0
+	var inside := lerpf(RS_Settings.FOV_MIN, RS_Settings.FOV_MAX, 0.25)
+	narrow.fov = inside if not is_equal_approx(before.fov, inside) else inside + 5.0
 	SettingsManager.settings = narrow
 	_check("поле зрения из настроек доходит до камеры игрока, по горизонтали",
-		start_ok and is_equal_approx(player.camera.fov, narrow.fov)
-			and player.camera.keep_aspect == Camera3D.KEEP_WIDTH,
+		start_ok and is_equal_approx(camera.fov, narrow.fov)
+			and camera.keep_aspect == Camera3D.KEEP_WIDTH,
 		"на старте %.1f при %.1f, после смены %.1f при %.1f" % [
-			player.camera.fov if start_ok else -1.0, before.fov, player.camera.fov, narrow.fov])
-	# Сейв со старой шкалы 60–120: камера держит границы сама.
+			camera.fov if start_ok else -1.0, before.fov, camera.fov, narrow.fov])
+	# Сейв со старой шкалы (первое лицо, до 110): камера держит границы сама.
 	var wide := before.copy()
 	wide.fov = 120.0
 	SettingsManager.settings = wide
 	_check("поле зрения из старого сейва прижимается к границам",
-		is_equal_approx(player.camera.fov, RS_Settings.FOV_MAX), "%.1f" % player.camera.fov)
+		is_equal_approx(camera.fov, RS_Settings.FOV_MAX), "%.1f" % camera.fov)
 	SettingsManager.settings = before
 	player.free()
 

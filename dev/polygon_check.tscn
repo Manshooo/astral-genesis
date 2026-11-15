@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/polygon_check.gd" id="1_check"]
+
+[node name="PolygonCheck" type="Node"]
+script = ExtResource("1_check")

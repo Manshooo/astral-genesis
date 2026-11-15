@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cocf1f7qtvkf1" path="res://src/entities/player/e_player.gd" id="1_yrckd"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_txhfs"]
-[ext_resource type="Script" uid="uid://dg5mcn5wabvf2" path="res://src/components/gameplay/c_fps_camera.gd" id="3_6qelm"]
+[ext_resource type="Script" uid="uid://dg5mcn5wabvf2" path="res://src/components/gameplay/c_eyes.gd" id="3_6qelm"]
 [ext_resource type="Script" uid="uid://bxvdso6ek0oyg" path="res://src/components/gameplay/c_player_input.gd" id="4_fyfga"]
 [ext_resource type="Script" uid="uid://d3y7smdoj10p1" path="res://src/components/physics/c_velocity.gd" id="5_0tiaq"]
 [ext_resource type="Script" uid="uid://b61v0sxtcd1gw" path="res://src/components/gameplay/skills/c_flight.gd" id="6_flight"]
@@ -14,7 +14,11 @@
 [ext_resource type="Script" path="res://src/components/rendering/c_soul_cloud.gd" id="12_cloud"]
 [ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_head.tres" id="13_head"]
 [ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_trail.tres" id="14_trail"]
-[ext_resource type="Material" path="res://assets/materials/MAT_soul_smoke_wisps.tres" id="15_wisps"]
+[ext_resource type="Script" path="res://src/components/gameplay/c_third_person_camera.gd" id="16_tpcam"]
+[ext_resource type="PackedScene" path="res://src/entities/player/camera_rig.tscn" id="17_rig"]
+
+[sub_resource type="Resource" id="Resource_tpcam"]
+script = ExtResource("16_tpcam")
 
 [sub_resource type="Resource" id="Resource_yrckd"]
 script = ExtResource("3_6qelm")
@@ -52,9 +56,6 @@ script = ExtResource("11_decaysound")
 [sub_resource type="SphereShape3D" id="SphereShape3D_ml67e"]
 margin = 0.06
 radius = 0.26
-
-[sub_resource type="SphereShape3D" id="SphereShape3D_eyereach"]
-radius = 0.12
 
 [sub_resource type="Resource" id="Resource_cloud"]
 script = ExtResource("12_cloud")
@@ -104,52 +105,21 @@ turbulence_noise_strength = 0.5
 turbulence_influence_min = 0.02
 turbulence_influence_max = 0.06
 
-[sub_resource type="ParticleProcessMaterial" id="Process_wisps"]
-emission_shape = 6
-emission_ring_axis = Vector3(0, 0, 1)
-emission_ring_height = 0.02
-emission_ring_radius = 0.46
-emission_ring_inner_radius = 0.36
-direction = Vector3(0, 1, 0)
-spread = 180.0
-initial_velocity_min = 0.01
-initial_velocity_max = 0.04
-gravity = Vector3(0, 0, 0)
-angle_min = -180.0
-angle_max = 180.0
-angular_velocity_min = -15.0
-angular_velocity_max = 15.0
-scale_min = 0.12
-scale_max = 0.22
-scale_curve = SubResource("CurveTexture_smoke_scale")
-color_ramp = SubResource("GradientTexture_smoke_fade")
-turbulence_enabled = true
-turbulence_noise_strength = 0.3
-turbulence_influence_min = 0.02
-turbulence_influence_max = 0.05
-
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=254995031]
 collision_layer = 2
 collision_mask = 49
 script = ExtResource("1_yrckd")
-component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing"), SubResource("Resource_glow"), SubResource("Resource_decaysound"), SubResource("Resource_cloud")])
+component_resources = Array[ExtResource("2_txhfs")]([SubResource("Resource_yrckd"), SubResource("Resource_78jcs"), SubResource("Resource_h1k6i"), SubResource("Resource_flight"), SubResource("Resource_phasing"), SubResource("Resource_glow"), SubResource("Resource_decaysound"), SubResource("Resource_cloud"), SubResource("Resource_tpcam")])
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=238945308]
 extra_cull_margin = 3.0
 gi_mode = 2
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=1009209839]
+[node name="Eyes" type="Marker3D" parent="." unique_id=1009209839]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033333153, 0.0049188733)
-cull_mask = 1048573
-fov = 118.35706
 
-[node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=900551378]
-target_position = Vector3(0, 0, -3)
-collision_mask = 8
-hit_from_inside = true
-
-[node name="SoulGlow" type="OmniLight3D" parent="Camera3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0.25)
+[node name="SoulGlow" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11666685, 0.25491887)
 light_color = Color(0.79, 0.66, 0.95, 1)
 light_energy = 0.6
 light_specular = 0.2
@@ -159,23 +129,11 @@ omni_attenuation = 1.5
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942624027]
 shape = SubResource("SphereShape3D_ml67e")
 
-[node name="SoulWisps" type="GPUParticles3D" parent="Camera3D"]
-transform = Transform3D(1.15, 0, 0, 0, 0.66, 0, 0, 0, 1, 0, 0, -0.35)
-cast_shadow = 0
-gi_mode = 0
-material_override = ExtResource("15_wisps")
-amount = 48
-lifetime = 1.2
-local_coords = false
-visibility_aabb = AABB(-2, -2, -2, 4, 4, 4)
-process_material = SubResource("Process_wisps")
-draw_pass_1 = SubResource("QuadMesh_card")
-
 [node name="SoulCloud" type="Node3D" parent="."]
 
 [node name="Head" type="MultiMeshInstance3D" parent="SoulCloud"]
+physics_interpolation_mode = 2
 top_level = true
-layers = 2
 cast_shadow = 0
 gi_mode = 0
 material_override = ExtResource("13_head")
@@ -196,7 +154,4 @@ draw_pass_1 = SubResource("QuadMesh_card")
 [node name="BodyAnimation" type="AnimationTree" parent="."]
 active = false
 
-[node name="EyeReach" type="SpringArm3D" parent="."]
-collision_mask = 17
-shape = SubResource("SphereShape3D_eyereach")
-spring_length = 0.0
+[node name="CameraRig" parent="." instance=ExtResource("17_rig")]

@@ -101,6 +101,7 @@ shadow_enabled = true
 omni_range = 9.0
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=664291122]
+physics_interpolation_mode = 2
 transform = Transform3D(0.962175, 0.06241898, -0.26518512, 0.024310216, 0.9498437, 0.3117784, 0.27134526, -0.30643213, 0.9123986, -6.163161, 2.399943, 3.8017337)
 current = true
 fov = 55.0

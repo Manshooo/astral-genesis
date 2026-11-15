@@ -1,7 +1,8 @@
 # res://dev/debug_menu.gd
 ## Меню отладки: читы, которые удобнее нажать мышью, чем держать клавишей, —
 ## начисление очков навыков и эссенции Архитектора, перенос в уникальные
-## комнаты и сид забега в буфер обмена. Открывается из отладочного оверлея и живёт экраном в стеке
+## комнаты, сид забега в буфер обмена, а в полигоне — его раздел (станции, темп
+## времени, версии клипов). Открывается из отладочного оверлея и живёт экраном в стеке
 ## UIManager: курсор, блок ввода игрока и закрытие по Esc — те же, что у дерева
 ## навыков, своих правил у меню нет.
 ##
@@ -28,16 +29,31 @@ signal travel_requested(scene_path: String, title: String)
 signal grant_requested(index: int)
 ## Нажата кнопка копирования сида забега; что копировать — знает оверлей.
 signal seed_copy_requested
+## Нажата кнопка раздела «Полигон» — номер записи, которую дал полигон.
+signal polygon_requested(index: int)
 
 @onready var _seed_button: Button = %SeedButton
 @onready var _grants: VBoxContainer = %Grants
 @onready var _rooms: VBoxContainer = %Rooms
+@onready var _polygon: FoldableContainer = %Polygon
+@onready var _polygon_actions: VBoxContainer = %PolygonActions
 
 
 ## [param rooms] — { "title": String, "scene_path": String } на каждую кнопку
 ## переноса; [param grants] — подписи кнопок начисления, по порядку таблицы;
-## [param seed_title] — подпись кнопки сида, с самим числом.
-func setup(rooms: Array[Dictionary], grants: Array[String], seed_title: String) -> void:
+## [param seed_title] — подпись кнопки сида, с самим числом; [param polygon] —
+## подписи раздела «Полигон», пусто вне полигона (раздел тогда скрыт).
+func setup(rooms: Array[Dictionary], grants: Array[String], seed_title: String, polygon: Array[String] = []) -> void:
+	_polygon.visible = not polygon.is_empty()
+	# В полигоне за меню приходят ради его раздела — он и раскрыт.
+	if not polygon.is_empty():
+		(%Progression as FoldableContainer).folded = true
+		_polygon.folded = false
+	var polygon_buttons := _fill(_polygon_actions, polygon.size())
+	for i in polygon.size():
+		polygon_buttons[i].text = polygon[i]
+		polygon_buttons[i].pressed.connect(polygon_requested.emit.bind(i))
+
 	_seed_button.text = seed_title
 	_seed_button.pressed.connect(seed_copy_requested.emit)
 

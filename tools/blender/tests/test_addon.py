@@ -526,8 +526,8 @@ for rig_type in ('HUMANOID', 'CRAWLER', 'QUADRUPED'):
     check(schema is not None and {"Root", "Head"} <= set(schema.required)
           and set(schema.required) <= schema.allowed,
           "эталон %s читается, Root и Head обязательны" % rig_type.lower())
-check(len(rigs.schema('HUMANOID').allowed) == 56,
-      "гуманоид — все 56 костей SkeletonProfileHumanoid")
+check(len(rigs.schema('HUMANOID').allowed) == 56 + 12 + 1,
+      "гуманоид — 56 костей SkeletonProfileHumanoid, 12 костей подола халата и очки")
 check(rigs.schema('NONE') is None, "«не персонаж» эталона не имеет")
 
 humanoid = rigs.schema('HUMANOID')
@@ -567,7 +567,7 @@ for part in ("testrig_body", "testrig_head", "testrig_arms"):
 bpy.context.view_layer.update()
 
 RIG_MARKERS = ("needs an armature", "not a deform bone", "duplicate suffix", "reference list",
-               "lacks required", "unapplied", "no separate", "not named MAT_")
+               "lacks required", "unapplied", "not named MAT_")
 
 
 def rig_issues():
@@ -594,10 +594,6 @@ bones["Root"].use_deform = False
 check(any("Root" in i.message and "not a deform bone" in i.message for i in rig_issues()),
       "недеформирующий Root при deform-only ловится")
 bones["Root"].use_deform = True
-
-rig_parts["testrig_head"].name = "testrig_skull"
-check(any("no separate head" in i.message for i in rig_issues()), "голова без суффикса _head ловится")
-rig_parts["testrig_head"].name = "testrig_head"
 
 rig_mat.name = "palette"
 check(any("not named MAT_" in i.message for i in rig_issues()), "материал без MAT_ ловится")

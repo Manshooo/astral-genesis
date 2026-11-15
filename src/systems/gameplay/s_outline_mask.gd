@@ -83,6 +83,8 @@ func _build_nodes() -> void:
 	_mask_camera.cull_mask = O_OutlineVisual.OUTLINE_LAYER
 	_mask_camera.environment = _blank_environment()
 	_mask_camera.current = true
+	# Двойник ставится по игровой камере в кадре отрисовки: интерполяция физики отодвинула бы его от неё на тик.
+	_mask_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_mask.add_child(_mask_camera)
 
 	material.set_shader_parameter("mask_tex", _mask.get_texture())

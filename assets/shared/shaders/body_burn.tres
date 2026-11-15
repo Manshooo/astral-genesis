@@ -1,4 +1,4 @@
-[gd_resource type="VisualShader" format=3]
+[gd_resource type="VisualShader" format=3 uid="uid://5ant3hf2g5t0"]
 
 [sub_resource type="VisualShaderNodeTexture" id="VisualShaderNodeTexture_6hma4"]
 source = 5

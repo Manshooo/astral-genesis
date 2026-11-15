@@ -15,6 +15,7 @@ func _ready() -> void:
 		return
 	# Гибель врага отдаёт труп (O_EnemyDeath) — рэгдолл облику не нужен.
 	RS_EntityVisuals.strip_ragdoll(self)
+	RS_EntityVisuals.fade_actor(self)
 
 
 ## Класс угрозы врага L0..L5 — класс его трупа (второго числа нет). 0, если трупа нет.

@@ -1,11 +1,14 @@
 # res://src/systems/physics/s_snatch_target_detector.gd
 # Группа "physics": луч (space-state только из _physics_process). Каждый физкадр держит C_SnatchTargeted на теле с C_BodySnatchable под крестиком в пределах capture_range;
-# прицел и S_BodySnatch читают метку — один каст и один источник правды о цели.
+# прицел и S_BodySnatch читают метку — один каст и один источник правды о цели. Луч — от глаз к точке под прицелом (AimRay):
+# дальность от тела, стена обрывает (раньше луч видел только enemies и доставал сквозь стены).
 class_name S_SnatchTargetDetector
 extends System
 
 ## Тела-кандидаты на слое enemies (layer_3, бит 2).
 const ENEMIES_MASK := 1 << 2
+## Что видит луч: стены (static_colliders, бит 0) и enemies. Двери на moving_colliders в маске нет — как у удара.
+const RAY_MASK := (1 << 0) | ENEMIES_MASK
 
 ## Сколько не-целей на enemies луч проходит насквозь — предел против ошибки в данных.
 const MAX_PIERCED := 8
@@ -19,7 +22,7 @@ func query() -> QueryBuilder:
 
 ## Строго ДО S_BodySnatch (буфер применяется после process() каждой системы, метка уже стоит) и ПОСЛЕ S_Movement — луч из точки тела после тика.
 func deps() -> Dictionary[int, Array]:
-	return {Runs.Before: [S_BodySnatch], Runs.After: [S_Movement]}
+	return {Runs.Before: [S_BodySnatch], Runs.After: [S_Movement, S_CameraAim]}
 
 
 func process(entities: Array[Entity], _components: Array, _delta: float) -> void:
@@ -28,14 +31,14 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		return
 
 	var player := entities[0] as E_Player
-	if player == null or player.camera == null:
+	if player == null or player.view_camera == null:
 		_clear_target()
 		return
 
 	var snatch := player.get_component(C_BodySnatch) as C_BodySnatch
 	# Дальность — стат: перк прибавляет к базе (C_StatModifiers).
 	var reach := C_StatModifiers.of(player, C_StatModifiers.CAPTURE_RANGE, snatch.capture_range)
-	var target := _raycast_body(player.camera, reach)
+	var target := _raycast_body(player, reach)
 
 	if target == _current_target:
 		return
@@ -46,17 +49,19 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 	_current_target = target
 
 
-## Луч из камеры вперёд (−Z) по маске enemies: захватываемая Entity или null. На enemies стоят и живые враги (без C_BodySnatchable) — такой хит луч проходит насквозь,
-## иначе враг заслонял бы цели за собой (на moving_colliders его видела бы стеной всякая маска).
-func _raycast_body(cam: Camera3D, capture_range: float) -> Entity:
-	var from := cam.global_position
-	var to := from - cam.global_transform.basis.z * capture_range
-	var space := cam.get_world_3d().direct_space_state
-	var params := PhysicsRayQueryParameters3D.create(from, to, ENEMIES_MASK)
-	var skip: Array[RID] = []
+## Луч от глаз к точке под прицелом: захватываемая Entity или null. На enemies стоят и живые враги (без C_BodySnatchable) — такой хит
+## луч проходит насквозь, иначе враг заслонял бы цели за собой (на moving_colliders его видела бы стеной всякая маска). Стену узнаём по
+## слою, не по отсутствию сущности: кости трупов лежат и на static_colliders, но с битом enemies.
+func _raycast_body(player: E_Player, capture_range: float) -> Entity:
+	var space := player.view_camera.get_world_3d().direct_space_state
+	var params := AimRay.query(player, capture_range, RAY_MASK)
+	var skip: Array[RID] = params.exclude
 	for _i in MAX_PIERCED:
 		var hit := space.intersect_ray(params)
 		if hit.is_empty():
+			return null
+		var collider := hit.collider as CollisionObject3D
+		if collider == null or collider.collision_layer & ENEMIES_MASK == 0:
 			return null
 		var target := _resolve_snatchable(hit.collider)
 		if target != null:
