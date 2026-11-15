@@ -1,6 +1,6 @@
 {
   "rig_type": "humanoid",
-  "note": "Имена и обязательность — из SkeletonProfileHumanoid Godot 4.7.2 (is_required), плюс Root по контракту рига. Тела: walker.",
+  "note": "Имена и обязательность — из SkeletonProfileHumanoid Godot 4.7.2 (is_required), плюс Root по контракту рига. Тела: walker. Сверх профиля — кости подола халата (учёный, 15.11): их качает SpringBoneSimulator3D облика, клипы их не двигают.",
   "required": [
     "Root", "Hips", "Spine", "Head",
     "LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand",
@@ -21,6 +21,8 @@
     "RightMiddleProximal", "RightMiddleIntermediate", "RightMiddleDistal",
     "RightRingProximal", "RightRingIntermediate", "RightRingDistal",
     "RightLittleProximal", "RightLittleIntermediate", "RightLittleDistal",
-    "LeftToes", "RightToes"
+    "LeftToes", "RightToes",
+    "LeftCoatFront1", "LeftCoatFront2", "LeftCoatSide1", "LeftCoatSide2", "LeftCoatBack1", "LeftCoatBack2",
+    "RightCoatFront1", "RightCoatFront2", "RightCoatSide1", "RightCoatSide2", "RightCoatBack1", "RightCoatBack2"
   ]
 }

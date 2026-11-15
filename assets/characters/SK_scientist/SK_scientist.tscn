@@ -1,0 +1,83 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://d8x41u5khd3s" path="res://assets/characters/SK_scientist/SK_scientist.glb" id="1_glb"]
+
+[node name="SK_scientist" instance=ExtResource("1_glb")]
+
+[node name="scientist" parent="scientist_skel/Skeleton3D"]
+extra_cull_margin = 1.5
+
+[node name="CoatSprings" type="SpringBoneSimulator3D" parent="scientist_skel/Skeleton3D"]
+setting_count = 6
+settings/0/root_bone_name = "LeftCoatFront1"
+settings/0/end_bone_name = "LeftCoatFront2"
+settings/0/extend_end_bone = true
+settings/0/end_bone/length = 0.04
+settings/0/radius/value = 0.03
+settings/0/stiffness/value = 3.0
+settings/0/drag/value = 0.45
+settings/0/gravity/value = 0.6
+settings/1/root_bone_name = "LeftCoatSide1"
+settings/1/end_bone_name = "LeftCoatSide2"
+settings/1/extend_end_bone = true
+settings/1/end_bone/length = 0.04
+settings/1/radius/value = 0.03
+settings/1/stiffness/value = 2.2
+settings/1/drag/value = 0.45
+settings/1/gravity/value = 0.6
+settings/2/root_bone_name = "LeftCoatBack1"
+settings/2/end_bone_name = "LeftCoatBack2"
+settings/2/extend_end_bone = true
+settings/2/end_bone/length = 0.04
+settings/2/radius/value = 0.03
+settings/2/stiffness/value = 1.8
+settings/2/drag/value = 0.45
+settings/2/gravity/value = 0.6
+settings/3/root_bone_name = "RightCoatFront1"
+settings/3/end_bone_name = "RightCoatFront2"
+settings/3/extend_end_bone = true
+settings/3/end_bone/length = 0.04
+settings/3/radius/value = 0.03
+settings/3/stiffness/value = 3.0
+settings/3/drag/value = 0.45
+settings/3/gravity/value = 0.6
+settings/4/root_bone_name = "RightCoatSide1"
+settings/4/end_bone_name = "RightCoatSide2"
+settings/4/extend_end_bone = true
+settings/4/end_bone/length = 0.04
+settings/4/radius/value = 0.03
+settings/4/stiffness/value = 2.2
+settings/4/drag/value = 0.45
+settings/4/gravity/value = 0.6
+settings/5/root_bone_name = "RightCoatBack1"
+settings/5/end_bone_name = "RightCoatBack2"
+settings/5/extend_end_bone = true
+settings/5/end_bone/length = 0.04
+settings/5/radius/value = 0.03
+settings/5/stiffness/value = 1.8
+settings/5/drag/value = 0.45
+settings/5/gravity/value = 0.6
+
+[node name="LeftUpperLegCollision" type="SpringBoneCollisionCapsule3D" parent="scientist_skel/Skeleton3D/CoatSprings"]
+bone_name = "LeftUpperLeg"
+position_offset = Vector3(0, 0.215, 0)
+radius = 0.085
+height = 0.52
+
+[node name="LeftLowerLegCollision" type="SpringBoneCollisionCapsule3D" parent="scientist_skel/Skeleton3D/CoatSprings"]
+bone_name = "LeftLowerLeg"
+position_offset = Vector3(0, 0.205, 0)
+radius = 0.065
+height = 0.46
+
+[node name="RightUpperLegCollision" type="SpringBoneCollisionCapsule3D" parent="scientist_skel/Skeleton3D/CoatSprings"]
+bone_name = "RightUpperLeg"
+position_offset = Vector3(0, 0.215, 0)
+radius = 0.085
+height = 0.52
+
+[node name="RightLowerLegCollision" type="SpringBoneCollisionCapsule3D" parent="scientist_skel/Skeleton3D/CoatSprings"]
+bone_name = "RightLowerLeg"
+position_offset = Vector3(0, 0.205, 0)
+radius = 0.065
+height = 0.46
