@@ -526,8 +526,8 @@ for rig_type in ('HUMANOID', 'CRAWLER', 'QUADRUPED'):
     check(schema is not None and {"Root", "Head"} <= set(schema.required)
           and set(schema.required) <= schema.allowed,
           "эталон %s читается, Root и Head обязательны" % rig_type.lower())
-check(len(rigs.schema('HUMANOID').allowed) == 56 + 12,
-      "гуманоид — 56 костей SkeletonProfileHumanoid и 12 костей подола халата")
+check(len(rigs.schema('HUMANOID').allowed) == 56 + 12 + 1,
+      "гуманоид — 56 костей SkeletonProfileHumanoid, 12 костей подола халата и очки")
 check(rigs.schema('NONE') is None, "«не персонаж» эталона не имеет")
 
 humanoid = rigs.schema('HUMANOID')
