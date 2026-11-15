@@ -148,11 +148,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033333153, 0.0049188733
 cull_mask = 1048573
 fov = 118.35706
 
-[node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=900551378]
-target_position = Vector3(0, 0, -3)
-collision_mask = 8
-hit_from_inside = true
-
 [node name="SoulGlow" type="OmniLight3D" parent="Camera3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0.25)
 light_color = Color(0.79, 0.66, 0.95, 1)

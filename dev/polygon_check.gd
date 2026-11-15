@@ -368,11 +368,7 @@ func _check_camera_station() -> void:
 		"плечо %.2f м, камера x %.2f" % [player.arm.get_hit_length(), camera_x])
 	var pivot_height := player.camera_rig.global_position.y - station.global_position.y
 	_check("опора камеры маленькой души не у пола", pivot_height >= view.min_pivot - 0.01, "%.2f м над полом" % pivot_height)
-	var eye_dir := -player.camera.global_basis.z
-	var to_aim := view.aim_point - player.camera.global_position
-	_check("луч из глаз смотрит в точку под прицелом камеры",
-		view.aim_point != Vector3.INF and eye_dir.angle_to(to_aim) < deg_to_rad(1.0),
-		"угол %.1f°" % rad_to_deg(eye_dir.angle_to(to_aim)))
+	await _check_aim_rays(player, station)
 
 	var grate_gap := 14.0 - 12.6
 	await _stand(player, station, Vector3(12.6, 0.0, -8.0), west)
@@ -449,6 +445,35 @@ func _check_body_turn(player: E_Player, station: Node3D, view: C_ThirdPersonCame
 	_check("на захвате тело сразу встаёт к прицелу",
 		absf(wrapf(rig.global_rotation.y - aim_yaw, -PI, PI)) < deg_to_rad(5.0) and absf(wrapf(aim_yaw - PI, -PI, PI)) < deg_to_rad(20.0),
 		"тело %.1f°, прицел %.1f°" % [rad_to_deg(rig.global_rotation.y), rad_to_deg(aim_yaw)])
+
+
+## Шаг 4, два луча: точка под прицелом — из камеры, а луч к ней — от глаз. Цель — «Цель за углом» станции в проходе
+## (объём интерактива 1 × 1.4 м, центр x = 6, z = −10.2).
+func _check_aim_rays(player: E_Player, station: Node3D) -> void:
+	var target := station.get_node("%TargetConsole") as Node3D
+	var target_entity := target as Node as Entity
+	var home := target.position
+	# Тело в 2.6 м от цели, камера за плечом — дальше 3 м: дальность интерактива должна считаться от тела. Тело
+	# левее цели на сдвиг плеча, чтобы луч из камеры (она правее тела) пришёл в её объём.
+	await _stand(player, station, Vector3(5.6, 0.0, -7.6), 0.0)
+	var camera_far := player.view_camera.global_position.distance_to(target.global_position) > SettingsManager.settings.interact_range
+	_check("дальность интерактива — от тела: камера дальше дальности, а цель подсвечена",
+		camera_far and target_entity.has_component(C_Highlighted),
+		"камера дальше: %s, подсвечена: %s" % [camera_far, target_entity.has_component(C_Highlighted)])
+	# Цель — за западной стеной прямого коридора (лицо стены на x = −3), тело — внутри, в 2.5 м от неё, лицом к стене.
+	# Изнутри: у коллизии тайлов, похоже, нет тыльной стороны, а снаружи коридора в игре всегда соседний тайл.
+	# Плечо — прямо за телом: со сдвигом вбок луч от глаз к точке на стене уходил бы мимо цели и без стены, и ассерт
+	# ничего бы не ловил (мутация «маска без стен» проходила).
+	var view := player.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+	var shoulder := view.shoulder_scale
+	view.shoulder_scale = 0.0
+	view.offset = 0.0
+	target.position = Vector3(-4.0, 0.0, 0.0)
+	await _stand(player, station, Vector3(-1.5, 0.0, 0.0), PI * 0.5)
+	_check("стена между глазами и целью обрывает луч интерактива", not target_entity.has_component(C_Highlighted), "")
+	target.position = home
+	view.shoulder_scale = shoulder
+	await _frames(1)
 
 
 ## Облик целиком в кадре: голова и руки уже не «только тенью», материалы — копии с дизером, общий не тронут.

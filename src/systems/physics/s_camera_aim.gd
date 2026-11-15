@@ -23,8 +23,12 @@ func process(entities: Array[Entity], _components: Array, _delta: float) -> void
 		var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
 		var space := player.view_camera.get_world_3d().direct_space_state
 		var exclude: Array[RID] = [(player as Node as CollisionObject3D).get_rid()]
+		var direction := -player.view_camera.global_basis.z
 		var from := player.view_camera.global_position
-		var to := from - player.view_camera.global_basis.z * view.aim_range
+		# Начинаем напротив глаз, а не от камеры: то, что между камерой и телом, — не цель (камера за плечом видит это
+		# лишь потому, что стоит позади).
+		from += direction * maxf(0.0, (player.eye_point() - from).dot(direction))
+		var to := from + direction * view.aim_range
 		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, exclude))
 		view.aim_point = hit["position"] if not hit.is_empty() else to
 		if view.auto_side:

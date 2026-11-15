@@ -14,7 +14,7 @@ func query() -> QueryBuilder:
 	return q.with_all([C_ThirdPersonCamera, C_FPSCamera])
 
 
-## После взгляда (рыскание и тангаж этого кадра) и после качки первого лица: наведение глаз ниже её перекрывает.
+## После взгляда (рыскание и тангаж этого кадра) и после качки первого лица: руки-муляж прячутся уже поставленными.
 func deps() -> Dictionary[int, Array]:
 	return {Runs.After: [S_CameraLook, S_FirstPersonMotion]}
 
@@ -27,7 +27,6 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
 		var look := entity.get_component(C_FPSCamera) as C_FPSCamera
 		place(player, view, look, delta)
-		_aim_eyes(player, view)
 		_hide_first_person(player)
 		# Экран со своей камерой (облёт полигона) кадр забирает, а закрываясь, может отдать его камере глаз.
 		var current := player.get_viewport().get_camera_3d()
@@ -61,17 +60,6 @@ static func place(player: E_Player, view: C_ThirdPersonCamera, look: C_FPSCamera
 	var turn := PI * 0.5 if view.offset >= 0.0 else -PI * 0.5
 	player.shoulder.rotation.y = turn
 	player.arm.rotation.y = -turn
-
-
-## Лучи игры пока идут из камеры в глазах формы. Наводим её в точку под прицелом: луч из глаз приходит туда, куда
-## показывает прицел, а дальность считается от тела. Уходит, когда лучи сами станут двумя (шаг 4 карточки).
-func _aim_eyes(player: E_Player, view: C_ThirdPersonCamera) -> void:
-	if view.aim_point == Vector3.INF:
-		return
-	var to_aim := view.aim_point - player.camera.global_position
-	if to_aim.length() < 0.05 or absf(to_aim.normalized().y) > 0.999:
-		return
-	player.camera.look_at(view.aim_point, Vector3.UP)
 
 
 ## Руки-муляж и клочья души висят на камере в глазах и снаружи торчали бы из облика. Уходят вместе с наследием

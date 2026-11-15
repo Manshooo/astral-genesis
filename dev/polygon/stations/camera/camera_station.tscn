@@ -228,7 +228,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0, -1.5)
 
 [node name="TargetConsole" type="Node3D" parent="."]
 unique_name_in_owner = true
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -11.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -10.2)
 script = ExtResource("15_console")
 component_resources = Array[ExtResource("16_component")]([SubResource("Resource_target_prompt")])
 
