@@ -62,6 +62,12 @@ func record_progress(
 	progress_saved.emit()
 
 
+## Облик надетого тела (C_Look: материал, вариант меша; −1 — не разыгран) к следующей контрольной точке: на диск его
+## пишет record_progress.
+func record_body_look(look: Vector2i) -> void:
+	save.body_look = look
+
+
 ## Поглощённые способности к следующей контрольной точке: на диск их пишет record_progress. Копии — сейв не делит объекты с живой душой.
 func record_abilities(slots: Array, bank: Array) -> void:
 	var saved_slots: Array[C_Ability] = []

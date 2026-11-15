@@ -14,7 +14,9 @@
 
 - Кости рэгдолла (`PhysicalBone3D`) в `e_body_walker.tscn` и
   `e_body_crawler.tscn` стоят на `collision_layer = 5`, то есть на
-  `static_colliders` + `enemies`.
+  `static_colliders` + `enemies`. У тел на своём `.glb` (hound, L5, учёный)
+  то же самое: слой 5 им ставит постимпорт аддона (замер 16.11), так что
+  правка — в аддоне, а не в сценах.
 - Маска плеч камеры — живая маска рига, урезанная до геометрии
   (`S_ThirdPersonCamera.GEOMETRY_MASK`), и бит `static_colliders` в ней есть.
   Поэтому кости ловятся плечом, как пол.

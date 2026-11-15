@@ -357,15 +357,17 @@ func _register_room_children(room_entity: Entity, node_id: StringName) -> Array[
 	# Происхождение штампуем ПОСЛЕ регистрации, как рёбра дверям: правка состава должна дойти до архетипов.
 	for e in children:
 		var body := e as E_Body
+		var origin: C_BodyOrigin = null
 		if body:
-			var origin := C_BodyOrigin.new()
+			origin = C_BodyOrigin.new()
 			origin.body_id = _body_id(node_id, room_entity, body)
-			body.add_component(origin)
 		elif e.has_meta(ROSTER_ID_META):
 			# Враг ростера несёт id маркера, O_EnemyDeath передаст его трупу: съеденный труп помечает id в сейве, маркер больше не разыгрывается.
-			var origin := C_BodyOrigin.new()
+			origin = C_BodyOrigin.new()
 			origin.body_id = e.get_meta(ROSTER_ID_META)
+		if origin != null:
 			e.add_component(origin)
+			RS_EntityVisuals.dress_actor(e, [graph.run_seed, origin.body_id])
 	return children
 
 

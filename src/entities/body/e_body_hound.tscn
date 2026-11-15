@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cpvk48wt6akpa"]
 
-[ext_resource type="Script" uid="uid://cbetc28hrcj0p" path="res://src/entities/body/e_body_hound.gd" id="1_y0plc"]
+[ext_resource type="Script" uid="uid://cbetc28hrcj0p" path="res://src/entities/body/e_body_rigged.gd" id="1_y0plc"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_qad0j"]
 [ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="3_3akvt"]
 [ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="3_d4fg4"]

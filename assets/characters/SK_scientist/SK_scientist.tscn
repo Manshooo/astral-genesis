@@ -5,14 +5,14 @@
 [node name="SK_scientist" instance=ExtResource("1_glb")]
 
 [node name="scientist" parent="scientist_skel/Skeleton3D"]
-extra_cull_margin = 1.5
+extra_cull_margin = 2.0
 
 [node name="scientist_glasses_round" parent="scientist_skel/Skeleton3D"]
-extra_cull_margin = 1.5
+extra_cull_margin = 2.0
 
 [node name="scientist_glasses_rect" parent="scientist_skel/Skeleton3D"]
 visible = false
-extra_cull_margin = 1.5
+extra_cull_margin = 2.0
 
 [node name="CoatDrive" type="ConvertTransformModifier3D" parent="scientist_skel/Skeleton3D"]
 setting_count = 4

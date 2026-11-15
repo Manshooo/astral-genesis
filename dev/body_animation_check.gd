@@ -7,8 +7,10 @@ const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
 const HOUND_BODY := "res://src/entities/body/e_body_hound.tscn"
 const HOUND_ENEMY := "res://src/entities/enemy/e_enemy_hound.tscn"
 const CRAWLER_BODY := "res://src/entities/body/e_body_crawler.tscn"
-## Что сцена облика вправе менять у узлов из .glb.
-const ALLOWED_OVERRIDES: Array[StringName] = [&"extra_cull_margin", &"cast_shadow", &"material_override", &"unique_id"]
+## Что сцена облика вправе менять у узлов из .glb: только отрисовку. visible — варианты меша (очки учёного): какой
+## показать, решает игра, а сцена держит вариант по умолчанию.
+const ALLOWED_OVERRIDES: Array[StringName] = [&"extra_cull_margin", &"cast_shadow", &"material_override", &"visible",
+	&"unique_id"]
 const SCENE_DIRS: Array[String] = ["res://src/entities/body/", "res://src/entities/enemy/"]
 
 

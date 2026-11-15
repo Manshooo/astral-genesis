@@ -63,6 +63,7 @@ static func _exit_of(soul: Entity, voluntary: bool) -> Dictionary:
 		"velocity": velocity.velocity if velocity else Vector3.ZERO,
 		"voluntary": voluntary,
 		"pose": _worn_pose(soul),
+		"look": soul.get_component(C_Look),
 	}
 
 

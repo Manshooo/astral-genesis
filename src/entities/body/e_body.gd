@@ -45,6 +45,8 @@ static func visual_of(body: Node) -> C_BodyVisual:
 		for geo: GeometryInstance3D in appearance.find_children("*", "GeometryInstance3D", true, false):
 			if geo.material_override != null:
 				visual.material_overrides[geo.name] = geo.material_override
+			if not geo.visible:
+				visual.hidden_meshes.append(geo.name)
 		var tree := RS_EntityVisuals.animation_tree(entity)
 		if tree != null:
 			visual.tree_root = tree.tree_root
@@ -63,8 +65,9 @@ static func visual_of(body: Node) -> C_BodyVisual:
 	return visual
 
 
-## То же по пути сцены — для восстановления из сейва, где инстанса уже нет.
-static func visual_of_scene(path: String) -> C_BodyVisual:
+## То же по пути сцены — для восстановления из сейва, где инстанса уже нет. [param look] — разыгранный облик тела из
+## сейва: надевается на пробный инстанс, иначе после загрузки учёный сменил бы одежду.
+static func visual_of_scene(path: String, look: C_Look = null) -> C_BodyVisual:
 	if path.is_empty() or not ResourceLoader.exists(path):
 		return null
 	var scene := load(path) as PackedScene
@@ -72,6 +75,7 @@ static func visual_of_scene(path: String) -> C_BodyVisual:
 		return null
 
 	var probe := scene.instantiate()
+	RS_EntityVisuals.dress(probe.get_node_or_null(VISUAL_NODE), look)
 	var visual := visual_of(probe)
 	probe.free()
 	return visual
