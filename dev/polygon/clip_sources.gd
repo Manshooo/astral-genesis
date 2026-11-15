@@ -5,7 +5,7 @@ extends RefCounted
 
 ## Куда класть версию клипов. Папка в .gitignore: версия — черновик для сравнения, в git ей не место.
 const VARIANTS_DIR := "res://dev/polygon/clips/"
-## Где лежат основные библиотеки клипов — по одной на тип рига и на руки-муляж.
+## Где лежат основные библиотеки клипов — по одной на тип рига.
 const RIGS_DIR := "res://assets/characters/_rigs/"
 ## Выбор версии или перечитанные файлы: стенд клипов ведёт свои библиотеки сам и пересобирает их по этому сигналу.
 signal changed
@@ -79,7 +79,7 @@ static func load_library(path: String, mode := ResourceLoader.CACHE_MODE_REUSE) 
 
 
 ## К какой основной относится версия: имя её файла начинается с имени основной, выигрывает самое длинное —
-## «ANIM_quadruped_fp_прыжок.glb» относится к рукам-муляжу, а не к телу. "" — ни к какой.
+## «ANIM_quadruped_tail_взмах.glb» относится к «ANIM_quadruped_tail», а не к «ANIM_quadruped». "" — ни к какой.
 static func official_for_file(file_name: String, official_paths: Array) -> String:
 	var best := ""
 	for path: String in official_paths:
@@ -181,7 +181,7 @@ func apply(mixer: AnimationMixer) -> void:
 			mixer.add_animation_library(key, wanted)
 
 
-## Следить за деревом: новые микшеры (манекен, труп, руки-муляж) и смена библиотек у старых (облик надели) получают
+## Следить за деревом: новые микшеры (манекен, труп) и смена библиотек у старых (облик надели) получают
 ## выбранную версию. Отложенно — библиотеки меняет O_BodyVisual посреди своего цикла.
 func watch(tree: SceneTree) -> void:
 	_tree = tree

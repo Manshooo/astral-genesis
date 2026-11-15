@@ -50,7 +50,23 @@ const PAGES_HEIGHT := 720.0 - 150.0 - 100.0
 
 func _ready() -> void:
 	_run()
+	_check_old_settings_file()
 	_finish()
+
+
+## Сейв настроек с полем, которого в RS_Settings больше нет («Покачивание камеры», снято вместе с первым лицом),
+## читается, а не отбрасывается: иначе игрок с прошлой версии терял бы все настройки. Файл временный, не сейв игрока.
+func _check_old_settings_file() -> void:
+	var path := "user://settings_menu_check_old.tres"
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_string('[gd_resource type="Resource" script_class="RS_Settings" load_steps=2 format=3]\n\n'
+		+ '[ext_resource type="Script" path="%s" id="1"]\n\n' % (RS_Settings as Script).resource_path
+		+ '[resource]\nscript = ExtResource("1")\nfov = 70.0\ncamera_motion = 0.5\n')
+	file.close()
+	var loaded := UserResourceFile.read(path, RS_Settings, "settings_menu_check") as RS_Settings
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	_check("старый сейв настроек со снятым полем читается и держит остальные значения",
+		loaded != null and is_equal_approx(loaded.fov, 70.0), str(loaded.fov if loaded else null))
 
 
 func _run() -> void:

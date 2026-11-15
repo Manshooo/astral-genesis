@@ -8,9 +8,6 @@ extends Observer
 ## Надетый облик под ригом.
 const WORN_NODE := &"WornBody"
 
-## Руки-муляж под камерой рига.
-const FP_ARMS_NODE := &"FpArms"
-
 ## AnimationTree рига в e_player.tscn: спит, пока облик не надет.
 const TREE_NODE := ^"BodyAnimation"
 
@@ -23,8 +20,7 @@ func each(event: Variant, entity: Entity, payload: Variant = null) -> void:
 	var visual := payload as C_BodyVisual
 	if visual == null:
 		return
-	# Прошлый облик снимаем ДО поиска меша БФЖ: руки-муляж на камере стоят в дереве раньше него. Пересадка коалесцирует
-	# remove+add, так что и при ADDED снимаем сами.
+	# Пересадка коалесцирует remove+add, так что прошлый облик и при ADDED снимаем сами.
 	_take_off(entity)
 	# Основной меш — вид БФЖ: облик-сцена его прячет, облик-меш подменяет.
 	var geo := RS_EntityVisuals.primary(entity) as MeshInstance3D
@@ -60,7 +56,8 @@ func _restore(entity: Entity, geo: GeometryInstance3D, visual: C_BodyVisual) -> 
 		geo.transform = visual.restore_transform
 
 
-## Инстанс облика под ригом: голова и руки только тенью, рэгдолл снят, клипы — деревом тела на узле рига.
+## Инстанс облика под ригом: рэгдолл снят, клипы — деревом тела на узле рига. Облик виден целиком и гаснет, когда
+## камера подходит к нему вплотную (числа — C_ThirdPersonCamera рига).
 func _put_on(entity: Entity, visual: C_BodyVisual) -> void:
 	var rig := entity as Node as Node3D
 	if rig == null:
@@ -68,18 +65,14 @@ func _put_on(entity: Entity, visual: C_BodyVisual) -> void:
 	var worn := visual.scene.instantiate() as Node3D
 	worn.name = WORN_NODE
 	RS_EntityVisuals.strip_ragdoll(worn)
-	RS_EntityVisuals.hide_from_wearer(worn)
 	for geo: GeometryInstance3D in worn.find_children("*", "GeometryInstance3D", true, false):
 		if visual.material_overrides.has(geo.name):
 			geo.material_override = visual.material_overrides[geo.name]
+	var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
+	if view != null and view.own_fade != BaseMaterial3D.DISTANCE_FADE_DISABLED:
+		RS_EntityVisuals.fade_near_camera(worn, view.own_fade, view.own_fade_near, view.own_fade_far)
 	rig.add_child(worn)
 	worn.transform = _in_rig(entity, visual)
-
-	var player := entity as E_Player
-	if visual.fp_arms != null and player != null and player.camera != null:
-		var arms := visual.fp_arms.instantiate()
-		arms.name = FP_ARMS_NODE
-		player.camera.add_child(arms)
 
 	var tree := rig.get_node_or_null(TREE_NODE) as AnimationTree
 	if tree == null or visual.tree_root == null:
@@ -100,9 +93,6 @@ func _take_off(entity: Entity) -> void:
 		tree.active = false
 		tree.tree_root = null
 	_drop(rig, WORN_NODE)
-	var player := entity as E_Player
-	if player != null and player.camera != null:
-		_drop(player.camera, FP_ARMS_NODE)
 
 
 func _drop(holder: Node, node_name: StringName) -> void:

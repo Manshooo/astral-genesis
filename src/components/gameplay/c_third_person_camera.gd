@@ -25,6 +25,13 @@ extends Component
 ## Докуда луч из камеры ищет точку под прицелом.
 @export var aim_range := 100.0
 
+@export_group("Облик вблизи камеры")
+## Как гаснет надетый облик, когда камера подходит вплотную (O_BodyVisual выдаёт ему копии материалов): ближе
+## own_fade_near его не видно, дальше own_fade_far он плотный. По объекту — облик гаснет целиком, а не пятнами.
+@export var own_fade := BaseMaterial3D.DISTANCE_FADE_OBJECT_DITHER
+@export var own_fade_near := 0.6
+@export var own_fade_far := 1.6
+
 ## Взгляд — рыскание и тангаж опоры (S_CameraLook). Тело взгляд не крутит: оно поворачивается по направлению
 ## передвижения (S_BodyTurn). INF — рыскание ещё не взято с рига (S_ThirdPersonCamera берёт его в первый кадр).
 var yaw := INF

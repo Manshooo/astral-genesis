@@ -165,7 +165,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4, -1.5)
 billboard = 1
 pixel_size = 0.006
-text = "От первого лица
+text = "Мат
 вселиться в тело"
 font_size = 64
 outline_size = 12

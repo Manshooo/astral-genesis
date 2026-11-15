@@ -1,17 +1,15 @@
 extends Node3D
-## Стенд клипов: облик тела или руки-муляж на подставке, и клип играется сам по себе — без дерева, переходов и
+## Стенд клипов: облик тела на подставке, и клип играется сам по себе — без дерева, переходов и
 ## S_BodyAnimation. Время ведёт стенд (пауза, перемотка, покадрово, скорость, петля), AnimationPlayer стоит в ручном
 ## режиме и только применяет позу. Облик и клипы берутся у сцены тела, поэтому стенд годится любому анимированному телу.
 ## Вики: [[Полигон]].
 
 const ClipSources := preload("res://dev/polygon/clip_sources.gd")
 
-enum Model { BODY, ARMS }
+enum Model { BODY }
 
-## Тело, чьи облик и клипы на стенде; руки-муляж — его fp_arms_scene.
+## Тело, чьи облик и клипы на стенде.
 @export var body_scene: PackedScene
-## На какой высоте над подставкой висят руки-муляж: их начало координат — камера.
-@export var arms_height := 1.6
 
 ## Источники клипов полигона (dev/polygon/clip_sources.gd): основные и версии.
 var clips: ClipSources
@@ -39,16 +37,7 @@ func setup(sources: ClipSources) -> void:
 	clips = sources
 	clips.changed.connect(_refresh)
 	_models[Model.BODY] = _take(body_scene, Vector3.ZERO)
-	var probe := body_scene.instantiate()
-	var arms_scene: PackedScene = probe.get(&"fp_arms_scene")
-	probe.free()
-	if arms_scene != null:
-		_models[Model.ARMS] = _take(arms_scene, Vector3(0.0, arms_height, 0.0))
 	select_model(Model.BODY)
-
-
-func has_arms() -> bool:
-	return _models.has(Model.ARMS)
 
 
 func select_model(which: Model) -> void:
@@ -179,25 +168,9 @@ func _take(scene: PackedScene, lift: Vector3) -> Dictionary:
 	animated.get_parent().remove_child(animated)
 	probe.free()
 	RS_EntityVisuals.strip_ragdoll(animated)
-	_unclip_for_stand(animated)
 	_slot.add_child(animated)
 	animated.transform = Transform3D(placement.basis, placement.origin + lift)
 	return {"node": animated, "key": key, "official": official}
-
-
-## Материал рук-муляжа рисует их «поджатыми» к игровой камере (свой угол обзора, сжатая глубина) — с камеры облёта они
-## легли бы поверх всего кадра. Копия без этого, своя тень для читаемости позы; общий материал не трогаем.
-func _unclip_for_stand(node: Node) -> void:
-	for mesh: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
-		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		for i in mesh.get_surface_override_material_count():
-			var material := mesh.get_active_material(i) as BaseMaterial3D
-			if material == null or not (material.use_fov_override or material.use_z_clip_scale):
-				continue
-			var copy := material.duplicate() as BaseMaterial3D
-			copy.use_fov_override = false
-			copy.use_z_clip_scale = false
-			mesh.set_surface_override_material(i, copy)
 
 
 func _library() -> AnimationLibrary:

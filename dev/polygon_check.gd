@@ -11,7 +11,6 @@ const POLYGON := "res://dev/polygon/polygon.tscn"
 const WORLD := "res://src/world/world.tscn"
 const MENU := "res://dev/debug_menu.tscn"
 const BODY_LIBRARY := "res://assets/characters/_rigs/quadruped/ANIM_quadruped.glb"
-const ARMS_LIBRARY := "res://assets/characters/_rigs/quadruped/ANIM_quadruped_fp.glb"
 ## Путь синтетической версии: в папку версий проверка ничего не пишет, версия кладётся в список в памяти.
 const FAKE_VARIANT := "res://dev/polygon/clips/ANIM_quadruped_run_as_walk.glb"
 
@@ -110,23 +109,6 @@ func _check_stand() -> void:
 	stand.playing = false
 	await _check_one_shot(stand)
 
-	if not stand.has_arms():
-		_check("у hound есть руки-муляж для стенда", false, "fp_arms_scene пуст")
-		return
-	stand.select_model(1)
-	await _frames(1)
-	var arms := _visible_meshes(stand)
-	var shared := load("res://assets/characters/SK_hound_fp_arms/materials/MAT_hound_fp.tres") as BaseMaterial3D
-	var unclipped := arms.all(func(mesh: MeshInstance3D) -> bool:
-		var material := mesh.get_active_material(0) as BaseMaterial3D
-		return material != null and not material.use_fov_override and not material.use_z_clip_scale)
-	_check("руки-муляж на стенде видны одни и без «поджатого» материала", not arms.is_empty() and unclipped, str(arms))
-	_check("общий материал рук не тронут — в игре он поджат как был", shared.use_fov_override and shared.use_z_clip_scale, "")
-	_check("у рук свои клипы", _sorted(Array(stand.clip_names())) == _sorted((load(ARMS_LIBRARY) as AnimationLibrary).get_animation_list()),
-		str(stand.clip_names()))
-	stand.select_model(0)
-	await _frames(1)
-
 
 ## Клип без петли в самом клипе (укус, гибель) плеер, доиграв, останавливает сам. Стенд, который ждал от плеера
 ## «играю», после этого молча не двигал позу: ни повтор, ни перемотка — помогал только повторный выбор клипа.
@@ -169,8 +151,10 @@ func _check_variants() -> void:
 	var clips: RefCounted = _polygon.clips
 	var officials: Array = clips.officials.keys()
 	var sources := load("res://dev/polygon/clip_sources.gd")
-	_check("версия рук узнаётся по самому длинному имени основной",
-		sources.official_for_file("ANIM_quadruped_fp_прыжок.glb", officials) == ARMS_LIBRARY, "")
+	# Основная с длинным именем — синтетическая: второй библиотеки у четвероногого с уходом рук-муляжа нет.
+	var longer := BODY_LIBRARY.get_basename() + "_tail.glb"
+	_check("версия узнаётся по самому длинному имени основной",
+		sources.official_for_file("ANIM_quadruped_tail_взмах.glb", officials + [longer]) == longer, "")
 	_check("версия тела — к телу", sources.official_for_file("ANIM_quadruped_run2.glb", officials) == BODY_LIBRARY, "")
 	_check("чужой файл ни к чему не относится", sources.official_for_file("hound_run.glb", officials) == "", "")
 

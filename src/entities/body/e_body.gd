@@ -14,17 +14,19 @@ extends Entity
 @export_range(0, 5) var body_class: int = 0
 
 
-## Руки-муляж, которые риг при вселении вешает на камеру (гибрид от первого лица). Свойство сцены, как display_name_key;
-## пусто — тело без рук в кадре.
-@export var fp_arms_scene: PackedScene
-
-
 ## Труп только что был врагом и падает (клип гибели, потом рэгдолл), а не лежит с начала. Ставит O_EnemyDeath до add_child.
 var dying := false
 
 
 ## Узел облика: инстанс сцены SK_*.tscn — её и надевает риг (C_BodyVisual.scene).
 const VISUAL_NODE := "Visual"
+
+
+## Наследники зовут super(): тело гаснет вблизи камеры, как любой чужой объект.
+func _ready() -> void:
+	if Engine.is_editor_hint():
+		return
+	RS_EntityVisuals.fade_actor(self)
 
 
 ## Облик тела из СЦЕНЫ — единственный источник правды, правило геометрии у RS_EntityVisuals. Трансформ относительно
@@ -48,8 +50,6 @@ static func visual_of(body: Node) -> C_BodyVisual:
 			visual.tree_root = tree.tree_root
 			for key in tree.get_animation_library_list():
 				visual.libraries[key] = tree.get_animation_library(key)
-		if entity is E_Body:
-			visual.fp_arms = (entity as E_Body).fp_arms_scene
 	else:
 		var geo := RS_EntityVisuals.primary(entity) as MeshInstance3D
 		if geo == null or geo.mesh == null:

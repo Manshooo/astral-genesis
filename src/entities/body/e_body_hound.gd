@@ -8,6 +8,7 @@ func _ready() -> void:
 	# E_Body — @tool, _ready() срабатывает и в редакторе: без отсечки Jolt роняет риг под гравитацией и поза костей сохраняется в файл.
 	if Engine.is_editor_hint():
 		return
+	super()
 	if dying:
 		_fall()
 	else:

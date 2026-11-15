@@ -49,7 +49,6 @@
 [ext_resource type="Script" path="res://src/observers/o_combat_mark.gd" id="44_combatmark"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_decay_sound.gd" id="45_decaysound"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_body_animation.gd" id="46_bodyanim"]
-[ext_resource type="Script" path="res://src/systems/gameplay/s_first_person_motion.gd" id="47_fpmotion"]
 [ext_resource type="Script" path="res://src/systems/gameplay/s_third_person_camera.gd" id="48_tpcamera"]
 [ext_resource type="Script" path="res://src/systems/physics/s_camera_aim.gd" id="49_cameraaim"]
 [ext_resource type="Script" path="res://src/systems/physics/s_body_turn.gd" id="50_bodyturn"]
@@ -156,10 +155,6 @@ group = &"gameplay"
 
 [node name="S_BodyAnimation" type="Node" parent="World/Systems/gameplay"]
 script = ExtResource("46_bodyanim")
-group = &"gameplay"
-
-[node name="S_FirstPersonMotion" type="Node" parent="World/Systems/gameplay"]
-script = ExtResource("47_fpmotion")
 group = &"gameplay"
 
 [node name="S_ThirdPersonCamera" type="Node" parent="World/Systems/gameplay"]

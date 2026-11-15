@@ -1,6 +1,6 @@
 extends "res://dev/check_harness.gd"
-## Анимации тел: правило «способность ⇒ обязательные клипы», облик на риге (сцена облика, голова и руки тенью,
-## руки-муляж на камере) и то, что S_BodyAnimation включает по делу тела, — ход, удар, попадание, гибель трупа.
+## Анимации тел: правило «способность ⇒ обязательные клипы», облик на риге (сцена облика целиком в кадре, гаснет
+## вблизи камеры) и то, что S_BodyAnimation включает по делу тела, — ход, удар, попадание, гибель трупа.
 ## Запускать: godot --headless dev/body_animation_check.tscn
 
 const PLAYER_SCENE := "res://src/entities/player/e_player.tscn"
@@ -9,7 +9,7 @@ const HOUND_ENEMY := "res://src/entities/enemy/e_enemy_hound.tscn"
 const CRAWLER_BODY := "res://src/entities/body/e_body_crawler.tscn"
 ## Что сцена облика вправе менять у узлов из .glb.
 const ALLOWED_OVERRIDES: Array[StringName] = [&"extra_cull_margin", &"cast_shadow", &"material_override", &"unique_id"]
-const SCENE_DIRS: Array[String] = ["res://src/entities/body/", "res://src/entities/enemy/", "res://src/entities/body/fp_arms/"]
+const SCENE_DIRS: Array[String] = ["res://src/entities/body/", "res://src/entities/enemy/"]
 
 
 func _ready() -> void:
@@ -17,7 +17,7 @@ func _ready() -> void:
 	# Пол и настоящее движение: «на полу ли» — флаг move_and_slide(), без него тело всё время в воздухе.
 	_add_floor()
 	_add_systems(world, "physics", [S_BodySnatch.new(), S_Gravity.new(), S_Movement.new()])
-	_add_systems(world, "gameplay", [S_BodyAnimation.new(), S_FirstPersonMotion.new()])
+	_add_systems(world, "gameplay", [S_BodyAnimation.new()])
 	world.add_observer(O_ExpelFromBody.new())
 	world.add_observer(O_BodyVisual.new())
 	world.add_observer(O_BodyForm.new())
@@ -135,21 +135,13 @@ func _check_worn(world: World) -> void:
 		_check("облик смотрит в −Z, как камера", worn.transform.basis.z.z < 0.0, str(worn.transform.basis.z))
 	var tree := player.get_node(O_BodyVisual.TREE_NODE) as AnimationTree
 	_check("дерево рига проснулось с клипами тела", tree.active and tree.tree_root != null and tree.has_animation(&"quadruped/idle"), "")
-	var arms := player.camera.get_node_or_null(NodePath(O_BodyVisual.FP_ARMS_NODE))
-	_check("руки-муляж на камере", arms != null, "")
-	if arms != null:
-		var arm_mesh := arms.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
-		_check("руки-муляж своей тени не дают", arm_mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "")
-		var material := arm_mesh.mesh.surface_get_material(0) as BaseMaterial3D
-		_check("материал рук не клипует в стены",
-			material != null and material.use_fov_override and material.use_z_clip_scale, str(material))
-	await _check_camera_motion(player)
+	if worn != null:
+		_check_worn_fade(worn)
 
 	# Пересадка в тело без сцены облика: прошлый облик снят, меш тела на виде БФЖ.
 	await _capture(world, player, CRAWLER_BODY, Vector3(-3, 0, 0))
 	await get_tree().process_frame
 	_check("пересадка снимает прошлый облик", player.get_node_or_null(NodePath(O_BodyVisual.WORN_NODE)) == null, "")
-	_check("пересадка снимает руки-муляж", player.camera.get_node_or_null(NodePath(O_BodyVisual.FP_ARMS_NODE)) == null, "")
 	_check("тело без сцены облика — меш на виде БФЖ", sphere.visible and sphere.mesh != ghost_mesh, "")
 	_check("дерево рига уснуло", not tree.active, "")
 
@@ -160,85 +152,20 @@ func _check_worn(world: World) -> void:
 	_check("выход снимает облик", player.get_node_or_null(NodePath(O_BodyVisual.WORN_NODE)) == null, "")
 	_check("выход возвращает вид БФЖ", sphere.visible and sphere.mesh == ghost_mesh, "видна=%s, меш=%s, призрак=%s" % [sphere.visible, sphere.mesh, ghost_mesh])
 	await _animate(1)
-	var look := player.get_component(C_FPSCamera) as C_FPSCamera
-	_check("после выхода камера без качки", player.camera.h_offset == 0.0 and player.camera.v_offset == 0.0
-		and player.camera.rotation.z == 0.0 and is_equal_approx(player.camera.rotation.x, _pitch(player))
-		and player.camera.position == look.eye_position, str(player.camera.position))
 	world.remove_entity(player)
 	player.queue_free()
 	await get_tree().process_frame
 
 
-## Тангаж взгляда — у камеры от третьего лица (C_ThirdPersonCamera), камера в глазах повторяет его.
-func _pitch(player: E_Player) -> float:
-	return (player.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera).pitch
-
-
-## Камера в hound стоит там, где голова облика: стоя чуть впереди маркера Eyes, в беге — на метр ниже и впереди,
-## в укусе — выпадом вперёд; у стены не уходит за неё. Качка — сдвигом картинки.
-func _check_camera_motion(player: E_Player) -> void:
-	var camera := player.camera
-	var look := player.get_component(C_FPSCamera) as C_FPSCamera
-	var motion := player.get_component(C_FirstPersonMotion) as C_FirstPersonMotion
-	# Сила качки — настройка игрока: проверка ставит свою и возвращает его (в файл ничего не пишется).
-	var players_motion := SettingsManager.settings.camera_motion
-	SettingsManager.settings.camera_motion = RS_Settings.CAMERA_MOTION_FULL
-	await _animate(30)
-	var base := look.eye_position
-	_check("стоя камера у глаз облика, а не у маркера", camera.position.is_equal_approx(base + motion.stand_head),
-		"%s, база %s" % [camera.position, base])
-
-	var vel := player.get_component(C_Velocity) as C_Velocity
-	var sprint := player.get_component(C_Sprint) as C_Sprint
-	sprint.active = true
-	vel.velocity = Vector3(4, 0, 0)
-	var swayed := 0.0
-	for i in 80:
-		await _animate(1)
-		swayed = maxf(swayed, absf(camera.v_offset))
-	_check("на бегу камера качается", swayed > 0.01, "%.3f м" % swayed)
-	_check("в беге камера опустилась к голове и ушла вперёд",
-		camera.position.y < base.y - 0.8 and camera.position.z < base.z - 0.6, "%s, база %s" % [camera.position, base])
-	SettingsManager.settings.camera_motion = RS_Settings.CAMERA_MOTION_OFF
-	var still := 0.0
-	var running_at := camera.position
-	for i in 30:
-		await _animate(1)
-		still = maxf(still, absf(camera.v_offset) + absf(camera.h_offset) + absf(camera.rotation.z))
-	_check("покачивание выкл — качки нет, голова на месте", still == 0.0 and camera.position.distance_to(running_at) < 0.01,
-		"качка %.4f, сдвиг %.3f" % [still, camera.position.distance_to(running_at)])
-	SettingsManager.settings.camera_motion = RS_Settings.CAMERA_MOTION_FULL
-
-	# Стена в 0.6 м перед центром тела: голова в беге (0.94 м вперёд) за ней, камера — нет.
-	var wall := StaticBody3D.new()
-	var box := CollisionShape3D.new()
-	box.shape = BoxShape3D.new()
-	(box.shape as BoxShape3D).size = Vector3(4, 8, 0.2)
-	wall.add_child(box)
-	add_child(wall)
-	var forward: Vector3 = -player.global_basis.z
-	wall.global_transform = Transform3D(player.global_basis, player.global_position + forward * 0.7)
-	await _physics(3)
-	await _animate(2)
-	var ahead: float = (camera.global_position - player.global_position).dot(forward)
-	_check("у стены камера не уходит за неё, но и не прячется в базу", ahead < 0.6 - 0.05 and ahead > 0.2, "%.3f м впереди центра, стена в 0.6" % ahead)
-	wall.queue_free()
-	await _physics(3)
-	sprint.active = false
-	vel.velocity = Vector3.ZERO
-	await _animate(90)
-
-	var attack := player.get_component(C_Attack) as C_Attack
-	var stand := camera.position
-	attack.cooldown_left = attack.interval
-	await _animate(int(motion.bite_time * motion.bite_peak * 60.0))
-	_check("укус выносит камеру вперёд и клюёт вниз",
-		camera.position.z < stand.z - 0.2 and camera.rotation.x < _pitch(player) - 0.03,
-		"z %.3f при %.3f, тангаж %.3f при %.3f" % [camera.position.z, stand.z, camera.rotation.x, _pitch(player)])
-	await _animate(40)
-	_check("укус отыграл — камера вернулась",
-		is_equal_approx(camera.rotation.x, _pitch(player)) and camera.position.distance_to(stand) < 0.01, str(camera.position))
-	SettingsManager.settings.camera_motion = players_motion
+## Надетый облик гаснет, когда камера подходит вплотную: у него своя копия материала с растворением, общий
+## материал облика (его делят враги и тела) не тронут.
+func _check_worn_fade(worn: Node3D) -> void:
+	var mesh := worn.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	var own := mesh.get_active_material(0) as BaseMaterial3D
+	var shared := mesh.mesh.surface_get_material(0) as BaseMaterial3D
+	_check("надетый облик гаснет вблизи камеры, общий материал не тронут",
+		own != null and own != shared and own.distance_fade_mode != BaseMaterial3D.DISTANCE_FADE_DISABLED
+			and (shared == null or shared.distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_DISABLED), str(own))
 
 
 func _capture(world: World, player: E_Player, scene: String, at: Vector3) -> void:

@@ -1,5 +1,5 @@
 extends Control
-## Экран стенда клипов: выбор облика, версии и клипа, время клипа и скорость, A/B между основной и версией. Сам ничего
+## Экран стенда клипов: выбор версии и клипа, время клипа и скорость, A/B между основной и версией. Сам ничего
 ## не проигрывает — правит стенд (clip_stand.gd) и показывает его состояние. Вики: [[Полигон]].
 
 ## С какого расстояния камера смотрит на облик.
@@ -10,7 +10,6 @@ var _stand: Node3D
 var _clip_rows: Array[StringName] = []
 
 @onready var _camera: Camera3D = %OrbitCamera
-@onready var _model_pick: OptionButton = %ModelPick
 @onready var _source_pick: OptionButton = %SourcePick
 @onready var _ab: Button = %AbButton
 @onready var _clips: ItemList = %Clips
@@ -26,13 +25,10 @@ var _clip_rows: Array[StringName] = []
 func setup(stand: Node3D, _polygon: Node) -> void:
 	_stand = stand
 	_camera.look_at_target(stand.focus, VIEW_DISTANCE)
-	_model_pick.set_item_disabled(1, not stand.has_arms())
-	_model_pick.selected = stand.model
 	_loop.button_pressed = stand.loop
 	_speed.set_value_no_signal(stand.speed)
 	_springs.button_pressed = stand.springs
 
-	_model_pick.item_selected.connect(_on_model)
 	_source_pick.item_selected.connect(_on_source)
 	_ab.pressed.connect(_toggle_ab)
 	_clips.item_selected.connect(func(row: int) -> void: _stand.select_clip(_clip_rows[row]))
@@ -107,12 +103,6 @@ func _next_clip(direction: int) -> void:
 	var row := wrapi(_clip_rows.find(_stand.clip) + direction, 0, _clip_rows.size())
 	_clips.select(row)
 	_stand.select_clip(_clip_rows[row])
-
-
-func _on_model(index: int) -> void:
-	_stand.select_model(index)
-	_camera.look_at_target(_stand.focus, VIEW_DISTANCE if index == 0 else VIEW_DISTANCE * 0.5)
-	_fill()
 
 
 func _on_source(index: int) -> void:

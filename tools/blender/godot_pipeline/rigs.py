@@ -21,13 +21,6 @@ RIG_TYPE_ITEMS = [
     ('QUADRUPED', "Quadruped", "Four legs and a tail (hound). Bone names from rigs/quadruped.json", 3),
 ]
 
-# Голова и руки облика — отдельные объекты: пока облик надет на игрока, они
-# рисуются только тенью, а меш целиком так не переключить. Суффикс, а не
-# свойство: имя объекта доезжает до Godot именем узла, и облику на риге не нужно
-# разбирать extras, чтобы найти их.
-HEAD_SUFFIX = "_head"
-ARMS_SUFFIX = "_arms"
-
 # Автосуффикс Blender для дубля: arm.001.l, leg.001. В Godot такие имена в путях
 # треков «плывут» на реимпорте (godotengine/godot#115792).
 DUPLICATE_MARKER = re.compile(r"\.\d{3}(?![0-9])")

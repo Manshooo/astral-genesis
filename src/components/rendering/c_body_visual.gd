@@ -14,9 +14,6 @@ extends Component
 ## Материалы, которыми сцена тела перекрасила меши облика (тон L5 на общем SK_hound): имя меша → материал.
 @export var material_overrides: Dictionary[StringName, Material] = {}
 
-## Руки-муляж тела (E_Body.fp_arms_scene): риг вешает их на камеру. null — рук в кадре нет.
-@export var fp_arms: PackedScene
-
 ## Меш и материал, снятые с тела, — у тел без сцены облика.
 @export var mesh: Mesh
 @export var material_override: Material

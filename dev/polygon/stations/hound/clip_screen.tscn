@@ -46,26 +46,6 @@ theme_override_constants/separation = 8
 layout_mode = 2
 text = "Стенд клипов"
 
-[node name="ModelRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
-layout_mode = 2
-
-[node name="Caption" type="Label" parent="Panel/Margin/VBox/ModelRow"]
-custom_minimum_size = Vector2(72, 0)
-layout_mode = 2
-text = "Облик"
-
-[node name="ModelPick" type="OptionButton" parent="Panel/Margin/VBox/ModelRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-selected = 0
-item_count = 2
-popup/item_0/text = "Тело"
-popup/item_0/id = 0
-popup/item_1/text = "Руки-муляж"
-popup/item_1/id = 1
-
 [node name="SourceRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
 

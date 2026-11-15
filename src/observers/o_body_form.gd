@@ -1,7 +1,7 @@
 # res://src/observers/o_body_form.gd
 # Наблюдатель: надевает на душу-риг форму захваченного тела (габарит коллизии, уровень глаз) и возвращает призрачную
 # при развоплощении; как C_BodyVisual → O_BodyVisual. Правим НА МЕСТЕ, не подменяя узлов: на CollisionShape3D ссылается
-# E_Player.foot_offset, камеру держат по @onready S_FPSLook и S_Flight.
+# E_Player.foot_offset, на камеру в глазах — E_Player.eye_point (лучи прицела, взгляд врага).
 class_name O_BodyForm
 extends Observer
 
@@ -67,7 +67,7 @@ func _place_camera(player: E_Player, form: C_BodyForm, camera: Camera3D) -> void
 	camera.transform = wanted
 
 
-## База глаз для S_FirstPersonMotion — там, куда форма только что поставила камеру.
+## База глаз (опора камеры от третьего лица) — там, куда форма только что поставила камеру в глазах.
 func _remember_eyes(player: E_Player, camera: Camera3D) -> void:
 	var look := player.get_component(C_FPSCamera) as C_FPSCamera
 	if look and camera:

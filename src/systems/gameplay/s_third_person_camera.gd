@@ -14,9 +14,9 @@ func query() -> QueryBuilder:
 	return q.with_all([C_ThirdPersonCamera, C_FPSCamera])
 
 
-## После взгляда (рыскание и тангаж этого кадра) и после качки первого лица: руки-муляж прячутся уже поставленными.
+## После взгляда: рыскание и тангаж этого кадра.
 func deps() -> Dictionary[int, Array]:
-	return {Runs.After: [S_CameraLook, S_FirstPersonMotion]}
+	return {Runs.After: [S_CameraLook]}
 
 
 func process(entities: Array[Entity], _components: Array, delta: float) -> void:
@@ -40,7 +40,7 @@ static func place(player: E_Player, view: C_ThirdPersonCamera, look: C_FPSCamera
 	var size := player.form_size()
 	var eyes := player.camera.position.y
 	if look.eye_position != Vector3.INF:
-		eyes = look.eye_position.y  # база глаз без качки S_FirstPersonMotion
+		eyes = look.eye_position.y  # база глаз формы (O_BodyForm)
 	var lift := maxf(eyes + view.pivot_lift * size.x, view.min_pivot - player.foot_offset().y)
 	player.camera_rig.global_position = rig.get_global_transform_interpolated().origin + Vector3.UP * lift
 	if view.yaw == INF:
@@ -62,18 +62,9 @@ static func place(player: E_Player, view: C_ThirdPersonCamera, look: C_FPSCamera
 	player.arm.rotation.y = -turn
 
 
-## Руки-муляж и клочья души висят на камере в глазах и снаружи торчали бы из облика. Уходят вместе с наследием
-## первого лица (шаг 5 карточки). S_SoulCloud включает клочья только при смене «во плоти / вне тела» — гасим каждый кадр.
+## Клочья души висят на камере в глазах и снаружи торчали бы из облика. Уходят вместе с обликом души первого лица
+## (шаг 6 карточки). S_SoulCloud включает клочья только при смене «во плоти / вне тела» — гасим каждый кадр.
 func _hide_first_person(player: E_Player) -> void:
-	var arms := player.camera.get_node_or_null(NodePath(O_BodyVisual.FP_ARMS_NODE)) as Node3D
-	if arms != null:
-		arms.visible = false
-	# Голова и руки облика «только тенью» (RS_EntityVisuals.hide_from_wearer) — снаружи облик был бы без головы.
-	var worn := player.get_node_or_null(NodePath(O_BodyVisual.WORN_NODE))
-	if worn != null:
-		for geo: GeometryInstance3D in worn.find_children("*", "GeometryInstance3D", true, false):
-			if geo.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY:
-				geo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	var cloud := player.get_component(C_SoulCloud) as C_SoulCloud
 	if cloud == null:
 		return
