@@ -266,7 +266,7 @@ func _check_treadmill() -> void:
 	treadmill.speed = 0.0
 
 
-# --- 5. Мат: тело для первого лица -------------------------------------------------
+# --- 5. Мат: тело для захвата ------------------------------------------------------
 func _check_mat() -> void:
 	var mat: Node3D = _station.mat
 	var body: E_Body = mat.body

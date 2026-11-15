@@ -82,9 +82,9 @@ func _run(world: World) -> void:
 	await get_tree().process_frame
 
 	var collision := player.get_node_or_null("CollisionShape3D") as CollisionShape3D
-	var camera := player.get_node_or_null("Eyes") as Node3D  # глаза формы: маркер, по нему встаёт камера
+	var eyes := player.get_node_or_null("Eyes") as Node3D  # глаза формы: отсюда второй луч прицела и взгляд врага
 	var ghost_shape := collision.shape
-	var ghost_camera := camera.transform
+	var ghost_eyes := eyes.transform
 	var ghost_lift := player.foot_offset().y
 
 	# Entity наследует Node, поэтому до Node3D — через двойной каст, как в
@@ -113,9 +113,9 @@ func _run(world: World) -> void:
 	)
 	# Origin рига — в центре габарита, на высоте подошвы над полом.
 	_check(
-		"камера села на уровень глаз тела",
-		is_equal_approx(camera.transform.origin.y, body_form.eye_height - sole),
-		"%.3f вместо %.3f" % [camera.transform.origin.y, body_form.eye_height - sole]
+		"глаза рига встали на уровень глаз тела",
+		is_equal_approx(eyes.transform.origin.y, body_form.eye_height - sole),
+		"%.3f вместо %.3f" % [eyes.transform.origin.y, body_form.eye_height - sole]
 	)
 	# Подошва рига должна оказаться там же, где подошва тела, — на полу комнаты.
 	_check(
@@ -148,9 +148,9 @@ func _run(world: World) -> void:
 	await get_tree().process_frame
 	_check("габарит вернулся призрачный", collision.shape == ghost_shape, str(collision.shape))
 	_check(
-		"камера вернулась призрачная",
-		camera.transform.is_equal_approx(ghost_camera),
-		str(camera.transform.origin)
+		"глаза вернулись призрачные",
+		eyes.transform.is_equal_approx(ghost_eyes),
+		str(eyes.transform.origin)
 	)
 
 	# --- 4. Отказ, когда тело не помещается ---------------------------------
@@ -217,11 +217,11 @@ func _run(world: World) -> void:
 		"%.3f (офсет прошлого тела был %.3f)" % [geo.transform.origin.y, sole]
 	)
 	_check(
-		"после пересадки камера села на уровень глаз нового тела",
+		"после пересадки глаза рига встали на уровень глаз нового тела",
 		is_equal_approx(
-			camera.transform.origin.y, crawler_form.eye_height - crawler_form.foot_offset().y
+			eyes.transform.origin.y, crawler_form.eye_height - crawler_form.foot_offset().y
 		),
-		str(camera.transform.origin.y)
+		str(eyes.transform.origin.y)
 	)
 
 	# --- 6. Реальная геометрия комнаты: подошва впритык к полу — не теснота -

@@ -1,7 +1,7 @@
 # res://src/systems/gameplay/s_camera_look.gd
 # Группа "gameplay": взгляд крутится каждый ОТРИСОВАННЫЙ кадр (камера с частотой физики дёргается). Мышь крутит опору
 # камеры (C_ThirdPersonCamera), а не тело: тело поворачивается по направлению передвижения (S_BodyTurn). Чувствительность —
-# SettingsManager, предел тангажа — GameConfig. Вики: [[Вид от третьего лица]].
+# SettingsManager, предел тангажа — GameConfig. Вики: [[Камера от третьего лица]].
 class_name S_CameraLook
 extends System
 

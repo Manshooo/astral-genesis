@@ -1,7 +1,7 @@
 # res://src/systems/physics/s_camera_aim.gd
 # Группа "physics": луч из камеры от третьего лица через центр кадра — точка под прицелом (C_ThirdPersonCamera.aim_point),
 # первый из двух лучей прицела. Заодно смена плеча у стены: лучи вбок от опоры. Space-state — только из физкадра.
-# Вики: [[Вид от третьего лица]].
+# Вики: [[Камера от третьего лица]].
 class_name S_CameraAim
 extends System
 

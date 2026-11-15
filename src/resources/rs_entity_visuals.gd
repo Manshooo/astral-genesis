@@ -33,7 +33,7 @@ static func animation_tree(entity: Node) -> AnimationTree:
 	return found[0] if not found.is_empty() else null
 
 
-## Все AnimationTree сущности: у рига во плоти их два — облик (BodyAnimation) и руки-муляж на камере.
+## Все AnimationTree сущности. Сейчас у каждой одно — облик (BodyAnimation); список терпит и несколько.
 static func animation_trees(entity: Node) -> Array[AnimationTree]:
 	var found: Array[AnimationTree] = []
 	if entity == null:
@@ -56,7 +56,7 @@ static func fade_actor(entity: Node) -> void:
 
 ## Всей геометрии [param appearance] — копии материалов, которые гаснут дизером по расстоянию до камеры: ближе
 ## [param near] не видно, дальше [param far] плотно. Общие материалы не трогаются — облик тела делит их с врагами.
-## Материал не BaseMaterial3D остаётся как есть. Вики: [[Вид от третьего лица]].
+## Материал не BaseMaterial3D остаётся как есть. Вики: [[Камера от третьего лица]].
 static func fade_near_camera(appearance: Node, mode: BaseMaterial3D.DistanceFadeMode, near: float, far: float) -> void:
 	for node in appearance.find_children("*", "MeshInstance3D", true, false):
 		var mesh := node as MeshInstance3D
