@@ -40,8 +40,9 @@ func setup(treadmill: Node3D, polygon: Node) -> void:
 	_follow.toggled.connect(func(_on: bool) -> void: _retarget())
 	_source_pick.item_selected.connect(_on_source)
 	_fill_presets()
-	_fill_buttons(_fidgets, S_BodyAnimation.FIDGETS.map(func(kind: StringName) -> String: return String(kind)),
-		func(i: int) -> void: _treadmill.fidget_kind(S_BodyAnimation.FIDGETS[i]))
+	var tree: AnimationTree = treadmill.animation_tree()
+	var fidgets := S_BodyAnimation.fidgets_of(tree) if tree != null else PackedStringArray()
+	_fill_buttons(_fidgets, Array(fidgets), func(i: int) -> void: _treadmill.fidget_kind(StringName(fidgets[i])))
 	_fill_buttons(_time_scales, Polygon.TIME_SCALES.map(func(value: float) -> String: return "×%s" % value),
 		func(i: int) -> void: _polygon.set_time_scale(Polygon.TIME_SCALES[i]))
 	_fill_sources()

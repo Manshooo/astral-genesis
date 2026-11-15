@@ -3,7 +3,7 @@ extends C_BodyTrait
 ## Умение ходить по земле и скорость этого тела. Нет компонента = не ходит (призрак летит, S_Flight).
 
 ## Клипы, без которых анимированное тело с этой способностью не обходится (dev/body_clips_check).
-const CLIPS: Array[StringName] = [&"idle", &"walk"]
+const CLIPS: Array[StringName] = [&"idle", &"walk", &"walk_back", &"strafe_left", &"strafe_right"]
 
 ## Скорость по горизонтали, м/с; абсолютная.
 @export var speed: float = 4.5
@@ -11,3 +11,8 @@ const CLIPS: Array[StringName] = [&"idle", &"walk"]
 ## Как быстро тело разворачивается по направлению передвижения, градусов в секунду (S_BodyTurn). Лежит здесь, а не
 ## отдельной характеристикой: поворачивается та способность, которой форма передвигается, и уезжает она вместе с ней.
 @export var turn_speed: float = 540.0
+
+## Доли скорости шага спиной назад и вбок (стрейф игрока шагом, S_Walk). Клипы вбок и назад записаны медленнее
+## переднего, и на полной скорости ноги скользили бы.
+@export_range(0.1, 1.0, 0.05) var back_speed_scale: float = 0.6
+@export_range(0.1, 1.0, 0.05) var side_speed_scale: float = 0.8

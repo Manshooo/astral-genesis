@@ -10,6 +10,10 @@ extends C_BodyTrait
 ## То же для run.
 @export var run_clip_speed: float = 4.0
 
+## То же для walk_back и strafe_left/strafe_right (шаг спиной и вбок, стрейф игрока); 0 — как walk_clip_speed.
+@export var walk_back_clip_speed: float = 0.0
+@export var strafe_clip_speed: float = 0.0
+
 ## То же для trot — рысь между шагом и бегом; 0 — у тела рыси нет, весь ход до бега идёт клипом walk.
 @export var trot_clip_speed: float = 0.0
 
@@ -27,6 +31,8 @@ const STILL_SPEED := 0.2
 
 ## Состояние между тиками: S_BodyAnimation узнаёт удар по сбросу перезарядки, попадание — по падению прочности.
 var state: StringName = &"idle"
+## Куда тело идёт шагом в своих осях (x — вправо, y — вперёд), длина 1: точка смеси клипов шага.
+var walk_direction := Vector2(0.0, 1.0)
 var last_cooldown: float = 0.0
 var last_health: float = -1.0
 var airborne: bool = false

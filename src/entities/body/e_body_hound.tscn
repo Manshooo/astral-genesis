@@ -35,6 +35,7 @@ metadata/_custom_type_script = "uid://brejetk5bt2cr"
 [sub_resource type="Resource" id="Resource_w3ko0"]
 script = ExtResource("6_wvqws")
 speed = 4.5
+side_speed_scale = 0.6
 metadata/_custom_type_script = "uid://dknqwce2loh3r"
 
 [sub_resource type="Resource" id="Resource_a0cgm"]
@@ -69,6 +70,8 @@ script = ExtResource("ext_animation")
 walk_clip_speed = 1.84
 run_clip_speed = 4.5
 trot_clip_speed = 4.5
+walk_back_clip_speed = 1.06
+strafe_clip_speed = 0.9
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jimbe"]
 radius = 0.44

@@ -192,15 +192,33 @@ func _check_enemy(world: World) -> void:
 	var anim := enemy.get_component(C_BodyAnimation) as C_BodyAnimation
 	var fast := anim.run_from_speed + 1.0
 	var trotting := (anim.trot_from_speed + anim.run_from_speed) * 0.5
-	for case in [[Vector3(fast, 0, 0), &"run"], [Vector3(trotting, 0, 0), &"trot"], [Vector3(1.0, 0, 0), &"walk"],
-			[Vector3.ZERO, &"idle"]]:
+	# Враг идёт лицом вперёд: скорость вдоль его −Z. Вбок и назад — шаг, а не рысь (см. ниже).
+	var node := enemy as Node as Node3D
+	var ahead := -node.global_basis.z
+	var right := node.global_basis.x
+	for case in [[ahead * fast, &"run"], [ahead * trotting, &"trot"], [ahead * 1.0, &"walk"], [Vector3.ZERO, &"idle"]]:
 		vel.velocity = case[0]
 		# Полторы секунды: переход идёт в темпе клипа (pace стоит после машины состояний), медленный шаг тянет его вдвое.
 		await _animate(90)
 		_check("враг на %.1f м/с — %s" % [case[0].length(), case[1]], playback.get_current_node() == case[1],
 			"играет %s, хочет %s, путь %s" % [playback.get_current_node(), anim.state, playback.get_travel_path()])
 
-	vel.velocity = Vector3(fast, 0, 0)
+	# Шаг по направлению: смесь клипов шага (BlendSpace2D) по скорости в осях тела; рыси вбок и назад нет.
+	for case in [[right * trotting, Vector2(1, 0), "вправо"], [-right * 1.0, Vector2(-1, 0), "влево"],
+			[-ahead * 1.0, Vector2(0, -1), "спиной"]]:
+		vel.velocity = case[0]
+		await _animate(60)
+		var blend: Vector2 = tree.get(S_BodyAnimation.WALK_BLEND)
+		_check("враг на %.1f м/с %s — шаг смесью к %s" % [case[0].length(), case[2], case[1]],
+			playback.get_current_node() == &"walk" and blend.distance_to(case[1]) < 0.05,
+			"играет %s, смесь %s" % [playback.get_current_node(), blend])
+	vel.velocity = -ahead * 1.0
+	await _animate(5)
+	var back_pace := clampf(1.0 / anim.walk_back_clip_speed, S_BodyAnimation.WALK_PACE.x, S_BodyAnimation.WALK_PACE.y)
+	_check("шаг спиной ускорен по скорости своего клипа, а не переднего",
+		is_equal_approx(tree.get(S_BodyAnimation.PACE), back_pace), "%s против %s" % [tree.get(S_BodyAnimation.PACE), back_pace])
+
+	vel.velocity = ahead * fast
 	await _animate(10)
 	var pace := clampf(fast / anim.run_clip_speed, S_BodyAnimation.RUN_PACE.x, S_BodyAnimation.RUN_PACE.y)
 	_check("клип бега ускорен под ход", is_equal_approx(tree.get(S_BodyAnimation.PACE), pace), str(tree.get(S_BodyAnimation.PACE)))

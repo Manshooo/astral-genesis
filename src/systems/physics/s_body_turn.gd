@@ -1,7 +1,7 @@
 # res://src/systems/physics/s_body_turn.gd
-# Группа "physics": тело игрока поворачивается по направлению передвижения, со скоростью разворота своей способности
-# (C_Walk у тела, C_Flight у души), а на ударе и захвате — сразу к точке под прицелом. Камера свободна: взгляд крутит её,
-# а не тело (S_CameraLook). Поворот — в физкадре, чтобы его сглаживала интерполяция физики. Вики: [[Камера от третьего лица]].
+# Группа "physics": тело игрока шагом держит взгляд камеры (стрейф), бегом и в полёте души поворачивается по направлению
+# передвижения — со скоростью разворота своей способности (C_Walk, C_Flight); на ударе и захвате — сразу к прицелу.
+# Поворот — в физкадре, чтобы его сглаживала интерполяция физики. Вики: [[Камера от третьего лица]].
 class_name S_BodyTurn
 extends System
 
@@ -35,8 +35,11 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		var velocity := (entity.get_component(C_Velocity) as C_Velocity).velocity
 		if Vector2(velocity.x, velocity.z).length() < MIN_SPEED:
 			continue
+		var wanted := yaw_of(velocity)
+		if strafing(entity) and view.yaw != INF:
+			wanted = view.yaw  # шагом тело держит взгляд камеры и идёт вбок или спиной (клипы — S_BodyAnimation)
 		var step := deg_to_rad(turn_speed(entity)) * delta
-		var turn := wrapf(yaw_of(velocity) - node.global_rotation.y, -PI, PI)
+		var turn := wrapf(wanted - node.global_rotation.y, -PI, PI)
 		node.global_rotation.y += clampf(turn, -step, step)
 
 
@@ -53,6 +56,17 @@ static func turn_speed(entity: Entity) -> float:
 	if flight != null:
 		return flight.turn_speed
 	return FALLBACK_TURN
+
+
+## Стрейф — тело идёт шагом: у формы есть ходьба (у души полёт, переда у сгустка нет) и бег не нажат. Бег разворачивает
+## тело по передвижению: клипов бега вбок и назад нет.
+static func strafing(entity: Entity) -> bool:
+	return entity.has_component(C_Walk) and not sprinting(entity)
+
+
+static func sprinting(entity: Entity) -> bool:
+	var sprint := entity.get_component(C_Sprint) as C_Sprint
+	return sprint != null and sprint.active
 
 
 ## Удар (есть чем бить) или захват в этом тике — тело встаёт лицом к прицелу.
