@@ -1,8 +1,8 @@
-[gd_resource type="ShaderMaterial" format=3]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dknfabpdxpjwf"]
 
-[ext_resource type="Shader" path="res://assets/shared/shaders/slab_shuffle.gdshader" id="1_shader"]
-[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_floor_albedo.png" id="2_albedo"]
-[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_floor_n.png" id="3_normal"]
+[ext_resource type="Shader" uid="uid://cn1yipbr2ejpy" path="res://assets/shared/shaders/slab_shuffle.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" uid="uid://dt37gmrfmf3hy" path="res://assets/textures/T_concrete_floor_albedo.png" id="2_albedo"]
+[ext_resource type="Texture2D" uid="uid://oh7qpj6b1l5r" path="res://assets/textures/T_concrete_floor_n.png" id="3_normal"]
 
 [resource]
 resource_name = "MAT_concrete_floor"
@@ -10,6 +10,7 @@ render_priority = 0
 shader = ExtResource("1_shader")
 shader_parameter/albedo_tex = ExtResource("2_albedo")
 shader_parameter/normal_tex = ExtResource("3_normal")
+shader_parameter/uv_scale = Vector2(2, 2)
 shader_parameter/slabs = 4
 shader_parameter/roughness = 0.9
 shader_parameter/normal_depth = 1.0

@@ -8,12 +8,16 @@
 // гранж) нужен hex-tiling, а не этот шейдер.
 //
 // Развёртка в метрах — из Blender (tools/kit_materials.py арт-репозитория,
-// 1 текстура = 4 м, 256 px/м). Материал там простой, без перемешивания: в
-// превью Blender видна обычная плитка с периодом 4 м, а повтор гасится здесь.
+// 1 текстура = FLOOR_TEX_M). Материал там простой, без перемешивания: в превью
+// Blender видна обычная плитка, а повтор гасится здесь. uv_scale/uv_offset —
+// как Mapping-нода: при uv_scale = 2 текстура ложится на вдвое меньший квадрат,
+// и превью Blender с игрой по размеру плиты уже не совпадает.
 shader_type spatial;
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec2 uv_scale = vec2(1.0);
+uniform vec2 uv_offset = vec2(0.0);
 uniform int slabs = 4;
 uniform float roughness : hint_range(0.0, 1.0) = 0.9;
 uniform float normal_depth : hint_range(0.0, 4.0) = 1.0;
@@ -24,6 +28,13 @@ vec3 hash33(vec3 p) {
 	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
 	p += dot(p, p.yxz + 33.33);
 	return fract((p.xxy + p.yxx) * p.zyx);
+}
+
+
+// Масштаб — в vertex(), как uv1_scale у StandardMaterial3D: тогда dFdx(UV) во
+// fragment() уже от масштабированной развёртки, и мипмап выбирается верно.
+void vertex() {
+	UV = UV * uv_scale + uv_offset;
 }
 
 void fragment() {
