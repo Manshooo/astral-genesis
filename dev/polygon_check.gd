@@ -292,6 +292,9 @@ func _check_screens() -> void:
 		var orbit := screen.get_node("%OrbitCamera") as Camera3D
 		_check("%s: камера облёта ведёт кадр, ввод игрока заблокирован" % opener,
 			orbit.current and player.has_component(C_UIBlocked), "")
+		var heard: Variant = AudioManager.listener_pose()
+		_check("%s: слушатель звука у камеры облёта, не у игрока" % opener,
+			heard != null and (heard as Transform3D).origin.is_equal_approx(orbit.global_position), "")
 		UIManager.close_top()
 		await _frames(2)
 		_check("%s: закрытие возвращает кадр и ввод игроку" % opener,
@@ -349,6 +352,7 @@ func _check_camera_station() -> void:
 		"плечо %.2f м, камера x %.2f" % [player.arm.get_hit_length(), camera_x])
 	var pivot_height := player.camera_rig.global_position.y - station.global_position.y
 	_check("опора камеры маленькой души не у пола", pivot_height >= view.min_pivot - 0.01, "%.2f м над полом" % pivot_height)
+	_check_listener(player)
 	await _check_aim_rays(player, station)
 
 	var grate_gap := 14.0 - 12.6
@@ -393,6 +397,19 @@ func _check_camera_station() -> void:
 
 ## Шаг 3: мышь крутит камеру, а не тело; «вперёд» — куда смотрит камера; тело разворачивается по направлению
 ## передвижения, а на захвате — сразу к прицелу. Душа на арене у маркера станции, вокруг пусто.
+## Уши у глаз формы, повороты — от камеры: свои шаги не звучат за плечом, «слева на экране» — слева.
+func _check_listener(player: E_Player) -> void:
+	var heard: Variant = AudioManager.listener_pose()
+	var camera := player.view_camera.global_transform
+	var ears := (heard as Transform3D) if heard != null else Transform3D()
+	_check("слушатель звука у глаз персонажа, а не у камеры на плече",
+		heard != null and ears.origin.distance_to(player.eye_point()) < 0.05
+			and camera.origin.distance_to(player.eye_point()) > 1.0,
+		"от глаз %.2f м, камера от глаз %.2f м" % [ears.origin.distance_to(player.eye_point()),
+			camera.origin.distance_to(player.eye_point())])
+	_check("слушатель звука повёрнут как камера", heard != null and ears.basis.is_equal_approx(camera.basis), "")
+
+
 func _check_body_turn(player: E_Player, station: Node3D, view: C_ThirdPersonCamera) -> void:
 	var rig := player as Node as Node3D
 	await _stand(player, station, Vector3(0.0, 0.0, 9.0), 0.0)

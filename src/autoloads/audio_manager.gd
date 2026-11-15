@@ -91,16 +91,31 @@ func _process(delta: float) -> void:
 	if _manager == null:
 		return
 
-	# Слушатель за активной камерой, не за игроком: в меню игрока в мире нет.
-	var camera := get_viewport().get_camera_3d()
-	if camera != null:
-		var t := camera.global_transform
+	var pose: Variant = listener_pose()
+	if pose != null:
+		var t: Transform3D = pose
 		_manager.set_listener_transform(t.origin, -t.basis.z, t.basis.y)
 
 	_apply_tick_level(get_tree().paused)
 	_manager.update()
 	if _host_mixed:
 		_mix_and_discard(delta)
+
+
+## Где и куда слушает игра (Transform3D) или null, если кадр не рисует ни одна камера.
+## Кадр рисует камера игрока — уши у глаз формы, а не на плече: иначе свои шаги звучат
+## за 3 м, а звук за спиной камеры громче, чем у тела. Повороты — всегда от камеры,
+## чтобы «слева на экране» звучало слева. Чужая камера (меню, облёт полигона) — всё у неё.
+func listener_pose() -> Variant:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return null
+	var pose := camera.global_transform
+	var player := E_Player.find() as E_Player
+	if player != null and player.view_camera == camera:
+		# Камера рига ставится в _process по интерполированному телу — уши туда же, иначе дрожат.
+		pose.origin = player.eyes.get_global_transform_interpolated().origin
+	return pose
 
 
 ## Headless: прокрутить звук без вывода. Кадры по реальному delta, иначе звуковые часы
