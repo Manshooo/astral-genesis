@@ -21,11 +21,34 @@ class _Ragdoll:
 	var before_rotation: Array[Quaternion] = []
 	var after_position: Array[Vector3] = []
 	var after_rotation: Array[Quaternion] = []
+	## Кости, которым пишется смещение: корень скелета и верхние кости рэгдолла (таз). Остальным — только
+	## поворот: суставы Jolt мягкие, прижатая к стене голова растягивает шею на сантиметры, и смещение
+	## записало бы этот зазор в позу — голова «отваливалась» от шеи.
+	var movable := {}
 
 	func _init(p_simulator: PhysicalBoneSimulator3D) -> void:
 		simulator = p_simulator
 		skeleton = p_simulator.get_skeleton()
 		_read(before_position, before_rotation)
+		var simulated := {}
+		for child in simulator.get_children():
+			if child is PhysicalBone3D and (child as PhysicalBone3D).get_bone_id() >= 0:
+				simulated[(child as PhysicalBone3D).get_bone_id()] = true
+		for bone in skeleton.get_bone_count():
+			var parent := skeleton.get_bone_parent(bone)
+			if parent < 0:
+				movable[bone] = true
+				continue
+			if not simulated.has(bone):
+				continue
+			var top := true
+			while parent >= 0:
+				if simulated.has(parent):
+					top = false
+					break
+				parent = skeleton.get_bone_parent(parent)
+			if top:
+				movable[bone] = true
 
 	## Зовётся из modification_processed: только там видна поза ПОСЛЕ симулятора — дальше Skeleton3D
 	## возвращает кости к хранимой позе, и get_bone_pose в _process показал бы позу до пуска.
@@ -99,7 +122,8 @@ func _commit() -> int:
 		if not is_instance_valid(ragdoll.skeleton) or ragdoll.after_position.is_empty():
 			continue
 		for bone in ragdoll.skeleton.get_bone_count():
-			var moved := ragdoll.after_position[bone].distance_to(ragdoll.before_position[bone]) > EPSILON
+			var moved := ragdoll.movable.has(bone) \
+					and ragdoll.after_position[bone].distance_to(ragdoll.before_position[bone]) > EPSILON
 			var turned := ragdoll.after_rotation[bone].angle_to(ragdoll.before_rotation[bone]) > EPSILON
 			if moved or turned:
 				changes.append([ragdoll, bone])
@@ -112,8 +136,9 @@ func _commit() -> int:
 		var bone: int = change[1]
 		var position := "bones/%d/position" % bone
 		var rotation := "bones/%d/rotation" % bone
-		history.add_do_property(ragdoll.skeleton, position, ragdoll.after_position[bone])
-		history.add_undo_property(ragdoll.skeleton, position, ragdoll.before_position[bone])
+		if ragdoll.movable.has(bone):
+			history.add_do_property(ragdoll.skeleton, position, ragdoll.after_position[bone])
+			history.add_undo_property(ragdoll.skeleton, position, ragdoll.before_position[bone])
 		history.add_do_property(ragdoll.skeleton, rotation, ragdoll.after_rotation[bone])
 		history.add_undo_property(ragdoll.skeleton, rotation, ragdoll.before_rotation[bone])
 	history.commit_action()

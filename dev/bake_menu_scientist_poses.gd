@@ -107,14 +107,14 @@ func _bake(pose: StringName) -> Dictionary:
 
 	await _capture(skeleton, simulator)
 	var skeleton_in_visual := visual.global_transform.affine_inverse() * skeleton.global_transform
-	var result := _to_pose(skeleton, skeleton_in_visual)
+	var result := _to_pose(skeleton, simulator, skeleton_in_visual)
 	visual.queue_free()
 	await process_frame
 	return result
 
 
 ## Root ставится так, что таз над началом узла, а голова смотрит к −Z — как стояли заглушки.
-func _to_pose(skeleton: Skeleton3D, skeleton_in_visual: Transform3D) -> Dictionary:
+func _to_pose(skeleton: Skeleton3D, simulator: PhysicalBoneSimulator3D, skeleton_in_visual: Transform3D) -> Dictionary:
 	var hips: Vector3 = _captured[skeleton.find_bone("Hips")][1].origin
 	var head: Vector3 = _captured[skeleton.find_bone("Head")][1].origin
 	var to_head := Vector2(head.x - hips.x, head.z - hips.z)
@@ -122,7 +122,7 @@ func _to_pose(skeleton: Skeleton3D, skeleton_in_visual: Transform3D) -> Dictiona
 	var yaw := to_head.angle_to(Vector2(0.0, -1.0))
 	var on_floor := Transform3D(Basis(Vector3.UP, -yaw), Vector3.ZERO) * Transform3D(Basis.IDENTITY, Vector3(-hips.x, 0.0, -hips.z))
 	var recenter: Transform3D = skeleton_in_visual.affine_inverse() * on_floor * _captured[-1]
-	return _local_pose(skeleton, recenter)
+	return _local_pose(skeleton, simulator, recenter)
 
 
 # --- Досимуляция позы из редактора -------------------------------------------
@@ -152,7 +152,7 @@ func _settle(node_name: String, seconds: float) -> Error:
 	if hips.y < -0.5:
 		push_error("таз ушёл под пол — у комнаты нет коллизии на маске костей, запись отменена")
 		return ERR_INVALID_DATA
-	var pose := _local_pose(skeleton, Transform3D.IDENTITY)
+	var pose := _local_pose(skeleton, simulator, Transform3D.IDENTITY)
 	menu.queue_free()
 	await process_frame
 	return _patch_menu({node_name: pose})
@@ -192,7 +192,13 @@ func _capture(skeleton: Skeleton3D, simulator: PhysicalBoneSimulator3D) -> void:
 
 
 ## {имя кости: локальный Transform3D} без халата; корень скелета умножается на [param root_fix].
-func _local_pose(skeleton: Skeleton3D, root_fix: Transform3D) -> Dictionary:
+## Смещение берётся только у корня и верхних костей рэгдолла (таз), остальным — длина кости из покоя:
+## суставы Jolt мягкие, растянутая шея иначе застыла бы зазором и голова «отвалилась» бы.
+func _local_pose(skeleton: Skeleton3D, simulator: PhysicalBoneSimulator3D, root_fix: Transform3D) -> Dictionary:
+	var simulated := {}
+	for child in simulator.get_children():
+		if child is PhysicalBone3D:
+			simulated[(child as PhysicalBone3D).get_bone_id()] = true
 	var result := {}
 	for bone in skeleton.get_bone_count():
 		var bone_name := skeleton.get_bone_name(bone)
@@ -201,8 +207,19 @@ func _local_pose(skeleton: Skeleton3D, root_fix: Transform3D) -> Dictionary:
 		var local: Transform3D = _captured[bone][0]
 		if skeleton.get_bone_parent(bone) < 0:
 			local = root_fix * local
+		elif not (simulated.has(bone) and not _has_simulated_ancestor(skeleton, bone, simulated)):
+			local.origin = skeleton.get_bone_rest(bone).origin
 		result[bone_name] = local
 	return result
+
+
+static func _has_simulated_ancestor(skeleton: Skeleton3D, bone: int, simulated: Dictionary) -> bool:
+	var parent := skeleton.get_bone_parent(bone)
+	while parent >= 0:
+		if simulated.has(parent):
+			return true
+		parent = skeleton.get_bone_parent(parent)
+	return false
 
 
 ## Кости встают в .tscn текстом — в блок переопределения Skeleton3D учёного, как пишет редактор; прочие строки
