@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/shared/shaders/wall_finish.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_cast_wall_albedo.png" id="2_fa"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_cast_wall_n.png" id="3_fn"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_concrete_cast_wall_r.png" id="4_fr"]
+
+[resource]
+resource_name = "MAT_concrete_cast_wall"
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/field_albedo = ExtResource("2_fa")
+shader_parameter/field_normal = ExtResource("3_fn")
+shader_parameter/field_roughness = ExtResource("4_fr")

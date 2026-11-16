@@ -46,6 +46,16 @@ _subresources={
 "use_external/fallback_path": "res://assets/materials/MAT_building.tres",
 "use_external/path": "uid://dajpdmo30j0th"
 },
+"MAT_concrete_cast_ceiling": {
+"use_external/enabled": true,
+"use_external/fallback_path": "res://assets/materials/MAT_concrete_cast_ceiling.tres",
+"use_external/path": "res://assets/materials/MAT_concrete_cast_ceiling.tres"
+},
+"MAT_concrete_cast_floor": {
+"use_external/enabled": true,
+"use_external/fallback_path": "res://assets/materials/MAT_concrete_cast_floor.tres",
+"use_external/path": "res://assets/materials/MAT_concrete_cast_floor.tres"
+},
 "MAT_concrete_floor": {
 "use_external/enabled": true,
 "use_external/fallback_path": "res://assets/materials/MAT_concrete_floor.tres",

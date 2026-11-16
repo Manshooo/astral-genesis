@@ -69,6 +69,7 @@ func _ready() -> void:
 
 	await _check_layers()
 	await _check_death_and_memory()
+	await _check_consumed_authored_body()
 	await _check_markers_on_floor()
 
 	RunManager._end_run()
@@ -358,6 +359,45 @@ func _check_death_and_memory() -> void:
 	expected.erase(marker_id)
 	_check("съеденный труп снимает маркер: враг не воскресает", not after.has(marker_id), "")
 	_check("остальные маркеры слоя не тронуты", after == expected, "")
+
+
+## Съеденное авторское тело (ходок хаба) при новой сборке слоя не возвращается и даже не входит в дерево: вошедшее
+## получает копии материалов, и снятое до первой отрисовки сыплет «Parameter "material" is null» (godotengine#85817).
+func _check_consumed_authored_body() -> void:
+	var depth := 0
+	var entered := [0]
+	var count_bodies := func(node: Node) -> void:
+		if node is E_Body:
+			entered[0] += 1
+	get_tree().node_added.connect(count_bodies)
+	await _reload_layer(depth)
+	var bodies_before: int = entered[0]
+
+	var body_id := &""
+	for spawned: LayerStreamer.SpawnedRoom in RunManager.layer.rooms.values():
+		for child in spawned.children:
+			if body_id == &"" and child is E_Body and not child.has_meta(LayerStreamer.ROSTER_ID_META) \
+					and child.has_component(C_BodyOrigin):
+				body_id = (child.get_component(C_BodyOrigin) as C_BodyOrigin).body_id
+	if body_id == &"":
+		get_tree().node_added.disconnect(count_bodies)
+		_check("на L%d есть авторское тело для проверки" % depth, false, "seed %d" % RUN_SEED)
+		return
+
+	WorldSave.save.consumed_body_ids.append(body_id)
+	entered[0] = 0
+	await _reload_layer(depth)
+	get_tree().node_added.disconnect(count_bodies)
+	var still := false
+	for spawned: LayerStreamer.SpawnedRoom in RunManager.layer.rooms.values():
+		for child in spawned.children:
+			if child is E_Body and child.has_component(C_BodyOrigin) \
+					and (child.get_component(C_BodyOrigin) as C_BodyOrigin).body_id == body_id:
+				still = true
+	_check("съеденное авторское тело не возвращается при новой сборке слоя", not still, body_id)
+	_check("съеденное тело не входит в дерево даже на кадр", entered[0] == bodies_before - 1,
+		"тел вошло %d, без съеденного ожидалось %d" % [entered[0], bodies_before - 1])
+	WorldSave.save.consumed_body_ids.erase(body_id)
 
 
 # --- Маркеры в сценах ----------------------------------------------------------

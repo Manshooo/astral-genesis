@@ -10,12 +10,19 @@
 [ext_resource type="PackedScene" uid="uid://b2172qd47jicw" path="res://assets/props/SM_Animal_cage_A/SM_Animal_cage_A.glb" id="9_xikcx"]
 [ext_resource type="PackedScene" uid="uid://cpvk48wt6akpa" path="res://src/entities/body/e_body_hound.tscn" id="10_1sr8u"]
 [ext_resource type="PackedScene" path="res://src/levels/lamp.tscn" id="lamp"]
+[ext_resource type="Material" path="res://assets/materials/MAT_concrete_cast_floor.tres" id="fin_concrete_cast_floor"]
+[ext_resource type="Material" path="res://assets/materials/MAT_concrete_cast_wall.tres" id="fin_concrete_cast_wall"]
+[ext_resource type="Material" path="res://assets/materials/MAT_concrete_cast_ceiling.tres" id="fin_concrete_cast_ceiling"]
+[ext_resource type="Material" path="res://assets/materials/MAT_plastic_floor.tres" id="fin_plastic_floor"]
+[ext_resource type="Material" path="res://assets/materials/MAT_plastic_wall.tres" id="fin_plastic_wall"]
+[ext_resource type="Material" path="res://assets/materials/MAT_plastic_ceiling.tres" id="fin_plastic_ceiling"]
 
 [sub_resource type="Resource" id="Resource_ng4uo"]
 script = ExtResource("3_jqxau")
 size = Vector3i(2, 1, 2)
 walls = ExtResource("4_lh1oc")
 door_sockets = Array[Vector4i]([Vector4i(0, 0, 0, 0), Vector4i(1, 0, 0, 0)])
+finish = Dictionary[Material, Material]({ExtResource("fin_concrete_cast_floor"): ExtResource("fin_plastic_floor"), ExtResource("fin_concrete_cast_wall"): ExtResource("fin_plastic_wall"), ExtResource("fin_concrete_cast_ceiling"): ExtResource("fin_plastic_ceiling")})
 
 [node name="vivarium" type="Node3D" unique_id=620451068]
 script = ExtResource("1_qwslo")
