@@ -2,10 +2,9 @@
 ## Живая сцена за главным меню — крупный план инкубатора глазами души (§8 «Меню — спека»): колба (IncubatorFlask),
 ## лаборатория в темноте и тумане, камера «дышит». Здесь только кадр меню: камера, лампа, кровь, тела. Арт заглушек
 ## подменяется ресурсом: свечение лампы — через материал слота, действие модели — меткой menu_action на узле.
+## Кадр — положение и поворот Camera3D в сцене: код камеру не наводит, только качает по высоте.
 extends Node3D
 
-## Сдвиг композиции: инкубатор уходит вправо (меню слева, точка схода ~70 % ширины).
-const COMPOSITION_YAW := 0.39
 ## Дыхание камеры: ±4 см по высоте за 6 с.
 const BREATH_AMPLITUDE := 0.04
 const BREATH_PERIOD := 6.0
@@ -26,7 +25,6 @@ const ACTION_META := &"menu_action"
 var _lamp_glow: StandardMaterial3D = preload("res://assets/materials/MAT_light_fluorescent_glow.tres")
 
 @onready var camera: Camera3D = $Camera3D
-@onready var _flask: IncubatorFlask = $Incubator/Flask
 @onready var _lamp: Light3D = $FluorescentLamp/Light
 @onready var _lab: Node3D = $Lab
 @onready var _blood: Node3D = $Lab/Blood
@@ -55,9 +53,6 @@ func _ready() -> void:
 	_play_actions()
 
 	camera.make_current()
-	# Мозг уже стоит: _ready() колбы отработал раньше.
-	camera.look_at(_flask.specimen.global_position)
-	camera.rotate_y(COMPOSITION_YAW)
 	_base_height = camera.position.y
 
 
@@ -137,7 +132,7 @@ static func _draw_blood_stub() -> ImageTexture:
 	return ImageTexture.create_from_image(image)
 
 
-## Действие из метки menu_action: модель с такой анимацией играет её; заглушки читают метку сами.
+## Действие из метки menu_action: модель с такой анимацией играет её. Позы учёных — кости в сцене, не клип.
 func _play_actions() -> void:
 	for node in _lab.get_children():
 		if not node.has_meta(ACTION_META):

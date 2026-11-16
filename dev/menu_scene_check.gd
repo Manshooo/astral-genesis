@@ -140,6 +140,19 @@ func _check_loads_clean() -> void:
 	)
 	var env := menu.get_node("WorldEnvironment")
 	_check("окружение — LevelEnvironment", env is LevelEnvironment, "окружение мимо настроек графики")
+	# Стоящий учёный держит таз на ~0.95 м; лёжа и сидя у стены — ниже 0.5. Поза записана в сцене, а не
+	# ставится кодом: ни клип, ни рэгдолл не должны поднять тело после 90 кадров.
+	var standing := []
+	for node_name in ["ScientistEaten", "ScientistCrawled"]:
+		var skeleton := menu.get_node("Lab/%s/Visual/scientist_skel/Skeleton3D" % node_name) as Skeleton3D
+		var hips := (skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("Hips"))).origin
+		if hips.y > 0.5 or hips.y < -0.05:
+			standing.append("%s (таз на %.2f м)" % [node_name, hips.y])
+	_check(
+		"учёные лежат на полу в позах из сцены",
+		standing.is_empty(),
+		"не на полу: %s" % [standing]
+	)
 	menu.queue_free()
 	await get_tree().process_frame
 
@@ -315,7 +328,7 @@ func _check_fallback_flask() -> void:
 		"декалей %d, без текстуры %d" % [decals.size(), bare.size()]
 	)
 	var unmarked := []
-	for node_name in ["Hound", "ScientistEaten", "ScientistCurled", "ScientistCrawled"]:
+	for node_name in ["Hound", "ScientistEaten", "ScientistSlumped", "ScientistCrawled"]:
 		if not menu.get_node("Lab/" + node_name).has_meta(&"menu_action"):
 			unmarked.append(node_name)
 	_check(

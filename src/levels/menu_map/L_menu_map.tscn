@@ -5,10 +5,13 @@
 [ext_resource type="PackedScene" uid="uid://bar53m3lj6cyr" path="res://assets/levels/SM_room_P_walled_2x2x1/SM_room_P_walled_2x2x1.glb" id="3_room"]
 [ext_resource type="PackedScene" uid="uid://1d4bjood4d0l" path="res://src/entities/incubator/e_incubator.tscn" id="4_htmip"]
 [ext_resource type="Script" uid="uid://t6aos1d87lt5" path="res://src/levels/level_environment.gd" id="5_levelenv"]
-[ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_scientist_stub.tscn" id="7_scientist"]
+[ext_resource type="PackedScene" path="res://src/levels/menu_map/menu_scientist.tscn" id="7_scientist"]
 [ext_resource type="PackedScene" path="res://src/levels/menu_map/menu_hound.tscn" id="8_hound"]
 [ext_resource type="PackedScene" uid="uid://djmjulnyrgth6" path="res://assets/props/interactive/SM_door_double/SM_door_double.glb" id="9_1m5cf"]
 [ext_resource type="PackedScene" path="res://src/levels/menu_map/stubs/menu_fluorescent_stub.tscn" id="9_lamp"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v2.tres" id="10_look_eaten"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v4.tres" id="11_look_curled"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v5.tres" id="12_look_crawled"]
 
 [sub_resource type="Environment" id="Environment_lab"]
 background_mode = 1
@@ -34,8 +37,8 @@ volumetric_fog_length = 24.0
 
 [sub_resource type="CameraAttributesPractical" id="Attributes_dof"]
 dof_blur_far_enabled = true
-dof_blur_far_distance = 5.4
-dof_blur_far_transition = 3.0
+dof_blur_far_distance = 11.0
+dof_blur_far_transition = 2.0
 dof_blur_amount = 0.12
 
 [node name="MenuMap" type="Node3D" unique_id=1397178608]
@@ -62,13 +65,1130 @@ metadata/menu_action = "eat"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7, 0, -1.9)
 metadata/menu_action = "pose_back"
 
-[node name="ScientistCurled" parent="Lab" unique_id=285086334 instance=ExtResource("7_scientist")]
-transform = Transform3D(0.77, 0, 0.64, 0, 1, 0, -0.64, 0, 0.77, 0.2, 0, -5)
-metadata/menu_action = "pose_side"
+[node name="Skeleton3D" parent="Lab/ScientistEaten/Visual/scientist_skel" index="0" unique_id=1922037902]
+bones/0/position = Vector3(0.16653208, 0, 0.087801136)
+bones/0/rotation = Quaternion(-0.5308506, 0.46711636, 0.46711636, 0.5308506)
+bones/1/position = Vector3(0.06590341, 0.17634828, 0.29224336)
+bones/1/rotation = Quaternion(-0.15262966, 0.16634952, -0.5783221, 0.7839487)
+bones/8/position = Vector3(0.08854056, -0.038779784, 0.0007700324)
+bones/8/rotation = Quaternion(0.7327225, 0.6125146, 0.19329017, -0.22490562)
+bones/9/position = Vector3(0.0051173493, 0.42830962, -0.0054258704)
+bones/9/rotation = Quaternion(0.9551916, 0.007578821, -0.064603984, 0.28875223)
+bones/10/position = Vector3(0.013828352, 0.40404195, 0.011740394)
+bones/10/rotation = Quaternion(-0.809485, -0.023433013, -0.09495768, 0.57893693)
+bones/11/rotation = Quaternion(8.5573345e-07, 0.9735839, -0.22832967, 3.5863227e-06)
+bones/18/position = Vector3(-0.089312315, -0.040617328, 0.0019470155)
+bones/18/rotation = Quaternion(0.7326735, -0.4644497, 0.241355, -0.43499848)
+bones/19/position = Vector3(0.0017752126, 0.42635667, -0.007337928)
+bones/19/rotation = Quaternion(0.9571895, -0.00417516, -0.07443838, 0.2796958)
+bones/20/position = Vector3(0.017479949, 0.41154888, 0.014261976)
+bones/20/rotation = Quaternion(-0.7790103, -0.07876102, -0.1618372, 0.6006233)
+bones/21/rotation = Quaternion(-6.7035503e-06, 0.9735839, -0.22832964, -4.8813e-05)
+bones/22/position = Vector3(9.134412e-05, 0.12991832, -0.0010816455)
+bones/22/rotation = Quaternion(-0.1814502, -0.0047454895, -0.11928154, 0.9761276)
+bones/23/position = Vector3(9.5397234e-05, 0.12013723, -0.00024440885)
+bones/23/rotation = Quaternion(0.21355328, 0.021177595, 0.048403975, 0.97550166)
+bones/24/rotation = Quaternion(0.009927227, 7.5849854e-08, 7.53014e-10, 0.9999507)
+bones/25/rotation = Quaternion(-0.35758823, -0.39613056, -0.5738196, 0.6212426)
+bones/26/position = Vector3(-0.009279792, 0.15030745, -0.0035091043)
+bones/26/rotation = Quaternion(-0.4057189, 0.13317612, -0.096774474, 0.89905006)
+bones/27/position = Vector3(-0.0036306083, 0.27982897, -0.0009921491)
+bones/27/rotation = Quaternion(0.9545665, -0.019569784, 0.008999631, 0.29721847)
+bones/28/position = Vector3(-0.0043928474, 0.27003726, 0.00027291477)
+bones/28/rotation = Quaternion(0.56448936, -0.0261449, 0.011861659, 0.8249409)
+bones/29/rotation = Quaternion(0.13771388, 0.7002501, -0.09030958, 0.6946429)
+bones/30/rotation = Quaternion(0.22154063, 2.8054612e-07, -1.4466711e-07, 0.9751511)
+bones/31/rotation = Quaternion(0.15116988, -5.6936347e-08, 1.03490706e-07, 0.9885078)
+bones/32/rotation = Quaternion(0.052636098, 0.6822788, -0.17499177, 0.7078862)
+bones/33/rotation = Quaternion(0.22154346, 7.3096686e-08, -1.090461e-07, 0.9751505)
+bones/34/rotation = Quaternion(0.15116857, 1.40268295e-08, 1.4756311e-07, 0.988508)
+bones/35/rotation = Quaternion(0.107498646, 0.6950195, -0.120773174, 0.70057535)
+bones/36/rotation = Quaternion(0.2215436, 2.9996815e-07, -1.0634949e-07, 0.97515047)
+bones/37/rotation = Quaternion(0.15116733, -9.2996935e-08, -2.36305e-09, 0.98850816)
+bones/38/rotation = Quaternion(0.08317658, 0.68988174, -0.14498186, 0.7043615)
+bones/39/rotation = Quaternion(0.22154495, 2.4701512e-09, 4.8651494e-08, 0.97515017)
+bones/40/rotation = Quaternion(0.15116781, 1.9664765e-07, -7.566486e-08, 0.9885081)
+bones/41/rotation = Quaternion(0.024339339, 0.94333994, 0.32293987, -0.07229968)
+bones/42/rotation = Quaternion(0.12027717, 9.001091e-05, 0.0016668452, 0.99273896)
+bones/43/rotation = Quaternion(0.17658511, -0.00035558088, -0.0035483877, 0.9842789)
+bones/44/position = Vector3(0.00047428906, 0.1595043, -0.009490341)
+bones/44/rotation = Quaternion(0.22192918, -0.17992975, -0.15761912, 0.9452666)
+bones/45/position = Vector3(0.00084349513, 0.10545796, 0.0007261187)
+bones/45/rotation = Quaternion(0.017440628, 0.25856283, 0.19663547, 0.94560856)
+bones/46/position = Vector3(-1.4271844e-08, 0.09599989, 0.11131365)
+bones/46/rotation = Quaternion(-0.70710677, -4.445521e-08, -4.4383967e-08, 0.70710677)
+bones/47/rotation = Quaternion(-0.35729373, 0.39581153, 0.57400304, 0.6214459)
+bones/48/position = Vector3(0.008112602, 0.15051489, -0.0038939714)
+bones/48/rotation = Quaternion(0.049825292, -0.16373533, -0.041512042, 0.98437035)
+bones/49/position = Vector3(0.00019811839, 0.28026864, 6.869435e-05)
+bones/49/rotation = Quaternion(0.053582408, 0.0005667131, -0.001334747, 0.9985624)
+bones/50/position = Vector3(0.00060311705, 0.27033025, -4.9829483e-05)
+bones/50/rotation = Quaternion(-0.23475017, -0.00029683128, 0.0017809962, 0.97205406)
+bones/51/rotation = Quaternion(0.13771403, -0.7002493, 0.09030937, 0.6946438)
+bones/52/rotation = Quaternion(0.22154118, -1.207368e-06, 4.0567767e-07, 0.975151)
+bones/53/rotation = Quaternion(0.15117028, 2.5119652e-06, -3.0700934e-07, 0.98850775)
+bones/54/rotation = Quaternion(0.052636128, -0.68227786, 0.17499165, 0.70788723)
+bones/55/rotation = Quaternion(0.22154291, -9.505544e-07, 3.4398363e-07, 0.97515064)
+bones/56/rotation = Quaternion(0.1511693, -1.6752281e-06, 1.8899632e-08, 0.98850787)
+bones/57/rotation = Quaternion(0.10749838, -0.69501966, 0.12077298, 0.70057523)
+bones/58/rotation = Quaternion(0.22154415, 5.675153e-08, -1.8223757e-08, 0.97515035)
+bones/59/rotation = Quaternion(0.15116681, -8.700969e-09, 5.491187e-08, 0.9885083)
+bones/60/rotation = Quaternion(0.0831765, -0.68988675, 0.14498256, 0.7043565)
+bones/61/rotation = Quaternion(0.2215446, 6.4911706e-06, -1.5640471e-06, 0.9751502)
+bones/62/rotation = Quaternion(0.15116808, -3.160941e-06, 2.2842447e-07, 0.98850805)
+bones/64/rotation = Quaternion(0.120277315, -9.001393e-05, -0.0016668726, 0.99273896)
+bones/65/rotation = Quaternion(0.17658532, 0.00035559078, 0.003548195, 0.98427886)
+
+[node name="LeftFoot" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="0" unique_id=537004034]
+transform = Transform3D(0.003741622, 0.73455334, -0.6785408, 0.44581488, -0.60860765, -0.6563887, -0.89511746, -0.30004776, -0.3297519, 0.15960133, 0.09621732, -0.044272583)
+
+[node name="LeftLowerLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="1" unique_id=2031207842]
+transform = Transform3D(0.026396418, -0.8806219, -0.47308376, 0.26418117, -0.45027828, 0.8529114, -0.96411186, -0.1474935, 0.2207581, 0.5205987, 0.26448193, 0.026061263)
+
+[node name="LeftUpperLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="2" unique_id=1729454214]
+transform = Transform3D(0.036884423, 0.9944987, -0.09804091, 0.13709489, -0.102215804, -0.9852701, -0.989871, 0.022900071, -0.14011088, 0.09392462, 0.30221444, 0.020558234)
+
+[node name="RightFoot" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="3" unique_id=1123269471]
+transform = Transform3D(0.29064617, 0.33895195, 0.8947832, 0.6931872, -0.71920586, 0.047278374, 0.6595578, 0.6065107, -0.44399178, 0.03988251, 0.14379093, 0.063818574)
+
+[node name="RightLowerLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="4" unique_id=402977552]
+transform = Transform3D(0.5202621, 0.7491021, -0.41009012, 0.4276513, 0.18712771, 0.8843632, 0.739217, -0.63547635, -0.22299875, -0.27165508, 0.046690643, 0.3156071)
+
+[node name="RightUpperLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="5" unique_id=1455563989]
+transform = Transform3D(0.5990807, -0.43836856, 0.67002654, 0.3011033, -0.65204585, -0.6958258, 0.7419158, 0.6186028, -0.2586339, -0.08090061, 0.3190543, 0.048646778)
+
+[node name="LeftHand" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="6" unique_id=1041889918]
+transform = Transform3D(-0.26852378, -0.9541486, -0.13227123, 0.9335044, -0.22388725, -0.28007913, 0.23762324, -0.19868346, 0.95082074, 0.29896528, 0.08349399, -0.48938346)
+
+[node name="LeftLowerArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="7" unique_id=179340370]
+transform = Transform3D(-0.21731013, -0.21986201, -0.9510191, 0.9512864, 0.17059582, -0.25681052, 0.21870275, -0.9604987, 0.17207962, 0.35764116, 0.04167571, -0.22909926)
+
+[node name="LeftUpperArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="8" unique_id=1994410722]
+transform = Transform3D(-0.21299468, 0.7277767, 0.6519007, 0.94169235, -0.024964571, 0.3355481, 0.26047847, 0.6853596, -0.6800244, 0.15386166, 0.052413348, -0.4206117)
+
+[node name="Head" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="9" unique_id=1839375872]
+transform = Transform3D(0.9729962, -0.19375345, 0.12545148, -0.104747266, 0.11367552, 0.9879807, -0.20568542, -0.974442, 0.09031063, 7.264316e-08, 0.051021073, -0.5548453)
+
+[node name="Neck" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="10" unique_id=1147780245]
+transform = Transform3D(0.9001662, 0.20057993, -0.38661152, 0.36600775, 0.13279307, 0.9210887, 0.23609114, -0.9706356, 0.046121985, -0.021631235, 0.03603944, -0.45271665)
+
+[node name="RightHand" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="11" unique_id=64946936]
+transform = Transform3D(0.117874004, -0.968531, -0.21921131, -0.9162868, -0.19117454, 0.35195312, -0.3827851, 0.15937428, -0.9099863, -0.7309329, 0.043079592, -0.5371082)
+
+[node name="RightLowerArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="12" unique_id=220231204]
+transform = Transform3D(0.121401556, -0.9613969, 0.2469376, -0.916143, -0.01277937, 0.4006483, -0.3820262, -0.27486932, -0.8823281, -0.47109914, 0.047106747, -0.46261624)
+
+[node name="RightUpperArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="13" unique_id=1722434756]
+transform = Transform3D(0.11902407, -0.9826144, 0.14248638, -0.91577786, -0.05319374, 0.39814785, -0.38364637, -0.1778749, -0.9061876, -0.1957365, 0.062169366, -0.41262522)
+
+[node name="Chest" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="14" unique_id=1126615707]
+transform = Transform3D(0.9994631, -0.029287882, 0.01468635, -0.024672318, -0.37784198, 0.92554134, -0.021558061, -0.9254067, -0.3783617, -0.013821739, 0.14756995, -0.19629796)
+
+[node name="Spine" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="15" unique_id=176455631]
+transform = Transform3D(0.9972946, 0.0708577, -0.01956183, 0.06510527, -0.7278846, 0.6826019, 0.034128815, -0.6820287, -0.73052853, -0.022434307, 0.23517661, -0.11454272)
+
+[node name="Hips" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="16" unique_id=785687410]
+transform = Transform3D(0.98482746, -0.17329672, 0.009116504, -0.084280774, -0.43171486, 0.8980641, -0.15169583, -0.8852064, -0.43977022, 1.4901161e-08, 0.29224336, -7.450581e-09)
+
+[node name="scientist" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="17" unique_id=1413972898]
+material_override = ExtResource("10_look_eaten")
+
+[node name="scientist_glasses_round" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="19" unique_id=1219793593]
+material_override = ExtResource("10_look_eaten")
+
+[node name="LeftFoot" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="0" unique_id=1380953371]
+transform = Transform3D(-0.0037377907, -0.9596385, -0.2812119, -0.44581035, 0.2533209, -0.85853463, 0.8951196, 0.12215815, -0.42876363, 0.22400689, 0.03906787, -0.07470119)
+joint_offset = Transform3D(7.432205e-06, -1.3984737e-07, -1.0000001, -0.44459623, -0.89573145, -3.1790635e-06, -0.8957314, 0.44459626, -6.7194323e-06, 0.002000176, 0.08000008, -0.04399992)
+body_offset = Transform3D(-1, -2.2128224e-06, -5.90086e-06, -5.662441e-07, -0.89573157, 0.4445948, -6.2584877e-06, 0.44459504, 0.89573175, 0.0020000935, 0.09122074, 0.0038444996)
+
+[node name="LeftLowerLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="1" unique_id=503646579]
+transform = Transform3D(-0.14398998, -0.88062227, 0.45141044, -0.0422467, -0.45027786, -0.8918885, 0.98867697, -0.1474936, 0.027632114, 0.33975577, 0.17199463, -0.004217267)
+joint_offset = Transform3D(-0.2503441, 3.5217642e-08, -0.96815705, -4.931323e-08, 1.0000001, 4.912728e-08, 0.9681572, 6.0041664e-08, -0.25034407, -1.1078163e-05, -0.20536518, -1.7315135e-05)
+body_offset = Transform3D(-0.96815664, 1.937151e-07, -0.25034502, -1.4901161e-08, 1, 6.2258914e-07, 0.25034493, 4.991889e-07, -0.9681566, -1.50203705e-05, 0.20536518, -1.3887882e-05)
+
+[node name="LeftUpperLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="2" unique_id=1498533413]
+transform = Transform3D(-0.0126702245, 0.9944984, -0.103982866, -0.33438423, -0.10221825, -0.9368771, -0.9423517, 0.022899786, 0.3338397, 0.30785942, 0.28022557, 0.025442481)
+joint_offset = Transform3D(-1.301113e-06, -0.8864968, 0.4627348, 1, -1.6292068e-07, 2.4996707e-06, -2.1405606e-06, 0.46273473, 0.8864969, -3.9424303e-05, -0.2151175, 1.4155288e-05)
+joint_rotation = Vector3(-2.4996705e-06, 0.4810776, 1.5707965)
+body_offset = Transform3D(0.8864968, -6.891787e-08, -0.46273458, -1.2367964e-06, 0.9999998, -2.225861e-06, 0.46273455, 2.4838373e-06, 0.8864967, 4.1484833e-05, 0.21511745, 6.2286854e-06)
+
+[node name="RightFoot" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="3" unique_id=1086344546]
+transform = Transform3D(-0.29057536, 0.09421816, 0.9522022, -0.69318163, 0.66526055, -0.2773583, -0.6595948, -0.7406424, -0.12799804, 0.07365942, 0.07697988, 0.11611903)
+joint_offset = Transform3D(-7.921644e-05, -1.592853e-07, -1, -0.44459617, -0.8957314, 3.5361994e-05, -0.8957313, 0.44459623, 7.088581e-05, -0.0020003358, 0.0800003, -0.04399867)
+body_offset = Transform3D(-1, 3.746152e-05, 7.0914626e-05, -2.4437904e-06, -0.8957309, 0.44459617, 8.004904e-05, 0.444596, 0.8957308, -0.0020002127, 0.09122038, 0.0038433075)
+
+[node name="RightLowerLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="4" unique_id=2050808143]
+transform = Transform3D(-0.40103012, 0.7491016, 0.52727765, -0.635431, 0.18712795, -0.74913996, -0.6598503, -0.63547623, 0.4009584, -0.11781001, 0.08511636, 0.1851039)
+joint_offset = Transform3D(0.25034577, -4.759668e-08, -0.96815634, 2.9007032e-07, 1.0000004, 2.58442e-08, 0.96815634, -2.8730358e-07, 0.25034577, 8.124025e-07, -0.20536764, -6.455089e-06)
+joint_rotation = Vector3(-2.5844209e-08, -1.3177589, 2.9007037e-07)
+body_offset = Transform3D(-0.9681561, -8.940697e-08, 0.25034738, -8.940697e-08, 0.99999964, 3.2782555e-07, -0.2503471, 4.172325e-07, -0.968156, 2.3841858e-06, 0.20536757, -5.9604645e-06)
+
+[node name="RightUpperLeg" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="5" unique_id=1004608425]
+transform = Transform3D(0.22104281, -0.43836695, 0.8711915, 0.58890724, -0.6520468, -0.47751787, 0.7773856, 0.6186029, 0.114027224, -0.1751988, 0.17879151, 0.18171608)
+joint_offset = Transform3D(1.3692626e-06, -0.8864993, -0.46273005, 1, 7.54979e-08, 2.8144575e-06, -2.4600793e-06, -0.46273, 0.8864994, -4.526921e-07, -0.21511209, 1.8314111e-07)
+body_offset = Transform3D(0.8864991, 7.4505806e-07, 0.46273053, 2.682209e-07, 1, -1.9222498e-06, -0.46273023, 1.7285347e-06, 0.88649887, 4.7683716e-07, 0.21511209, 0)
+
+[node name="LeftHand" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="6" unique_id=1150158978]
+transform = Transform3D(0.14986572, -0.9458538, -0.2879252, 0.28886288, -0.23662065, 0.92766863, -0.94556785, -0.22219664, 0.23776074, 0.23981094, 0.067664415, -0.49089134)
+joint_offset = Transform3D(0.9997933, -0.019794099, 0.0047231745, 0.01988352, 0.99960834, -0.019701663, -0.004331348, 0.019791493, 0.999795, 0.01201185, -0.060031924, -0.0019888424)
+joint_rotation = Vector3(0.01970293, 0.004724108, 0.019888684)
+body_offset = Transform3D(0.0047233403, -0.019701287, 0.99979466, -0.01979798, 0.9996081, 0.019791089, -0.9997928, -0.019887611, 0.00433141, 0.00074899197, 0.06028557, 0.010824084)
+
+[node name="LeftLowerArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="7" unique_id=579670047]
+transform = Transform3D(0.95012873, -0.21986562, -0.22116642, 0.26067096, 0.17061017, 0.95023304, -0.17119034, -0.96049535, 0.2194142, 0.32795548, 0.0647092, -0.35877216)
+joint_offset = Transform3D(0.999992, 1.08045825e-07, 0.004061385, -1.6006884e-07, 1.0000001, 1.2808845e-05, -0.0040613865, -1.28093925e-05, 0.9999917, 2.3395787e-06, -0.1350069, -5.861493e-07)
+joint_rotation = Vector3(-1.2808847e-05, 0.004061397, -1.600688e-07)
+body_offset = Transform3D(0.0040603504, 1.5154481e-05, 0.9999916, 1.7881393e-07, 1, -1.5199184e-05, -0.9999916, 3.1292439e-07, 0.0040603317, 2.6226044e-06, 0.1350069, 2.3841858e-06)
+
+[node name="LeftUpperArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="8" unique_id=1122656614]
+transform = Transform3D(-0.6529628, 0.727776, -0.20971815, -0.33082163, -0.02497185, 0.94336283, 0.6813198, 0.68536013, 0.25706977, 0.25569963, 0.04902897, -0.32465422)
+joint_offset = Transform3D(-1.6809534e-07, -0.005013044, -0.9999874, 1, 4.367033e-06, -1.8998985e-07, 4.3679297e-06, -0.99998754, 0.0050130435, -9.66337e-07, -0.13996506, -0.00011779905)
+body_offset = Transform3D(0.005014509, -6.556511e-06, 0.9999873, -3.1590462e-06, 1, 6.7055225e-06, -0.99998724, -3.2782555e-06, 0.005014479, 0.00011688471, 0.13996506, -8.34465e-07)
+
+[node name="Head" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="9" unique_id=1211001169]
+transform = Transform3D(-0.9729963, -0.19375265, -0.12545165, 0.1047474, 0.11367574, -0.98798066, 0.20568468, -0.9744423, -0.09031098, -0.016148567, 0.07960402, -0.6457921)
+joint_offset = Transform3D(-7.54979e-08, 1, 1.509958e-07, 0.9999999, 7.54979e-08, 6.618469e-08, 6.618467e-08, 1.509958e-07, -1, -7.980358e-08, -0.0950005, 0.018000038)
+joint_rotation = Vector3(-6.618469e-08, 3.1415925, 1.5707963)
+body_offset = Transform3D(-1, 8.1956387e-07, -1.0803342e-07, 7.599592e-07, 1.0000001, 3.7252903e-07, 4.656613e-08, 2.9802322e-07, -1, 0, 0.095000505, 0.018000066)
+
+[node name="Neck" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="10" unique_id=1182689979]
+transform = Transform3D(0.9001663, 0.20057976, -0.3866115, 0.3660077, 0.1327933, 0.92108864, 0.23609114, -0.9706358, 0.04612232, -0.010852575, 0.040877286, -0.5013114)
+joint_offset = Transform3D(-4.3711445e-08, -1, 5.986597e-08, 0.99999994, -4.371139e-08, 1.0207298e-06, -1.0207295e-06, 5.9866004e-08, 1.0000001, -4.821532e-07, -0.04997217, 0.001952364)
+body_offset = Transform3D(1.0000001, -1.0430813e-07, 5.3085387e-08, 0, 1.0000001, -3.2037497e-07, -8.009374e-08, 2.719462e-07, 0.9999999, 4.7683716e-07, 0.049972177, -0.0019523501)
+
+[node name="RightHand" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="11" unique_id=988088859]
+transform = Transform3D(0.23777914, 0.96146935, -0.1379778, -0.3437686, 0.21615902, 0.9138372, 0.9084516, -0.16985899, 0.38192102, -0.79150605, 0.036294557, -0.5370022)
+joint_offset = Transform3D(0.99979293, -0.019794162, -0.004723242, -0.019883614, -0.9996082, -0.01971104, -0.004331227, 0.019800877, -0.99979466, 0.011974327, 0.059723753, -0.0021977602)
+body_offset = Transform3D(-0.004723221, -0.019711956, -0.9997945, -0.01979278, -0.99960804, 0.019801743, -0.9997932, 0.019882306, 0.0043311715, -0.0009634793, 0.05998087, 0.010793924)
+
+[node name="RightLowerArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="12" unique_id=1524518501]
+transform = Transform3D(0.24462101, -0.9620798, -0.12067709, 0.39792326, -0.0138848815, 0.91731364, -0.88420457, -0.2724144, 0.3794374, -0.60102534, 0.04538161, -0.4997729)
+joint_offset = Transform3D(-0.9999918, -5.5815583e-08, 0.0040608845, -1.8479648e-08, 1.0000002, 9.194073e-06, -0.004060885, 9.193925e-06, -0.9999917, -0.00038480505, -0.1351454, 1.9448535e-06)
+body_offset = Transform3D(0.0029321313, -7.964671e-06, -0.99999577, 0.002777785, 0.99999595, 1.0430813e-07, 0.99999183, -0.0027775913, 0.0029320717, 1.9967556e-06, 0.1351459, 9.417534e-06)
+
+[node name="RightUpperArm" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="13" unique_id=1698653731]
+transform = Transform3D(0.14308122, -0.98261464, -0.11830636, 0.39355192, -0.053191997, 0.9177623, -0.9080995, -0.17787424, 0.37909907, -0.33343625, 0.05470421, -0.4375521)
+joint_offset = Transform3D(5.657546e-08, -0.005013044, 0.9999874, 1, 1.6252189e-06, -4.8428774e-08, -1.6249555e-06, 0.99998754, 0.0050130435, 4.0100495e-06, -0.14013672, 1.0267125e-05)
+joint_rotation = Vector3(4.8428774e-08, 1.5657833, 1.5707947)
+body_offset = Transform3D(0.005013138, -1.8775463e-06, -0.9999873, 5.9604645e-08, 1, -1.937151e-06, 0.99998736, 5.9604645e-08, 0.0050130785, 9.983778e-06, 0.14013672, -4.053116e-06)
+
+[node name="Chest" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="14" unique_id=615385680]
+transform = Transform3D(-0.014685522, 0.9994632, 0.029288013, -0.92554116, -0.024671555, 0.37784246, 0.37836215, -0.021558445, 0.92540663, -0.016189098, 0.11170478, -0.27883065)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.0020021966, -0.00029803213, 0.089997046)
+body_offset = Transform3D(8.1397593e-07, 1.0000001, 1.17346644e-07, -5.066395e-07, 6.3329935e-08, -1.0000001, -1, 8.549541e-07, 4.7683716e-07, 0.00029802322, 0.08999705, -0.0020022392)
+
+[node name="Spine" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="15" unique_id=266307627]
+transform = Transform3D(0.019561801, 0.99729466, -0.070857376, -0.6826019, 0.06510504, 0.7278846, 0.73052853, 0.034128644, 0.68202883, -0.018147707, 0.188642, -0.15254176)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.0040890053, 5.147882e-05, 0.06009209)
+body_offset = Transform3D(-2.9802322e-08, 1, 3.2410026e-07, 0, 2.8684735e-07, -1, -0.99999994, -3.1664968e-08, -1.1920929e-07, -5.1498413e-05, 0.06009209, -0.004088998)
+
+[node name="Hips" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="16" unique_id=108805728]
+transform = Transform3D(-0.009116387, 0.98482746, 0.17329688, -0.8980641, -0.08428068, 0.43171483, 0.4397702, -0.15169601, 0.8852065, -0.0052444935, 0.2748016, -0.024357319)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.004999997, -3.4272625e-09, 0.029999964)
+body_offset = Transform3D(1.1920929e-07, 1.0000001, 1.3411045e-07, 0, 1.1920929e-07, -1.0000002, -1, 1.6391277e-07, -5.9604645e-08, 0, 0.029999971, -0.004999995)
+
+[node name="CoatDrive" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="21"]
+settings/0/apply_bone = 4
+settings/0/reference_type = 0
+settings/0/reference_bone = 8
+settings/1/apply_bone = 14
+settings/1/reference_type = 0
+settings/1/reference_bone = 18
+settings/2/apply_bone = 6
+settings/2/reference_type = 0
+settings/2/reference_bone = 8
+settings/3/apply_bone = 16
+settings/3/reference_type = 0
+settings/3/reference_bone = 18
+
+[node name="CoatSprings" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D" index="22"]
+settings/0/root_bone = 4
+settings/0/end_bone = 5
+settings/0/end_bone/direction = 6
+settings/0/individual_config = false
+settings/0/rotation_axis = 3
+settings/0/radius/damping_curve = null
+settings/0/stiffness/damping_curve = null
+settings/0/drag/damping_curve = null
+settings/0/gravity/damping_curve = null
+settings/0/gravity/direction = Vector3(0, -1, 0)
+settings/0/joints/0/bone_name = "LeftCoatFront1"
+settings/0/joints/0/bone = 4
+settings/0/joints/1/bone_name = "LeftCoatFront2"
+settings/0/joints/1/bone = 5
+settings/0/enable_all_child_collisions = true
+settings/0/exclude_collision_count = 0
+settings/1/root_bone = 6
+settings/1/end_bone = 7
+settings/1/end_bone/direction = 6
+settings/1/individual_config = false
+settings/1/rotation_axis = 3
+settings/1/radius/damping_curve = null
+settings/1/stiffness/damping_curve = null
+settings/1/drag/damping_curve = null
+settings/1/gravity/damping_curve = null
+settings/1/gravity/direction = Vector3(0, -1, 0)
+settings/1/joints/0/bone_name = "LeftCoatSide1"
+settings/1/joints/0/bone = 6
+settings/1/joints/1/bone_name = "LeftCoatSide2"
+settings/1/joints/1/bone = 7
+settings/1/enable_all_child_collisions = true
+settings/1/exclude_collision_count = 0
+settings/2/root_bone = 2
+settings/2/end_bone = 3
+settings/2/end_bone/direction = 6
+settings/2/individual_config = false
+settings/2/rotation_axis = 3
+settings/2/radius/damping_curve = null
+settings/2/stiffness/damping_curve = null
+settings/2/drag/damping_curve = null
+settings/2/gravity/damping_curve = null
+settings/2/gravity/direction = Vector3(0, -1, 0)
+settings/2/joints/0/bone_name = "LeftCoatBack1"
+settings/2/joints/0/bone = 2
+settings/2/joints/1/bone_name = "LeftCoatBack2"
+settings/2/joints/1/bone = 3
+settings/2/enable_all_child_collisions = true
+settings/2/exclude_collision_count = 0
+settings/3/root_bone = 14
+settings/3/end_bone = 15
+settings/3/end_bone/direction = 6
+settings/3/individual_config = false
+settings/3/rotation_axis = 3
+settings/3/radius/damping_curve = null
+settings/3/stiffness/damping_curve = null
+settings/3/drag/damping_curve = null
+settings/3/gravity/damping_curve = null
+settings/3/gravity/direction = Vector3(0, -1, 0)
+settings/3/joints/0/bone_name = "RightCoatFront1"
+settings/3/joints/0/bone = 14
+settings/3/joints/1/bone_name = "RightCoatFront2"
+settings/3/joints/1/bone = 15
+settings/3/enable_all_child_collisions = true
+settings/3/exclude_collision_count = 0
+settings/4/root_bone = 16
+settings/4/end_bone = 17
+settings/4/end_bone/direction = 6
+settings/4/individual_config = false
+settings/4/rotation_axis = 3
+settings/4/radius/damping_curve = null
+settings/4/stiffness/damping_curve = null
+settings/4/drag/damping_curve = null
+settings/4/gravity/damping_curve = null
+settings/4/gravity/direction = Vector3(0, -1, 0)
+settings/4/joints/0/bone_name = "RightCoatSide1"
+settings/4/joints/0/bone = 16
+settings/4/joints/1/bone_name = "RightCoatSide2"
+settings/4/joints/1/bone = 17
+settings/4/enable_all_child_collisions = true
+settings/4/exclude_collision_count = 0
+settings/5/root_bone = 12
+settings/5/end_bone = 13
+settings/5/end_bone/direction = 6
+settings/5/individual_config = false
+settings/5/rotation_axis = 3
+settings/5/radius/damping_curve = null
+settings/5/stiffness/damping_curve = null
+settings/5/drag/damping_curve = null
+settings/5/gravity/damping_curve = null
+settings/5/gravity/direction = Vector3(0, -1, 0)
+settings/5/joints/0/bone_name = "RightCoatBack1"
+settings/5/joints/0/bone = 12
+settings/5/joints/1/bone_name = "RightCoatBack2"
+settings/5/joints/1/bone = 13
+settings/5/enable_all_child_collisions = true
+settings/5/exclude_collision_count = 0
+
+[node name="LeftUpperLegCollision" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/CoatSprings" index="0"]
+bone = 8
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="LeftLowerLegCollision" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/CoatSprings" index="1"]
+bone = 9
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="RightUpperLegCollision" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/CoatSprings" index="2"]
+bone = 18
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="RightLowerLegCollision" parent="Lab/ScientistEaten/Visual/scientist_skel/Skeleton3D/CoatSprings" index="3"]
+bone = 19
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="ScientistSlumped" parent="Lab" unique_id=285086334 instance=ExtResource("7_scientist")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.8409664, -7.408926)
+metadata/menu_action = "pose_sit_wall"
+
+[node name="Skeleton3D" parent="Lab/ScientistSlumped/Visual/scientist_skel" index="0" unique_id=1922037902]
+bones/0/position = Vector3(0, 0, -0.10641384)
+bones/0/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
+bones/1/position = Vector3(0.000374645, 0.2400837, 0.93207014)
+bones/1/rotation = Quaternion(0.44629595, -0.0009993267, -0.0017004024, 0.8948833)
+bones/8/position = Vector3(0.08812478, -0.03902179, 0.0002156794)
+bones/8/rotation = Quaternion(0.88829273, -0.0031153306, -0.02890825, 0.45835647)
+bones/9/position = Vector3(1.4264137e-05, 0.4299509, 0.00050389767)
+bones/9/rotation = Quaternion(0.037449688, -0.0003742524, 0.0011015721, 0.99929786)
+bones/10/position = Vector3(7.015839e-05, 0.4104797, -0.00026106834)
+bones/10/rotation = Quaternion(-0.56903267, 0.016398015, 0.018271457, 0.82194835)
+bones/11/position = Vector3(-7.124214e-09, 0.15294765, 4.7688786e-09)
+bones/11/rotation = Quaternion(8.388711e-07, 0.9735839, -0.22832967, 3.5553105e-06)
+bones/18/position = Vector3(-0.08809988, -0.03909862, -0.000121980906)
+bones/18/rotation = Quaternion(0.88852894, 0.003179756, 0.020408228, 0.45835546)
+bones/19/position = Vector3(-3.6675483e-05, 0.42980143, 0.00044631958)
+bones/19/rotation = Quaternion(0.03728098, 0.00067103445, -0.0012487259, 0.9993038)
+bones/20/position = Vector3(-0.000118073076, 0.41034746, -0.0002872944)
+bones/20/rotation = Quaternion(-0.5704784, -0.016073167, -0.017994292, 0.82095814)
+bones/21/position = Vector3(5.1405777e-09, 0.1529476, 1.9190338e-10)
+bones/21/rotation = Quaternion(-6.658203e-06, 0.97358394, -0.2283295, -4.88188e-05)
+bones/22/position = Vector3(0.00016697095, 0.12759912, 0.0007890165)
+bones/22/rotation = Quaternion(0.43001112, -0.0002643388, 0.009221405, 0.9027765)
+bones/23/position = Vector3(-9.5708296e-05, 0.11854082, -0.002396524)
+bones/23/rotation = Quaternion(0.06327299, 0.0057417518, 0.02431532, 0.99768347)
+bones/24/position = Vector3(0, 0.12000006, -5.680802e-08)
+bones/24/rotation = Quaternion(0.27942327, 8.068695e-08, 2.3481126e-08, 0.960168)
+bones/25/position = Vector3(0.024999999, 0.10486889, 0.0052434555)
+bones/25/rotation = Quaternion(-0.37905145, -0.41591537, -0.5596452, 0.6083845)
+bones/26/position = Vector3(0.0013159513, 0.15098993, -0.0005327165)
+bones/26/rotation = Quaternion(-0.3111092, 0.16662647, -0.64886284, 0.6741096)
+bones/27/position = Vector3(0.00069725513, 0.28161508, -0.00091677904)
+bones/27/rotation = Quaternion(0.45765108, -0.059756234, -0.006946743, 0.8870944)
+bones/28/position = Vector3(-0.0010248423, 0.27005845, 0.0010803342)
+bones/28/rotation = Quaternion(0.52104187, -0.0034551886, -6.548732e-05, 0.85352415)
+bones/29/position = Vector3(-0.0011130652, 0.10149479, 0.023990694)
+bones/29/rotation = Quaternion(0.052032124, 0.70603615, -0.0042975666, 0.70624864)
+bones/30/position = Vector3(-6.9643207e-09, 0.038000047, 5.745096e-08)
+bones/30/rotation = Quaternion(0.04884215, 2.6653396e-07, -5.5385353e-08, 0.99880654)
+bones/31/position = Vector3(4.4864237e-09, 0.024000043, -6.961636e-08)
+bones/31/rotation = Quaternion(0.047014527, -1.1290002e-07, 4.8271016e-08, 0.9988942)
+bones/32/position = Vector3(0.00024106813, 0.09452727, -0.025875313)
+bones/32/rotation = Quaternion(-0.034025382, 0.6985192, -0.09053897, 0.70902467)
+bones/33/position = Vector3(1.0822873e-08, 0.029999983, 1.0494841e-07)
+bones/33/rotation = Quaternion(0.0488445, 1.0689018e-07, -6.9722475e-08, 0.9988064)
+bones/34/position = Vector3(-1.339231e-10, 0.019999892, 6.926712e-08)
+bones/34/rotation = Quaternion(0.04701386, -8.823643e-09, 1.2935634e-07, 0.9988943)
+bones/35/position = Vector3(-0.0010721582, 0.10315754, 0.0069544488)
+bones/35/rotation = Quaternion(0.021319032, 0.7045568, -0.035171743, 0.7084547)
+bones/36/position = Vector3(4.5056225e-10, 0.041999936, 4.6772475e-09)
+bones/36/rotation = Quaternion(0.04884487, 4.100815e-07, -6.543927e-09, 0.99880636)
+bones/37/position = Vector3(8.027925e-10, 0.026999952, 2.6977311e-08)
+bones/37/rotation = Quaternion(0.047011614, -7.442338e-08, 7.7058075e-09, 0.99889433)
+bones/38/position = Vector3(-0.00095243537, 0.100821786, -0.010002263)
+bones/38/rotation = Quaternion(-0.0032826648, 0.70240796, -0.05982643, 0.7092483)
+bones/39/position = Vector3(-8.489167e-09, 0.038999997, -7.046037e-08)
+bones/39/rotation = Quaternion(0.048845276, 2.3821828e-08, 2.8190522e-08, 0.99880636)
+bones/40/position = Vector3(-1.1307293e-09, 0.025000015, 1.8966966e-07)
+bones/40/rotation = Quaternion(0.04701249, 2.2127526e-07, -7.885964e-08, 0.99889433)
+bones/41/position = Vector3(0.0053628604, 0.02754361, 0.021484572)
+bones/41/rotation = Quaternion(0.02433961, 0.94334, 0.32293984, -0.07229894)
+bones/42/position = Vector3(1.4901161e-08, 0.045099884, -3.3527613e-08)
+bones/42/rotation = Quaternion(0.03329658, -5.5562872e-05, 0.0016683423, 0.9994441)
+bones/43/position = Vector3(4.4703484e-08, 0.02817789, -1.1175871e-08)
+bones/43/rotation = Quaternion(0.072732456, 1.7214525e-05, -0.0035658071, 0.9973451)
+bones/44/position = Vector3(0.0002984628, 0.15892059, 0.0015155077)
+bones/44/rotation = Quaternion(0.2897373, -0.13022733, -0.13470745, 0.9385878)
+bones/45/position = Vector3(0.0019403994, 0.10497652, 0.0028649569)
+bones/45/rotation = Quaternion(0.20943417, 0.13048737, 0.03724451, 0.9683611)
+bones/46/position = Vector3(-1.8766071e-08, 0.096000075, 0.111313604)
+bones/46/rotation = Quaternion(-0.70710677, -5.9604666e-08, -5.960464e-08, 0.70710677)
+bones/47/position = Vector3(-0.025000002, 0.10486889, 0.005243446)
+bones/47/rotation = Quaternion(-0.37876418, 0.41560283, 0.5598397, 0.608598)
+bones/48/position = Vector3(-0.0011152029, 0.15098442, -0.00038553774)
+bones/48/rotation = Quaternion(-0.34796742, -0.08480221, 0.62804466, 0.69085974)
+bones/49/position = Vector3(-0.0006390512, 0.28104067, -0.0007991195)
+bones/49/rotation = Quaternion(0.50909865, 0.03562839, -0.11116706, 0.852755)
+bones/50/position = Vector3(-0.00065004826, 0.27061158, 0.00025340915)
+bones/50/rotation = Quaternion(0.7423433, -0.363198, -0.039153293, 0.5616767)
+bones/51/position = Vector3(0.0011130704, 0.10149471, 0.023990696)
+bones/51/rotation = Quaternion(0.052032102, -0.7060352, 0.0042976504, 0.7062496)
+bones/52/position = Vector3(1.5011599e-08, 0.038000032, -6.385123e-08)
+bones/52/rotation = Quaternion(0.17235504, -0.060884103, -0.26060376, 0.94798344)
+bones/53/position = Vector3(-5.973959e-10, 0.024000015, 9.482028e-08)
+bones/53/rotation = Quaternion(0.047014546, 2.4979418e-06, 6.3961224e-08, 0.9988942)
+bones/54/position = Vector3(-0.00024106231, 0.094527125, -0.025875311)
+bones/54/rotation = Quaternion(-0.03402555, -0.69851804, 0.09053897, 0.7090258)
+bones/55/position = Vector3(3.326428e-08, 0.030000124, 2.5809726e-08)
+bones/55/rotation = Quaternion(0.16692281, -0.0932011, -0.26425433, 0.94531476)
+bones/56/position = Vector3(1.0453505e-09, 0.019999985, 1.5017577e-08)
+bones/56/rotation = Quaternion(0.047013827, -1.6590865e-06, -1.5530307e-07, 0.9988943)
+bones/57/position = Vector3(0.0010721656, 0.10315746, 0.0069544488)
+bones/57/rotation = Quaternion(0.021319024, -0.704557, 0.03517175, 0.70845455)
+bones/58/position = Vector3(-4.284349e-08, 0.041999772, -5.1101317e-08)
+bones/58/rotation = Quaternion(0.22462715, -0.1049161, -0.37924528, 0.8914641)
+bones/59/position = Vector3(-1.0763959e-14, 0.026999952, -7.489227e-08)
+bones/59/rotation = Quaternion(0.04701163, 4.4654062e-08, 2.101581e-09, 0.99889433)
+bones/60/position = Vector3(0.000952441, 0.100821696, -0.010002261)
+bones/60/rotation = Quaternion(-0.0032822804, -0.70241284, 0.059826482, 0.7092434)
+bones/61/position = Vector3(-1.5673312e-08, 0.03899995, -5.7825947e-08)
+bones/61/rotation = Quaternion(0.19691682, -0.10050584, -0.323451, 0.9200553)
+bones/62/position = Vector3(-3.693188e-09, 0.025000045, -9.984069e-08)
+bones/62/rotation = Quaternion(0.047012497, -3.0809954e-06, -7.849505e-08, 0.99889433)
+bones/63/position = Vector3(-0.0053628553, 0.027543526, 0.02148458)
+bones/63/rotation = Quaternion(-0.024339622, 0.94333994, 0.32293993, 0.07229894)
+bones/64/position = Vector3(2.3769795e-07, 0.045099694, -1.60164e-07)
+bones/64/rotation = Quaternion(0.16481324, -0.17279974, -0.16226126, 0.9574174)
+bones/65/position = Vector3(1.9837171e-07, 0.028178032, -2.9802322e-08)
+bones/65/rotation = Quaternion(0.072732456, -1.7228991e-05, 0.0035658025, 0.9973451)
+bones/1/scale = Vector3(1, 0.99999994, 0.99999994)
+bones/2/scale = Vector3(1.0000159, 1.0000002, 1.00002)
+bones/4/scale = Vector3(1.0000143, 1.0000001, 1.0000157)
+bones/6/scale = Vector3(0.9999731, 0.99999994, 0.9999998)
+bones/8/scale = Vector3(0.99999994, 1.0000001, 1.0000001)
+bones/9/scale = Vector3(0.99999976, 1, 1.0000001)
+bones/12/scale = Vector3(1.0000157, 0.9999999, 1.0000198)
+bones/14/scale = Vector3(1.0000144, 0.99999994, 1.0000159)
+bones/16/scale = Vector3(0.99997365, 1.0000001, 1.0000002)
+bones/17/scale = Vector3(0.99999917, 0.99999994, 1.0000008)
+bones/18/scale = Vector3(0.9999996, 1.0000005, 1.0000006)
+bones/19/scale = Vector3(1.0000004, 1.0000008, 1.0000007)
+bones/22/scale = Vector3(1, 1.0000001, 1.0000001)
+bones/24/scale = Vector3(1, 1, 1)
+bones/26/scale = Vector3(0.9999997, 1.0000004, 1.0000002)
+bones/27/scale = Vector3(0.99999994, 1, 1.0000002)
+bones/48/scale = Vector3(0.9999997, 0.99999976, 0.9999999)
+bones/49/scale = Vector3(1, 1.0000002, 1)
+bones/50/scale = Vector3(0.99999976, 1.0000002, 0.99999994)
+bones/52/scale = Vector3(0.9999997, 1.0000002, 0.9999999)
+bones/55/scale = Vector3(1, 1.0000002, 1)
+bones/58/scale = Vector3(0.9999997, 1.0000002, 0.9999998)
+bones/61/scale = Vector3(0.99999976, 1.0000004, 0.99999994)
+bones/64/scale = Vector3(0.99999994, 0.9999999, 1.0000005)
+
+[node name="LeftFoot" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="0" unique_id=537004034]
+transform = Transform3D(0.99999976, 1.2293458e-07, 7.2792172e-06, 2.9094517e-06, 0.9130356, -0.4078813, -6.677932e-06, 0.4078813, 0.9130353, 0.099999994, 0.94035876, 0.5149138)
+
+[node name="LeftLowerLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="1" unique_id=2031207842]
+transform = Transform3D(0.9987741, 0.012173365, -0.047974523, -0.047753, -0.017876664, -0.99869955, -0.013015143, 0.99976623, -0.017273515, 0.095, 0.9477013, 0.10427749)
+
+[node name="LeftUpperLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="2" unique_id=1729454214]
+transform = Transform3D(0.99877423, 0.016270572, -0.04674648, -0.047065057, 0.019781798, -0.99869615, -0.015324619, 0.99967206, 0.02052325, 0.088, 0.9391907, -0.32580566)
+
+[node name="RightFoot" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="3" unique_id=1123269471]
+transform = Transform3D(0.9999999, -2.5704503e-07, -7.919781e-05, -3.3684075e-05, 0.90448403, -0.4265106, 7.1705086e-05, 0.42651057, 0.90448385, -0.10000001, 0.91897744, 0.5147389)
+
+[node name="RightLowerLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="4" unique_id=402977552]
+transform = Transform3D(0.99877423, -0.012173371, 0.047976285, 0.047477905, -0.038365364, -0.99813646, 0.013991274, 0.99919075, -0.037740372, -0.09500002, 0.93473536, 0.104339)
+
+[node name="RightUpperLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="5" unique_id=1455563989]
+transform = Transform3D(0.9987736, -0.016270585, 0.046751905, 0.0465872, -0.010355741, -0.998861, 0.016736181, 0.9998143, -0.009585053, -0.088, 0.9391907, -0.32580566)
+
+[node name="LeftHand" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="6" unique_id=1041889918]
+transform = Transform3D(-0.98593163, 0.16548811, 0.023494823, -0.10243113, -0.70927656, 0.6974495, 0.13208382, 0.685231, 0.71624976, 0.2705167, 0.93100953, -0.16994175)
+
+[node name="LeftLowerArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="7" unique_id=179340370]
+transform = Transform3D(-0.9844374, 0.17468132, 0.019207848, -0.108667925, -0.69099486, 0.7146458, 0.13810769, 0.7014369, 0.69922376, 0.22330332, 1.1177738, -0.3595283)
+
+[node name="LeftUpperArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="8" unique_id=1994410722]
+transform = Transform3D(-0.9844375, 0.1723434, 0.03435521, -0.17208636, -0.9850283, 0.010320246, 0.035619415, 0.0042476654, 0.99935687, 0.17500004, 1.3938508, -0.36071873)
+
+[node name="Head" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="9" unique_id=1839375872]
+transform = Transform3D(1, -2.4868996e-14, 1.6858749e-07, 1.1431122e-07, 0.7350133, -0.67805266, -1.2391405e-07, 0.67805254, 0.73501337, -8.6704325e-15, 1.5059662, -0.26545483)
+
+[node name="Neck" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="10" unique_id=1147780245]
+transform = Transform3D(1, -2.3980817e-14, 8.456085e-08, 5.8509993e-08, 0.7219671, -0.69192743, -6.1050144e-08, 0.6919273, 0.72196716, -6.087449e-15, 1.4301459, -0.33812046)
+
+[node name="RightHand" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="11" unique_id=64946936]
+transform = Transform3D(-0.4291736, -0.12676074, 0.89428264, 0.9015933, -0.11955169, 0.41573635, 0.054213583, 0.98470294, 0.16559497, -0.29644758, 0.9124341, -0.20104074)
+
+[node name="RightLowerArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="12" unique_id=220231204]
+transform = Transform3D(-0.9094242, -0.20493622, 0.36186826, 0.3770403, -0.77344793, 0.50952846, 0.17546526, 0.5998167, 0.7806613, -0.2410568, 1.121484, -0.3631611)
+
+[node name="RightUpperArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="13" unique_id=1722434756]
+transform = Transform3D(-0.9094241, -0.23568696, 0.34263572, 0.21738182, -0.97178996, -0.091484725, 0.35453162, -0.0087156, 0.9350034, -0.17500007, 1.3938506, -0.36071825)
+
+[node name="Chest" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="14" unique_id=1126615707]
+transform = Transform3D(1, 0, 0, 0, 0.99172133, -0.12840919, 0, 0.12840919, 0.99172133, 0, 1.1881127, -0.45613778)
+
+[node name="Spine" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="15" unique_id=176455631]
+transform = Transform3D(1, 0, 0, 0, 0.9831862, 0.18260604, 0, -0.18260604, 0.9831862, 0, 1.0701303, -0.43422517)
+
+[node name="Hips" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="16" unique_id=785687410]
+transform = Transform3D(1, 0, 0, 0, 0.7702339, 0.6377613, 0, -0.6377613, 0.7702339, 0, 0.97, -0.35131598)
+
+[node name="scientist" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="17" unique_id=1413972898]
+material_override = ExtResource("11_look_curled")
+
+[node name="scientist_glasses_rect" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="18" unique_id=694117945]
+visible = true
+
+[node name="scientist_glasses_round" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="19" unique_id=1219793593]
+visible = false
+
+[node name="LeftFoot" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="0" unique_id=1380953371]
+transform = Transform3D(-1, 1.6959142e-08, -1.560471e-07, -2.3278062e-08, -0.9991762, 0.040583223, -1.5523028e-07, 0.040583223, 0.9991762, 0.10067463, 1.0221554, 0.5561042)
+joint_offset = Transform3D(7.432205e-06, -1.3984737e-07, -1.0000001, -0.44459623, -0.89573145, -3.1790635e-06, -0.8957314, 0.44459626, -6.7194323e-06, 0.00067465566, 0.0800576, -0.04447636)
+body_offset = Transform3D(-1.0000002, -3.1092572e-06, -6.730915e-06, -1.5194061e-07, -0.89572924, 0.44459882, -7.416132e-06, 0.44459882, 0.89572954, 0.00067460537, 0.09148407, 0.004245281)
+
+[node name="LeftLowerLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="1" unique_id=503646579]
+transform = Transform3D(-0.9789797, 0.012170328, -0.20359431, -0.20378968, -0.017856017, 0.9788519, 0.008277564, 0.9997665, 0.019960865, 0.097541094, 0.94397855, 0.30933905)
+joint_offset = Transform3D(-0.2503441, 3.5217642e-08, -0.96815705, -4.931323e-08, 1.0000001, 4.912728e-08, 0.9681572, 6.0041664e-08, -0.25034407, 3.1619045e-05, -0.20511107, 6.815441e-05)
+body_offset = Transform3D(-0.9681562, -4.0233135e-06, -0.25034776, 1.2563542e-06, 0.9999999, -2.0904467e-05, 0.25034758, -2.0479783e-05, -0.96815574, 4.684925e-05, 0.20511103, 5.3867698e-05)
+
+[node name="LeftUpperLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="2" unique_id=1498533413]
+transform = Transform3D(0.86376154, 0.016212136, -0.50363994, -0.5038846, 0.019783853, -0.86354434, -0.0040359604, 0.9996729, 0.025257576, 0.09153584, 0.94327366, -0.11031532)
+joint_offset = Transform3D(-1.301113e-06, -0.8864968, 0.4627348, 1, -1.6292068e-07, 2.4996707e-06, -2.1405606e-06, 0.46273473, 0.8864969, -0.00012704541, -0.21555805, -0.00013614626)
+joint_rotation = Vector3(-2.4996705e-06, 0.4810776, 1.5707965)
+body_offset = Transform3D(0.88648015, -5.847495e-05, -0.46276698, 5.1546842e-05, 0.99999994, -2.7606264e-05, 0.46276686, 6.966293e-07, 0.8864799, 3.7014484e-05, 0.21555805, 0.0001796335)
+
+[node name="RightFoot" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="3" unique_id=1086344546]
+transform = Transform3D(-1, 2.7572915e-07, -5.0056904e-08, -2.766792e-07, -0.9997982, 0.020091325, -4.4507033e-08, 0.020091325, 0.9997982, -0.09980726, 0.9998988, 0.5570135)
+joint_offset = Transform3D(-7.921644e-05, -1.592853e-07, -1, -0.44459617, -0.8957314, 3.5361994e-05, -0.8957313, 0.44459623, 7.088581e-05, 0.00019276542, 0.08005566, -0.043891665)
+body_offset = Transform3D(-1.0000001, 3.5256493e-05, 7.100409e-05, -1.5295713e-07, -0.8957299, 0.4445957, 7.930028e-05, 0.44459566, 0.8957301, 0.00019305944, 0.091222286, 0.0037226677)
+
+[node name="RightLowerLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="4" unique_id=2050808143]
+transform = Transform3D(-0.9789792, -0.012174582, 0.2035968, 0.20391932, -0.038368404, 0.97823554, -0.0040979255, 0.9991895, 0.0400445, -0.09784591, 0.9265809, 0.30999088)
+joint_offset = Transform3D(0.25034577, -4.759668e-08, -0.96815634, 2.9007032e-07, 1.0000004, 2.58442e-08, 0.96815634, -2.8730358e-07, 0.25034577, -0.00028044733, -0.20583272, 0.00032116924)
+joint_rotation = Vector3(-2.5844209e-08, -1.3177589, 2.9007037e-07)
+body_offset = Transform3D(-0.96815497, -1.3699755e-06, 0.25035214, -5.7555735e-07, 0.99999887, 3.2745302e-06, -0.25035182, 3.028661e-06, -0.9681538, -0.00035220385, 0.20583248, 0.00024135411)
+
+[node name="RightUpperLeg" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="5" unique_id=1004608425]
+transform = Transform3D(0.86374754, -0.016266271, 0.5036622, 0.5035564, -0.01035348, -0.8639003, 0.019267093, 0.9998141, -0.00075180747, -0.09156132, 0.93694353, -0.10775471)
+joint_offset = Transform3D(1.3692626e-06, -0.8864993, -0.46273005, 1, 7.54979e-08, 2.8144575e-06, -2.4600793e-06, -0.46273, 0.8864994, 6.4252913e-06, -0.21809153, 1.6304484e-05)
+body_offset = Transform3D(0.88647074, 4.414469e-06, 0.46278575, -4.865229e-06, 0.99999976, -2.1111919e-07, -0.46278527, -2.0563602e-06, 0.88647, -1.2278557e-05, 0.21809149, -1.19283795e-05)
+
+[node name="LeftHand" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="6" unique_id=1150158978]
+transform = Transform3D(-0.031391878, 0.18438612, -0.98235244, -0.6837465, -0.72084624, -0.1134521, -0.7290441, 0.6681186, 0.14870209, 0.28002244, 0.8951642, -0.12101793)
+joint_offset = Transform3D(0.9997933, -0.019794099, 0.0047231745, 0.01988352, 0.99960834, -0.019701663, -0.004331348, 0.019791493, 0.999795, 0.011457093, -0.06027883, -0.0020038548)
+joint_rotation = Vector3(0.01970293, 0.004724108, 0.019888684)
+body_offset = Transform3D(0.0046924204, -0.019707337, 0.999795, -0.019793123, 0.99960744, 0.019796565, -0.9997922, -0.019881874, 0.004300356, 0.00076174736, 0.060521603, 0.0102648735)
+
+[node name="LeftLowerArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="7" unique_id=579670047]
+transform = Transform3D(-0.023175571, 0.17466219, -0.9843556, -0.71513563, -0.6909382, -0.10576166, -0.69860137, 0.7014967, 0.14092004, 0.2468963, 1.0242774, -0.2648487)
+joint_offset = Transform3D(0.999992, 1.08045825e-07, 0.004061385, -1.6006884e-07, 1.0000001, 1.2808845e-05, -0.0040613865, -1.28093925e-05, 0.9999917, -0.00017227519, -0.13513857, -6.724885e-06)
+joint_rotation = Vector3(-1.2808847e-05, 0.004061397, -1.600688e-07)
+body_offset = Transform3D(0.004045166, 2.0943582e-05, 0.999992, 8.198619e-05, 0.9999994, -2.1263957e-05, -0.99999094, 8.195639e-05, 0.004044965, 1.0251999e-05, 0.13513851, -0.00016117096)
+
+[node name="LeftUpperArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="8" unique_id=1122656614]
+transform = Transform3D(-0.039297335, 0.17231366, -0.984258, -0.011168521, -0.9850331, -0.17200343, -0.9991652, 0.004233429, 0.040633664, 0.19909072, 1.2559168, -0.3598194)
+joint_offset = Transform3D(-1.6809534e-07, -0.005013044, -0.9999874, 1, 4.367033e-06, -1.8998985e-07, 4.3679297e-06, -0.99998754, 0.0050130435, 0.00030468567, -0.14002448, -5.0211343e-05)
+body_offset = Transform3D(0.005018022, 2.9586372e-05, 0.9999876, -1.5353784e-05, 0.9999995, -2.9450457e-05, -0.999987, -1.5297905e-05, 0.0050180443, 5.2824616e-05, 0.14002442, 0.0003027916)
+
+[node name="Head" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="9" unique_id=1211001169]
+transform = Transform3D(-1, -8.7231506e-08, -1.3680757e-07, -1.5687907e-07, 0.73501307, 0.678053, 4.1407766e-08, 0.678053, -0.735013, 0.000831306, 1.5636281, -0.18788528)
+joint_offset = Transform3D(-7.54979e-08, 1, 1.509958e-07, 0.9999999, 7.54979e-08, 6.618469e-08, 6.618467e-08, 1.509958e-07, -1, 0.0008313148, -0.094978325, 0.017916631)
+joint_rotation = Vector3(-6.618469e-08, 3.1415925, 1.5707963)
+body_offset = Transform3D(-1, -8.723156e-08, 3.1779933e-08, -8.723155e-08, 1.0000001, 5.066395e-07, -3.177998e-08, 5.066395e-07, -1, 0.000831306, 0.09497833, 0.01791668)
+
+[node name="Neck" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="10" unique_id=1182689979]
+transform = Transform3D(1, -8.8832526e-14, 2.495125e-08, 1.7264536e-08, 0.7219664, -0.69192815, -1.8013903e-08, 0.69192815, 0.7219664, -0.00044214725, 1.4685514, -0.30591106)
+joint_offset = Transform3D(-4.3711445e-08, -1, 5.986597e-08, 0.99999994, -4.371139e-08, 1.0207298e-06, -1.0207295e-06, 5.9866004e-08, 1.0000001, 0.00044211766, -0.050014015, 0.0033197955)
+body_offset = Transform3D(1, -1.563194e-13, -5.96096e-08, 8.970602e-14, 1, -1.0430813e-06, 5.9609604e-08, 1.1026859e-06, 1, -0.00044211745, 0.05001402, -0.0033197403)
+
+[node name="RightHand" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="11" unique_id=988088859]
+transform = Transform3D(-0.8895597, 0.15295094, 0.43045285, -0.41754523, 0.11000504, -0.90197283, -0.18530956, -0.98209214, -0.033992108, -0.29411757, 0.9089689, -0.13996267)
+joint_offset = Transform3D(0.99979293, -0.019794162, -0.004723242, -0.019883614, -0.9996082, -0.01971104, -0.004331227, 0.019800877, -0.99979466, 0.011944181, 0.06000916, -0.0020522636)
+body_offset = Transform3D(-0.004726678, -0.019705795, -0.9997949, -0.019795433, -0.9996077, 0.019795347, -0.99979293, 0.0198849, 0.0043348265, -0.00081285834, 0.06026268, 0.010757327)
+
+[node name="RightLowerArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="12" unique_id=1524518501]
+transform = Transform3D(0.35817987, -0.20494252, 0.9108819, 0.51104784, -0.7734485, -0.37497678, 0.7813688, 0.5998134, -0.17229825, -0.26884967, 1.016836, -0.28218985)
+joint_offset = Transform3D(-0.9999918, -5.5815583e-08, 0.0040608845, -1.8479648e-08, 1.0000002, 9.194073e-06, -0.004060885, 9.193925e-06, -0.9999917, 0.00016656615, -0.13520339, 2.6648424e-05)
+body_offset = Transform3D(0.0040513426, 4.954636e-06, -0.99999195, 5.155802e-06, 0.99999976, 4.850328e-06, 0.9999919, -5.155802e-06, 0.004051268, 2.6643276e-05, 0.13520336, -0.00016736984)
+
+[node name="RightUpperArm" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="13" unique_id=1698653731]
+transform = Transform3D(0.3380676, -0.23568422, 0.91113293, -0.09040396, -0.9717905, -0.21783103, 0.93676966, -0.008728421, -0.34983766, -0.20803064, 1.2576613, -0.36259508)
+joint_offset = Transform3D(5.657546e-08, -0.005013044, 0.9999874, 1, 1.6252189e-06, -4.8428774e-08, -1.6249555e-06, 0.99998754, 0.0050130435, 0.00061282015, -0.14014855, -0.00022766856)
+joint_rotation = Vector3(4.8428774e-08, 1.5657833, 1.5707947)
+body_offset = Transform3D(0.0050154924, -7.1604736e-06, -0.99998754, 1.0976568e-05, 1.0000001, -7.110182e-06, 0.99998736, -1.1002645e-05, 0.005015403, -0.00023174286, 0.14014857, -0.0006132126)
+
+[node name="Chest" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="14" unique_id=615385680]
+transform = Transform3D(1.1916819e-07, 1, 1.1924392e-07, 0.12841007, 1.02954324e-07, -0.99172115, -0.99172115, 1.3349374e-07, -0.12841007, 0, 1.2779329, -0.45154142)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.006975731, -9.860926e-09, 0.08966672)
+body_offset = Transform3D(1.1916819e-07, 1, 1.1924392e-07, 8.940697e-07, 1.1924381e-07, -0.99999994, -0.99999994, 1.191683e-07, -8.940697e-07, 0, 0.089666724, -0.006975651)
+
+[node name="Spine" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="15" unique_id=266307627]
+transform = Transform3D(1.187221e-07, 1, 1.1930322e-07, -0.18260555, 1.3897659e-07, -0.9831863, -0.9831863, 9.4940496e-08, 0.18260556, 0, 1.128398, -0.4491186)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.004003077, -6.683841e-09, 0.06000756)
+body_offset = Transform3D(1.1872211e-07, 1, 1.1930321e-07, 5.066395e-07, 1.1930314e-07, -1.0000001, -1.0000001, 1.1872216e-07, -4.917383e-07, 0, 0.060007572, -0.004003048)
+
+[node name="Hips" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="16" unique_id=108805728]
+transform = Transform3D(1.18898946e-07, 1, 1.1933655e-07, -0.63776153, 1.6774622e-07, -0.7702339, -0.7702339, 1.547173e-08, 0.63776153, 0, 0.9896917, -0.3743062)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.005149358, -2.9474965e-09, 0.0298295)
+body_offset = Transform3D(1.18898946e-07, 1, 1.1933655e-07, -2.0861626e-07, 1.1933659e-07, -1.0000001, -1.0000001, 1.1889894e-07, 2.0861626e-07, 0, 0.029829502, -0.0051493645)
+
+[node name="CoatDrive" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="21"]
+settings/0/apply_bone = 4
+settings/0/reference_type = 0
+settings/0/reference_bone = 8
+settings/1/apply_bone = 14
+settings/1/reference_type = 0
+settings/1/reference_bone = 18
+settings/2/apply_bone = 6
+settings/2/reference_type = 0
+settings/2/reference_bone = 8
+settings/3/apply_bone = 16
+settings/3/reference_type = 0
+settings/3/reference_bone = 18
+
+[node name="CoatSprings" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D" index="22"]
+settings/0/root_bone = 4
+settings/0/end_bone = 5
+settings/0/end_bone/direction = 6
+settings/0/individual_config = false
+settings/0/rotation_axis = 3
+settings/0/radius/damping_curve = null
+settings/0/stiffness/damping_curve = null
+settings/0/drag/damping_curve = null
+settings/0/gravity/damping_curve = null
+settings/0/gravity/direction = Vector3(0, -1, 0)
+settings/0/joints/0/bone_name = "LeftCoatFront1"
+settings/0/joints/0/bone = 4
+settings/0/joints/1/bone_name = "LeftCoatFront2"
+settings/0/joints/1/bone = 5
+settings/0/enable_all_child_collisions = true
+settings/0/exclude_collision_count = 0
+settings/1/root_bone = 6
+settings/1/end_bone = 7
+settings/1/end_bone/direction = 6
+settings/1/individual_config = false
+settings/1/rotation_axis = 3
+settings/1/radius/damping_curve = null
+settings/1/stiffness/damping_curve = null
+settings/1/drag/damping_curve = null
+settings/1/gravity/damping_curve = null
+settings/1/gravity/direction = Vector3(0, -1, 0)
+settings/1/joints/0/bone_name = "LeftCoatSide1"
+settings/1/joints/0/bone = 6
+settings/1/joints/1/bone_name = "LeftCoatSide2"
+settings/1/joints/1/bone = 7
+settings/1/enable_all_child_collisions = true
+settings/1/exclude_collision_count = 0
+settings/2/root_bone = 2
+settings/2/end_bone = 3
+settings/2/end_bone/direction = 6
+settings/2/individual_config = false
+settings/2/rotation_axis = 3
+settings/2/radius/damping_curve = null
+settings/2/stiffness/damping_curve = null
+settings/2/drag/damping_curve = null
+settings/2/gravity/damping_curve = null
+settings/2/gravity/direction = Vector3(0, -1, 0)
+settings/2/joints/0/bone_name = "LeftCoatBack1"
+settings/2/joints/0/bone = 2
+settings/2/joints/1/bone_name = "LeftCoatBack2"
+settings/2/joints/1/bone = 3
+settings/2/enable_all_child_collisions = true
+settings/2/exclude_collision_count = 0
+settings/3/root_bone = 14
+settings/3/end_bone = 15
+settings/3/end_bone/direction = 6
+settings/3/individual_config = false
+settings/3/rotation_axis = 3
+settings/3/radius/damping_curve = null
+settings/3/stiffness/damping_curve = null
+settings/3/drag/damping_curve = null
+settings/3/gravity/damping_curve = null
+settings/3/gravity/direction = Vector3(0, -1, 0)
+settings/3/joints/0/bone_name = "RightCoatFront1"
+settings/3/joints/0/bone = 14
+settings/3/joints/1/bone_name = "RightCoatFront2"
+settings/3/joints/1/bone = 15
+settings/3/enable_all_child_collisions = true
+settings/3/exclude_collision_count = 0
+settings/4/root_bone = 16
+settings/4/end_bone = 17
+settings/4/end_bone/direction = 6
+settings/4/individual_config = false
+settings/4/rotation_axis = 3
+settings/4/radius/damping_curve = null
+settings/4/stiffness/damping_curve = null
+settings/4/drag/damping_curve = null
+settings/4/gravity/damping_curve = null
+settings/4/gravity/direction = Vector3(0, -1, 0)
+settings/4/joints/0/bone_name = "RightCoatSide1"
+settings/4/joints/0/bone = 16
+settings/4/joints/1/bone_name = "RightCoatSide2"
+settings/4/joints/1/bone = 17
+settings/4/enable_all_child_collisions = true
+settings/4/exclude_collision_count = 0
+settings/5/root_bone = 12
+settings/5/end_bone = 13
+settings/5/end_bone/direction = 6
+settings/5/individual_config = false
+settings/5/rotation_axis = 3
+settings/5/radius/damping_curve = null
+settings/5/stiffness/damping_curve = null
+settings/5/drag/damping_curve = null
+settings/5/gravity/damping_curve = null
+settings/5/gravity/direction = Vector3(0, -1, 0)
+settings/5/joints/0/bone_name = "RightCoatBack1"
+settings/5/joints/0/bone = 12
+settings/5/joints/1/bone_name = "RightCoatBack2"
+settings/5/joints/1/bone = 13
+settings/5/enable_all_child_collisions = true
+settings/5/exclude_collision_count = 0
+
+[node name="LeftUpperLegCollision" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/CoatSprings" index="0"]
+bone = 8
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="LeftLowerLegCollision" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/CoatSprings" index="1"]
+bone = 9
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="RightUpperLegCollision" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/CoatSprings" index="2"]
+bone = 18
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="RightLowerLegCollision" parent="Lab/ScientistSlumped/Visual/scientist_skel/Skeleton3D/CoatSprings" index="3"]
+bone = 19
+rotation_offset = Quaternion(0, 0, 0, 1)
 
 [node name="ScientistCrawled" parent="Lab" unique_id=1100531842 instance=ExtResource("7_scientist")]
 transform = Transform3D(-0.94, 0, -0.34, 0, 1, 0, 0.34, 0, -0.94, -5.5, 0, -3.5)
 metadata/menu_action = "pose_face_down"
+
+[node name="Skeleton3D" parent="Lab/ScientistCrawled/Visual/scientist_skel" index="0" unique_id=1922037902]
+bones/0/position = Vector3(0.82207054, 0, 0.68389964)
+bones/0/rotation = Quaternion(0.26278934, 0.65646154, 0.6564616, -0.26278934)
+bones/1/position = Vector3(0.12306651, -1.0622492, 0.10843493)
+bones/1/rotation = Quaternion(0.93457836, -0.3466099, -0.00021641045, 0.08015505)
+bones/8/position = Vector3(0.088015854, -0.040050447, -0.00012543797)
+bones/8/rotation = Quaternion(0.9137348, -0.4003851, 0.06630041, 0.019615974)
+bones/9/position = Vector3(-4.9725175e-05, 0.43022752, -5.184114e-05)
+bones/9/rotation = Quaternion(0.26125243, 0.00018733028, 8.7254e-05, 0.9652705)
+bones/10/position = Vector3(-4.3861568e-05, 0.41072023, 1.7285347e-05)
+bones/10/rotation = Quaternion(-0.6868405, 0.013901862, 0.021022223, 0.7263711)
+bones/11/rotation = Quaternion(8.5573345e-07, 0.9735839, -0.22832967, 3.5863227e-06)
+bones/18/position = Vector3(-0.08801597, -0.039619863, -0.000201419)
+bones/18/rotation = Quaternion(0.74099326, -0.5938905, 0.22911035, 0.21384944)
+bones/19/position = Vector3(0.0010620952, 0.4301817, -0.00046640635)
+bones/19/rotation = Quaternion(0.33278602, -0.0021044624, -0.0060534617, 0.9429806)
+bones/20/position = Vector3(0.0032934546, 0.41059524, 0.00027118623)
+bones/20/rotation = Quaternion(-0.76818347, -0.016604817, -0.041344624, 0.6386776)
+bones/21/rotation = Quaternion(-6.7035503e-06, 0.9735839, -0.22832964, -4.8813e-05)
+bones/22/position = Vector3(-7.1406364e-05, 0.12996578, 0.00013815612)
+bones/22/rotation = Quaternion(0.09920668, -0.123234086, 0.19285871, 0.96838886)
+bones/23/position = Vector3(-2.348423e-05, 0.12005007, 2.7477741e-05)
+bones/23/rotation = Quaternion(0.06735343, 0.047270562, -0.19566055, 0.9772134)
+bones/24/rotation = Quaternion(0.14036185, 7.929183e-08, 6.018373e-08, 0.99010026)
+bones/25/rotation = Quaternion(-0.35758823, -0.39613056, -0.5738196, 0.6212426)
+bones/26/position = Vector3(-0.03348881, 0.14991367, -0.02068472)
+bones/26/rotation = Quaternion(0.12425286, 0.5182451, -0.6616176, 0.5274898)
+bones/27/position = Vector3(2.3245811e-06, 0.28027523, -0.00013577938)
+bones/27/rotation = Quaternion(0.043055102, 0.002798012, -0.0036623052, 0.99906206)
+bones/28/position = Vector3(0.0021585822, 0.27023953, -0.00014352798)
+bones/28/rotation = Quaternion(-0.04335614, 0.0059923334, -0.0143296085, 0.9989389)
+bones/29/rotation = Quaternion(0.08892249, 0.7048442, -0.041242357, 0.70255715)
+bones/30/rotation = Quaternion(0.1529785, 2.1098616e-07, -7.32472e-08, 0.9882295)
+bones/31/rotation = Quaternion(0.08184659, -1.0824165e-07, -3.5357786e-08, 0.996645)
+bones/32/rotation = Quaternion(0.0031279153, 0.69282377, -0.12697192, 0.7098335)
+bones/33/rotation = Quaternion(0.15298086, 8.715077e-08, -7.09051e-08, 0.98822916)
+bones/34/rotation = Quaternion(0.0818461, 4.49145e-09, 6.282576e-08, 0.99664503)
+bones/35/rotation = Quaternion(0.058366723, 0.7017512, -0.0719966, 0.70636755)
+bones/36/rotation = Quaternion(0.15298152, 3.3415844e-07, -1.2888636e-07, 0.98822904)
+bones/37/rotation = Quaternion(0.081843786, -7.668303e-08, 8.481101e-08, 0.9966452)
+bones/38/rotation = Quaternion(0.03384044, 0.6983146, -0.096505195, 0.7084478)
+bones/39/rotation = Quaternion(0.15298155, 1.0980014e-08, 5.760386e-08, 0.98822904)
+bones/40/rotation = Quaternion(0.0818447, 2.28372e-07, -5.997682e-08, 0.9966451)
+bones/41/rotation = Quaternion(0.024339339, 0.94333994, 0.32293987, -0.07229968)
+bones/42/rotation = Quaternion(0.12027717, 9.001091e-05, 0.0016668452, 0.99273896)
+bones/43/rotation = Quaternion(0.17658511, -0.00035558088, -0.0035483877, 0.9842789)
+bones/44/position = Vector3(0.00018668175, 0.15191615, -0.052681983)
+bones/44/rotation = Quaternion(-0.30247772, -0.22046377, -0.048823018, 0.92602336)
+bones/45/position = Vector3(3.9368868e-05, 0.10580039, -4.196167e-05)
+bones/45/rotation = Quaternion(-0.21923937, -0.22723906, -0.17336403, 0.93286735)
+bones/46/position = Vector3(-1.4271844e-08, 0.09599989, 0.11131365)
+bones/46/rotation = Quaternion(-0.70710677, -4.445521e-08, -4.4383967e-08, 0.70710677)
+bones/47/rotation = Quaternion(-0.35729373, 0.39581153, 0.57400304, 0.6214459)
+bones/48/position = Vector3(0.0335083, 0.14987054, -0.021009922)
+bones/48/rotation = Quaternion(0.08855585, -0.65510124, 0.3911882, 0.6402906)
+bones/49/position = Vector3(-3.5494566e-05, 0.28047025, -0.0001347065)
+bones/49/rotation = Quaternion(0.042752925, -0.0015849199, 0.00074093184, 0.9990841)
+bones/50/position = Vector3(-0.0004864335, 0.27034795, -0.0001898408)
+bones/50/rotation = Quaternion(-0.056958184, -0.002390881, 0.0062063816, 0.9983544)
+bones/51/rotation = Quaternion(0.0889219, -0.7048432, 0.041241806, 0.7025582)
+bones/52/rotation = Quaternion(0.15297937, -1.2333126e-06, 2.0739802e-07, 0.9882294)
+bones/53/rotation = Quaternion(0.081846476, 2.4971257e-06, 9.2861605e-08, 0.996645)
+bones/54/rotation = Quaternion(0.0031274331, -0.6928228, 0.12697141, 0.7098345)
+bones/55/rotation = Quaternion(0.1529816, -9.847103e-07, 1.444423e-07, 0.98822904)
+bones/56/rotation = Quaternion(0.081846006, -1.6502405e-06, -2.3926128e-07, 0.99664503)
+bones/57/rotation = Quaternion(0.05836714, -0.7017513, 0.071997, 0.7063674)
+bones/58/rotation = Quaternion(0.1529808, 2.2888605e-08, 6.29951e-09, 0.98822916)
+bones/59/rotation = Quaternion(0.081843756, -2.6100313e-08, 7.76743e-08, 0.9966452)
+bones/60/rotation = Quaternion(0.033840284, -0.6983197, 0.096505046, 0.70844287)
+bones/61/rotation = Quaternion(0.15298237, 6.595975e-06, -1.0494786e-06, 0.9882289)
+bones/62/rotation = Quaternion(0.08184417, -3.1764785e-06, 4.5287546e-08, 0.99664515)
+bones/64/rotation = Quaternion(0.120277315, -9.001393e-05, -0.0016668726, 0.99273896)
+bones/65/rotation = Quaternion(0.17658532, 0.00035559078, 0.003548195, 0.98427886)
+
+[node name="LeftFoot" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="0" unique_id=537004034]
+transform = Transform3D(-0.61428565, 0.48584917, 0.6217751, -0.24738616, -0.8668223, 0.4329204, 0.7493022, 0.112118214, 0.65266854, 0.5063406, 0.21006279, 0.59002507)
+
+[node name="LeftLowerLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="1" unique_id=2031207842]
+transform = Transform3D(-0.6430194, 0.6407637, -0.4194619, -0.2078044, 0.38118142, 0.9008433, 0.73711866, 0.66642547, -0.11195354, 0.24314508, 0.053479176, 0.31634495)
+
+[node name="LeftUpperLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="2" unique_id=1729454214]
+transform = Transform3D(-0.6432354, 0.7646838, -0.03882512, -0.20746441, -0.12525526, 0.9701908, 0.737026, 0.6321157, 0.23921317, -0.08587695, 0.10740741, 0.044440426)
+
+[node name="RightFoot" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="3" unique_id=1123269471]
+transform = Transform3D(-0.27493557, 0.45295113, 0.8480839, -0.6434719, -0.7420908, 0.18773785, 0.71439093, -0.49410236, 0.49548864, 0.822005, 0.17824198, 0.32645518)
+
+[node name="RightLowerLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="4" unique_id=402977552]
+transform = Transform3D(-0.20248495, 0.7576713, -0.620431, -0.6910966, 0.3383119, 0.6386945, 0.69381946, 0.558104, 0.4551209, 0.5117439, 0.041435596, 0.094891846)
+
+[node name="RightUpperLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="5" unique_id=1455563989]
+transform = Transform3D(-0.18991737, 0.9817721, -0.0074421577, -0.69275963, -0.12863086, 0.70960444, 0.6957124, 0.13992189, 0.70456135, 0.089601755, 0.09783698, 0.034289706)
+
+[node name="LeftHand" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="6" unique_id=1041889918]
+transform = Transform3D(0.4865831, -0.109667294, 0.8667242, 0.87021375, -0.026867736, -0.4919417, 0.07723662, 0.99360526, 0.08236072, -0.19352257, 0.030172203, 0.07861844)
+
+[node name="LeftLowerArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="7" unique_id=179340370]
+transform = Transform3D(0.49471903, -0.048466057, 0.867701, 0.86253786, -0.09464869, -0.49706185, 0.10621717, 0.9943304, -0.0050205365, -0.18136849, 0.053816818, -0.19031894)
+
+[node name="LeftUpperArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="8" unique_id=1994410722]
+transform = Transform3D(0.49890915, -0.1264517, 0.85738, 0.85916364, -0.05762711, -0.5084461, 0.113702, 0.99029756, 0.07989213, -0.14581195, 0.069897234, -0.46786425)
+
+[node name="Head" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="9" unique_id=1839375872]
+transform = Transform3D(-0.47778872, -0.7226945, 0.49943042, -0.8309516, 0.1873417, -0.5238538, 0.2850222, -0.66529375, -0.6900337, -1.3038516e-08, 0.08449864, -0.61894566)
+
+[node name="Neck" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="10" unique_id=1147780245]
+transform = Transform3D(-0.87926793, -0.2592061, 0.39962518, -0.43364805, 0.08849484, -0.8967263, 0.19707222, -0.9617592, -0.1902147, 0.027475476, 0.07511529, -0.5172069)
+
+[node name="RightHand" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="11" unique_id=64946936]
+transform = Transform3D(0.32949707, 0.7619639, -0.55753314, -0.8407318, -0.03193511, -0.5405095, -0.42965332, 0.646832, 0.6300846, 0.6031321, 0.036725484, -0.10318762)
+
+[node name="RightLowerArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="12" unique_id=220231204]
+transform = Transform3D(0.3232887, 0.6977431, -0.6392492, -0.83730793, -0.10382858, -0.53678256, -0.44090834, 0.708784, 0.55065906, 0.41453457, 0.06428613, -0.29491585)
+
+[node name="RightUpperArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="13" unique_id=1722434756]
+transform = Transform3D(0.32414314, 0.7502374, -0.57626003, -0.83546907, -0.058717787, -0.5463919, -0.44376007, 0.65855634, 0.60776705, 0.2040492, 0.08065146, -0.4795552)
+
+[node name="Chest" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="14" unique_id=1126615707]
+transform = Transform3D(-0.9989798, -0.026961176, 0.036231592, -0.02996584, -0.2045137, -0.97840494, 0.033788793, -0.9784924, 0.20349726, 0.035530206, 0.124301, -0.24096908)
+
+[node name="Spine" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="15" unique_id=176455631]
+transform = Transform3D(-0.92611676, 0.34556106, 0.15131311, -0.17165084, -0.028837956, -0.9847357, -0.33592266, -0.9379531, 0.0860233, -0.005980332, 0.12778603, -0.12837799)
+
+[node name="Hips" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="16" unique_id=785687410]
+transform = Transform3D(-0.9969444, -0.04649522, -0.06277167, 0.055160593, 0.14997251, -0.9871502, 0.05531183, -0.9875964, -0.14694941, -5.9604645e-08, 0.10843505, 0)
+
+[node name="scientist" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="17" unique_id=1413972898]
+material_override = ExtResource("12_look_crawled")
+
+[node name="scientist_glasses_rect" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="18" unique_id=694117945]
+visible = true
+material_override = ExtResource("12_look_crawled")
+
+[node name="scientist_glasses_round" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="19" unique_id=1219793593]
+visible = false
+
+[node name="LeftFoot" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="0" unique_id=1380953371]
+transform = Transform3D(0.6145116, -0.15887137, 0.7732633, 0.24747589, 0.9688911, 0.002395383, -0.7495885, 0.18989202, 0.6347116, 0.55182314, 0.12967928, 0.6042571)
+joint_offset = Transform3D(7.432205e-06, -1.3984737e-07, -1.0000001, -0.44459623, -0.89573145, -3.1790635e-06, -0.8957314, 0.44459626, -6.7194323e-06, 0.0026255327, 0.08240253, -0.043975204)
+body_offset = Transform3D(-1.0003755, 0.00018882751, -6.2584877e-06, -1.4528632e-07, -0.89575285, 0.44477543, -7.5399876e-06, 0.44460663, 0.8960887, 0.0026106834, 0.09337139, 0.0027689934)
+
+[node name="LeftLowerLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="1" unique_id=503646579]
+transform = Transform3D(0.51770294, 0.64091563, 0.5674605, 0.42684814, 0.38125542, -0.82002735, -0.74191576, 0.6667501, -0.076196626, 0.37474442, 0.13176674, 0.45321655)
+joint_offset = Transform3D(-0.2503441, 3.5217642e-08, -0.96815705, -4.931323e-08, 1.0000001, 4.912728e-08, 0.9681572, 6.0041664e-08, -0.25034407, -2.5767928e-05, -0.20531072, 9.123524e-07)
+body_offset = Transform3D(-0.96847343, 0.00012624264, -0.25064877, 2.682209e-07, 1.0003419, 0.00024959445, 0.25042647, -3.3410266e-05, -0.96821314, 1.1920929e-06, 0.20538092, 4.7683716e-07)
+
+[node name="LeftUpperLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="2" unique_id=1498533413]
+transform = Transform3D(-0.58841157, 0.7649692, 0.26342854, 0.26512262, -0.125295, 0.95603925, 0.76434696, 0.63238543, -0.12908563, 0.07867384, 0.08047349, 0.1804533)
+joint_offset = Transform3D(-1.301113e-06, -0.8864968, 0.4627348, 1, -1.6292068e-07, 2.4996707e-06, -2.1405606e-06, 0.46273473, 0.8864969, 8.950878e-06, -0.21509379, -1.9487927e-05)
+joint_rotation = Vector3(-2.4996705e-06, 0.4810776, 1.5707965)
+body_offset = Transform3D(0.88682675, 2.3424625e-05, -0.46292984, -1.0430813e-06, 1.0003937, 9.3601644e-05, 0.46290636, 1.4878809e-05, 0.8864334, -1.1920929e-05, 0.21517849, 1.6331673e-05)
+
+[node name="RightFoot" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="3" unique_id=1086344546]
+transform = Transform3D(0.27506724, -0.028788209, 0.96141034, 0.64363766, 0.7480422, -0.16175075, -0.7145191, 0.6632923, 0.22429107, 0.8671346, 0.11256065, 0.28185368)
+joint_offset = Transform3D(-7.921644e-05, -1.592853e-07, -1, -0.44459617, -0.8957314, 3.5361994e-05, -0.8957313, 0.44459623, 7.088581e-05, -0.0019721102, 0.07999091, -0.043981757)
+body_offset = Transform3D(-1.0002344, 0.00042065978, -1.2457371e-05, -8.940697e-08, -0.89588845, 0.44468263, 7.925928e-05, 0.44467434, 0.89612275, -0.0020067692, 0.091220856, 0.0038433075)
+
+[node name="RightLowerLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="4" unique_id=2050808143]
+transform = Transform3D(0.351463, 0.7578915, 0.55034065, 0.5093462, 0.3383613, -0.7912509, -0.7858963, 0.5584094, -0.26710773, 0.66734743, 0.11091136, 0.20950985)
+joint_offset = Transform3D(0.25034577, -4.759668e-08, -0.96815634, 2.9007032e-07, 1.0000004, 2.58442e-08, 0.96815634, -2.8730358e-07, 0.25034577, -2.6791304e-05, -0.2052968, -2.9700955e-06)
+joint_rotation = Vector3(-2.5844209e-08, -1.3177589, 2.9007037e-07)
+body_offset = Transform3D(-0.9684434, 0.00013321638, 0.25007057, -4.3213367e-07, 1.000354, 0.00021380186, -0.2504196, 3.3915043e-05, -0.9683819, 2.1457672e-06, 0.20536947, -2.6226044e-06)
+
+[node name="RightUpperLeg" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="5" unique_id=1004608425]
+transform = Transform3D(-0.16492394, 0.9821743, -0.094522014, -0.9425283, -0.12858783, 0.30839172, 0.29074007, 0.13995086, 0.9469343, 0.30079317, 0.0701669, 0.064388275)
+joint_offset = Transform3D(1.3692626e-06, -0.8864993, -0.46273005, 1, 7.54979e-08, 2.8144575e-06, -2.4600793e-06, -0.46273, 0.8864994, -2.1070413e-05, -0.21502766, 9.0115526e-07)
+body_offset = Transform3D(0.88653874, -8.6039305e-05, 0.4631037, 1.3560057e-06, 1.0003933, 2.9027462e-05, -0.4627505, 4.7951937e-05, 0.88671225, -2.3841858e-07, 0.21511221, -2.3841858e-07)
+
+[node name="LeftHand" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="6" unique_id=1150158978]
+transform = Transform3D(-0.8623357, -0.13651149, 0.48840797, 0.49663067, -0.034228336, 0.8672868, -0.10167724, 0.99045074, 0.09731212, -0.19029951, 0.024043137, 0.13945198)
+joint_offset = Transform3D(0.9997933, -0.019794099, 0.0047231745, 0.01988352, 0.99960834, -0.019701663, -0.004331348, 0.019791493, 0.999795, 0.012001258, -0.05997488, -0.0021722554)
+joint_rotation = Vector3(0.01970293, 0.004724108, 0.019888684)
+body_offset = Transform3D(0.0047238115, -0.019710876, 0.99989134, -0.019800246, 1.0000073, 0.019825615, -1.000094, -0.019905359, 0.004675027, 0.0009331703, 0.060256004, 0.01081872)
+
+[node name="LeftLowerArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="7" unique_id=579670047]
+transform = Transform3D(-0.8659439, -0.048512995, 0.4985862, 0.50071067, -0.09465832, 0.8604234, 0.0054536164, 0.99472594, 0.10625978, -0.18777084, 0.04125841, -0.055828094)
+joint_offset = Transform3D(0.999992, 1.08045825e-07, 0.004061385, -1.6006884e-07, 1.0000001, 1.2808845e-05, -0.0040613865, -1.28093925e-05, 0.9999917, 1.5311387e-05, -0.13517359, -0.00028424297)
+joint_rotation = Vector3(-1.2808847e-05, 0.004061397, -1.600688e-07)
+body_offset = Transform3D(0.0040625893, 1.04904175e-05, 1.0000938, 1.1920929e-07, 1.0003965, 5.5082142e-05, -1.0002911, -3.7908554e-05, 0.0044063777, 0.00028562546, 0.1352272, 1.1444092e-05)
+
+[node name="LeftUpperArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="8" unique_id=1122656614]
+transform = Transform3D(-0.85511994, -0.12652391, 0.50354975, 0.51289797, -0.057639785, 0.85651225, -0.079344794, 0.99069035, 0.114182815, -0.16335106, 0.062143236, -0.32902098)
+joint_offset = Transform3D(-1.6809534e-07, -0.005013044, -0.9999874, 1, 4.367033e-06, -1.8998985e-07, 4.3679297e-06, -0.99998754, 0.0050130435, -1.4945281e-06, -0.14010467, -0.00037459203)
+body_offset = Transform3D(0.0050147064, -2.2612512e-06, 1.0000919, -2.8312206e-07, 1.0003988, 4.2125583e-05, -1.000282, -2.4095178e-05, 0.005365234, 0.00037431717, 0.14016056, -2.861023e-06)
+
+[node name="Head" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="9" unique_id=1211001169]
+transform = Transform3D(0.47784787, -0.7230331, -0.49968505, 0.8310543, 0.18731043, 0.52370167, -0.28505743, -0.6655152, 0.69038564, -0.059399128, 0.092804246, -0.69432354)
+joint_offset = Transform3D(-7.54979e-08, 1, 1.509958e-07, 0.9999999, 7.54979e-08, 6.618469e-08, 6.618467e-08, 1.509958e-07, -1, -1.1121645e-05, -0.094593726, 0.017991193)
+joint_rotation = Vector3(-6.618469e-08, 3.1415925, 1.5707963)
+body_offset = Transform3D(-1.0001236, 0.00012461841, 0.00034838915, -5.9604645e-08, 1.0003861, -7.870793e-05, 8.940697e-08, 1.1920929e-07, -1.0002904, -5.6028366e-06, 0.09463167, 0.01799643)
+
+[node name="Neck" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="10" unique_id=1182689979]
+transform = Transform3D(-0.87956023, -0.2593344, 0.39990002, -0.43377453, 0.08851618, -0.89666295, 0.19713792, -0.96213555, -0.190348, 0.013743401, 0.08128815, -0.56489706)
+joint_offset = Transform3D(-4.3711445e-08, -1, 5.986597e-08, 0.99999994, -4.371139e-08, 1.0207298e-06, -1.0207295e-06, 5.9866004e-08, 1.0000001, 3.2324356e-06, -0.04995235, 0.0019515418)
+body_offset = Transform3D(1.0003248, 2.9325485e-05, -0.00029541552, 1.4007092e-06, 1.0003971, 6.252527e-05, -1.5884638e-05, 1.1920929e-06, 1.0000783, -1.1920929e-06, 0.049972057, -0.0019516349)
+
+[node name="RightHand" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="11" unique_id=988088859]
+transform = Transform3D(0.54093134, -0.77956665, -0.31696963, 0.5451533, 0.037755568, 0.83748573, -0.6409086, -0.6258193, 0.4454065, 0.64276457, 0.029588807, -0.057070732)
+joint_offset = Transform3D(0.99979293, -0.019794162, -0.004723242, -0.019883614, -0.9996082, -0.01971104, -0.004331227, 0.019800877, -0.99979466, 0.012002383, 0.059978377, -0.0019952352)
+body_offset = Transform3D(-0.0047238767, -0.019721642, -0.9999115, -0.01979959, -1.0000067, 0.01983875, -1.0000739, 0.019907832, 0.004695922, -0.0007554889, 0.060256004, 0.010818601)
+
+[node name="RightLowerArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="12" unique_id=1524518501]
+transform = Transform3D(-0.6381121, 0.69805074, -0.32609612, -0.5403304, -0.10385323, 0.83501947, 0.5490198, 0.7090357, 0.44344807, 0.5087395, 0.050404903, -0.19909477)
+joint_offset = Transform3D(-0.9999918, -5.5815583e-08, 0.0040608845, -1.8479648e-08, 1.0000002, 9.194073e-06, -0.004060885, 9.193925e-06, -0.9999917, -7.5716434e-07, -0.13503501, -0.00017126751)
+body_offset = Transform3D(0.0040610433, 9.119511e-06, -1.0001112, -8.940697e-08, 1.0003955, 7.8856945e-05, 1.0002749, -4.476309e-05, 0.0044215024, -0.00017005205, 0.13508844, -4.529953e-06)
+
+[node name="RightUpperArm" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="13" unique_id=1698653731]
+transform = Transform3D(-0.5747877, 0.7505521, -0.32724807, -0.5507282, -0.058729902, 0.83261585, 0.6057024, 0.6588021, 0.4471074, 0.30896997, 0.07304458, -0.38693428)
+joint_offset = Transform3D(5.657546e-08, -0.005013044, 0.9999874, 1, 1.6252189e-06, -4.8428774e-08, -1.6249555e-06, 0.99998754, 0.0050130435, 1.3999508e-05, -0.14010182, -0.0007369318)
+joint_rotation = Vector3(4.8428774e-08, 1.5657833, 1.5707947)
+body_offset = Transform3D(0.0050163567, 3.054738e-06, -1.0001081, -4.4703484e-07, 1.0003986, 4.248321e-05, 1.0002661, -2.5361776e-05, 0.0053825974, -0.0007366538, 0.1401577, -1.3589859e-05)
+
+[node name="Chest" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="14" unique_id=615385680]
+transform = Transform3D(-0.036232106, -0.99937993, 0.02697289, 0.97842157, -0.029954635, 0.20443551, -0.2035008, 0.03379795, 0.9789003, 0.033039093, 0.107926, -0.32907915)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.0019846573, -2.3071473e-06, 0.08959671)
+body_offset = Transform3D(-9.685755e-08, 1.0003997, 4.4703484e-06, 7.4505806e-08, -5.066395e-07, -1.0003836, -1.000017, -2.3595989e-05, 0.00015993416, 1.9073486e-06, 0.08963108, -0.0019990206)
+
+[node name="Spine" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="15" unique_id=266307627]
+transform = Transform3D(-0.1513152, -0.9264967, -0.34569952, 0.9847475, -0.17158464, 0.028826576, -0.08602446, -0.33606488, 0.93832874, 0.014024258, 0.13000588, -0.1846571)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.0039989133, 2.145732e-06, 0.059612285)
+body_offset = Transform3D(2.952438e-07, 1.0003883, 4.0059094e-06, 2.6077032e-08, 2.165325e-07, -1.0003998, -1.0000119, -0.00013493665, 2.2571534e-05, -2.3841858e-06, 0.059636116, -0.004000306)
+
+[node name="Hips" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/PhysicalBoneSimulator3D" index="16" unique_id=108805728]
+transform = Transform3D(0.062772125, -0.99734485, 0.046514124, 0.98716027, 0.055139456, -0.14991373, 0.14695093, 0.055327266, 0.98800045, -0.0010714531, 0.11784274, -0.028713226)
+joint_offset = Transform3D(4.3711406e-08, -1.1920928e-07, -1, 1.509958e-07, -1, 1.1920929e-07, -1, -1.509958e-07, -4.371139e-08, -0.005003599, 7.526249e-07, 0.029806405)
+body_offset = Transform3D(1.7881393e-07, 1.0003988, 6.765127e-06, -1.4901161e-08, 2.0861626e-07, -1.000391, -1.00001, 4.374236e-05, -0.00011859834, -9.536743e-07, 0.029818058, -0.0050001144)
+
+[node name="CoatDrive" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="21"]
+settings/0/apply_bone = 4
+settings/0/reference_type = 0
+settings/0/reference_bone = 8
+settings/1/apply_bone = 14
+settings/1/reference_type = 0
+settings/1/reference_bone = 18
+settings/2/apply_bone = 6
+settings/2/reference_type = 0
+settings/2/reference_bone = 8
+settings/3/apply_bone = 16
+settings/3/reference_type = 0
+settings/3/reference_bone = 18
+
+[node name="CoatSprings" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D" index="22"]
+settings/0/root_bone = 4
+settings/0/end_bone = 5
+settings/0/end_bone/direction = 6
+settings/0/individual_config = false
+settings/0/rotation_axis = 3
+settings/0/radius/damping_curve = null
+settings/0/stiffness/damping_curve = null
+settings/0/drag/damping_curve = null
+settings/0/gravity/damping_curve = null
+settings/0/gravity/direction = Vector3(0, -1, 0)
+settings/0/joints/0/bone_name = "LeftCoatFront1"
+settings/0/joints/0/bone = 4
+settings/0/joints/1/bone_name = "LeftCoatFront2"
+settings/0/joints/1/bone = 5
+settings/0/enable_all_child_collisions = true
+settings/0/exclude_collision_count = 0
+settings/1/root_bone = 6
+settings/1/end_bone = 7
+settings/1/end_bone/direction = 6
+settings/1/individual_config = false
+settings/1/rotation_axis = 3
+settings/1/radius/damping_curve = null
+settings/1/stiffness/damping_curve = null
+settings/1/drag/damping_curve = null
+settings/1/gravity/damping_curve = null
+settings/1/gravity/direction = Vector3(0, -1, 0)
+settings/1/joints/0/bone_name = "LeftCoatSide1"
+settings/1/joints/0/bone = 6
+settings/1/joints/1/bone_name = "LeftCoatSide2"
+settings/1/joints/1/bone = 7
+settings/1/enable_all_child_collisions = true
+settings/1/exclude_collision_count = 0
+settings/2/root_bone = 2
+settings/2/end_bone = 3
+settings/2/end_bone/direction = 6
+settings/2/individual_config = false
+settings/2/rotation_axis = 3
+settings/2/radius/damping_curve = null
+settings/2/stiffness/damping_curve = null
+settings/2/drag/damping_curve = null
+settings/2/gravity/damping_curve = null
+settings/2/gravity/direction = Vector3(0, -1, 0)
+settings/2/joints/0/bone_name = "LeftCoatBack1"
+settings/2/joints/0/bone = 2
+settings/2/joints/1/bone_name = "LeftCoatBack2"
+settings/2/joints/1/bone = 3
+settings/2/enable_all_child_collisions = true
+settings/2/exclude_collision_count = 0
+settings/3/root_bone = 14
+settings/3/end_bone = 15
+settings/3/end_bone/direction = 6
+settings/3/individual_config = false
+settings/3/rotation_axis = 3
+settings/3/radius/damping_curve = null
+settings/3/stiffness/damping_curve = null
+settings/3/drag/damping_curve = null
+settings/3/gravity/damping_curve = null
+settings/3/gravity/direction = Vector3(0, -1, 0)
+settings/3/joints/0/bone_name = "RightCoatFront1"
+settings/3/joints/0/bone = 14
+settings/3/joints/1/bone_name = "RightCoatFront2"
+settings/3/joints/1/bone = 15
+settings/3/enable_all_child_collisions = true
+settings/3/exclude_collision_count = 0
+settings/4/root_bone = 16
+settings/4/end_bone = 17
+settings/4/end_bone/direction = 6
+settings/4/individual_config = false
+settings/4/rotation_axis = 3
+settings/4/radius/damping_curve = null
+settings/4/stiffness/damping_curve = null
+settings/4/drag/damping_curve = null
+settings/4/gravity/damping_curve = null
+settings/4/gravity/direction = Vector3(0, -1, 0)
+settings/4/joints/0/bone_name = "RightCoatSide1"
+settings/4/joints/0/bone = 16
+settings/4/joints/1/bone_name = "RightCoatSide2"
+settings/4/joints/1/bone = 17
+settings/4/enable_all_child_collisions = true
+settings/4/exclude_collision_count = 0
+settings/5/root_bone = 12
+settings/5/end_bone = 13
+settings/5/end_bone/direction = 6
+settings/5/individual_config = false
+settings/5/rotation_axis = 3
+settings/5/radius/damping_curve = null
+settings/5/stiffness/damping_curve = null
+settings/5/drag/damping_curve = null
+settings/5/gravity/damping_curve = null
+settings/5/gravity/direction = Vector3(0, -1, 0)
+settings/5/joints/0/bone_name = "RightCoatBack1"
+settings/5/joints/0/bone = 12
+settings/5/joints/1/bone_name = "RightCoatBack2"
+settings/5/joints/1/bone = 13
+settings/5/enable_all_child_collisions = true
+settings/5/exclude_collision_count = 0
+
+[node name="LeftUpperLegCollision" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/CoatSprings" index="0"]
+bone = 8
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="LeftLowerLegCollision" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/CoatSprings" index="1"]
+bone = 9
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="RightUpperLegCollision" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/CoatSprings" index="2"]
+bone = 18
+rotation_offset = Quaternion(0, 0, 0, 1)
+
+[node name="RightLowerLegCollision" parent="Lab/ScientistCrawled/Visual/scientist_skel/Skeleton3D/CoatSprings" index="3"]
+bone = 19
+rotation_offset = Quaternion(0, 0, 0, 1)
 
 [node name="Blood" type="Node3D" parent="Lab" unique_id=1349058353]
 
@@ -84,9 +1204,30 @@ size = Vector3(0.5, 0.6, 3.2)
 transform = Transform3D(0.5, 0, 0.866, 0, 1, 0, -0.866, 0, 0.5, -3.6, 0, -2.3)
 size = Vector3(0.8, 0.6, 0.8)
 
-[node name="PoolCurled" type="Decal" parent="Lab/Blood" unique_id=1980308224]
-transform = Transform3D(0.77, 0, 0.64, 0, 1, 0, -0.64, 0, 0.77, 0.1, 0, -4.7)
-size = Vector3(1.4, 0.6, 1.4)
+[node name="PoolSlumped" type="Decal" parent="Lab/Blood" unique_id=1980308224]
+transform = Transform3D(0.77, 0, 0.64, 0, 1, 0, -0.64, 0, 0.77, -0.5, 0, -7.4)
+size = Vector3(1.8, 0.6, 1.4)
+normal_fade = 0.5
+
+[node name="TrailSlumped" type="Decal" parent="Lab/Blood" unique_id=1980308225]
+transform = Transform3D(0.94, 0, -0.34, 0, 1, 0, 0.34, 0, 0.94, -1, 0, -6.2)
+size = Vector3(0.45, 0.6, 2.4)
+normal_fade = 0.5
+
+[node name="DropsSlumped" type="Decal" parent="Lab/Blood" unique_id=1980308226]
+transform = Transform3D(0.5, 0, -0.866, 0, 1, 0, 0.866, 0, 0.5, 0.6, 0, -6.6)
+size = Vector3(0.7, 0.6, 0.7)
+normal_fade = 0.5
+
+[node name="WallSmear" type="Decal" parent="Lab/Blood" unique_id=1980308227]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.5, 0.95, -7.9)
+size = Vector3(0.6, 0.4, 1.7)
+normal_fade = 0.5
+
+[node name="WallSplatter" type="Decal" parent="Lab/Blood" unique_id=1980308228]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.51557976, 0.715982, -7.9)
+size = Vector3(1.4104004, 0.4, 1.3339844)
+normal_fade = 0.5
 
 [node name="FluorescentLamp" type="Node3D" parent="." unique_id=1695126365]
 transform = Transform3D(1, 0, 0, 0, 0.927, -0.375, 0, 0.375, 0.927, -2.9, 6, -2.4)
@@ -102,7 +1243,7 @@ omni_range = 9.0
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=664291122]
 physics_interpolation_mode = 2
-transform = Transform3D(0.962175, 0.06241898, -0.26518512, 0.024310216, 0.9498437, 0.3117784, 0.27134526, -0.30643213, 0.9123986, -6.163161, 2.399943, 3.8017337)
+transform = Transform3D(0.83393, 0.13133934, -0.53601354, 0, 0.9712677, 0.23798959, 0.55187, -0.19846669, 0.8099693, -6.163161, 2.399943, 3.8017337)
 current = true
 fov = 55.0
 
@@ -113,3 +1254,10 @@ follow_viewport_enabled = true
 
 [node name="SM_door_double" parent="." unique_id=74968818 instance=ExtResource("9_1m5cf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.020218, 1.1920929e-07, -7.978514)
+
+[editable path="Lab/ScientistEaten"]
+[editable path="Lab/ScientistEaten/Visual"]
+[editable path="Lab/ScientistSlumped"]
+[editable path="Lab/ScientistSlumped/Visual"]
+[editable path="Lab/ScientistCrawled"]
+[editable path="Lab/ScientistCrawled/Visual"]
