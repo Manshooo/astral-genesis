@@ -317,6 +317,7 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	LayerFinds.place_in_room(entity, node_data, graph.run_seed)
 	# Обстановка по сиду — до add_entity и навмеша: убранный стул не должен в него попасть (RoomDressing).
 	RoomDressing.dress_room(entity, node_data.id, node_data.depth, graph.run_seed)
+	_drop_consumed_bodies(entity, node_data.id)
 
 	ECS.world.add_entity(entity)
 
@@ -337,20 +338,25 @@ func _spawn_room(node_data: RS_LevelNode, entity: Entity, plan: RS_LayerPlan) ->
 	return spawned
 
 
-## Регистрирует вложенные сущности комнаты (add_entity(room) кладёт только её). Отсеивает УЖЕ ПОГЛОЩЁННЫЕ тела: комната приходит из сцены целой, комплекс — из сида.
+## Снимает УЖЕ ПОГЛОЩЁННЫЕ тела: комната приходит из сцены целой, комплекс — из сида, и рядом встала бы копия того, в
+## ком игрок сидит. До add_entity: тело в дереве успело бы получить копии материалов (fade_actor), а удалённое до первой
+## отрисовки сыплет «Parameter "material" is null» — баг движка godotengine/godot#85817.
+func _drop_consumed_bodies(room_entity: Entity, node_id: StringName) -> void:
+	# owned=false — иначе сущности из инстансов под-сцен не находятся.
+	for node in room_entity.find_children("*", "E_Body", true, false):
+		if WorldSave.save.consumed_body_ids.has(_body_id(node_id, room_entity, node)):
+			node.get_parent().remove_child(node)
+			node.free()
+
+
+## Регистрирует вложенные сущности комнаты (add_entity(room) кладёт только её).
 func _register_room_children(room_entity: Entity, node_id: StringName) -> Array[Entity]:
 	var children: Array[Entity] = []
 	# owned=false — иначе сущности из инстансов под-сцен не находятся.
 	for node in room_entity.find_children("*", "Entity", true, false):
 		var e := node as Entity
-		if e == null:
-			continue
-		var body := e as E_Body
-		if body and WorldSave.save.consumed_body_ids.has(_body_id(node_id, room_entity, body)):
-			# Тело съедено — иначе рядом встала бы копия того, в ком игрок сидит; в мир не регистрируем.
-			body.queue_free()
-			continue
-		children.append(e)
+		if e != null:
+			children.append(e)
 	if not children.is_empty():
 		ECS.world.add_entities(children)
 
