@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="RS_RagdollProfile" format=3]
+
+[ext_resource type="Script" path="res://src/resources/rs_ragdoll_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+neutral_pose = Dictionary[StringName, Vector3]({
+&"Chest": Vector3(8, 0, 0),
+&"Head": Vector3(10, 0, 0),
+&"LeftFoot": Vector3(30, 0, 0),
+&"LeftLowerArm": Vector3(40, 0, 0),
+&"LeftLowerLeg": Vector3(70, 0, 0),
+&"LeftUpperArm": Vector3(40, 0, -70),
+&"LeftUpperLeg": Vector3(-60, 0, 0),
+&"Neck": Vector3(10, 0, 0),
+&"RightFoot": Vector3(30, 0, 0),
+&"RightLowerArm": Vector3(40, 0, 0),
+&"RightLowerLeg": Vector3(70, 0, 0),
+&"RightUpperArm": Vector3(40, 0, 70),
+&"RightUpperLeg": Vector3(-60, 0, 0),
+&"Spine": Vector3(8, 0, 0)
+})

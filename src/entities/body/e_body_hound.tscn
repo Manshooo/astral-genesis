@@ -16,6 +16,8 @@
 [ext_resource type="Script" uid="uid://2brst6hy73o0" path="res://src/components/gameplay/skills/c_sprint.gd" id="ext_sprint"]
 [ext_resource type="AnimationNodeBlendTree" path="res://data/animation/quadruped_tree.tres" id="ext_tree"]
 [ext_resource type="PackedScene" path="res://assets/characters/SK_hound/SK_hound.tscn" id="ext_visual"]
+[ext_resource type="Script" path="res://src/components/physics/c_ragdoll.gd" id="ragdoll_script"]
+[ext_resource type="Resource" path="res://data/ragdoll/hound_ragdoll.tres" id="ragdoll_profile"]
 
 [sub_resource type="Resource" id="Resource_swvon"]
 script = ExtResource("3_3akvt")
@@ -77,13 +79,17 @@ strafe_clip_speed = 0.9
 radius = 0.44
 height = 2.52
 
+[sub_resource type="Resource" id="Resource_ragdoll"]
+script = ExtResource("ragdoll_script")
+profile = ExtResource("ragdoll_profile")
+
 [node name="Hound" type="StaticBody3D" unique_id=1516563894]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("1_y0plc")
 display_name_key = &"BODY_HOUND"
 body_class = 3
-component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_swvon"), SubResource("Resource_qxb0x"), SubResource("Resource_hound_decay"), SubResource("Resource_w3ko0"), SubResource("Resource_a0cgm"), SubResource("Resource_hound_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_regeneration"), SubResource("Resource_animation")])
+component_resources = Array[ExtResource("2_qad0j")]([SubResource("Resource_swvon"), SubResource("Resource_qxb0x"), SubResource("Resource_hound_decay"), SubResource("Resource_w3ko0"), SubResource("Resource_a0cgm"), SubResource("Resource_hound_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_regeneration"), SubResource("Resource_animation"), SubResource("Resource_ragdoll")])
 
 [node name="Visual" parent="." unique_id=944537717 instance=ExtResource("ext_visual")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

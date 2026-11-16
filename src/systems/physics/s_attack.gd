@@ -60,10 +60,26 @@ func _attack(entities: Array[Entity], _components: Array, delta: float) -> void:
 		if target == null:
 			continue
 
+		_mark_struck(player, target)
 		# Через воронку: удар обязан оставить след «кто, кому, сколько и чем» (S_Health.deal_damage).
 		S_Health.deal_damage(target, damage_against(entity, target, attack), entity, MEANS)
 		ECS.world.emit_event(&"attack_hit", entity, target)
 		C_ScreenMessage.show_on(entity, "HUD_MSG_HIT", cmd)
+
+
+## Откуда пришёл удар: если он уронит цель, её труп разбросает руки и ноги (C_Ragdoll.struck_from).
+func _mark_struck(attacker: Entity, target: Entity) -> void:
+	var hitter := attacker as Node as Node3D
+	var victim := target as Node as Node3D
+	if hitter == null or victim == null:
+		return
+	var struck := target.get_component(C_Struck) as C_Struck
+	if struck == null:
+		struck = C_Struck.new()
+		cmd.add_component(target, struck)
+	var away := victim.global_position - hitter.global_position
+	struck.direction = Vector3(away.x, 0.0, away.z).normalized()
+	struck.at_msec = Time.get_ticks_msec()
 
 
 ## Бить нечем — гасим защёлку.

@@ -1,6 +1,6 @@
 extends "res://dev/check_harness.gd"
 ## Проверка боя: удар тела (C_Attack + S_Attack), здоровье и смерть врага
-## (O_EnemyDeath) и «враг — живая версия тела».
+## (O_EnemyDeath) и «враг — живая версия тела»; уронивший удар доходит до трупа (C_Ragdoll.struck_from).
 ##
 ## Проверяет ПОВЕДЕНИЕ, а не форму сцен: тело с ударом наносит урон врагу и
 ## убивает его; на месте врага встаёт тело нужной сцены с полным здоровьем, в
@@ -179,6 +179,14 @@ func _run() -> void:
 		"труп встал на место врага",
 		(corpse as Node as Node3D).global_position.distance_to(Vector3(0.0, 0.05, -1.5)) < 0.5,
 		str((corpse as Node as Node3D).global_position)
+	)
+	# Удар, уронивший врага, доходит до трупа: тот ляжет рэгдоллом, разбросав руки по удару (S_Ragdoll).
+	var ragdoll := corpse.get_component(C_Ragdoll) as C_Ragdoll
+	var away := (Vector3(0.0, 0.05, -1.5) - (player as Node as Node3D).global_position) * Vector3(1.0, 0.0, 1.0)
+	_check(
+		"труп знает, откуда пришёл уронивший его удар",
+		ragdoll != null and ragdoll.struck_from.dot(away.normalized()) > 0.9,
+		str(ragdoll.struck_from) if ragdoll else "нет C_Ragdoll"
 	)
 
 	# --- 7. Трупы не бьют ------------------------------------------------------

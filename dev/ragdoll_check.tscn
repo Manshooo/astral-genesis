@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/ragdoll_check.gd" id="1_ragdoll"]
+
+[node name="RagdollCheck" type="Node"]
+script = ExtResource("1_ragdoll")

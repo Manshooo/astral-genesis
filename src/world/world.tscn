@@ -52,6 +52,7 @@
 [ext_resource type="Script" path="res://src/systems/gameplay/s_third_person_camera.gd" id="48_tpcamera"]
 [ext_resource type="Script" path="res://src/systems/physics/s_camera_aim.gd" id="49_cameraaim"]
 [ext_resource type="Script" path="res://src/systems/physics/s_body_turn.gd" id="50_bodyturn"]
+[ext_resource type="Script" path="res://src/systems/physics/s_ragdoll.gd" id="51_ragdoll"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_3owqy"]
 exposure_multiplier = 1.5
@@ -232,6 +233,10 @@ group = &"physics"
 
 [node name="S_Attack" type="Node" parent="World/Systems/physics" unique_id=2051314060]
 script = ExtResource("38_attack")
+group = &"physics"
+
+[node name="S_Ragdoll" type="Node" parent="World/Systems/physics"]
+script = ExtResource("51_ragdoll")
 group = &"physics"
 
 [node name="O_OutlineVisual" type="Node" parent="World/Systems" unique_id=229755935]
