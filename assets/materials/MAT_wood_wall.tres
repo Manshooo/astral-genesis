@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/shared/shaders/wall_finish.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_wood_wall_albedo.png" id="2_fa"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_wood_wall_n.png" id="3_fn"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_wood_wall_r.png" id="4_fr"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_wood_wall_low_albedo.png" id="5_la"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_wood_wall_low_n.png" id="6_ln"]
+[ext_resource type="Texture2D" path="res://assets/textures/T_wood_wall_low_r.png" id="7_lr"]
+
+[resource]
+resource_name = "MAT_wood_wall"
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/field_albedo = ExtResource("2_fa")
+shader_parameter/field_normal = ExtResource("3_fn")
+shader_parameter/field_roughness = ExtResource("4_fr")
+shader_parameter/use_low = true
+shader_parameter/low_albedo = ExtResource("5_la")
+shader_parameter/low_normal = ExtResource("6_ln")
+shader_parameter/low_roughness = ExtResource("7_lr")

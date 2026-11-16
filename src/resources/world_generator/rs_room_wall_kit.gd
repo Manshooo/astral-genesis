@@ -24,8 +24,32 @@ extends Resource
 ## Возвращает поставленные двери с гранями. Одна сборка на игру (LayerStreamer) и предпросмотр. Деталь ставится в центр клетки, дверь — на середину грани
 ## ([[Метрики и кит]] §2 п. 7); место считается в мире и переводится в координаты корня room обратным преобразованием (корень уже повёрнут). У коробки со стенами
 ## в меше — только объявленные сокеты: полотно на дверь, заглушка на остальные. Грань выхода в возвращаемые двери не попадает (не ребро графа).
+## Отделка комнаты (C_RoomShell.finish) — после расстановки: она касается и коробки, и стен.
 func assemble(room: Node3D, node_id: StringName, plan: RS_LayerPlan) -> Dictionary[Node3D, Vector4i]:
 	var shell := RS_RoomLayout.shell_of(room)
+	var doors := _assemble_pieces(room, node_id, plan, shell)
+	if shell and not shell.finish.is_empty():
+		apply_finish(room, shell.finish)
+	return doors
+
+
+## Подменяет материалы поверхностей под root по таблице «материал кита → материал комнаты». Ключ — материал меша
+## (.glb ссылается на общий .tres из assets/materials, поэтому сравнение по ресурсу), уже стоящая подмена тоже узнаётся.
+static func apply_finish(root: Node, finish: Dictionary[Material, Material]) -> void:
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var src := mi.get_surface_override_material(i)
+			if src == null:
+				src = mi.mesh.surface_get_material(i)
+			var dst: Material = finish.get(src)
+			if dst:
+				mi.set_surface_override_material(i, dst)
+
+
+func _assemble_pieces(room: Node3D, node_id: StringName, plan: RS_LayerPlan, shell: C_RoomShell) -> Dictionary[Node3D, Vector4i]:
 	var exits := _exit_faces(shell, node_id, plan)
 	if shell and shell.walls_in_shell:
 		return _assemble_walled(room, node_id, plan, shell, exits)

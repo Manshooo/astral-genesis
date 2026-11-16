@@ -7,11 +7,18 @@
 [ext_resource type="PackedScene" path="res://assets/levels/SM_room_P_shell_2x2x1/SM_room_P_shell_2x2x1.glb" id="5_8ut7d"]
 [ext_resource type="PackedScene" path="res://src/entities/body/e_body_walker.tscn" id="90_body"]
 [ext_resource type="PackedScene" path="res://src/levels/lamp.tscn" id="lamp"]
+[ext_resource type="Material" path="res://assets/materials/MAT_concrete_cast_floor.tres" id="fin_concrete_cast_floor"]
+[ext_resource type="Material" path="res://assets/materials/MAT_concrete_cast_wall.tres" id="fin_concrete_cast_wall"]
+[ext_resource type="Material" path="res://assets/materials/MAT_concrete_cast_ceiling.tres" id="fin_concrete_cast_ceiling"]
+[ext_resource type="Material" path="res://assets/materials/MAT_plastic_floor.tres" id="fin_plastic_floor"]
+[ext_resource type="Material" path="res://assets/materials/MAT_plastic_wall.tres" id="fin_plastic_wall"]
+[ext_resource type="Material" path="res://assets/materials/MAT_plastic_ceiling.tres" id="fin_plastic_ceiling"]
 
 [sub_resource type="Resource" id="Resource_6iy6b"]
 script = ExtResource("3_2oaqr")
 size = Vector3i(2, 1, 2)
 walls = ExtResource("4_ua5we")
+finish = Dictionary[Material, Material]({ExtResource("fin_concrete_cast_floor"): ExtResource("fin_plastic_floor"), ExtResource("fin_concrete_cast_wall"): ExtResource("fin_plastic_wall"), ExtResource("fin_concrete_cast_ceiling"): ExtResource("fin_plastic_ceiling")})
 
 [node name="lab_room" type="Node3D" unique_id=620451068]
 script = ExtResource("1_f0wrg")
