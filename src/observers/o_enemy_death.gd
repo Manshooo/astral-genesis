@@ -28,6 +28,8 @@ static func replace_with_corpse(enemy: Entity) -> void:
 	var origin_id: StringName = origin.body_id if origin else &""
 	var look := enemy.get_component(C_Look) as C_Look
 	var worn_look := look.duplicate() as C_Look if look != null and look.is_rolled() else null
+	var struck := enemy.get_component(C_Struck) as C_Struck
+	var struck_from := struck.direction if struck != null and struck.is_fresh() else Vector3.ZERO
 
 	ECS.world.remove_entity(enemy)
 	if scene == null or parent == null:
@@ -47,6 +49,10 @@ static func replace_with_corpse(enemy: Entity) -> void:
 		var inherited := C_BodyOrigin.new()
 		inherited.body_id = origin_id
 		corpse.add_component(inherited)
+	# Удар, уронивший врага, разбрасывает руки и ноги его трупа, когда тот ляжет рэгдоллом.
+	var ragdoll := corpse.get_component(C_Ragdoll) as C_Ragdoll
+	if ragdoll != null:
+		ragdoll.struck_from = struck_from
 	# Труп — тот же человек: облик врага, а не новый бросок.
 	var corpse_look := corpse.get_component(C_Look) as C_Look
 	if worn_look != null and corpse_look != null:

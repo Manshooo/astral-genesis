@@ -21,6 +21,8 @@
 [ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v4.tres" id="look_v4"]
 [ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v5.tres" id="look_v5"]
 [ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v6.tres" id="look_v6"]
+[ext_resource type="Script" path="res://src/components/physics/c_ragdoll.gd" id="ragdoll_script"]
+[ext_resource type="Resource" path="res://data/ragdoll/humanoid_ragdoll.tres" id="ragdoll_profile"]
 
 [sub_resource type="Resource" id="Resource_health"]
 script = ExtResource("3_health")
@@ -75,13 +77,17 @@ script = ExtResource("look_script")
 materials = Array[Material]([ExtResource("look_v1"), ExtResource("look_v2"), ExtResource("look_v3"), ExtResource("look_v4"), ExtResource("look_v5"), ExtResource("look_v6")])
 alternatives = PackedStringArray("scientist_glasses_round", "scientist_glasses_rect")
 
+[sub_resource type="Resource" id="Resource_ragdoll"]
+script = ExtResource("ragdoll_script")
+profile = ExtResource("ragdoll_profile")
+
 [node name="e_body_scientist" type="StaticBody3D" unique_id=1735200101]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("1_body")
 display_name_key = &"BODY_SCIENTIST"
 body_class = 1
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_animation"), SubResource("Resource_look")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_animation"), SubResource("Resource_look"), SubResource("Resource_ragdoll")])
 
 [node name="Visual" parent="." unique_id=1735200111 instance=ExtResource("12_visual")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

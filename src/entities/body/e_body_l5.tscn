@@ -12,6 +12,8 @@
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_attack.gd" id="10_attack"]
 [ext_resource type="Material" path="res://assets/shared/materials/palette_l5.tres" id="11_tone"]
 [ext_resource type="Script" path="res://src/components/gameplay/skills/c_body_animation.gd" id="12_animation"]
+[ext_resource type="Script" path="res://src/components/physics/c_ragdoll.gd" id="ragdoll_script"]
+[ext_resource type="Resource" path="res://data/ragdoll/hound_ragdoll.tres" id="ragdoll_profile"]
 
 [sub_resource type="Resource" id="Resource_health"]
 script = ExtResource("3_health")
@@ -63,10 +65,14 @@ strafe_clip_speed = 0.9
 radius = 0.44
 height = 2.52
 
+[sub_resource type="Resource" id="Resource_ragdoll"]
+script = ExtResource("ragdoll_script")
+profile = ExtResource("ragdoll_profile")
+
 [node name="e_body_l5" unique_id=1735200105 instance=ExtResource("1_base")]
 display_name_key = &"BODY_L5"
 body_class = 5
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_animation")])
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_animation"), SubResource("Resource_ragdoll")])
 
 [node name="Visual" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
