@@ -1,18 +1,24 @@
-## Единый редактор геймдизайна: вкладка главного экрана плюс док Room Wizard.
+## Единый редактор геймдизайна: вкладка главного экрана, док Room Wizard и симуляция рэгдолла в меню 3D-вьюпорта.
 ## См. [[Редакторские инструменты]], [[Единый редактор геймдизайна]].
 @tool
 extends EditorPlugin
 
 const MainScreen := preload("res://addons/game_design_tool/main_screen.gd")
 const RoomWizard := preload("res://addons/game_design_tool/dock/room_wizard.gd")
+const RagdollToolbar := preload("res://addons/game_design_tool/ragdoll/ragdoll_toolbar.tscn")
 # Иконка обязана быть 16×16 и с color="#e0e0e0" на <svg> (вики: «Иконка вкладки»).
 const PLUGIN_ICON := preload("res://addons/game_design_tool/assets/gamedesign.svg")
 
 var _main_screen: Control
 var _room_wizard: Control
+var _ragdoll: Control
 
 
 func _enter_tree() -> void:
+	_ragdoll = RagdollToolbar.instantiate()
+	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _ragdoll)
+	scene_changed.connect(_ragdoll.stop.unbind(1))
+
 	_main_screen = MainScreen.new()
 	EditorInterface.get_editor_main_screen().add_child(_main_screen)
 	# Пока вкладку не выбрали, экран скрыт — иначе наложится на 2D/3D.
@@ -26,6 +32,11 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
+	if _ragdoll:
+		_ragdoll.cancel()
+		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _ragdoll)
+		_ragdoll.queue_free()
+		_ragdoll = null
 	if _main_screen:
 		_main_screen.queue_free()
 		_main_screen = null
@@ -33,6 +44,12 @@ func _exit_tree() -> void:
 		remove_control_from_docks(_room_wizard)
 		_room_wizard.queue_free()
 		_room_wizard = null
+
+
+## Сохранение посреди симуляции записало бы в файл заморозку чужих тел — сперва остановка с записью позы.
+func _save_external_data() -> void:
+	if _ragdoll:
+		_ragdoll.stop()
 
 
 func _has_main_screen() -> bool:
