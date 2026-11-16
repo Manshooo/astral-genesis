@@ -37,6 +37,9 @@ extends Resource
 ## Остаток кармана тела и его объём (C_BodyDecay): иначе загрузка вернула бы тело с полным запасом.
 @export var body_lifespan_remaining: float = 0.0
 @export var body_lifespan_max: float = 0.0
+## Облик занятого тела (C_Look): номер материала и варианта меша; −1 — как в сцене. Разыгран по месту тела, а места
+## после захвата нет.
+@export var body_look: Vector2i = Vector2i(-1, -1)
 ## Поглощённые способности (C_AbilityLoadout): слоты души по индексу (null — пусто) и банк. Копии компонентов — числа
 ## способности переживают правку сцены тела, как потолки HP и запаса.
 @export var ability_slots: Array[C_Ability] = []
@@ -78,6 +81,7 @@ func clear_run() -> void:
 	body_health_max = 0.0
 	body_lifespan_remaining = 0.0
 	body_lifespan_max = 0.0
+	body_look = Vector2i(-1, -1)
 	ability_slots = []
 	ability_bank = []
 	consumed_body_ids.clear()

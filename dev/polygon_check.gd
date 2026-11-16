@@ -382,6 +382,7 @@ func _check_camera_station() -> void:
 		player.arm.collision_mask & C_Phasing.PERMEABLE_BIT != 0 and player.arm.get_hit_length() < grate_gap,
 		"маска %d, плечо %.2f м" % [player.arm.collision_mask, player.arm.get_hit_length()])
 	_check_worn_fade(player)
+	await _check_strafe(player, station, view)
 
 	_check_others_fade(station.dummy)
 	var bars := (station.get_node("%Grate") as Node).find_children("*", "CSGBox3D", false, false)
@@ -395,8 +396,6 @@ func _check_camera_station() -> void:
 	view.min_arm = min_arm
 
 
-## Шаг 3: мышь крутит камеру, а не тело; «вперёд» — куда смотрит камера; тело разворачивается по направлению
-## передвижения, а на захвате — сразу к прицелу. Душа на арене у маркера станции, вокруг пусто.
 ## Уши у глаз формы, повороты — от камеры: свои шаги не звучат за плечом, «слева на экране» — слева.
 func _check_listener(player: E_Player) -> void:
 	var heard: Variant = AudioManager.listener_pose()
@@ -410,6 +409,8 @@ func _check_listener(player: E_Player) -> void:
 	_check("слушатель звука повёрнут как камера", heard != null and ears.basis.is_equal_approx(camera.basis), "")
 
 
+## Мышь крутит камеру, а не тело; «вперёд» — куда смотрит камера; душа разворачивается по направлению передвижения, а на
+## захвате — сразу к прицелу. Душа на арене у маркера станции, вокруг пусто.
 func _check_body_turn(player: E_Player, station: Node3D, view: C_ThirdPersonCamera) -> void:
 	var rig := player as Node as Node3D
 	await _stand(player, station, Vector3(0.0, 0.0, 9.0), 0.0)
@@ -443,6 +444,38 @@ func _check_body_turn(player: E_Player, station: Node3D, view: C_ThirdPersonCame
 	_check("на захвате тело сразу встаёт к прицелу",
 		absf(wrapf(rig.global_rotation.y - aim_yaw, -PI, PI)) < deg_to_rad(5.0) and absf(wrapf(aim_yaw - PI, -PI, PI)) < deg_to_rad(20.0),
 		"тело %.1f°, прицел %.1f°" % [rad_to_deg(rig.global_rotation.y), rad_to_deg(aim_yaw)])
+
+
+## Стрейф тела: шагом тело держит взгляд камеры и идёт вбок смесью клипов шага, медленнее переда; бег разворачивает его
+## по передвижению. Тело hound на открытой арене, камера на север.
+func _check_strafe(player: E_Player, station: Node3D, view: C_ThirdPersonCamera) -> void:
+	var rig := player as Node as Node3D
+	var walk := player.get_component(C_Walk) as C_Walk
+	var tree := RS_EntityVisuals.animation_tree(player)
+	await _stand(player, station, Vector3(0.0, 0.0, 9.0), 0.0)
+	view.yaw = 0.0
+	view.pitch = 0.0
+	Input.action_press("move_right")
+	await _frames(40)
+	var velocity := (player.get_component(C_Velocity) as C_Velocity).velocity
+	var blend: Vector2 = tree.get(S_BodyAnimation.WALK_BLEND) if tree != null else Vector2.ZERO
+	var wanted := walk.speed * walk.side_speed_scale
+	_check("шагом вбок тело держит взгляд камеры, а не разворачивается",
+		velocity.normalized().dot(Vector3.RIGHT) > 0.95 and absf(wrapf(rig.global_rotation.y, -PI, PI)) < deg_to_rad(5.0),
+		"скорость %s, тело %.1f°" % [velocity, rad_to_deg(rig.global_rotation.y)])
+	_check("шаг вбок медленнее переда — доля C_Walk", absf(Vector2(velocity.x, velocity.z).length() - wanted) < 0.05,
+		"%.2f м/с, ждали %.2f" % [Vector2(velocity.x, velocity.z).length(), wanted])
+	_check("вбок играет шаг смесью к strafe_right", tree != null and blend.distance_to(Vector2(1, 0)) < 0.1, "смесь %s" % blend)
+
+	Input.action_press("sprint")
+	await _frames(40)
+	var turned := rig.global_rotation.y
+	Input.action_release("sprint")
+	Input.action_release("move_right")
+	_check("бег вбок разворачивает тело по передвижению",
+		absf(wrapf(turned - S_BodyTurn.yaw_of(Vector3.RIGHT), -PI, PI)) < deg_to_rad(10.0),
+		"тело %.1f°, ждали %.1f°" % [rad_to_deg(turned), rad_to_deg(S_BodyTurn.yaw_of(Vector3.RIGHT))])
+	await _frames(10)
 
 
 ## Шаг 4, два луча: точка под прицелом — из камеры, а луч к ней — от глаз. Цель — «Цель за углом» станции в проходе

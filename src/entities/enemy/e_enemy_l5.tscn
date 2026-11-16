@@ -45,6 +45,8 @@ script = ExtResource("12_animation")
 walk_clip_speed = 1.84
 run_clip_speed = 4.5
 trot_clip_speed = 4.5
+walk_back_clip_speed = 1.06
+strafe_clip_speed = 0.9
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_l5"]
 radius = 0.44

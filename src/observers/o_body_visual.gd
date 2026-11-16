@@ -68,6 +68,8 @@ func _put_on(entity: Entity, visual: C_BodyVisual) -> void:
 	for geo: GeometryInstance3D in worn.find_children("*", "GeometryInstance3D", true, false):
 		if visual.material_overrides.has(geo.name):
 			geo.material_override = visual.material_overrides[geo.name]
+		# Видимость — целиком как у тела: показанный у него вариант очков в свежем инстансе может быть спрятан.
+		geo.visible = not visual.hidden_meshes.has(geo.name)
 	var view := entity.get_component(C_ThirdPersonCamera) as C_ThirdPersonCamera
 	if view != null and view.own_fade != BaseMaterial3D.DISTANCE_FADE_DISABLED:
 		RS_EntityVisuals.fade_near_camera(worn, view.own_fade, view.own_fade_near, view.own_fade_far)

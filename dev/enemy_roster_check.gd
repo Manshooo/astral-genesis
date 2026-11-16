@@ -229,6 +229,18 @@ func _reload_layer(depth: int) -> void:
 	await get_tree().physics_frame
 
 
+## Облик врагов ростера с вариантами (C_Look): id маркера → (материал, очки).
+func _roster_looks() -> Dictionary:
+	var looks := {}
+	for spawned: LayerStreamer.SpawnedRoom in RunManager.layer.rooms.values():
+		for child in spawned.children:
+			if child is E_Enemy and child.has_meta(LayerStreamer.ROSTER_ID_META):
+				var look := child.get_component(C_Look) as C_Look
+				if look != null:
+					looks[child.get_meta(LayerStreamer.ROSTER_ID_META)] = Vector2i(look.material_index, look.alternative_index)
+	return looks
+
+
 ## Расстояние по полу: рэгдолл за кадр оседает, и высота не про место.
 func _flat(v: Vector3) -> float:
 	return Vector2(v.x, v.z).length()
@@ -241,6 +253,9 @@ func _check_layers() -> void:
 	var unregistered := 0
 	var not_origin := 0
 	var l5_seen := 0
+	var unrolled := 0
+	var faces := {}
+	var restyled: Array[String] = []
 	for depth: int in RS_LevelGraph.DEPTHS:
 		await _reload_layer(depth)
 		var first := _roster_enemies()
@@ -259,10 +274,17 @@ func _check_layers() -> void:
 					var origin := child.get_component(C_BodyOrigin) as C_BodyOrigin
 					not_origin += 0 if origin and origin.body_id == child.get_meta(LayerStreamer.ROSTER_ID_META) else 1
 
-		# Тот же слой, собранный заново, — те же враги на тех же маркерах.
+		var looks := _roster_looks()
+		for id: StringName in looks:
+			unrolled += 0 if looks[id].x >= 0 and looks[id].y >= 0 else 1
+			faces[looks[id]] = true
+
+		# Тот же слой, собранный заново, — те же враги на тех же маркерах, в тех же обликах.
 		await _reload_layer(depth)
 		if _roster_enemies() != first:
 			unstable.append("L%d" % depth)
+		if _roster_looks() != looks:
+			restyled.append("L%d" % depth)
 	_check("маркеры ростера в комнатах дают врагов (%d на всех слоях)" % total, total > 0, "")
 	_check("на слое встали только положенные ему враги", wrong_depth.is_empty(), ", ".join(wrong_depth.slice(0, 4)))
 	_check("слой, собранный заново, возвращает тех же врагов на те же места", unstable.is_empty(), ", ".join(unstable))
@@ -270,6 +292,10 @@ func _check_layers() -> void:
 	_check("враг ростера несёт id своего маркера", not_origin == 0, "%d без C_BodyOrigin" % not_origin)
 	print("  (врагов ростера на всех слоях: %d, существ L5: %d)" % [total, l5_seen])
 	_check("на дне встают существа L5", l5_seen > 0, "")
+	_check("облик врага с вариантами разыгран по месту", unrolled == 0 and not faces.is_empty(),
+		"%d не разыграны, обликов %d" % [unrolled, faces.size()])
+	_check("враги ростера разные с лица", faces.size() >= 3, "сочетаний облика и очков: %d" % faces.size())
+	_check("слой, собранный заново, возвращает врагов в тех же обликах", restyled.is_empty(), ", ".join(restyled))
 
 
 ## Убитый враг ростера оставляет труп с id маркера; съеденный труп — маркер не

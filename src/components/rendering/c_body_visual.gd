@@ -11,8 +11,11 @@ extends Component
 @export var tree_root: AnimationRootNode
 @export var libraries: Dictionary[StringName, AnimationLibrary] = {}
 
-## Материалы, которыми сцена тела перекрасила меши облика (тон L5 на общем SK_hound): имя меша → материал.
+## Материалы, которыми сцена тела перекрасила меши облика (тон L5 на общем SK_hound, облик учёного): имя меша → материал.
 @export var material_overrides: Dictionary[StringName, Material] = {}
+
+## Меши облика, спрятанные у тела (непоказанный вариант очков, C_Look): риг прячет их тоже.
+@export var hidden_meshes: PackedStringArray = PackedStringArray()
 
 ## Меш и материал, снятые с тела, — у тел без сцены облика.
 @export var mesh: Mesh

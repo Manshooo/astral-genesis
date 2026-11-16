@@ -20,10 +20,16 @@ const RUN_PACE := Vector2(0.6, 2.5)
 ## Сколько приземление держит тело на месте, прежде чем снова решать по скорости.
 const LANDING := 0.3
 
+## Направление шага, ближе к переду которого (косинус угла) идёт обычный ход — шаг, рысь; дальше — шаг вбок или спиной.
+const FORWARD_COS := 0.7
+
 const STATE := &"parameters/state/playback"
 const PACE := &"parameters/pace/scale"
+## Точка смеси клипов шага (BlendSpace2D walk): x — вправо, y — вперёд.
+const WALK_BLEND := &"parameters/state/walk/blend_position"
 const DEATH := &"death"
-const FIDGETS: Array[StringName] = [&"idle_listen", &"idle_scratch", &"idle_sniff"]
+## Узел дерева, чьи входы — позы безделья: у каждого типа рига они свои.
+const FIDGET_KIND := &"fidget_kind"
 const HITS: Array[StringName] = [&"hit_front", &"hit_back"]
 
 
@@ -49,7 +55,9 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		# Бег — это нажатый бег, а не скорость: шаг тела сам бывает быстрее клипа бега. Врагу без C_Sprint — порог.
 		var sprint := entity.get_component(C_Sprint) as C_Sprint
 		var running := sprint.active if sprint != null else speed >= anim.run_from_speed
-		var pace := _move(anim, speed, running, on_floor, velocity.y, delta)
+		var node := entity as Node as Node3D
+		var local := node.global_basis.inverse() * velocity if node != null else Vector3.FORWARD
+		var pace := _move(anim, speed, Vector2(local.x, -local.z), running, on_floor, velocity.y, delta)
 		var swung := _swung(entity, anim)
 		var hit := _hit(entity, anim)
 		var fidget := _fidget(anim, speed, delta)
@@ -57,6 +65,7 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 		for tree in trees:
 			var playback := _playback(tree)
 			tree.set(PACE, pace)
+			tree.set(WALK_BLEND, anim.walk_direction)
 			var current := playback.get_current_node()
 			var flying_on := AIRBORNE.has(anim.state) and AIRBORNE.has(current)
 			if current != anim.state and not flying_on and not playback.get_travel_path().has(anim.state):
@@ -66,8 +75,9 @@ func process(entities: Array[Entity], _components: Array, delta: float) -> void:
 			if hit != &"":
 				tree.set(&"parameters/hit_kind/transition_request", hit)
 				tree.set(&"parameters/hit/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-			if fidget != &"":
-				tree.set(&"parameters/fidget_kind/transition_request", fidget)
+			var kinds := fidgets_of(tree) if fidget else PackedStringArray()
+			if not kinds.is_empty():
+				tree.set(&"parameters/fidget_kind/transition_request", kinds[randi() % kinds.size()])
 				tree.set(&"parameters/fidget/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 			elif anim.state != &"idle" and tree.get(&"parameters/fidget/active"):
 				tree.set(&"parameters/fidget/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
@@ -77,8 +87,21 @@ func _playback(tree: AnimationTree) -> AnimationNodeStateMachinePlayback:
 	return tree.get(STATE) as AnimationNodeStateMachinePlayback
 
 
-## Выбирает состояние в anim.state; возвращает темп клипа.
-func _move(anim: C_BodyAnimation, speed: float, running: bool, on_floor: bool, rise: float, delta: float) -> float:
+## Позы безделья дерева — входы узла fidget_kind; пусто — у дерева их нет.
+static func fidgets_of(tree: AnimationTree) -> PackedStringArray:
+	var names := PackedStringArray()
+	var root := tree.tree_root as AnimationNodeBlendTree
+	var kinds := root.get_node(FIDGET_KIND) as AnimationNodeTransition if root != null and root.has_node(FIDGET_KIND) else null
+	if kinds != null:
+		for i in kinds.get_input_count():
+			names.append(kinds.get_input_name(i))
+	return names
+
+
+## Выбирает состояние в anim.state и направление шага в anim.walk_direction; возвращает темп клипа.
+## [param heading] — горизонтальная скорость в осях тела (x — вправо, y — вперёд).
+func _move(anim: C_BodyAnimation, speed: float, heading: Vector2, running: bool, on_floor: bool, rise: float,
+		delta: float) -> float:
 	anim.landing_left -= delta
 	if not on_floor:
 		if not anim.airborne:
@@ -94,14 +117,28 @@ func _move(anim: C_BodyAnimation, speed: float, running: bool, on_floor: bool, r
 		if anim.landing_left <= 0.0:
 			anim.state = &"idle"
 		return 1.0
-	if not running and anim.trot_clip_speed > 0.0 and speed >= anim.trot_from_speed:
+	if running:
+		anim.state = &"run"
+		return clampf(speed / anim.run_clip_speed, RUN_PACE.x, RUN_PACE.y)
+	var direction := heading.normalized() if heading != Vector2.ZERO else Vector2(0.0, 1.0)
+	# Рысь — только вперёд: клипов рыси вбок и назад нет, в стрейфе тело идёт смесью клипов шага.
+	if direction.y >= FORWARD_COS and anim.trot_clip_speed > 0.0 and speed >= anim.trot_from_speed:
 		anim.state = &"trot"
+		anim.walk_direction = Vector2(0.0, 1.0)
 		return clampf(speed / anim.trot_clip_speed, WALK_PACE.x, WALK_PACE.y)
-	if not running:
-		anim.state = &"walk"
-		return clampf(speed / anim.walk_clip_speed, WALK_PACE.x, WALK_PACE.y)
-	anim.state = &"run"
-	return clampf(speed / anim.run_clip_speed, RUN_PACE.x, RUN_PACE.y)
+	anim.state = &"walk"
+	anim.walk_direction = direction
+	return clampf(speed / walk_clip_speed(anim, direction), WALK_PACE.x, WALK_PACE.y)
+
+
+## Метров в секунду у смеси клипов шага по [param direction]: вес каждого клипа — доля направления по его оси.
+static func walk_clip_speed(anim: C_BodyAnimation, direction: Vector2) -> float:
+	var forward := maxf(direction.y, 0.0)
+	var back := maxf(-direction.y, 0.0)
+	var side := absf(direction.x)
+	var back_speed := anim.walk_back_clip_speed if anim.walk_back_clip_speed > 0.0 else anim.walk_clip_speed
+	var side_speed := anim.strafe_clip_speed if anim.strafe_clip_speed > 0.0 else anim.walk_clip_speed
+	return (forward * anim.walk_clip_speed + back * back_speed + side * side_speed) / maxf(forward + back + side, 0.001)
 
 
 ## Удар узнаём по сбросу перезарядки: она взводится в миг замаха, у игрока (C_Attack) и у врага (C_EnemyAI) одинаково.
@@ -130,13 +167,13 @@ func _hit(entity: Entity, anim: C_BodyAnimation) -> StringName:
 	return HITS.pick_random() if hurt else &""
 
 
-## Постоял — почесался или прислушался; клип или &"".
-func _fidget(anim: C_BodyAnimation, speed: float, delta: float) -> StringName:
+## Постоял — пора почесаться или прислушаться; какой позой — решает дерево (fidgets_of).
+func _fidget(anim: C_BodyAnimation, speed: float, delta: float) -> bool:
 	if anim.state != &"idle" or speed >= C_BodyAnimation.STILL_SPEED or anim.fidget_left < 0.0:
 		anim.fidget_left = randf_range(anim.fidget_interval.x, anim.fidget_interval.y)
-		return &""
+		return false
 	anim.fidget_left -= delta
 	if anim.fidget_left > 0.0:
-		return &""
+		return false
 	anim.fidget_left = randf_range(anim.fidget_interval.x, anim.fidget_interval.y)
-	return FIDGETS.pick_random()
+	return true

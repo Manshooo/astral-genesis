@@ -34,8 +34,10 @@ var _forward := Vector3.FORWARD
 
 
 ## Тело ставится подошвой в placement — туда, где стоял риг; velocity — скорость рига в момент выхода; pose —
-## поза костей надетого тела в этот миг (имя кости → локальная поза), пустая — тело стартует из своей позы покоя.
-func start(body_scene: PackedScene, placement: Transform3D, velocity: Vector3, soul: Node3D, pose: Dictionary = {}) -> void:
+## поза костей надетого тела в этот миг (имя кости → локальная поза), пустая — тело стартует из своей позы покоя;
+## look — облик надетого тела (C_Look), иначе сгорало бы тело в одежде сцены, а не та, что носили.
+func start(body_scene: PackedScene, placement: Transform3D, velocity: Vector3, soul: Node3D, pose: Dictionary = {},
+		look: C_Look = null) -> void:
 	global_transform = placement
 	_soul = soul
 	_velocity = velocity
@@ -47,6 +49,7 @@ func start(body_scene: PackedScene, placement: Transform3D, velocity: Vector3, s
 		if node is CollisionObject3D:
 			(node as CollisionObject3D).collision_layer = 0
 	_apply_pose(pose)
+	RS_EntityVisuals.dress(_husk.get_node_or_null(E_Body.VISUAL_NODE), look)
 	add_child(_husk)
 	for node in _husk.find_children("*", "PhysicalBone3D", true, false):
 		_bones.append(node as PhysicalBone3D)

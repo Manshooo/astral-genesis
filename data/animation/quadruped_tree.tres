@@ -80,6 +80,29 @@ animation = &"quadruped/trot"
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hbngg"]
 animation = &"quadruped/walk"
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_walk_back"]
+animation = &"quadruped/walk_back"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_strafe_left"]
+animation = &"quadruped/strafe_left"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_strafe_right"]
+animation = &"quadruped/strafe_right"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_walk"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_hbngg")
+blend_point_0/pos = Vector2(0, 1)
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("AnimationNodeAnimation_walk_back")
+blend_point_1/pos = Vector2(0, -1)
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("AnimationNodeAnimation_strafe_left")
+blend_point_2/pos = Vector2(-1, 0)
+blend_point_2/name = &"2"
+blend_point_3/node = SubResource("AnimationNodeAnimation_strafe_right")
+blend_point_3/pos = Vector2(1, 0)
+blend_point_3/name = &"3"
+
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_vwe6g"]
 xfade_time = 0.25
 
@@ -215,7 +238,7 @@ states/run/node = SubResource("AnimationNodeAnimation_xvusf")
 states/run/position = Vector2(320, 0)
 states/trot/node = SubResource("AnimationNodeAnimation_86dck")
 states/trot/position = Vector2(240, 80)
-states/walk/node = SubResource("AnimationNodeAnimation_hbngg")
+states/walk/node = SubResource("AnimationNodeBlendSpace2D_walk")
 states/walk/position = Vector2(160, 0)
 transitions = ["idle", "walk", SubResource("AnimationNodeStateMachineTransition_vwe6g"), "idle", "run", SubResource("AnimationNodeStateMachineTransition_ulytb"), "idle", "jump", SubResource("AnimationNodeStateMachineTransition_cg2g0"), "idle", "jump_air", SubResource("AnimationNodeStateMachineTransition_ge74u"), "jump_air", "idle", SubResource("AnimationNodeStateMachineTransition_snu6h"), "walk", "idle", SubResource("AnimationNodeStateMachineTransition_4cs7k"), "walk", "run", SubResource("AnimationNodeStateMachineTransition_xp3fb"), "walk", "jump", SubResource("AnimationNodeStateMachineTransition_1bs6v"), "walk", "jump_air", SubResource("AnimationNodeStateMachineTransition_r1eq8"), "jump_land", "walk", SubResource("AnimationNodeStateMachineTransition_7q5lx"), "jump_air", "walk", SubResource("AnimationNodeStateMachineTransition_s65wr"), "run", "idle", SubResource("AnimationNodeStateMachineTransition_66ta4"), "run", "walk", SubResource("AnimationNodeStateMachineTransition_stra1"), "run", "jump", SubResource("AnimationNodeStateMachineTransition_uvehh"), "run", "jump_air", SubResource("AnimationNodeStateMachineTransition_85dmi"), "jump_land", "run", SubResource("AnimationNodeStateMachineTransition_ojspy"), "jump_air", "run", SubResource("AnimationNodeStateMachineTransition_fhglu"), "jump", "jump_air", SubResource("AnimationNodeStateMachineTransition_0n5jc"), "jump_air", "jump_land", SubResource("AnimationNodeStateMachineTransition_munya"), "jump", "jump_land", SubResource("AnimationNodeStateMachineTransition_hre54"), "jump_land", "idle", SubResource("AnimationNodeStateMachineTransition_v3w67"), "idle", "death", SubResource("AnimationNodeStateMachineTransition_6yqqd"), "walk", "death", SubResource("AnimationNodeStateMachineTransition_qhtk7"), "run", "death", SubResource("AnimationNodeStateMachineTransition_6rhdi"), "jump", "death", SubResource("AnimationNodeStateMachineTransition_f5gbp"), "jump_air", "death", SubResource("AnimationNodeStateMachineTransition_vk0rj"), "jump_land", "death", SubResource("AnimationNodeStateMachineTransition_7w2gl"), "Start", "idle", SubResource("AnimationNodeStateMachineTransition_0k4ob"), "idle", "trot", SubResource("AnimationNodeStateMachineTransition_mqjcm"), "trot", "idle", SubResource("AnimationNodeStateMachineTransition_7pvby"), "walk", "trot", SubResource("AnimationNodeStateMachineTransition_pt4iu"), "trot", "walk", SubResource("AnimationNodeStateMachineTransition_saru7"), "trot", "run", SubResource("AnimationNodeStateMachineTransition_3k5ph"), "trot", "jump", SubResource("AnimationNodeStateMachineTransition_goyai"), "trot", "jump_air", SubResource("AnimationNodeStateMachineTransition_xxalh"), "jump_land", "trot", SubResource("AnimationNodeStateMachineTransition_2ji08"), "jump_air", "trot", SubResource("AnimationNodeStateMachineTransition_skvmm"), "run", "trot", SubResource("AnimationNodeStateMachineTransition_erijk"), "trot", "death", SubResource("AnimationNodeStateMachineTransition_jhuf6")]
 

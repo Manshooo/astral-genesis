@@ -13,7 +13,8 @@ func sub_systems() -> Array[Array]:
 
 
 ## Игрок ходит в базисе взгляда камеры, а не тела: тело само поворачивается по направлению передвижения (S_BodyTurn),
-## и «вперёд» по своему базису гнало бы его по кругу.
+## и «вперёд» по своему базису гнало бы его по кругу. Шагом тело держит взгляд камеры, и назад и вбок оно идёт медленнее;
+## бег разворачивает тело по передвижению, и доли к нему не относятся.
 func _walk_player(entities: Array[Entity], _components: Array, _delta: float) -> void:
 	for entity in entities:
 		var inp := entity.get_component(C_PlayerInput) as C_PlayerInput
@@ -21,7 +22,21 @@ func _walk_player(entities: Array[Entity], _components: Array, _delta: float) ->
 		var basis := (entity as Node as Node3D).global_basis
 		if view != null and view.yaw != INF:
 			basis = Basis(Vector3.UP, view.yaw)
-		_walk(entity, inp.move_direction, basis)
+		var scale := 1.0 if S_BodyTurn.sprinting(entity) else strafe_scale(entity.get_component(C_Walk) as C_Walk, inp.move_direction)
+		_walk(entity, inp.move_direction, basis, scale)
+
+
+## Доля скорости шага по направлению ввода в осях взгляда (−Z вперёд): вперёд 1, назад и вбок — доли C_Walk, между ними —
+## смесь по весу каждой оси.
+static func strafe_scale(walk: C_Walk, move_direction: Vector3) -> float:
+	var flat := Vector2(move_direction.x, move_direction.z)
+	if flat == Vector2.ZERO:
+		return 1.0
+	flat = flat.normalized()
+	var forward := maxf(-flat.y, 0.0)
+	var back := maxf(flat.y, 0.0)
+	var side := absf(flat.x)
+	return (forward + back * walk.back_speed_scale + side * walk.side_speed_scale) / (forward + back + side)
 
 
 func _walk_enemy(entities: Array[Entity], _components: Array, _delta: float) -> void:
@@ -32,7 +47,7 @@ func _walk_enemy(entities: Array[Entity], _components: Array, _delta: float) -> 
 
 ## [param basis] МИРОВОЙ: velocity мировая, transform — относительно родителя; враг в комнате, повёрнутой на четверть,
 ## шёл бы мимо цели (ловит dev/enemy_ai_check).
-func _walk(entity: Entity, move_direction: Vector3, basis: Basis) -> void:
+func _walk(entity: Entity, move_direction: Vector3, basis: Basis, scale := 1.0) -> void:
 	var vel := entity.get_component(C_Velocity) as C_Velocity
 	# Entity наследует Node — до Node3D двойной каст.
 	var node := entity as Node as Node3D
@@ -46,7 +61,7 @@ func _walk(entity: Entity, move_direction: Vector3, basis: Basis) -> void:
 
 	# Скорость тела — база, поверх модификаторы души.
 	var walk := entity.get_component(C_Walk) as C_Walk
-	var speed := C_StatModifiers.of(entity, C_StatModifiers.WALK_SPEED, walk.speed)
+	var speed := C_StatModifiers.of(entity, C_StatModifiers.WALK_SPEED, walk.speed) * scale
 	var wish := (basis * move_direction).normalized()
 	vel.velocity.x = wish.x * speed
 	vel.velocity.z = wish.z * speed

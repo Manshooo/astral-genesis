@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" path="res://src/entities/body/e_body_walker.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://cbetc28hrcj0p" path="res://src/entities/body/e_body_rigged.gd" id="1_body"]
 [ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/ecs/component.gd" id="2_comp"]
 [ext_resource type="Script" uid="uid://5r77tfxtjy6p" path="res://src/components/gameplay/c_health.gd" id="3_health"]
 [ext_resource type="Script" uid="uid://bgw8q60os3ln1" path="res://src/components/gameplay/skills/c_body_snatchable.gd" id="4_snatch"]
@@ -9,8 +9,18 @@
 [ext_resource type="Script" uid="uid://buxoowbmksowk" path="res://src/components/gameplay/skills/c_jump.gd" id="7_jump"]
 [ext_resource type="Script" uid="uid://2brst6hy73o0" path="res://src/components/gameplay/skills/c_sprint.gd" id="8_sprint"]
 [ext_resource type="Script" uid="uid://ctjphmeky1e32" path="res://src/components/gameplay/skills/c_footsteps.gd" id="9_footsteps"]
-[ext_resource type="Script" path="res://src/components/gameplay/skills/c_attack.gd" id="10_attack"]
-[ext_resource type="Material" path="res://assets/shared/materials/palette_scientist.tres" id="11_tone"]
+[ext_resource type="Script" uid="uid://bcfb5ij1d3q6i" path="res://src/components/gameplay/skills/c_attack.gd" id="10_attack"]
+[ext_resource type="Script" uid="uid://dgo5c41li6b1d" path="res://src/components/gameplay/skills/c_body_animation.gd" id="11_animation"]
+[ext_resource type="PackedScene" path="res://assets/characters/SK_scientist/SK_scientist.tscn" id="12_visual"]
+[ext_resource type="AnimationNodeBlendTree" path="res://data/animation/humanoid_tree.tres" id="13_tree"]
+[ext_resource type="AnimationLibrary" path="res://assets/characters/_rigs/humanoid/ANIM_humanoid.glb" id="14_clips"]
+[ext_resource type="Script" path="res://src/components/gameplay/skills/c_look.gd" id="look_script"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v1.tres" id="look_v1"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v2.tres" id="look_v2"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v3.tres" id="look_v3"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v4.tres" id="look_v4"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v5.tres" id="look_v5"]
+[ext_resource type="Material" path="res://assets/characters/SK_scientist/materials/MAT_scientist_v6.tres" id="look_v6"]
 
 [sub_resource type="Resource" id="Resource_health"]
 script = ExtResource("3_health")
@@ -23,6 +33,8 @@ script = ExtResource("4_snatch")
 [sub_resource type="Resource" id="Resource_walk"]
 script = ExtResource("5_walk")
 speed = 3.8
+back_speed_scale = 0.5
+side_speed_scale = 0.35
 
 [sub_resource type="Resource" id="Resource_decay"]
 script = ExtResource("6_decay")
@@ -47,9 +59,42 @@ damage = 6.0
 reach = 1.8
 interval = 1.0
 
-[node name="e_body_scientist" unique_id=1735200101 instance=ExtResource("1_base")]
-display_name_key = &"BODY_SCIENTIST"
-component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack")])
+[sub_resource type="Resource" id="Resource_animation"]
+script = ExtResource("11_animation")
+walk_clip_speed = 1.3
+run_clip_speed = 3.91
+walk_back_clip_speed = 0.69
+strafe_clip_speed = 0.44
 
-[node name="body" parent="Skeleton3D" index="0"]
-material_override = ExtResource("11_tone")
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_scientist"]
+radius = 0.32
+height = 1.82
+
+[sub_resource type="Resource" id="Resource_look"]
+script = ExtResource("look_script")
+materials = Array[Material]([ExtResource("look_v1"), ExtResource("look_v2"), ExtResource("look_v3"), ExtResource("look_v4"), ExtResource("look_v5"), ExtResource("look_v6")])
+alternatives = PackedStringArray("scientist_glasses_round", "scientist_glasses_rect")
+
+[node name="e_body_scientist" type="StaticBody3D" unique_id=1735200101]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_body")
+display_name_key = &"BODY_SCIENTIST"
+body_class = 1
+component_resources = Array[ExtResource("2_comp")]([SubResource("Resource_health"), SubResource("Resource_snatch"), SubResource("Resource_walk"), SubResource("Resource_decay"), SubResource("Resource_jump"), SubResource("Resource_sprint"), SubResource("Resource_footsteps"), SubResource("Resource_attack"), SubResource("Resource_animation"), SubResource("Resource_look")])
+
+[node name="Visual" parent="." unique_id=1735200111 instance=ExtResource("12_visual")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="AnimationTree" type="AnimationTree" parent="." unique_id=1735200112]
+active = false
+root_node = NodePath("../Visual")
+libraries/humanoid = ExtResource("14_clips")
+tree_root = ExtResource("13_tree")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1735200113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.91, 0)
+shape = SubResource("CapsuleShape3D_scientist")
+
+[node name="Eyes" type="Marker3D" parent="." unique_id=1735200114]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1.69, -0.08)

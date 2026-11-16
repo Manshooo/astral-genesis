@@ -237,9 +237,15 @@ func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 	player.add_component(embodied)
 
 	# Характеристики — из СЦЕНЫ общим механизмом захвата: перечисление по именам завело бы вторую копию правила.
+	var look: C_Look = null
 	for worn in E_Body.traits_of_scene(saved.body_scene_path):
 		if worn is C_BodyTrait:
 			(worn as C_BodyTrait).on_worn(player)
+		if worn is C_Look:
+			# Облик тела — разыгранный на его месте, а места после захвата уже нет: номера из сейва.
+			look = worn as C_Look
+			look.material_index = saved.body_look.x
+			look.alternative_index = saved.body_look.y
 		player.add_component(worn)
 
 	# HP — чистое состояние: числами из сейва, вместе с потолком.
@@ -253,7 +259,7 @@ func _restore_embodiment(player: Entity, saved: RS_WorldSave) -> void:
 	if form:
 		player.add_component(form)
 
-	var visual := E_Body.visual_of_scene(saved.body_scene_path)
+	var visual := E_Body.visual_of_scene(saved.body_scene_path, look)
 	if visual:
 		player.add_component(visual)
 	else:
@@ -601,6 +607,8 @@ func _checkpoint(node_id: StringName, persist: bool = true) -> void:
 		if loadout:
 			# Ждущие ответа на полный банк в сейв не идут: вылет посреди выбора — это «не брать».
 			WorldSave.record_abilities(loadout.slots, loadout.bank)
+	var look := player.get_component(C_Look) as C_Look if player else null
+	WorldSave.record_body_look(Vector2i(look.material_index, look.alternative_index) if look else Vector2i(-1, -1))
 
 	WorldSave.record_progress(
 		node_id,

@@ -26,6 +26,8 @@ static func replace_with_corpse(enemy: Entity) -> void:
 	var scene: PackedScene = (enemy as E_Enemy).corpse_scene if enemy is E_Enemy else null
 	var origin := enemy.get_component(C_BodyOrigin) as C_BodyOrigin
 	var origin_id: StringName = origin.body_id if origin else &""
+	var look := enemy.get_component(C_Look) as C_Look
+	var worn_look := look.duplicate() as C_Look if look != null and look.is_rolled() else null
 
 	ECS.world.remove_entity(enemy)
 	if scene == null or parent == null:
@@ -45,6 +47,12 @@ static func replace_with_corpse(enemy: Entity) -> void:
 		var inherited := C_BodyOrigin.new()
 		inherited.body_id = origin_id
 		corpse.add_component(inherited)
+	# Труп — тот же человек: облик врага, а не новый бросок.
+	var corpse_look := corpse.get_component(C_Look) as C_Look
+	if worn_look != null and corpse_look != null:
+		corpse_look.material_index = worn_look.material_index
+		corpse_look.alternative_index = worn_look.alternative_index
+		RS_EntityVisuals.dress_actor(corpse, null)
 	_release_with_room(corpse)
 
 
