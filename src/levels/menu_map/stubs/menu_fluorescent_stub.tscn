@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://eqmjym64sbiv"]
 
 [ext_resource type="Material" path="res://assets/materials/MAT_light_fluorescent_glow.tres" id="1_glow"]
 
@@ -27,19 +27,19 @@ height = 0.46
 material = SubResource("Mat_housing")
 size = Vector3(0.012, 1.6, 0.012)
 
-[node name="MenuFluorescentStub" type="Node3D"]
+[node name="MenuFluorescentStub" type="Node3D" unique_id=40437182]
 
-[node name="Housing" type="MeshInstance3D" parent="."]
+[node name="Housing" type="MeshInstance3D" parent="." unique_id=1535393295]
 mesh = SubResource("Mesh_housing")
 
-[node name="Tube" type="MeshInstance3D" parent="."]
+[node name="Tube" type="MeshInstance3D" parent="." unique_id=364962270]
 transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.055, -0.055, 0)
 mesh = SubResource("Mesh_tube")
 
-[node name="TubeBroken" type="MeshInstance3D" parent="."]
+[node name="TubeBroken" type="MeshInstance3D" parent="." unique_id=1014195416]
 transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.055, -0.055, -0.36)
 mesh = SubResource("Mesh_tube_broken")
 
-[node name="Chain" type="MeshInstance3D" parent="."]
+[node name="Chain" type="MeshInstance3D" parent="." unique_id=70091026]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -0.6)
 mesh = SubResource("Mesh_chain")

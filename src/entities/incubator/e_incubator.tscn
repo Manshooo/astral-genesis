@@ -78,9 +78,12 @@ script = ExtResource("11_flask")
 [node name="Glow" type="OmniLight3D" parent="Flask" unique_id=847897843]
 light_color = Color(0.79, 0.66, 0.95, 1)
 light_energy = 1.6
+shadow_enabled = true
+shadow_caster_mask = 4293918721
 omni_range = 5.0656867
 
 [node name="Bubbles" type="GPUParticles3D" parent="Flask" unique_id=902973414]
+layers = 2
 amount = 36
 lifetime = 3.0
 preprocess = 6.0
