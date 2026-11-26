@@ -156,19 +156,29 @@ jobs:
           rm /tmp/byprod-sdk.zip
           ls -l addons/byprod/bin/
 
+      - name: Движок и импорт
+        id: godot
+        uses: ./.github/actions/godot-setup
+
+      - name: Проставить номер сборки
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: bash .github/scripts/set_version.sh "$VERSION"
+
       - name: Собрать Windows
         uses: ./.github/actions/godot-export
         with:
+          godot-bin: ${{ steps.godot.outputs.bin }}
           platform: windows
           label: v${{ needs.prepare.outputs.version }}
-          version: ${{ needs.prepare.outputs.version }}
 
       - name: Собрать Linux
         uses: ./.github/actions/godot-export
         with:
+          godot-bin: ${{ steps.godot.outputs.bin }}
           platform: linux
           label: v${{ needs.prepare.outputs.version }}
-          version: ${{ needs.prepare.outputs.version }}
 
       - name: Повесить тег
         env:

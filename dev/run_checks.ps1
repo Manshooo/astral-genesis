@@ -24,9 +24,9 @@
     `godot` из PATH.
 
 .PARAMETER Check
-    Какую проверку прогнать: "All" (по умолчанию, всё) либо имя файла любого
-    dev/*_check.tscn без расширения (например "body_traits_check"). "Body"
-    остаётся алиасом "body_traits_check" для обратной совместимости.
+    Какую проверку прогнать: "All" (по умолчанию, всё), "Smoke" (короткий
+    набор CI) либо имя файла любого dev/*_check.tscn без расширения.
+    "Body" остаётся алиасом "body_traits_check" для обратной совместимости.
 
 .PARAMETER ListChecks
     Только напечатать, какие dev/*_check.tscn найдены, и выйти — без запуска
@@ -160,15 +160,38 @@ $resolvedCheck = $Check
 if ($resolvedCheck -eq "Body") { $resolvedCheck = "body_traits_check" }
 
 if ($resolvedCheck -eq "All") {
-    foreach ($name in $genericChecks) {
-        if (-not (Run-GenericCheck $name)) { $overallFail = $true }
+    $checksToRun = $genericChecks
+} elseif ($resolvedCheck -eq "Smoke") {
+    $checksToRun = @(
+        "abilities_check"
+        "body_form_check"
+        "body_traits_check"
+        "byprod_check"
+        "combat_check"
+        "corridor_spawn_check"
+        "enemy_ai_check"
+        "menu_scene_check"
+        "movement_check"
+        "room_shell_check"
+        "run_entry_check"
+        "settings_menu_check"
+        "system_order_check"
+        "version_label_check"
+    )
+    $missing = @($checksToRun | Where-Object { $_ -notin $genericChecks })
+    if ($missing.Count -gt 0) {
+        throw "Не найдены сценарии набора Smoke: $($missing -join ', ')"
     }
 } elseif ($genericChecks -contains $resolvedCheck) {
-    if (-not (Run-GenericCheck $resolvedCheck)) { $overallFail = $true }
+    $checksToRun = @($resolvedCheck)
 } else {
     Write-Host "Неизвестное значение -Check: '$Check'." -ForegroundColor Red
-    Write-Host "Доступно: All, $([string]::Join(', ', $genericChecks))"
+    Write-Host "Доступно: All, Smoke, $([string]::Join(', ', $genericChecks))"
     exit 2
+}
+
+foreach ($name in $checksToRun) {
+    if (-not (Run-GenericCheck $name)) { $overallFail = $true }
 }
 
 Write-Host ""

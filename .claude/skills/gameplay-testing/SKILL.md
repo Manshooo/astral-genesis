@@ -41,6 +41,8 @@ effort: high
 `corridor_graph_check`. Параметры:
 - `-Check <имя>` — прогнать только одну проверку: имя файла без расширения
   (`body_traits_check`, `stat_modifiers_check`, …). Без `-Check` — всё сразу.
+- `-Check Smoke` — короткий набор CI для автоматических прогонов. Полный
+  набор на GitHub запускается через «Сборка» → «Run workflow».
 - `-ListChecks` — только напечатать, что сейчас найдено под `-Check All`, без
   запуска Godot. Полезно после того как в `dev/` появился новый сценарий.
 - `-GodotPath <путь>` — если Godot не в `C:\Program Files\Godot Engine\...` по
