@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/session-start.sh\"",
+            "commandWindows": "exit 0",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}
