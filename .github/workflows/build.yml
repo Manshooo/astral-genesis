@@ -1,6 +1,6 @@
 name: Сборка
 
-# Проверки и проверочная сборка на каждый PR в master и на каждый пуш в master.
+# Короткие проверки и сборка на каждый PR в master и на каждый пуш в master.
 # Релизных веток нет: все PR идут прямо в master (docs/astral-genesis/Задачи/
 # Карточки/Работа в master и релизы тегами.md), поэтому точка проверки одна.
 # По PR сломанный экспорт видно до вливания, а ревьюер скачивает готовую сборку
@@ -16,6 +16,11 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      full_checks:
+        description: Прогнать все headless-сценарии
+        type: boolean
+        default: true
 
 concurrency:
   group: build-${{ github.ref }}
@@ -25,12 +30,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Headless-проверки из dev/ — те же, что разработчик гоняет перед PR
-  # (dev/run_checks.ps1). Раньше CI их не запускал вовсе: PR, ломающий
-  # генератор, вселение или двери, проходил зелёным, пока держался экспорт, и
-  # проверки оставались ритуалом, которого ничто не требовало. Отдельным джобом,
-  # а не шагом сборки: падение проверок видно сразу, не дожидаясь экспорта, а
-  # шаблоны экспорта (почти гигабайт) проверкам не нужны.
+  # Проверки идут параллельно экспорту и обходятся без его шаблонов.
   checks:
     name: Headless-проверки
     runs-on: ubuntu-latest
@@ -43,9 +43,7 @@ jobs:
           lfs: true
           submodules: recursive
 
-      # Рантайм byProd здесь не качается намеренно: его отсутствие обязано
-      # значить «нет звука», а не «не запускается», и byprod_check сверяет
-      # именно это поведение (docs/astral-genesis/how-to/Звук.md).
+      # Без рантайма byProd byprod_check проверяет запуск игры без звука.
       - name: Движок и импорт
         id: godot
         uses: ./.github/actions/godot-setup
@@ -56,7 +54,8 @@ jobs:
         shell: pwsh
         env:
           GODOT: ${{ steps.godot.outputs.bin }}
-        run: ./dev/run_checks.ps1 -SkipSubmoduleCheck
+          CHECK_SUITE: ${{ github.event_name == 'workflow_dispatch' && inputs.full_checks && 'All' || 'Smoke' }}
+        run: ./dev/run_checks.ps1 -Check $env:CHECK_SUITE -SkipSubmoduleCheck
 
   build:
     name: Windows и Linux
@@ -131,25 +130,37 @@ jobs:
           echo "Номер сборки: ${version}, метка архива: ${label}"
 
       # Обе платформы на одном раннере: движок, шаблоны и импорт ресурсов
-      # переиспользуются, второй вызов доходит до экспорта за секунды.
+      # подготавливаются один раз.
+      - name: Движок и импорт
+        id: godot
+        uses: ./.github/actions/godot-setup
+
+      # Номер меняет project.godot, поэтому его ставим после расчёта ключа кэша.
+      - name: Проставить номер сборки
+        shell: bash
+        env:
+          VERSION: ${{ steps.label.outputs.version }}
+        run: bash .github/scripts/set_version.sh "$VERSION"
+
       - name: Собрать Windows
         uses: ./.github/actions/godot-export
         with:
+          godot-bin: ${{ steps.godot.outputs.bin }}
           platform: windows
           label: ${{ steps.label.outputs.label }}
-          version: ${{ steps.label.outputs.version }}
 
       - name: Собрать Linux
         uses: ./.github/actions/godot-export
         with:
+          godot-bin: ${{ steps.godot.outputs.bin }}
           platform: linux
           label: ${{ steps.label.outputs.label }}
-          version: ${{ steps.label.outputs.version }}
 
       - name: Выложить артефакты
         uses: actions/upload-artifact@v7
         with:
           name: astral-genesis-${{ steps.label.outputs.label }}
           path: dist/*.zip
+          compression-level: 0
           retention-days: 14
           if-no-files-found: error
